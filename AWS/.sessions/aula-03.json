@@ -223,17 +223,17 @@
       }
     ]
   },
-  "pos": 4,
-  "marco_sessao": 0,
+  "pos": 8,
+  "marco_sessao": 4,
   "status": {
     "intro": "visto",
     "t1": "visto",
     "t2": "visto",
     "t3": "visto",
-    "t4": "pendente",
-    "t5": "pendente",
-    "t6": "pendente",
-    "t7": "pendente",
+    "t4": "visto",
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
     "p1": "pendente",
     "p2": "pendente",
     "p3": "pendente",
@@ -247,7 +247,11 @@
     "intro": "2026-07-25T00:08:26+00:00",
     "t1": "2026-07-25T00:15:38+00:00",
     "t2": "2026-07-25T00:40:19+00:00",
-    "t3": "2026-07-25T00:45:33+00:00"
+    "t3": "2026-07-25T00:45:33+00:00",
+    "t4": "2026-07-25T21:29:52+00:00",
+    "t5": "2026-07-25T21:43:49+00:00",
+    "t6": "2026-07-25T21:53:59+00:00",
+    "t7": "2026-07-25T22:03:07+00:00"
   },
   "notes": [
     {
@@ -264,6 +268,16 @@
       "beat": "t4",
       "ts": "2026-07-25T00:46:59+00:00",
       "text": "PARADA da sessao no t4 (route tables + IGW) — beat apenas INICIADO, NAO concluido (aluno pediu pausa, cansaco). Aluno pediu explicitamente pra NAO marcar t4 como concluido. Ate aqui na sessao: revisao do M02 (2/2 - unset de credenciais + billing exige root), t1 (VPC=rede privada regional), t2 (CIDR - dominado com perguntas otimas sobre colisao de IP privado e por que nao usar publico), t3 (subnet publica vs privada = definida pela ROTA, nao pelo nome - checkpoint perfeito). Ja narrei o t4 inteiro (route table = lista de placas, rota local nao-removivel, 0.0.0.0/0=internet, longest prefix match, IGW=portao tradutor priv<->pub 1 por VPC, e o CHECKLIST DOS 4 pra alcancar instancia: IGW+rota+IP publico+SG). FALTA: aluno responder o checkpoint dos 4 e confirmar. AMANHA: retomar t4 do inicio (reforcar os 4), depois t5 (NAT gateway - CUIDADO custa), t6 (SG vs NACL), t7 (DNS+peering), depois praticas."
+    },
+    {
+      "beat": "t4",
+      "ts": "2026-07-25T21:29:52+00:00",
+      "text": "Aluno deu feedback: nao cobrar em checkpoint/prova conceito ainda nao ensinado (Security Group apareceu no checklist dos 4 antes de t6). Regra: o que for cobrado, explicar antes (nem que seja resumo de 1 linha na hora)."
+    },
+    {
+      "beat": "t7",
+      "ts": "2026-07-25T22:03:07+00:00",
+      "text": "t7 concluido. DNS na VPC (resolvedor no base+2, enableDnsHostnames OFF na custom = pegadinha M04, resolucao interna retorna IP privado) + VPC Peering (conexao logica pcx-, config no console de VPC, handshake + rotas manuais dos 2 lados apontando CIDR da outra, nao transitivo, Transit Gateway = hub pra escala). Aluno fez perguntas EXCELENTES o tempo todo: entendeu cadeia dupla de NAT (NAT GW troca origem->IP privado do NAT; IGW traduz priv->pub do NAT), sacou sozinho que NAT=IP publico compartilhado N-pra-1, e deduziu as rotas de peering (cada VPC aponta CIDR da outra pro pcx-). FEEDBACK IMPORTANTE registrado no t4: nao cobrar conceito antes de ensinar. PROXIMA SESSAO: praticas p1-p5 (construir VPC no Console, depois CLI, teardown). Toda a teoria do M03 esta dominada."
     }
   ],
   "iniciado_em": "2026-07-24T23:59:48+00:00"
