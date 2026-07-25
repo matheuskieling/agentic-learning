@@ -1,0 +1,270 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/AWS/03-rede-vpc/roteiro.json",
+  "roteiro": {
+    "modulo": "03",
+    "titulo": "Rede — VPC",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — a rede é o alicerce invisível",
+        "pontos": [
+          "Objetivo: dominar VPC, subnets, rotas, gateways e firewalls da AWS",
+          "Motivação: todo EC2/RDS/ELB mora numa VPC; entender agora evita horas de 'não conecta'",
+          "Prática: construir uma VPC completa no Console e recriar via CLI, com teardown total",
+          "Custo: US$ 0 se seguir o roteiro — o único vilão (NAT Gateway) não será criado"
+        ],
+        "checkpoint": "Confirme que o aluno completou os módulos 01-02 e está pronto pra começar",
+        "ref": "03-rede-vpc/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "O que é uma VPC",
+        "pontos": [
+          "VPC = sua rede privada e isolada dentro da AWS (analogia do condomínio murado)",
+          "Regional: vive numa região e atravessa todas as AZs dela",
+          "Isolada por padrão: nada entra/sai sem você criar os componentes",
+          "Toda conta tem uma default VPC por região; subnets são as fatias internas"
+        ],
+        "checkpoint": "Pergunte: a VPC é global, regional ou por AZ? E as subnets?",
+        "ref": "03-rede-vpc/teoria.md#1-o-que-é-uma-vpc"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "CIDR: lendo /16 e /24",
+        "pontos": [
+          "IPv4 = 32 bits; /N prende os N primeiros bits (rede), o resto varia (hosts)",
+          "/16 = 65.536 IPs; /24 = 256; cada bit a menos na barra DOBRA a rede",
+          "Regra mental: barra maior = rede menor",
+          "AWS reserva 5 IPs por subnet → /24 tem 251 usáveis",
+          "Faixas privadas RFC 1918; armadilha dos CIDRs sobrepostos entre redes que um dia se falarão"
+        ],
+        "checkpoint": "Teste: quantos IPs tem um /24? E um /28? Por que 251 usáveis?",
+        "ref": "03-rede-vpc/teoria.md#2-cidr-entendendo-16-24-e-os-ips-privados"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Subnets públicas vs. privadas + default VPC",
+        "pontos": [
+          "Subnet = fatia do CIDR presa a UMA AZ; é onde os recursos moram",
+          "O que torna pública: rota 0.0.0.0/0 → IGW na route table associada — não é o nome!",
+          "Arquitetura clássica: exposto na pública (LB, bastion), o grosso na privada (app, banco)",
+          "Default VPC: tudo público, boa pra teste; produção = VPC customizada sempre",
+          "Erro clássico de iniciante: banco de dados na subnet pública da default VPC"
+        ],
+        "checkpoint": "Pergunte: o que DE FATO faz uma subnet ser pública?",
+        "ref": "03-rede-vpc/teoria.md#3-subnets-públicas-vs-privadas"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "Route tables e Internet Gateway",
+        "pontos": [
+          "Cada subnet tem exatamente uma route table (a main, se nenhuma for associada)",
+          "Rota local (CIDR da VPC) é implícita e não removível; 0.0.0.0/0 é a rota default",
+          "Longest prefix match: vale a rota mais específica que casar",
+          "IGW: 1 por VPC, anexado; traduz IP privado ↔ público",
+          "Checklist dos 4 pra ser alcançável: IGW + rota + IP público + SG; IPv4 público custa (~US$3,60/mês)"
+        ],
+        "checkpoint": "Peça as 4 condições pra alcançar uma instância da internet",
+        "ref": "03-rede-vpc/teoria.md#5-route-tables-e-o-internet-gateway"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "NAT Gateway — saída sem entrada (⚠️ custa!)",
+        "pontos": [
+          "Problema: subnet privada precisa SAIR (updates, APIs) sem ficar exposta",
+          "NAT Gateway mora na subnet PÚBLICA com um Elastic IP; mão única (só conexões iniciadas de dentro)",
+          "Fluxo: privada → rota 0.0.0.0/0 → NAT → IGW → internet",
+          "⚠️ SEM Free Tier: ~US$0,045/h (≈US$32/mês) + ~US$0,045/GB, por AZ — campeão de sangria silenciosa",
+          "Alternativas: NAT instance, VPC endpoints (gateway endpoints de S3/DynamoDB são grátis)"
+        ],
+        "checkpoint": "Pergunte onde o NAT mora e por que; reforce o alerta de custo antes de seguir",
+        "ref": "03-rede-vpc/teoria.md#6-nat-gateway--saída-sem-entrada-️-custa-dinheiro"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "Security Groups (stateful) vs. NACLs (stateless)",
+        "pontos": [
+          "SG: na instância/ENI, stateful, só Allow, nega entrada e libera saída por padrão",
+          "NACL: na subnet, stateless, Allow e Deny em ordem numérica, default permite tudo",
+          "Stateful na prática: liberou 443 de entrada, a resposta sai sozinha; NACL exige ephemeral ports",
+          "Superpoder: SG referencia outro SG como origem (banco aceita 5432 vindo do SG do app)",
+          "Dia a dia: 95% SGs; NACL fica no default salvo bloqueios grosseiros na borda"
+        ],
+        "checkpoint": "Teste com o exemplo da porta 443: o que muda entre SG e NACL?",
+        "ref": "03-rede-vpc/teoria.md#7-security-groups-vs-nacls--o-firewall-em-duas-camadas"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "DNS na VPC + VPC Peering (visão geral)",
+        "pontos": [
+          "Resolvedor embutido no IP base+2 (ex.: 10.0.0.2); atributos enableDnsSupport/enableDnsHostnames",
+          "DnsHostnames vem OFF em VPC customizada — detalhe que pega no M04",
+          "DNS público resolvido de dentro retorna o IP privado (tráfego fica interno)",
+          "Peering: liga 2 VPCs por IP privado; exige CIDRs sem sobreposição + rotas dos 2 lados",
+          "Não transitivo (A↔B, B↔C ≠ A↔C); em escala, Transit Gateway (só o conceito)"
+        ],
+        "checkpoint": "Recapitule a teoria toda e pergunte: 'podemos partir pra construir a VPC?'",
+        "ref": "03-rede-vpc/teoria.md#8-dns-na-vpc-e-vpc-peering-visão-geral"
+      },
+      {
+        "id": "p1",
+        "fase": "pratica",
+        "titulo": "Prática A — VPC, subnets e IGW no Console",
+        "pontos": [
+          "Criar curso-vpc 10.0.0.0/16 (modo 'VPC only' — o assistente esconde o aprendizado e adora criar NAT pago)",
+          "Criar as subnets 10.0.1.0/24 e 10.0.2.0/24 na us-east-1a — por ora idênticas!",
+          "Criar o IGW e ANEXAR à VPC (ele nasce detached)",
+          "Reforçar: nenhuma subnet é pública ainda; falta a rota"
+        ],
+        "acao": "Guiar os passos 1-3 da pratica.md no Console",
+        "checkpoint": "Confirme VPC, 2 subnets e IGW anexado antes de seguir",
+        "ref": "03-rede-vpc/pratica.md#parte-a--construir-a-vpc-no-console"
+      },
+      {
+        "id": "p2",
+        "fase": "pratica",
+        "titulo": "Prática A — route tables: o momento em que a subnet vira pública",
+        "pontos": [
+          "Criar curso-rt-publica, adicionar 0.0.0.0/0 → IGW, associar à subnet 10.0.1.0/24",
+          "Celebrar o momento: AGORA ela é pública — a rota fez isso",
+          "Criar curso-rt-privada sem rota nenhuma e associar à 10.0.2.0/24 (explicitude)",
+          "Mostrar a rota local implícita e onde a rota pro NAT entraria um dia"
+        ],
+        "acao": "Guiar os passos 4-5 da pratica.md no Console",
+        "checkpoint": "Peça pro aluno explicar por que uma subnet é pública e a outra não",
+        "ref": "03-rede-vpc/pratica.md#passo-4--route-table-pública"
+      },
+      {
+        "id": "p3",
+        "fase": "pratica",
+        "titulo": "Prática A — security group, tela do NAT e DNS",
+        "pontos": [
+          "Criar curso-sg-web: 80/443 do mundo, 22 SÓ do meu IP (/32) — nunca SSH aberto",
+          "Lembrar o stateful: sem regra pra respostas",
+          "NAT Gateway: abrir a tela de criação, ver que pede subnet PÚBLICA + Elastic IP, e CANCELAR",
+          "Opcional consciente: criar e destruir imediatamente (NAT + release do EIP)",
+          "Habilitar DNS hostnames na VPC (vem off na customizada)"
+        ],
+        "acao": "Guiar os passos 6-8 da pratica.md no Console",
+        "checkpoint": "Confirme o SG criado, o NAT NÃO criado (ou já destruído) e o DNS ligado",
+        "ref": "03-rede-vpc/pratica.md#passo-6--security-group"
+      },
+      {
+        "id": "p4",
+        "fase": "pratica",
+        "titulo": "Prática B — recriar tudo via CLI",
+        "pontos": [
+          "create-vpc / create-subnet / create-internet-gateway + attach / create-route-table + create-route + associate",
+          "Guardar IDs em variáveis de shell; tags de Name em tudo",
+          "create-security-group + authorize-security-group-ingress (com o IP do aluno via checkip)",
+          "Inspecionar com describe-* e comparar com o diagrama — ~10 comandos = a rede inteira (embrião de IaC)"
+        ],
+        "acao": "Guiar os passos 9-14 da pratica.md na CLI, conferindo cada saída",
+        "checkpoint": "Confirme que os describe-* batem com o diagrama antes do teardown",
+        "ref": "03-rede-vpc/pratica.md#parte-b--recriar-tudo-via-cli"
+      },
+      {
+        "id": "p5",
+        "fase": "pratica",
+        "titulo": "Prática C — teardown COMPLETO e verificação",
+        "pontos": [
+          "Ordem importa: SG → route table (desassociar antes) → IGW (detach antes) → subnets → VPC",
+          "Console tem o delete em cascata (Actions → Delete VPC) pra VPC da Parte A",
+          "Verificação final: só a default VPC resta; zero NAT; zero Elastic IP",
+          "NUNCA deletar a default VPC; EIP solto cobra"
+        ],
+        "acao": "Guiar o teardown da pratica.md nas duas VPCs e rodar os comandos de verificação",
+        "checkpoint": "Feche a prática confirmando a verificação final e o checklist do módulo",
+        "ref": "03-rede-vpc/pratica.md#parte-c--teardown-completo-obrigatório"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz da aula",
+        "pontos": [
+          "Fixar o conteúdo com o quiz interativo (10 questões)",
+          "Eu conduzo as perguntas no chat e tiro dúvidas a cada uma"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/apps/modulo-03/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+        "ref": "AWS/apps/modulo-03/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do módulo",
+        "pontos": [
+          "Avaliação de fim de módulo (12 questões de cenário, feedback por alternativa)",
+          "Aprovação 70%; só seguir pro Módulo 04 após passar"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/provas/modulo-03/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 04; se não, revise os pontos errados",
+        "ref": "AWS/provas/modulo-03/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 03",
+        "pontos": [
+          "Recap: CIDR, pública = rota pro IGW, NAT (custo!), SG stateful vs NACL stateless, peering",
+          "Você construiu e destruiu uma rede inteira duas vezes — Console e CLI",
+          "Próximo: Módulo 04 — Compute (EC2): finalmente uma instância DENTRO dessa rede"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 04 ou parar por aqui",
+        "ref": "AWS/CLAUDE.md#plano-completo-do-curso"
+      }
+    ]
+  },
+  "pos": 4,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "visto",
+    "t2": "visto",
+    "t3": "visto",
+    "t4": "pendente",
+    "t5": "pendente",
+    "t6": "pendente",
+    "t7": "pendente",
+    "p1": "pendente",
+    "p2": "pendente",
+    "p3": "pendente",
+    "p4": "pendente",
+    "p5": "pendente",
+    "q1": "pendente",
+    "prova": "pendente",
+    "fim": "pendente"
+  },
+  "concluido_em": {
+    "intro": "2026-07-25T00:08:26+00:00",
+    "t1": "2026-07-25T00:15:38+00:00",
+    "t2": "2026-07-25T00:40:19+00:00",
+    "t3": "2026-07-25T00:45:33+00:00"
+  },
+  "notes": [
+    {
+      "beat": "intro",
+      "ts": "2026-07-25T00:08:25+00:00",
+      "text": "Aluno declarou conhecimento de redes praticamente ZERO (pagina em branco). Pediu explicitamente base do mundo real (fora da AWS) antes de cada conceito AWS. Esperar muitas duvidas. Ir devagar, analogias concretas, nunca assumir termos de rede conhecidos (IP, sub-rede, roteador, firewall etc todos precisam ser construidos do zero)."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-07-25T00:40:17+00:00",
+      "text": "t2 (CIDR) concluido com dominio. Aluno acertou checkpoint (256, 16, 251 por causa dos 5 reservados). Fez perguntas EXCELENTES que anteciparam t3/NAT: (1) por que IPs privados iguais colidem ao conectar redes -> expliquei isolamento permite repetir, so colide quando redes se falam (peering/VPN); (2) por que nao usar IP publico pra conectar -> expliquei escassez+custo, exposicao/seguranca, e que peering usa corredor privado interno; (3) consolidou que IP publico e recurso alugado sob demanda. Reforcei: VPC inteira e privada por padrao; publico e EXTRA anexado a maquina especifica; e formula 'maquina publica = IP publico + caminho ate internet'. Aluno construindo modelo mental forte apesar de zero base de redes."
+    },
+    {
+      "beat": "t4",
+      "ts": "2026-07-25T00:46:59+00:00",
+      "text": "PARADA da sessao no t4 (route tables + IGW) — beat apenas INICIADO, NAO concluido (aluno pediu pausa, cansaco). Aluno pediu explicitamente pra NAO marcar t4 como concluido. Ate aqui na sessao: revisao do M02 (2/2 - unset de credenciais + billing exige root), t1 (VPC=rede privada regional), t2 (CIDR - dominado com perguntas otimas sobre colisao de IP privado e por que nao usar publico), t3 (subnet publica vs privada = definida pela ROTA, nao pelo nome - checkpoint perfeito). Ja narrei o t4 inteiro (route table = lista de placas, rota local nao-removivel, 0.0.0.0/0=internet, longest prefix match, IGW=portao tradutor priv<->pub 1 por VPC, e o CHECKLIST DOS 4 pra alcancar instancia: IGW+rota+IP publico+SG). FALTA: aluno responder o checkpoint dos 4 e confirmar. AMANHA: retomar t4 do inicio (reforcar os 4), depois t5 (NAT gateway - CUIDADO custa), t6 (SG vs NACL), t7 (DNS+peering), depois praticas."
+    }
+  ],
+  "iniciado_em": "2026-07-24T23:59:48+00:00"
+}
