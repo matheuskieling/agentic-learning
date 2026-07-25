@@ -1,0 +1,126 @@
+{
+  "titulo": "Revisão acumulada — 8 perguntas (módulos: 01, 02)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Qual comando da AWS CLI confirma que suas credenciais estão funcionando, mostrando sua identidade (UserId, Account, ARN)?",
+      "opcoes": [
+        "aws configure list-regions",
+        "aws sts get-caller-identity",
+        "aws iam whoami",
+        "aws ec2 describe-instances"
+      ],
+      "correta": 1,
+      "explicacao": "`aws sts get-caller-identity` é o teste padrão de 'quem sou eu' após configurar a CLI.",
+      "feedbacks": [
+        "Esse comando não é o teste de identidade; e 'configure list-regions' nem existe nesse formato.",
+        "Correto: é o jeito canônico de checar que a CLI está autenticada e ver sua identidade.",
+        "Não existe 'aws iam whoami'. O comando certo é 'aws sts get-caller-identity'.",
+        "describe-instances lista EC2 (e pode falhar/vir vazio) — não é um teste de identidade."
+      ],
+      "qid": "m01-prova#6"
+    },
+    {
+      "pergunta": "Qual a diferença entre uma Região e uma Zona de Disponibilidade (AZ)?",
+      "opcoes": [
+        "São sinônimos, apenas nomes diferentes para a mesma coisa",
+        "Região é uma área geográfica; AZ é um ou mais datacenters isolados dentro dela",
+        "AZ é maior que uma Região",
+        "Região é física e AZ é apenas lógica, sem datacenter real"
+      ],
+      "correta": 1,
+      "explicacao": "Uma Região contém várias AZs; cada AZ é um/mais datacenters com energia e rede independentes.",
+      "qid": "m01-quiz#1"
+    },
+    {
+      "pergunta": "Qual peça do IAM é uma identidade assumível que fornece credenciais TEMPORÁRIAS?",
+      "opcoes": [
+        "User",
+        "Group",
+        "Role",
+        "Policy"
+      ],
+      "correta": 2,
+      "explicacao": "Role é a identidade que se assume via STS, recebendo credenciais com session token e expiração.",
+      "qid": "m02-quiz#1"
+    },
+    {
+      "pergunta": "Sobre o IAM Identity Center, qual afirmação está CORRETA?",
+      "opcoes": [
+        "É um serviço para criar access keys de longa duração em massa",
+        "Fornece acesso humano via SSO com credenciais temporárias (roles), ideal para múltiplas contas",
+        "Substitui as policies do IAM por um sistema próprio de permissões incompatível",
+        "Só funciona para aplicações, nunca para pessoas"
+      ],
+      "correta": 1,
+      "explicacao": "Identity Center = SSO: pessoas logam num portal e recebem roles temporárias nas contas, sem chave eterna.",
+      "feedbacks": [
+        "É o oposto: o objetivo dele é ELIMINAR chaves de longa duração para humanos, trocando-as por sessões temporárias.",
+        "Correto: login único, diretório central (ou integrado a um IdP), permission sets aplicados em múltiplas contas, tudo via credenciais temporárias.",
+        "Ele usa o mesmo modelo por baixo: permission sets viram roles com policies IAM normais nas contas.",
+        "É exatamente para pessoas (acesso humano). Aplicações/serviços continuam usando roles diretamente."
+      ],
+      "qid": "m02-prova#9"
+    },
+    {
+      "pergunta": "Ao rodar 'aws sts assume-role', a resposta traz três credenciais. Qual delas NÃO existe nas access keys comuns de um IAM user?",
+      "opcoes": [
+        "AccessKeyId",
+        "SecretAccessKey",
+        "SessionToken",
+        "Nenhuma: as credenciais são idênticas às de um user"
+      ],
+      "correta": 2,
+      "explicacao": "O SessionToken é a marca das credenciais temporárias do STS — e elas ainda têm Expiration.",
+      "feedbacks": [
+        "AccessKeyId existe nos dois casos (nas temporárias costuma começar com ASIA em vez de AKIA), então não é o diferencial.",
+        "SecretAccessKey também existe nos dois tipos de credencial.",
+        "Correto: o SessionToken só existe em credenciais temporárias do STS, junto com uma data de expiração. Sem ele, as credenciais temporárias não funcionam.",
+        "São diferentes: credenciais de role têm SessionToken e expiram; access keys de user são de longa duração."
+      ],
+      "qid": "m02-prova#6"
+    },
+    {
+      "pergunta": "Sua empresa exige que a permissão de deletar snapshots NUNCA funcione, nem para admins. Como garantir isso via IAM?",
+      "opcoes": [
+        "Simplesmente não conceder Allow para deletar snapshots",
+        "Aplicar um Deny explícito para a ação de deletar snapshots, pois ele vence qualquer Allow",
+        "Remover todos os admins da conta",
+        "Criar um group vazio chamado 'sem-delete'"
+      ],
+      "correta": 1,
+      "explicacao": "Deny explícito é a trava inquebrável: mesmo quem tem AdministratorAccess (Allow *:*) é bloqueado.",
+      "feedbacks": [
+        "Insuficiente: um admin tem Allow em tudo (*:*), então a ação seguiria permitida. Não conceder só funciona pra quem não tem Allow amplo.",
+        "Correto: Deny explícito > Allow, sempre. É exatamente o mecanismo para travas absolutas que nem admin atravessa.",
+        "Drástico e não resolve: a exigência é bloquear UMA ação, não eliminar administradores da conta.",
+        "Group vazio não faz nada: policies só têm efeito quando anexadas, e um group sem policy (e sem membros) é inerte."
+      ],
+      "qid": "m02-prova#5"
+    },
+    {
+      "pergunta": "Qual comando da CLI você usa para assumir uma role e receber credenciais temporárias?",
+      "opcoes": [
+        "aws iam assume-role",
+        "aws sts assume-role",
+        "aws iam get-role-credentials",
+        "aws configure assume"
+      ],
+      "correta": 1,
+      "explicacao": "É o STS (Security Token Service) que emite credenciais temporárias: aws sts assume-role --role-arn ... --role-session-name ...",
+      "qid": "m02-quiz#8"
+    },
+    {
+      "pergunta": "O que significa o 'implicit deny' do IAM?",
+      "opcoes": [
+        "Toda ação é negada por padrão, a menos que alguma policy a permita",
+        "O root nega ações automaticamente",
+        "Policies inline negam mais que as gerenciadas",
+        "Ações fora da sua região são negadas"
+      ],
+      "correta": 0,
+      "explicacao": "O ponto de partida é negar tudo. Sem um Allow aplicável, a resposta é AccessDenied.",
+      "qid": "m02-quiz#5"
+    }
+  ]
+}

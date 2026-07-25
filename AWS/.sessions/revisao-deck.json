@@ -1,0 +1,58 @@
+{
+  "m01-prova#6": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m01-quiz#1": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-quiz#1": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-prova#9": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-prova#6": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-prova#5": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-quiz#8": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  },
+  "m02-quiz#5": {
+    "caixa": 2,
+    "vezes": 1,
+    "acertos": 1,
+    "ultima": "2026-07-24",
+    "proxima": "2026-07-27"
+  }
+}
