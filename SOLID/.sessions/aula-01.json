@@ -151,7 +151,7 @@
       }
     ]
   },
-  "pos": 5,
+  "pos": 10,
   "marco_sessao": 5,
   "status": {
     "intro": "visto",
@@ -159,11 +159,11 @@
     "t2": "visto",
     "t3": "visto",
     "t4": "visto",
-    "t5": "pendente",
-    "t6": "pendente",
-    "p1": "pendente",
-    "q1": "pendente",
-    "prova": "pendente",
+    "t5": "visto",
+    "t6": "visto",
+    "p1": "visto",
+    "q1": "visto",
+    "prova": "visto",
     "fim": "pendente"
   },
   "notes": [
@@ -176,7 +176,29 @@
       "beat": "t4",
       "ts": "2026-07-20T18:33:17+00:00",
       "text": "Aprofundamento pedido pelo aluno em OCP: 'pra onde vai o switch?'. Mostrei antes/depois em C# (ICalculadoraFrete), resolvedor por Dictionary e registro via DI (AddSingleton + IEnumerable injetado). Ponto-chave que ele pegou: switch de COMPORTAMENTO some; sobra no máximo 1 ponto de registro = adicionar linha (extensão) em vez de editar case (modificação)."
+    },
+    {
+      "beat": "p1",
+      "ts": "2026-07-28T13:34:55+00:00",
+      "text": "Aluno achou difícil nomear smell/sintoma/princípio no diagnóstico da God class (normal nesta fase). Acertou switch→OCP e God class→SRP; confundiu flag booleana (mapeou SRP, é OCP — primo do switch) e não viu sozinho os 'new' concretos (DIP) nem a mistura de camadas (SRP). Reforçar o mapa smell→sintoma→princípio ao longo de SRP/OCP/DIP."
+    },
+    {
+      "beat": "q1",
+      "ts": "2026-07-28T13:49:07+00:00",
+      "text": "Quiz Módulo 01: 10/10. Aluno fez perguntas conceituais fortes: (1) viscosidade x rigidez — corrigi que este cenário é viscosidade e que 'a solução já existir' não é o critério; (2) DDD x SRP — expliquei que DDD mantém só comportamento de domínio na entidade, empurrando persistência/apresentação/infra pra fora (concorda com SRP); (3) notou viés do banco (correta quase sempre no índice 1) — passei a embaralhar."
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-07-28T13:54:08+00:00",
+      "text": "Prova Módulo 01: 12/12 (100%). Aprovado com folga. Quiz também 10/10. Aluno demonstra entendimento ativo (perguntas conceituais fortes)."
     }
   ],
-  "iniciado_em": "2026-07-20T18:03:00+00:00"
+  "iniciado_em": "2026-07-20T18:03:00+00:00",
+  "concluido_em": {
+    "t5": "2026-07-28T13:24:31+00:00",
+    "t6": "2026-07-28T13:28:27+00:00",
+    "p1": "2026-07-28T13:39:27+00:00",
+    "q1": "2026-07-28T13:49:07+00:00",
+    "prova": "2026-07-28T13:54:08+00:00"
+  }
 }
