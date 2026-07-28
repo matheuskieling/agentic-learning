@@ -223,8 +223,8 @@
       }
     ]
   },
-  "pos": 8,
-  "marco_sessao": 4,
+  "pos": 11,
+  "marco_sessao": 8,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -234,9 +234,9 @@
     "t5": "visto",
     "t6": "visto",
     "t7": "visto",
-    "p1": "pendente",
-    "p2": "pendente",
-    "p3": "pendente",
+    "p1": "visto",
+    "p2": "visto",
+    "p3": "visto",
     "p4": "pendente",
     "p5": "pendente",
     "q1": "pendente",
@@ -251,7 +251,10 @@
     "t4": "2026-07-25T21:29:52+00:00",
     "t5": "2026-07-25T21:43:49+00:00",
     "t6": "2026-07-25T21:53:59+00:00",
-    "t7": "2026-07-25T22:03:07+00:00"
+    "t7": "2026-07-25T22:03:07+00:00",
+    "p1": "2026-07-27T23:43:30+00:00",
+    "p2": "2026-07-27T23:52:04+00:00",
+    "p3": "2026-07-28T00:19:47+00:00"
   },
   "notes": [
     {
@@ -278,6 +281,21 @@
       "beat": "t7",
       "ts": "2026-07-25T22:03:07+00:00",
       "text": "t7 concluido. DNS na VPC (resolvedor no base+2, enableDnsHostnames OFF na custom = pegadinha M04, resolucao interna retorna IP privado) + VPC Peering (conexao logica pcx-, config no console de VPC, handshake + rotas manuais dos 2 lados apontando CIDR da outra, nao transitivo, Transit Gateway = hub pra escala). Aluno fez perguntas EXCELENTES o tempo todo: entendeu cadeia dupla de NAT (NAT GW troca origem->IP privado do NAT; IGW traduz priv->pub do NAT), sacou sozinho que NAT=IP publico compartilhado N-pra-1, e deduziu as rotas de peering (cada VPC aponta CIDR da outra pro pcx-). FEEDBACK IMPORTANTE registrado no t4: nao cobrar conceito antes de ensinar. PROXIMA SESSAO: praticas p1-p5 (construir VPC no Console, depois CLI, teardown). Toda a teoria do M03 esta dominada."
+    },
+    {
+      "beat": "p1",
+      "ts": "2026-07-27T23:43:30+00:00",
+      "text": "p1 concluido no Console: VPC curso-vpc 10.0.0.0/16, 2 subnets (publica 10.0.1.0/24 e privada 10.0.2.0/24 ambas us-east-1a), IGW curso-igw attached. Aluno perguntou (otimo) se anexar IGW inclui em todas subnets - respondi que nao, IGW e da VPC, a route table e que conecta. Guardou 'anexar da possibilidade, rota da acesso'."
+    },
+    {
+      "beat": "p2",
+      "ts": "2026-07-27T23:52:04+00:00",
+      "text": "p2 concluido: rt-publica com 0.0.0.0/0->IGW associada a subnet publica (virou publica), rt-privada vazia associada a subnet privada. Aluno explicou perfeitamente por que uma e publica e outra nao (route table). Perguntou (otimo) sobre cardinalidade: respondi subnet->exatamente 1 route table; route table->N subnets (muitos-pra-um), com exemplo multi-AZ."
+    },
+    {
+      "beat": "p3",
+      "ts": "2026-07-28T00:19:47+00:00",
+      "text": "PARADA no fim da Parte A (Console COMPLETA): SG curso-sg-web (80/443 mundo, 22 /32 do IP dele 189.6.254.205), NAT so olhado+cancelado (tela nova modo Regional pede VPC nao subnet - expliquei zonal vs regional como avancado), DNS hostnames ENABLED. Aluno fez perguntas EXCELENTES e profundas: desembaracei (1) alcance [checklist dos 4: IP publico+rota IGW+SG] vs nomeacao [DNS: nome privado sempre, publico so com IP publico] - NAT nao tem a ver com hostname; (2) IP publico em subnet privada e inutil; (3) corrigi INVERSAO dele: subnet PRIVADA aponta 0.0.0.0/0->NAT, PUBLICA aponta ->IGW. PEDIDO DO ALUNO: proxima revisao com 5-10 perguntas cobrindo TUDO (teoria M03 + Parte A), extrair o maximo dele. PROXIMO: Parte B (recriar via CLI, beat p4) + Parte C teardown via CLI + quiz + prova. Nada custando (sem NAT/EIP)."
     }
   ],
   "iniciado_em": "2026-07-24T23:59:48+00:00"
