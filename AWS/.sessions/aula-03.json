@@ -223,8 +223,8 @@
       }
     ]
   },
-  "pos": 11,
-  "marco_sessao": 8,
+  "pos": 13,
+  "marco_sessao": 11,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -237,8 +237,8 @@
     "p1": "visto",
     "p2": "visto",
     "p3": "visto",
-    "p4": "pendente",
-    "p5": "pendente",
+    "p4": "visto",
+    "p5": "visto",
     "q1": "pendente",
     "prova": "pendente",
     "fim": "pendente"
@@ -254,7 +254,9 @@
     "t7": "2026-07-25T22:03:07+00:00",
     "p1": "2026-07-27T23:43:30+00:00",
     "p2": "2026-07-27T23:52:04+00:00",
-    "p3": "2026-07-28T00:19:47+00:00"
+    "p3": "2026-07-28T00:19:47+00:00",
+    "p4": "2026-07-29T00:36:59+00:00",
+    "p5": "2026-07-29T00:46:48+00:00"
   },
   "notes": [
     {
@@ -296,6 +298,16 @@
       "beat": "p3",
       "ts": "2026-07-28T00:19:47+00:00",
       "text": "PARADA no fim da Parte A (Console COMPLETA): SG curso-sg-web (80/443 mundo, 22 /32 do IP dele 189.6.254.205), NAT so olhado+cancelado (tela nova modo Regional pede VPC nao subnet - expliquei zonal vs regional como avancado), DNS hostnames ENABLED. Aluno fez perguntas EXCELENTES e profundas: desembaracei (1) alcance [checklist dos 4: IP publico+rota IGW+SG] vs nomeacao [DNS: nome privado sempre, publico so com IP publico] - NAT nao tem a ver com hostname; (2) IP publico em subnet privada e inutil; (3) corrigi INVERSAO dele: subnet PRIVADA aponta 0.0.0.0/0->NAT, PUBLICA aponta ->IGW. PEDIDO DO ALUNO: proxima revisao com 5-10 perguntas cobrindo TUDO (teoria M03 + Parte A), extrair o maximo dele. PROXIMO: Parte B (recriar via CLI, beat p4) + Parte C teardown via CLI + quiz + prova. Nada custando (sem NAT/EIP)."
+    },
+    {
+      "beat": "p4",
+      "ts": "2026-07-29T00:04:51+00:00",
+      "text": "Revisao forte de 10 perguntas (M03 teoria+PraticaA) ANTES da Pratica B. Aluno 10/10 de entendimento, so deslizes de detalhe: (1) esqueceu SG no checklist dos 4; (2) confundiu NACL default (LIBERA tudo) com custom; (3) disse rota local cobre subnet, e /16 da VPC; (4) achou NAT regional-automatico, e zonal 1-por-AZ; (5) disse resolvedor devolve hostname, e IP privado; (6) nao lembrou nome Transit Gateway; (7) na arquitetura final esqueceu SG-do-banco (SG referenciando SG) e a rota 0.0.0.0/0->NAT na RT privada. Corrigido tudo na hora. Revisar solto depois: NACL default vs custom, NAT zonal. Proximo: Pratica B CLI (p4)."
+    },
+    {
+      "beat": "q1",
+      "ts": "2026-07-29T00:46:48+00:00",
+      "text": "Pratica B (CLI) e C (teardown) COMPLETAS. Parte B: recriou VPC/subnets/IGW/RT-publica/SG via ~10 comandos CLI. Bugs que o aluno cacou sozinho e virou licao: (1) typo ResourseType->ResourceType (AWS barra); (2) --query VPC.VPCID retorna None mas CRIA a VPC mesmo assim (JMESPath case-sensitive: Vpc.VpcId) -> gerou VPC orfa que deletamos; (3) tpc->tcp. Conferiu describe-* batendo com diagrama (2x local: rt-publica+main; 0.0.0.0/0->igw so na publica). Perguntou por que VPC fica em 'aws ec2' (historico: rede nasceu junto do EC2) e sobre VPC Endpoints (servicos AWS ficam FORA da VPC, na rede publica; endpoint=porta privada sem NAT/internet, M13). Teardown C: destruiu VPC-CLI via comandos na ordem (SG->desassociar+delete RT->detach+delete IGW->subnets->VPC) e VPC-Console via cascade delete (Actions->Delete VPC) - achou console muito mais facil pra one-off; reforcei console=one-off manual, CLI=automacao/repro. Verificacao final LIMPA: so default VPC, 0 NAT, 0 EIP. PROXIMO: q1 (quiz da aula, 10q) + prova do modulo (12q, 70%). Parou aqui, cansaco fim do dia."
     }
   ],
   "iniciado_em": "2026-07-24T23:59:48+00:00"
