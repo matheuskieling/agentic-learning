@@ -1,0 +1,267 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/AWS/04-compute-ec2/roteiro.json",
+  "roteiro": {
+    "modulo": "04",
+    "titulo": "Compute — EC2",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — finalmente, servidores de verdade",
+        "pontos": [
+          "Objetivo: dominar EC2 — instâncias, AMIs, tipos, SSH, user data, EBS, metadata, ciclo de vida",
+          "Tudo dos módulos anteriores converge aqui: IAM (roles), VPC (subnet/SG) e custos",
+          "Prática: t3.micro (Free Tier) com nginx via user data, SSH, snapshot — e terminate verificado",
+          "Custo: US$ 0 no Free Tier; centavos fora dele SE o teardown for feito"
+        ],
+        "checkpoint": "Confirme os módulos 01-03 completos e a empolgação pra subir o primeiro servidor",
+        "ref": "04-compute-ec2/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "O que é uma instância + AMIs",
+        "pontos": [
+          "Instância = VM cobrada por segundo; você escolhe AMI, tipo, rede, disco, key pair",
+          "IaaS puro: da virtualização pra baixo é AWS, do SO pra cima é você",
+          "AMI = molde (SO + software); fontes: AWS, Marketplace (cuidado com licença!), comunidade, suas",
+          "AMIs são regionais; criar AMI própria = clonar servidor configurado (golden image)",
+          "x86_64 vs arm64 (Graviton): a AMI precisa casar com a arquitetura"
+        ],
+        "checkpoint": "Pergunte: no EC2, de quem é a responsabilidade pelos patches do SO?",
+        "ref": "04-compute-ec2/teoria.md#1-o-que-é-uma-instância-ec2"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "Lendo o nome do tipo: t3.micro",
+        "pontos": [
+          "Anatomia: família (letra) + geração (número) + tamanho (após o ponto)",
+          "Famílias: t (burstable/créditos), m (equilíbrio), c (CPU), r (RAM); g/p GPU etc.",
+          "Sufixos: g = Graviton/ARM, a = AMD, n = rede turbinada; geração maior = melhor",
+          "Cada degrau de tamanho ~dobra recursos e preço",
+          "Família t: créditos de CPU — ótima pra estudo, ruim pra 100% de carga contínua",
+          "Free Tier: 750h/mês de t3.micro por 12 meses (uma instância ligada o mês todo)"
+        ],
+        "checkpoint": "Teste: peça pro aluno decodificar r6g.xlarge e c7.large",
+        "ref": "04-compute-ec2/teoria.md#3-tipos-de-instância--aprendendo-a-ler-t3micro"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Key pairs e user data",
+        "pontos": [
+          "Key pair: AWS guarda a pública, você baixa a .pem UMA vez; chmod 400; nunca no repo",
+          "Perdeu a .pem = AWS não tem cópia; usuário de login depende da AMI (ec2-user, ubuntu)",
+          "User data: script que roda como root no PRIMEIRO boot — o bootstrap automático",
+          "Debug: /var/log/cloud-init-output.log é o primeiro lugar pra olhar",
+          "Armadilha: NUNCA segredos no user data (legível via metadata); segredos = role + Secrets Manager",
+          "Alternativas modernas de acesso: Instance Connect, SSM Session Manager (sem porta 22)"
+        ],
+        "checkpoint": "Pergunte o que acontece se perder a .pem e onde olhar se o user data falhar",
+        "ref": "04-compute-ec2/teoria.md#5-user-data--o-script-de-nascimento"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "EBS: discos, tipos e snapshots",
+        "pontos": [
+          "EBS = disco virtual de rede, persiste independente da instância, zonal (mesma AZ)",
+          "gp3 é o padrão atual (melhor e mais barato que gp2); io2 pra IOPS garantidas; st1/sc1 HDD",
+          "Snapshots: incrementais, viram volume em outra AZ ou AMI; cobram por GB·mês",
+          "DeleteOnTermination: raiz morre com a instância; volumes extras sobrevivem (e cobram!)",
+          "Instance store ≠ EBS: local, rápido e EFÊMERO — some no stop/terminate"
+        ],
+        "checkpoint": "Pergunte: qual tipo de volume escolher hoje por padrão, e por quê?",
+        "ref": "04-compute-ec2/teoria.md#6-ebs--os-discos-da-instância"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "Instance metadata e IMDSv2",
+        "pontos": [
+          "169.254.169.254 = a instância se consultando: IP, AZ, tipo... e credenciais da role",
+          "É daí que CLI/SDK dentro do EC2 tiram credenciais sem chave gravada (fecha o ciclo do M02)",
+          "IMDSv2 = sessão com token via PUT antes de consultar; padrão/obrigatório nas novas",
+          "Motivo: IMDSv1 era explorável via SSRF (app vulnerável vazava credenciais da role)",
+          "Na prática vamos ver o 401 sem token com os próprios olhos"
+        ],
+        "checkpoint": "Pergunte que ataque o IMDSv2 mitiga e como (PUT + token)",
+        "ref": "04-compute-ec2/teoria.md#7-instance-metadata--a-instância-se-conhecendo-imdsv2"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "Ciclo de vida: o que cobra em cada estado",
+        "pontos": [
+          "running: cobra compute + EBS + IPv4; stopped: NÃO cobra compute mas COBRA EBS",
+          "Stop: RAM some, EBS fica, IP público MUDA no start; Reboot: mesmo host/IP",
+          "Terminate: irreversível, volume raiz deletado (DeleteOnTermination)",
+          "Elastic IP: IP fixo que custa sempre (~US$3,60/mês) — ocioso é desperdício puro; release!",
+          "Mitos a matar: 'parei, não pago nada' (falso: EBS) e snapshots esquecidos acumulando"
+        ],
+        "checkpoint": "Teste: instância parada gera custo? De quê? E recapitule stop vs terminate",
+        "ref": "04-compute-ec2/teoria.md#8-ciclo-de-vida--o-que-cobra-em-cada-estado-"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "Recap da teoria + checagem de entendimento",
+        "pontos": [
+          "Amarrar: AMI + tipo + key pair + user data + EBS + metadata + ciclo de vida",
+          "Rodar as 5 perguntas de checagem da teoria",
+          "Preparar o plano da prática: lançar, acessar, snapshot, terminate verificado"
+        ],
+        "checkpoint": "Pergunte: 'podemos lançar seu primeiro servidor de verdade?'",
+        "ref": "04-compute-ec2/teoria.md#checagem-de-entendimento"
+      },
+      {
+        "id": "p1",
+        "fase": "pratica",
+        "titulo": "Prática A — key pair e launch no Console",
+        "pontos": [
+          "Criar curso-key (ED25519, .pem) → ~/.ssh + chmod 400; AWS não guarda cópia",
+          "Launch: Amazon Linux 2023, t3.micro (selo Free Tier), default VPC, IP público on",
+          "SG curso-sg-ec2: 22 só do My IP, 80 pro mundo; disco 8 GB gp3",
+          "User data com nginx + página consultando o metadata; conferir Metadata V2 only",
+          "Aguardar running + 2/2 checks e abrir http://<ip> — celebrar a página no ar"
+        ],
+        "acao": "Guiar os passos 1-4 da pratica.md no Console",
+        "checkpoint": "Confirme a página do nginx aberta no navegador antes de seguir",
+        "ref": "04-compute-ec2/pratica.md#parte-a--lançar-a-instância-console"
+      },
+      {
+        "id": "p2",
+        "fase": "pratica",
+        "titulo": "Prática B — SSH e explorar por dentro (IMDSv2)",
+        "pontos": [
+          "ssh -i ~/.ssh/curso-key.pem ec2-user@<ip>; troubleshooting de Permission denied/timeout",
+          "systemctl status nginx + ler o cloud-init-output.log (o log do user data)",
+          "IMDSv2 ao vivo: curl sem token → 401; PUT do token → consultas funcionam",
+          "Conectar com a teoria: é ali que a role entregaria credenciais temporárias"
+        ],
+        "acao": "Guiar os passos 5-6 da pratica.md no terminal do aluno",
+        "checkpoint": "Confirme que o aluno viu o 401 e as consultas com token antes de seguir",
+        "ref": "04-compute-ec2/pratica.md#passo-5--conectar-via-ssh"
+      },
+      {
+        "id": "p3",
+        "fase": "pratica",
+        "titulo": "Prática B — snapshot e ciclo de vida na pele",
+        "pontos": [
+          "Localizar o volume gp3, ver DeleteOnTermination, criar snapshot e esperar Completed",
+          "Stop: IP público some, volume continua (e continua cobrando!)",
+          "Start: volta com OUTRO IP — o caso de uso do Elastic IP (que NÃO vamos alocar: custa ocioso)",
+          "Nginx volta sozinho (systemctl enable) — bootstrap bem feito sobrevive a reinícios"
+        ],
+        "acao": "Guiar os passos 7-8 da pratica.md",
+        "checkpoint": "Pergunte o que continuou cobrando durante o stopped e por quê",
+        "ref": "04-compute-ec2/pratica.md#passo-7--criar-um-snapshot-do-volume"
+      },
+      {
+        "id": "p4",
+        "fase": "pratica",
+        "titulo": "Prática C — tudo de novo via CLI",
+        "pontos": [
+          "AMI atual via parâmetro público do SSM (o jeito reproduzível)",
+          "create-security-group + regras; user data em arquivo",
+          "run-instances com --metadata-options HttpTokens=required (IMDSv2 explícito)",
+          "aws ec2 wait instance-running + pegar IP via describe-instances --query",
+          "create-snapshot + wait snapshot-completed"
+        ],
+        "acao": "Guiar os passos 9-12 da pratica.md na CLI, conferindo cada saída",
+        "checkpoint": "Confirme a página no ar na instância da CLI e o snapshot completed",
+        "ref": "04-compute-ec2/pratica.md#parte-c--repetir-via-cli"
+      },
+      {
+        "id": "p5",
+        "fase": "pratica",
+        "titulo": "Prática D — teardown com verificação (o ritual completo)",
+        "pontos": [
+          "TERMINATE (não stop!) nas duas instâncias + wait instance-terminated",
+          "Deletar os 2 snapshots e os 2 security groups (após instâncias terminadas)",
+          "Verificação final em 4 listas: instances, volumes, snapshots, addresses — tudo limpo",
+          "Key pair pode ficar (grátis, reusável); amanhã conferir Billing ~US$ 0"
+        ],
+        "acao": "Guiar os passos 13-15 da pratica.md e conferir as 4 listas vazias",
+        "checkpoint": "Feche a prática confirmando a verificação final e o checklist do módulo",
+        "ref": "04-compute-ec2/pratica.md#parte-d--teardown-com-verificação-obrigatório-"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz da aula",
+        "pontos": [
+          "Fixar o conteúdo com o quiz interativo (10 questões)",
+          "Eu conduzo as perguntas no chat e tiro dúvidas a cada uma"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/apps/modulo-04/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+        "ref": "AWS/apps/modulo-04/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do módulo",
+        "pontos": [
+          "Avaliação de fim de módulo (12 questões de cenário, feedback por alternativa)",
+          "Aprovação 70%; só seguir pro Módulo 05 após passar"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/provas/modulo-04/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 05; se não, revise os pontos errados",
+        "ref": "AWS/provas/modulo-04/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 04",
+        "pontos": [
+          "Recap: você lançou, automatizou, acessou, fotografou e destruiu um servidor real — duas vezes",
+          "Fase 1-2 do curso ganhando corpo: conta segura + rede + compute",
+          "Opcional: simulado CLF-C02 (certificacoes/clf-c02) — já dá pra pontuar bem",
+          "Próximo: Módulo 05 — Escalabilidade & Balanceamento (ASG + ELB: de 1 instância pra frota)"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 05 ou parar por aqui",
+        "ref": "AWS/CLAUDE.md#plano-completo-do-curso"
+      }
+    ]
+  },
+  "pos": 3,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "visto",
+    "t2": "visto",
+    "t3": "pendente",
+    "t4": "pendente",
+    "t5": "pendente",
+    "t6": "pendente",
+    "t7": "pendente",
+    "p1": "pendente",
+    "p2": "pendente",
+    "p3": "pendente",
+    "p4": "pendente",
+    "p5": "pendente",
+    "q1": "pendente",
+    "prova": "pendente",
+    "fim": "pendente"
+  },
+  "concluido_em": {
+    "intro": "2026-07-30T00:39:53+00:00",
+    "t1": "2026-07-30T00:50:50+00:00",
+    "t2": "2026-07-30T01:00:43+00:00"
+  },
+  "notes": [
+    {
+      "beat": "intro",
+      "ts": "2026-07-30T00:39:53+00:00",
+      "text": "IMPORTANTE (igual M03): aluno declarou base FRACA em computacao geral - nao conhece servidor, maquina (virtual/fisica), sistema operacional, firewall, SSH etc. Pediu explicitamente para ensinar TUDO DO ZERO, construindo cada conceito da base (nao so o lado AWS). Usar analogias concretas do mundo real ANTES do termo AWS. Esperar muitas duvidas, ir devagar. Mesmo perfil que mandou bem no M03 (zero base de redes -> gabaritou)."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-07-30T01:00:43+00:00",
+      "text": "Beats intro+t1+t2 do M04 (EC2) feitos hoje (saideira). Aluno base ZERO em computacao - ensinei do chao: servidor, SO, maquina virtual (analogia pizza/fatia), IaaS (linha da responsabilidade), instancia, AMI (molde/waffle, regional=dados fisicos por regiao, custo de snapshot proprio vs AWS gratis, copia=+storage), e tipos de instancia. Aluno usa Arch Linux (omarchy) mas entende pouco - bom gancho pra AMI. Checkpoint t1 (patch SO=responsabilidade dele) OK. t2: decodificou r6g.xlarge e c7.large CERTO e escolheu r pra banco em memoria. Fez PERGUNTA EXCELENTE que virou aula: se familia (r/c) ja diz o musculo, o que 'large' significa? Desfiz o no: FAMILIA=proporcao (GB RAM por vCPU: c~2, m~4, r~8), TAMANHO=quantidade (escala CPU+RAM juntos). Corrigi: tamanho NAO e disco (disco=EBS separado, beat futuro); familia nao e 'so tem X', toda instancia tem os dois. PROXIMO: beat t3 (id t3) - proximo tema do roteiro (provavelmente key pairs/SSH ou ciclo de vida). Aluno quer poucos beats por vez, ansioso pela pratica."
+    }
+  ],
+  "iniciado_em": "2026-07-30T00:35:57+00:00"
+}
