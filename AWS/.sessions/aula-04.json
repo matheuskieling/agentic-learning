@@ -226,14 +226,14 @@
       }
     ]
   },
-  "pos": 3,
-  "marco_sessao": 0,
+  "pos": 5,
+  "marco_sessao": 3,
   "status": {
     "intro": "visto",
     "t1": "visto",
     "t2": "visto",
-    "t3": "pendente",
-    "t4": "pendente",
+    "t3": "visto",
+    "t4": "visto",
     "t5": "pendente",
     "t6": "pendente",
     "t7": "pendente",
@@ -249,7 +249,9 @@
   "concluido_em": {
     "intro": "2026-07-30T00:39:53+00:00",
     "t1": "2026-07-30T00:50:50+00:00",
-    "t2": "2026-07-30T01:00:43+00:00"
+    "t2": "2026-07-30T01:00:43+00:00",
+    "t3": "2026-07-30T17:58:43+00:00",
+    "t4": "2026-07-30T18:17:14+00:00"
   },
   "notes": [
     {
@@ -261,6 +263,11 @@
       "beat": "t2",
       "ts": "2026-07-30T01:00:43+00:00",
       "text": "Beats intro+t1+t2 do M04 (EC2) feitos hoje (saideira). Aluno base ZERO em computacao - ensinei do chao: servidor, SO, maquina virtual (analogia pizza/fatia), IaaS (linha da responsabilidade), instancia, AMI (molde/waffle, regional=dados fisicos por regiao, custo de snapshot proprio vs AWS gratis, copia=+storage), e tipos de instancia. Aluno usa Arch Linux (omarchy) mas entende pouco - bom gancho pra AMI. Checkpoint t1 (patch SO=responsabilidade dele) OK. t2: decodificou r6g.xlarge e c7.large CERTO e escolheu r pra banco em memoria. Fez PERGUNTA EXCELENTE que virou aula: se familia (r/c) ja diz o musculo, o que 'large' significa? Desfiz o no: FAMILIA=proporcao (GB RAM por vCPU: c~2, m~4, r~8), TAMANHO=quantidade (escala CPU+RAM juntos). Corrigi: tamanho NAO e disco (disco=EBS separado, beat futuro); familia nao e 'so tem X', toda instancia tem os dois. PROXIMO: beat t3 (id t3) - proximo tema do roteiro (provavelmente key pairs/SSH ou ciclo de vida). Aluno quer poucos beats por vez, ansioso pela pratica."
+    },
+    {
+      "beat": "t4",
+      "ts": "2026-07-30T18:17:14+00:00",
+      "text": "Sessao (manha 30/07): revisao 2/2 (AMI custom/regiao + escolha r6g pra Redis, modo standard vs unlimited do t) -> marco pos-t2. t3 (key pairs+user data) COMPLETO: ensinei do zero chave pub/priv (cadeado/chave), chmod 400 (permissoes Linux dono/grupo/outros), usuario de login por AMI (ec2-user/ubuntu, herdado pela AMI custom + contas proprias clonadas), user data (script 1o boot como root, roda 1x, log em /var/log/cloud-init-output.log, NUNCA segredos). Checkpoint t3 2/2. t4 (EBS) ENSINADO POR COMPLETO mas checkpoint respondido ERRADO e corrigido: aluno escolheu st1/sc1 -> corrigi p/ gp3 (HDD ruim p/ raiz por I/O aleatorio + st1/sc1 nem podem ser boot). Aluno fez 6 perguntas EXCELENTES que viraram aula: (1) chave pub mora NO disco, sem contradicao; (2) nova EC2=novo EBS; (3) INTUIU certo que trocar tipo de instancia=trocar vCPU/RAM mantendo disco (vs trocar disco=muda SO/dados); (4) resgate de .pem perdida=plugar disco velho e editar authorized_keys na mao; (5) disco extra serve p/ separar ciclo de vida, nao tamanho; (6) instance store vs RAM (store e disco, aguenta reboot, morre no stop/terminate). PROXIMO: t5 (instance metadata + IMDSv2) - ja plantei o gancho ('endereco interno' onde user data e legivel). Aluno ansioso pela pratica (p1 em diante), quer poucos beats por vez."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
