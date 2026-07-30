@@ -223,8 +223,8 @@
       }
     ]
   },
-  "pos": 13,
-  "marco_sessao": 11,
+  "pos": 15,
+  "marco_sessao": 13,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -239,8 +239,8 @@
     "p3": "visto",
     "p4": "visto",
     "p5": "visto",
-    "q1": "pendente",
-    "prova": "pendente",
+    "q1": "visto",
+    "prova": "visto",
     "fim": "pendente"
   },
   "concluido_em": {
@@ -256,7 +256,9 @@
     "p2": "2026-07-27T23:52:04+00:00",
     "p3": "2026-07-28T00:19:47+00:00",
     "p4": "2026-07-29T00:36:59+00:00",
-    "p5": "2026-07-29T00:46:48+00:00"
+    "p5": "2026-07-29T00:46:48+00:00",
+    "q1": "2026-07-30T00:06:46+00:00",
+    "prova": "2026-07-30T00:16:07+00:00"
   },
   "notes": [
     {
@@ -308,6 +310,16 @@
       "beat": "q1",
       "ts": "2026-07-29T00:46:48+00:00",
       "text": "Pratica B (CLI) e C (teardown) COMPLETAS. Parte B: recriou VPC/subnets/IGW/RT-publica/SG via ~10 comandos CLI. Bugs que o aluno cacou sozinho e virou licao: (1) typo ResourseType->ResourceType (AWS barra); (2) --query VPC.VPCID retorna None mas CRIA a VPC mesmo assim (JMESPath case-sensitive: Vpc.VpcId) -> gerou VPC orfa que deletamos; (3) tpc->tcp. Conferiu describe-* batendo com diagrama (2x local: rt-publica+main; 0.0.0.0/0->igw so na publica). Perguntou por que VPC fica em 'aws ec2' (historico: rede nasceu junto do EC2) e sobre VPC Endpoints (servicos AWS ficam FORA da VPC, na rede publica; endpoint=porta privada sem NAT/internet, M13). Teardown C: destruiu VPC-CLI via comandos na ordem (SG->desassociar+delete RT->detach+delete IGW->subnets->VPC) e VPC-Console via cascade delete (Actions->Delete VPC) - achou console muito mais facil pra one-off; reforcei console=one-off manual, CLI=automacao/repro. Verificacao final LIMPA: so default VPC, 0 NAT, 0 EIP. PROXIMO: q1 (quiz da aula, 10q) + prova do modulo (12q, 70%). Parou aqui, cansaco fim do dia."
+    },
+    {
+      "beat": "q1",
+      "ts": "2026-07-30T00:06:46+00:00",
+      "text": "Quiz da aula M03: 10/10 (100%). Alternativas embaralhadas a pedido do aluno (banco tende a repetir letra) - registrado em memoria quiz-shuffle-alternativas. Depois do quiz, 3 desafios de troubleshooting nivel SAA-C03 (a pedido do aluno, 'aumentar dificuldade'): (1) NACL custom sem efemeras na saida bloqueia resposta - aluno ACERTOU sozinho incl. portas efemeras; (2) peering nao-transitivo A-B-C - aluno concluiu certo (A nao alcanca C, Transit Gateway p/ escala) mas INVERTEU a palavra: disse 'peering e transitivo', corrigido -> NAO-transitivo, B nao encaminha, precisa peering direto A-C; (3) NAT na subnet privada = loop, deve estar na publica p/ ter rota ao IGW - aluno ACERTOU cadeia completa. Tambem revisou o checklist dos 4 (esqueceu o IGW-anexado, lembrou os outros 3). Revisar solto: peering nao-transitivo (palavra), NACL default vs custom. PROXIMO: prova do modulo (12q, 70%)."
+    },
+    {
+      "beat": "fim",
+      "ts": "2026-07-30T00:16:19+00:00",
+      "text": "PROVA M03: 12/12 (100%) APROVADO. Dia sem erro: aquecimento 2/2 + quiz 10/10 + 3 desafios SAA-C03 3/3 + prova 12/12. Alternativas embaralhadas (quiz+prova). Aluno acertou os 2 conceitos que antes escaparam: SG-referencia-SG e peering NAO-transitivo (sem inverter a palavra dessa vez). M03 (Rede/VPC) DOMINADO apesar de comecar com zero base de redes. Modulo 03 COMPLETO (16/16 beats). PROXIMO: Modulo 04 - Compute (EC2)."
     }
   ],
   "iniciado_em": "2026-07-24T23:59:48+00:00"

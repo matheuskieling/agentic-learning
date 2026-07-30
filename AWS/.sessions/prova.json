@@ -1,227 +1,227 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/AWS/provas/modulo-02/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/AWS/provas/modulo-03/questions.json",
   "bank": {
-    "titulo": "PROVA — Módulo 02: Conta, IAM & Segurança",
+    "titulo": "PROVA — Módulo 03: Rede — VPC",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Um desenvolvedor novo entrou no time e precisa das mesmas permissões dos outros 5 desenvolvedores. Qual a forma CORRETA de conceder?",
+        "pergunta": "Você precisa de uma VPC que comporte ~1000 hosts hoje, com espaço pra crescer, dividida em subnets de ~250 hosts. Qual combinação faz sentido?",
         "opcoes": [
-          "Anexar as policies diretamente no user dele, uma a uma",
-          "Adicionar o user dele ao group que os outros desenvolvedores já usam",
-          "Compartilhar as access keys de um desenvolvedor antigo",
-          "Dar AdministratorAccess pra garantir que nada falte"
+          "VPC /28 com subnets /30",
+          "VPC /16 com subnets /24",
+          "VPC /24 com subnets /16",
+          "VPC /8 pública na internet"
         ],
         "correta": 1,
-        "explicacao": "Groups existem exatamente pra isso: permissões em lote, gerenciadas num lugar só.",
+        "explicacao": "/16 dá 65.536 IPs (sobra pra crescer) e cada /24 dá 251 usáveis (~250 hosts). Subnet sempre MENOR que a VPC.",
         "feedbacks": [
-          "Funciona, mas não escala: com N users você gerencia N cópias das permissões. Policy direto no user é exceção, não regra.",
-          "Correto: o group já carrega as policies do time. Entrou no group, herdou as permissões — um lugar só pra gerenciar.",
-          "Nunca: credencial é individual e intransferível. Compartilhar chave destrói a auditoria (quem fez o quê?) e multiplica o risco de vazamento.",
-          "Viola o least privilege: admin total pra quem precisa só das permissões do time é exatamente o excesso que causa desastres."
+          "Um /28 tem só 16 IPs (11 usáveis) — não comporta nem 20 hosts, muito menos 1000. E /30 dentro dele é minúsculo.",
+          "Correto: /16 = 65.536 IPs de espaço, fatiado em /24s de 251 IPs usáveis cada — o padrão de mercado pra esse porte.",
+          "Impossível: a subnet (/16) seria MAIOR que a VPC (/24). O número depois da barra da subnet precisa ser maior ou igual ao da VPC.",
+          "Além do exagero (16 milhões de IPs), VPCs usam faixas PRIVADAS — não existem 'na internet'."
         ]
       },
       {
-        "pergunta": "Uma aplicação rodando numa instância EC2 precisa ler objetos de um bucket S3. Qual a abordagem recomendada?",
+        "pergunta": "Uma instância na subnet 10.0.5.0/24 tem IP público, o security group libera a porta 80, mas ninguém da internet consegue acessá-la. A route table da subnet só tem a rota 10.0.0.0/16 → local. Qual o problema?",
         "opcoes": [
-          "Gravar access keys de um IAM user num arquivo de configuração dentro da instância",
-          "Usar as credenciais do root, que sempre funcionam",
-          "Anexar à instância uma role com permissão de leitura no bucket",
-          "Tornar o bucket público para não precisar de credencial"
+          "Falta memória na instância",
+          "A subnet é privada: não há rota 0.0.0.0/0 para um Internet Gateway",
+          "O IP público expirou",
+          "A porta 80 exige NACL customizada"
         ],
-        "correta": 2,
-        "explicacao": "Roles para serviços: a instância assume a role e recebe credenciais temporárias, sem chave fixa pra vazar.",
+        "correta": 1,
+        "explicacao": "Sem rota pro IGW, o tráfego de/para a internet não tem caminho — IP público e SG liberado não bastam.",
         "feedbacks": [
-          "É o antipadrão clássico: chave de longa duração gravada num servidor. Se a instância for comprometida, a chave vaza e vale até alguém revogar.",
-          "Duplamente errado: o root nem deve TER access keys, e usá-lo numa aplicação é o maior risco possível.",
-          "Correto: role anexada à instância = credenciais temporárias renovadas automaticamente, com só as permissões necessárias. É o padrão AWS.",
-          "Tornar o bucket público resolve 'o acesso' expondo os dados pro mundo inteiro — é a receita dos vazamentos famosos de S3."
+          "Recursos da máquina não impedem conectividade de rede — o sintoma seria lentidão, não inacessibilidade total.",
+          "Correto: das 4 condições (IGW anexado, rota 0.0.0.0/0→IGW, IP público, SG), falta a rota. Só a local não leva à internet.",
+          "IPs públicos não 'expiram' com a instância ligada. O problema está no roteamento da subnet.",
+          "A NACL default permite tudo — não é preciso customizar nada pra porta 80 funcionar."
         ]
       },
       {
-        "pergunta": "Analise: um user tem uma policy com {\"Effect\":\"Allow\",\"Action\":\"s3:*\",\"Resource\":\"*\"} e outra com {\"Effect\":\"Deny\",\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::producao/*\"}. O que ele consegue fazer?",
+        "pergunta": "Por que o NAT Gateway deve ser criado numa subnet PÚBLICA, se quem o usa são as instâncias da subnet privada?",
         "opcoes": [
-          "Tudo no S3, inclusive escrever em producao, pois o Allow é mais amplo",
-          "Nada no S3, pois o Deny invalida a policy inteira",
-          "Tudo no S3, EXCETO escrever objetos no bucket producao",
-          "Somente ler o bucket producao"
+          "Por convenção de nomenclatura da AWS",
+          "Porque ele mesmo precisa alcançar a internet via IGW pra encaminhar o tráfego das instâncias privadas",
+          "Porque subnets privadas não aceitam gateways",
+          "Não deve: o NAT vai na subnet privada"
         ],
-        "correta": 2,
-        "explicacao": "O Deny explícito vence só onde ele bate (PutObject em producao/*); todo o resto do Allow continua valendo.",
+        "correta": 1,
+        "explicacao": "O NAT é o intermediário: recebe o tráfego da privada e o envia à internet — logo, ELE precisa da rota pro IGW.",
         "feedbacks": [
-          "O Deny explícito sempre vence o Allow no escopo em que se aplica — escrever em producao está bloqueado.",
-          "O Deny não 'contamina' a policy toda: ele só bloqueia a ação e o recurso que ele descreve. O resto do Allow permanece.",
-          "Correto: a avaliação é por ação+recurso. Deny explícito bloqueia PutObject em producao/*; todas as outras combinações seguem permitidas pelo Allow.",
-          "Ele pode muito mais que isso: o Allow s3:* em * cobre leitura e escrita em todos os buckets — só PutObject em producao está vetado."
+          "Não é convenção: é necessidade funcional de roteamento.",
+          "Correto: o caminho é privada → NAT (na pública, com Elastic IP) → IGW → internet. Se o NAT ficasse numa subnet sem rota pro IGW, ele também estaria 'preso'.",
+          "Subnets privadas aceitam qualquer recurso — o problema é que um NAT lá dentro não teria como sair pra internet.",
+          "NAT em subnet privada é um erro clássico: ele fica sem caminho pro IGW e nada funciona."
         ]
       },
       {
-        "pergunta": "Você criou uma policy com 'Allow s3:GetObject' em 'arn:aws:s3:::meu-bucket', mas o comando 'aws s3 ls s3://meu-bucket' retorna AccessDenied. Qual a causa mais provável?",
+        "pergunta": "Numa NACL customizada você liberou a entrada TCP 443 (regra 100), mas os clientes não recebem resposta do servidor. Qual a causa provável?",
         "opcoes": [
-          "Listar o conteúdo exige s3:ListBucket, que não foi concedido",
-          "O bucket precisa estar público para o ls funcionar",
-          "GetObject deveria apontar para região us-east-1 no ARN",
-          "Falta um Deny explícito na policy"
+          "Falta liberar a SAÍDA nas portas efêmeras (1024-65535), pois NACL é stateless",
+          "NACLs não suportam a porta 443",
+          "A regra deveria ter número menor que 100",
+          "Falta habilitar DNS hostnames na VPC"
         ],
         "correta": 0,
-        "explicacao": "Listar exige s3:ListBucket no ARN do bucket; GetObject serve pra baixar objetos (e pede o ARN bucket/*).",
+        "explicacao": "Stateless = ida e volta avaliadas separadamente. A resposta sai por uma porta efêmera e precisa de regra própria.",
         "feedbacks": [
-          "Correto: são ações diferentes. ListBucket (no ARN do bucket) lista; GetObject (no ARN bucket/*) baixa. O erro clássico é conceder uma e esquecer a outra.",
-          "Bucket público não é pré-requisito pra dono listar: com a permissão IAM certa (ListBucket), o ls funciona em bucket privado.",
-          "ARNs de S3 não levam região (o serviço de nomes de bucket é global): arn:aws:s3:::bucket. O problema é a ação faltante, não a região.",
-          "Deny explícito NEGARIA algo — adicionar um não destrava nada. O que falta é um Allow para s3:ListBucket."
+          "Correto: diferente do SG (stateful), a NACL não 'lembra' da conexão. A resposta ao cliente sai pelas ephemeral ports e precisa de regra de saída explícita.",
+          "NACLs suportam qualquer porta TCP/UDP — 443 inclusive.",
+          "O número só define a ordem de avaliação entre regras; 100 funciona perfeitamente se nenhuma regra anterior negar.",
+          "DNS hostnames afeta nomes DNS de instâncias, não o fluxo de pacotes numa NACL."
         ]
       },
       {
-        "pergunta": "No ARN 'arn:aws:iam::123456789012:user/joao', por que o campo de região está vazio (os dois-pontos seguidos)?",
+        "pergunta": "Arquitetura: app em EC2 e banco PostgreSQL (porta 5432). Qual a melhor regra no security group do banco?",
         "opcoes": [
-          "É um erro de digitação no ARN",
-          "Porque o IAM é um serviço global, sem região",
-          "Porque o user joao ainda não escolheu uma região",
-          "Porque a região só aparece para roles, não para users"
+          "Allow 5432 de 0.0.0.0/0",
+          "Allow 5432 tendo como origem o security group do app",
+          "Allow todas as portas do CIDR da VPC",
+          "Deny 5432 de todos, exceto o IP fixo da instância do app"
         ],
         "correta": 1,
-        "explicacao": "Serviços globais (IAM, Route 53, CloudFront) omitem a região no ARN, mas a posição fica marcada pelos dois-pontos.",
+        "explicacao": "Referenciar o SG do app como origem: instâncias podem mudar de IP/escalar e a regra continua valendo.",
         "feedbacks": [
-          "O ARN está correto: os '::' marcam a posição de um campo intencionalmente vazio.",
-          "Correto: IAM não vive numa região — users, groups, roles e policies valem na conta inteira, então o campo região fica vazio.",
-          "Users IAM não 'escolhem' região: a identidade é global e vale em todas as regiões da conta.",
-          "Roles também são IAM e também têm região vazia no ARN. A regra é do serviço (global), não do tipo de identidade."
+          "Banco aberto pro mundo é a receita de desastre — mesmo em subnet privada, é o antipadrão nº 1.",
+          "Correto: é o 'superpoder' dos SGs — a origem é a identidade (quem carrega o SG do app), não um IP. Escala e sobrevive a trocas de IP.",
+          "Amplo demais: qualquer recurso da VPC (inclusive comprometido) alcançaria o banco em qualquer porta. Least privilege também vale na rede.",
+          "SGs não têm regras Deny (só Allow) — e amarrar a IP fixo quebra quando a instância for substituída."
         ]
       },
       {
-        "pergunta": "Sua empresa exige que a permissão de deletar snapshots NUNCA funcione, nem para admins. Como garantir isso via IAM?",
+        "pergunta": "Você tem peering entre VPC-A ↔ VPC-B e VPC-B ↔ VPC-C. Uma instância na VPC-A precisa falar com outra na VPC-C. O que acontece?",
         "opcoes": [
-          "Simplesmente não conceder Allow para deletar snapshots",
-          "Aplicar um Deny explícito para a ação de deletar snapshots, pois ele vence qualquer Allow",
-          "Remover todos os admins da conta",
-          "Criar um group vazio chamado 'sem-delete'"
+          "Funciona: o tráfego passa pela VPC-B automaticamente",
+          "Não funciona: peering não é transitivo; é preciso um peering direto A↔C (ou um Transit Gateway)",
+          "Funciona apenas se as três VPCs estiverem na mesma AZ",
+          "Funciona se a VPC-B tiver um IGW"
         ],
         "correta": 1,
-        "explicacao": "Deny explícito é a trava inquebrável: mesmo quem tem AdministratorAccess (Allow *:*) é bloqueado.",
+        "explicacao": "Peering é ponto-a-ponto e não transitivo. A↔C exige conexão própria — ou um hub (Transit Gateway).",
         "feedbacks": [
-          "Insuficiente: um admin tem Allow em tudo (*:*), então a ação seguiria permitida. Não conceder só funciona pra quem não tem Allow amplo.",
-          "Correto: Deny explícito > Allow, sempre. É exatamente o mecanismo para travas absolutas que nem admin atravessa.",
-          "Drástico e não resolve: a exigência é bloquear UMA ação, não eliminar administradores da conta.",
-          "Group vazio não faz nada: policies só têm efeito quando anexadas, e um group sem policy (e sem membros) é inerte."
+          "É exatamente o que o peering NÃO faz: a VPC-B não roteia tráfego de terceiros entre as outras duas.",
+          "Correto: não-transitividade é a limitação central do peering. Cada par se conecta diretamente; em escala, o Transit Gateway vira o hub.",
+          "AZs não têm relação com peering — VPCs são regionais e o peering pode até ser entre regiões.",
+          "IGW é porta pra internet, não roteador entre peerings — não torna o peering transitivo."
         ]
       },
       {
-        "pergunta": "Ao rodar 'aws sts assume-role', a resposta traz três credenciais. Qual delas NÃO existe nas access keys comuns de um IAM user?",
+        "pergunta": "Qual sequência de comandos CLI cria uma subnet PÚBLICA funcional numa VPC nova?",
         "opcoes": [
-          "AccessKeyId",
-          "SecretAccessKey",
-          "SessionToken",
-          "Nenhuma: as credenciais são idênticas às de um user"
-        ],
-        "correta": 2,
-        "explicacao": "O SessionToken é a marca das credenciais temporárias do STS — e elas ainda têm Expiration.",
-        "feedbacks": [
-          "AccessKeyId existe nos dois casos (nas temporárias costuma começar com ASIA em vez de AKIA), então não é o diferencial.",
-          "SecretAccessKey também existe nos dois tipos de credencial.",
-          "Correto: o SessionToken só existe em credenciais temporárias do STS, junto com uma data de expiração. Sem ele, as credenciais temporárias não funcionam.",
-          "São diferentes: credenciais de role têm SessionToken e expiram; access keys de user são de longa duração."
-        ]
-      },
-      {
-        "pergunta": "Você exportou AWS_ACCESS_KEY_ID/SECRET/SESSION_TOKEN para testar uma role. Terminou o teste, mas a CLI continua agindo como a role. Por quê?",
-        "opcoes": [
-          "A role fica ativa até você deletá-la no console",
-          "Variáveis de ambiente têm precedência sobre ~/.aws/credentials; é preciso dar unset nelas",
-          "O arquivo ~/.aws/credentials foi sobrescrito pelo assume-role",
-          "A CLI trava na última identidade usada até reiniciar a máquina"
+          "create-vpc → create-subnet → pronto: subnets novas já saem públicas",
+          "create-vpc → create-subnet → create-internet-gateway → attach-internet-gateway → create-route-table → create-route (0.0.0.0/0→IGW) → associate-route-table",
+          "create-vpc → create-nat-gateway → associate-route-table",
+          "create-subnet → authorize-security-group-ingress na porta 80"
         ],
         "correta": 1,
-        "explicacao": "A ordem de precedência da CLI coloca env vars acima dos arquivos de perfil. unset AWS_* resolve.",
+        "explicacao": "É a cadeia completa: sem IGW anexado + rota default + associação, a subnet continua privada.",
         "feedbacks": [
-          "Deletar a role revogaria o acesso, mas o motivo do comportamento é local: as variáveis de ambiente ainda estão setadas no shell.",
-          "Correto: a CLI resolve credenciais nesta ordem: env vars primeiro, depois profiles. Enquanto as AWS_* existirem no shell, elas mandam.",
-          "assume-role não escreve nada em ~/.aws — ele só retorna as credenciais na resposta; você é quem as exportou no ambiente.",
-          "Não há 'trava': basta unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN e a CLI volta ao profile padrão."
+          "Subnets novas numa VPC customizada nascem PRIVADAS — sem IGW nem rota, não há caminho pra internet.",
+          "Correto: cada comando é uma peça — o gateway existe, está anexado, a rota aponta pra ele e a subnet usa essa route table. Faltando um elo, não funciona.",
+          "NAT Gateway serve pra SAÍDA da subnet privada — não torna nada público (e custa caro).",
+          "Security group controla tráfego na instância, mas não cria o caminho de roteamento que define uma subnet pública."
         ]
       },
       {
-        "pergunta": "Uma access key foi commitada por engano num repositório público do GitHub. Qual a PRIMEIRA providência?",
+        "pergunta": "Depois de um laboratório, você deletou a VPC de testes mas o comando 'aws ec2 describe-addresses' ainda lista um Elastic IP. O que isso significa?",
         "opcoes": [
-          "Apagar o commit e fazer force push — resolvido",
-          "Desativar/deletar a chave no IAM imediatamente e emitir uma nova",
-          "Trocar a senha do console do user",
-          "Esperar pra ver se alguém usa a chave antes de agir"
+          "Nada: Elastic IPs são sempre gratuitos",
+          "Há um EIP alocado e ocioso na conta, que está sendo cobrado — é preciso fazer Release",
+          "É um bug do describe-addresses",
+          "O EIP será liberado automaticamente em 24h"
         ],
         "correta": 1,
-        "explicacao": "Chave pública em repo = comprometida (bots varrem o GitHub em minutos). Revogar primeiro, limpar o histórico depois.",
+        "explicacao": "IPv4 público aloca­do custa (~US$ 3,60/mês) mesmo sem uso. Teardown inclui release de EIPs.",
         "feedbacks": [
-          "Tarde demais: bots capturam chaves em minutos e o histórico/forks/caches podem preservá-la. A chave JÁ está comprometida — revogue.",
-          "Correto: a chave deve ser considerada vazada no instante do push. Desativar/deletar no IAM corta o acesso; depois gere outra e limpe o repo.",
-          "Senha de console e access key são credenciais independentes — trocar a senha não invalida a chave vazada.",
-          "É o pior plano: a mineração de cripto na sua conta começa em minutos, não em dias. Agir imediatamente é a única resposta."
+          "Regra atual da AWS: TODO IPv4 público custa ~US$ 0,005/h — ocioso ou não. Gratuito ele não é.",
+          "Correto: o EIP sobrevive à VPC (é da conta, não da VPC) e cobra enquanto existir. release-address encerra a cobrança — por isso a verificação final do teardown.",
+          "O comando reflete a realidade: o endereço segue alocado à sua conta.",
+          "Não há liberação automática — o EIP fica (e cobra) até você fazer o Release."
         ]
       },
       {
-        "pergunta": "Sobre o IAM Identity Center, qual afirmação está CORRETA?",
+        "pergunta": "De DENTRO da VPC, uma instância resolve o DNS público de outra instância da mesma VPC. Que IP ela recebe, e por que isso é bom?",
         "opcoes": [
-          "É um serviço para criar access keys de longa duração em massa",
-          "Fornece acesso humano via SSO com credenciais temporárias (roles), ideal para múltiplas contas",
-          "Substitui as policies do IAM por um sistema próprio de permissões incompatível",
-          "Só funciona para aplicações, nunca para pessoas"
+          "O IP público — o tráfego sempre sai pra internet e volta",
+          "O IP privado — o tráfego fica dentro da VPC, mais rápido e sem custo de saída",
+          "Um erro de resolução: DNS público não resolve internamente",
+          "O IP do Internet Gateway"
         ],
         "correta": 1,
-        "explicacao": "Identity Center = SSO: pessoas logam num portal e recebem roles temporárias nas contas, sem chave eterna.",
+        "explicacao": "O resolvedor da VPC devolve o IP privado pra nomes públicos de instâncias da própria rede — tráfego interno.",
         "feedbacks": [
-          "É o oposto: o objetivo dele é ELIMINAR chaves de longa duração para humanos, trocando-as por sessões temporárias.",
-          "Correto: login único, diretório central (ou integrado a um IdP), permission sets aplicados em múltiplas contas, tudo via credenciais temporárias.",
-          "Ele usa o mesmo modelo por baixo: permission sets viram roles com policies IAM normais nas contas.",
-          "É exatamente para pessoas (acesso humano). Aplicações/serviços continuam usando roles diretamente."
+          "Seria desperdício: sair pra internet pra falar com o vizinho custaria latência e transferência de dados.",
+          "Correto: é o comportamento inteligente do Route 53 Resolver da VPC — mesmo usando o nome público, a conversa interna fica interna.",
+          "Resolve sim — e melhor: devolve o endereço privado quando a consulta vem de dentro.",
+          "O IGW não tem IP 'endereçável' pra instâncias — ele é um componente de tradução na borda da VPC."
         ]
       },
       {
-        "pergunta": "Seu user IAM admin não consegue ver as páginas de Billing, mas o root vê. O que está faltando?",
+        "pergunta": "Um user quer 'só bloquear uma faixa de IPs atacantes (203.0.113.0/24) pra TODA a subnet'. Qual ferramenta é a adequada?",
         "opcoes": [
-          "Instalar o plugin de billing da CLI",
-          "Ativar, como root, a opção 'IAM user and role access to Billing information' na conta",
-          "Dar AdministratorAccess ao user (só isso já resolveria)",
-          "Billing só pode ser visto pelo root, sem exceção"
+          "Security group com regra Deny para o CIDR",
+          "NACL com regra Deny para o CIDR, numerada antes das regras Allow",
+          "Deletar a route table da subnet",
+          "Desabilitar o DNS support da VPC"
         ],
         "correta": 1,
-        "explicacao": "Além da permissão IAM, existe uma chave global da conta (só o root ativa) que libera billing para users/roles.",
+        "explicacao": "SGs não têm Deny. Bloqueio explícito por CIDR na borda da subnet é o caso de uso clássico da NACL.",
         "feedbacks": [
-          "Não existe 'plugin de billing' — o bloqueio é uma configuração da conta, não da ferramenta.",
-          "Correto: é uma trava em dois fatores — a configuração da conta (ação de root) E a permissão IAM. Sem a primeira, nem admin enxerga billing.",
-          "AdministratorAccess sozinho não basta: enquanto a chave da conta estiver desativada, users IAM são bloqueados nas páginas de billing.",
-          "Pode sim ser visto por users IAM — desde que o root ative o acesso e o user tenha as permissões adequadas."
+          "Security groups só possuem regras Allow — não existe 'Deny' num SG. É a limitação que a NACL cobre.",
+          "Correto: NACLs aceitam Deny e avaliam em ordem numérica — um Deny 90 antes do Allow 100 barra a faixa na borda da subnet inteira.",
+          "Isso derrubaria TODO o tráfego da subnet (inclusive o legítimo) — a subnet ficaria órfã na main route table, e o ataque nem é questão de rota.",
+          "DNS não tem relação com bloqueio de pacotes por origem."
         ]
       },
       {
-        "pergunta": "Qual conjunto de práticas melhor descreve 'least privilege' aplicado corretamente?",
+        "pergunta": "No teardown via CLI, 'aws ec2 delete-vpc' falha com DependencyViolation. Qual a explicação e a ação correta?",
         "opcoes": [
-          "Dar s3:* e ec2:* para todos e restringir se houver incidente",
-          "Conceder só as ações e recursos necessários, revisar com 'last accessed' e remover o que não é usado",
-          "Usar uma única policy AdministratorAccess para simplificar a auditoria",
-          "Bloquear tudo com Deny explícito e abrir exceções por e-mail"
+          "É um erro transitório: repetir o comando até passar",
+          "Ainda existem recursos dentro da VPC (IGW anexado, subnets, SGs não-default...); deletar as dependências primeiro, na ordem",
+          "VPCs não podem ser deletadas via CLI, só pelo Console",
+          "É preciso usar --force no delete-vpc"
         ],
         "correta": 1,
-        "explicacao": "Least privilege = mínimo necessário + revisão contínua. O IAM ajuda mostrando quando cada permissão foi usada.",
+        "explicacao": "A VPC só deleta vazia: detach/delete do IGW, subnets, route tables não-main, SGs não-default antes.",
         "feedbacks": [
-          "'Restringir depois' nunca acontece — e o incidente vem antes. Começar amplo é o antipadrão que o least privilege combate.",
-          "Correto: ações e ARNs específicos, concessão sob demanda, e poda periódica guiada pelos dados de last accessed do IAM.",
-          "Admin pra todo mundo é o oposto de least privilege — e a auditoria fica pior, pois qualquer um pode ter feito qualquer coisa.",
-          "Desnecessário: o implicit deny já bloqueia tudo por padrão. Deny explícito é pra travas absolutas, não pra gestão do dia a dia."
+          "Repetir não resolve: o erro é determinístico enquanto as dependências existirem.",
+          "Correto: a ordem do teardown existe por causa disso — SGs → route tables (desassociar) → IGW (detach → delete) → subnets → VPC.",
+          "A CLI deleta VPCs normalmente (delete-vpc) — o Console é que oferece a conveniência da cascata.",
+          "Não existe --force no delete-vpc; a limpeza das dependências é obrigatória."
+        ]
+      },
+      {
+        "pergunta": "Por que a prática recomendada é criar VPC customizada em vez de usar a default VPC pra cargas sérias?",
+        "opcoes": [
+          "Porque a default VPC é mais cara",
+          "Porque na default tudo é público por padrão; a customizada permite desenhar isolamento (subnets privadas) sob medida",
+          "Porque a default VPC não suporta security groups",
+          "Porque a default VPC só existe em us-east-1"
+        ],
+        "correta": 1,
+        "explicacao": "A default existe pra conveniência: subnets todas públicas e IP público automático. Produção pede isolamento desenhado.",
+        "feedbacks": [
+          "Não há diferença de preço entre VPCs (ambas são gratuitas) — a diferença é de postura de segurança.",
+          "Correto: na default, um banco criado 'sem pensar' nasce em subnet pública com IP público. Na customizada, você decide o que é exposto e o que fica na subnet privada.",
+          "A default VPC suporta SGs normalmente — vem até com um SG default.",
+          "Existe uma default VPC em CADA região da conta."
         ]
       }
     ]
   },
   "order": [
-    10,
     1,
-    6,
-    0,
-    2,
-    5,
-    9,
-    7,
-    4,
-    8,
     11,
+    2,
+    4,
+    9,
+    6,
+    7,
+    0,
+    5,
+    8,
+    10,
     3
   ],
   "pos": 12,
@@ -236,14 +236,14 @@
     {
       "pos": 1,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
@@ -257,7 +257,7 @@
     {
       "pos": 4,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
