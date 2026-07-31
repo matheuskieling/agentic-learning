@@ -226,8 +226,8 @@
       }
     ]
   },
-  "pos": 9,
-  "marco_sessao": 5,
+  "pos": 10,
+  "marco_sessao": 9,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -238,7 +238,7 @@
     "t6": "visto",
     "t7": "visto",
     "p1": "visto",
-    "p2": "pendente",
+    "p2": "visto",
     "p3": "pendente",
     "p4": "pendente",
     "p5": "pendente",
@@ -255,7 +255,8 @@
     "t5": "2026-07-30T23:35:12+00:00",
     "t6": "2026-07-30T23:40:53+00:00",
     "t7": "2026-07-30T23:52:58+00:00",
-    "p1": "2026-07-31T00:11:31+00:00"
+    "p1": "2026-07-31T00:11:31+00:00",
+    "p2": "2026-07-31T23:22:52+00:00"
   },
   "notes": [
     {
@@ -282,6 +283,11 @@
       "beat": "p1",
       "ts": "2026-07-31T00:11:31+00:00",
       "text": "Sessao (tarde/noite 30/07): revisao 5/5 (t3+t4). t5 (metadata+IMDSv2) COMPLETO com exemplos concretos de request/resposta (SSRF: IMDSv1 vaza JSON de creds vs IMDSv2 401; por que SSRF nao monta PUT+cabecalho+token; proxy explicado). t6 (ciclo de vida) COMPLETO: running/stopped/terminated + custos, EIP ocioso, stop muda IP. t7 (recap) COMPLETO: 3 perguntas integrativas 3/3; aluno puxou modelo de cobranca do IPv4 (por HORA prorata, nao taxa fixa/foto num dia; mudanca de fev/2024 = todo IPv4 publico cobra). p1 (PRATICA A) FEITA COM SUCESSO no Console: criou key pair curso-key (ED25519), lancou t3.micro curso-web (i-0c9bea2a177e4571e) em us-east-1, AMI AL2023, SG curso-sg-ec2 (SSH=MyIP, HTTP=anywhere), 8GB gp3, user data instalou nginx + consultou metadata IMDSv2. Pagina no ar em http://52.55.100.253 (viu encoding UTF-8 quebrado - so cosmetico; e o Not secure do http puro - esperado). Combinamos SO 1 pratica/dia: dei STOP na instancia (nao terminate) - dentro do Free Tier = US/usr/bin/bash. Instancia STOPPED aguardando amanha. PROXIMO: p2 (SSH + explorar por dentro + ver 401 do IMDSv2 ao vivo). Ao retomar: dar START (aluno vai VER o IP mudar - passo 8 antecipado) e conectar via ssh -i ~/.ssh/curso-key.pem ec2-user@<novo-IP>. INSTANCIA E VOLUME EBS AINDA EXISTEM - lembrar do teardown no fim (p5)."
+    },
+    {
+      "beat": "p3",
+      "ts": "2026-07-31T23:22:52+00:00",
+      "text": "Sessao (noite 31/07): revisao 2/2 (ciclo de vida stop/start + IMDSv2 vs SSRF) -> marco pos-p1. PRATICA B (p2) FEITA COM SUCESSO. Deu START na curso-web (IP mudou 52.55.100.253 -> 23.22.241.237, aluno observou a troca). SSH 1a vez OK (ec2-user@IP, key ED25519, fingerprint gravado em known_hosts). Explorou por dentro: nginx active(running) enabled - expliquei que voltou no boot via systemd, NAO user data (que roda 1x); leu cloud-init-output.log (curto, so boot de hoje, sem reinstall = confirma user data 1x); viu IP privado 172.31.27.207 no log = mesmo do prompt. CLIMAX IMDSv2 AO VIVO: aluno PREVIU 401 sem token e acertou; PUT token + GET com token devolveu instance-id/type/public-ipv4 (bateram). Amarrei M02<->M04: e dali (iam/security-credentials/) que a role entregaria creds temporarias a CLI/SDK sem chave no disco. Checkpoint p2 OK, sem duvidas. Aluno pediu pra parar. Orientei STOP (nao terminate). INSTANCIA+EBS AINDA EXISTEM - teardown so no p5. PROXIMO: p3 (snapshot + ciclo de vida na pele)."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
