@@ -226,18 +226,18 @@
       }
     ]
   },
-  "pos": 5,
-  "marco_sessao": 3,
+  "pos": 9,
+  "marco_sessao": 5,
   "status": {
     "intro": "visto",
     "t1": "visto",
     "t2": "visto",
     "t3": "visto",
     "t4": "visto",
-    "t5": "pendente",
-    "t6": "pendente",
-    "t7": "pendente",
-    "p1": "pendente",
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
+    "p1": "visto",
     "p2": "pendente",
     "p3": "pendente",
     "p4": "pendente",
@@ -251,7 +251,11 @@
     "t1": "2026-07-30T00:50:50+00:00",
     "t2": "2026-07-30T01:00:43+00:00",
     "t3": "2026-07-30T17:58:43+00:00",
-    "t4": "2026-07-30T18:17:14+00:00"
+    "t4": "2026-07-30T18:17:14+00:00",
+    "t5": "2026-07-30T23:35:12+00:00",
+    "t6": "2026-07-30T23:40:53+00:00",
+    "t7": "2026-07-30T23:52:58+00:00",
+    "p1": "2026-07-31T00:11:31+00:00"
   },
   "notes": [
     {
@@ -268,6 +272,16 @@
       "beat": "t4",
       "ts": "2026-07-30T18:17:14+00:00",
       "text": "Sessao (manha 30/07): revisao 2/2 (AMI custom/regiao + escolha r6g pra Redis, modo standard vs unlimited do t) -> marco pos-t2. t3 (key pairs+user data) COMPLETO: ensinei do zero chave pub/priv (cadeado/chave), chmod 400 (permissoes Linux dono/grupo/outros), usuario de login por AMI (ec2-user/ubuntu, herdado pela AMI custom + contas proprias clonadas), user data (script 1o boot como root, roda 1x, log em /var/log/cloud-init-output.log, NUNCA segredos). Checkpoint t3 2/2. t4 (EBS) ENSINADO POR COMPLETO mas checkpoint respondido ERRADO e corrigido: aluno escolheu st1/sc1 -> corrigi p/ gp3 (HDD ruim p/ raiz por I/O aleatorio + st1/sc1 nem podem ser boot). Aluno fez 6 perguntas EXCELENTES que viraram aula: (1) chave pub mora NO disco, sem contradicao; (2) nova EC2=novo EBS; (3) INTUIU certo que trocar tipo de instancia=trocar vCPU/RAM mantendo disco (vs trocar disco=muda SO/dados); (4) resgate de .pem perdida=plugar disco velho e editar authorized_keys na mao; (5) disco extra serve p/ separar ciclo de vida, nao tamanho; (6) instance store vs RAM (store e disco, aguenta reboot, morre no stop/terminate). PROXIMO: t5 (instance metadata + IMDSv2) - ja plantei o gancho ('endereco interno' onde user data e legivel). Aluno ansioso pela pratica (p1 em diante), quer poucos beats por vez."
+    },
+    {
+      "beat": "t5",
+      "ts": "2026-07-30T23:35:12+00:00",
+      "text": "t5 (instance metadata + IMDSv2) COMPLETO. Ensinei: IP magico 169.254.169.254 (link-local, sempre igual mas so responde de DENTRO da instancia, analogia 'disque 0 da recepcao deste predio'), request HTTP normal via curl. Amarrou o ciclo do IAM Role do M02: metadata e de onde CLI/SDK tiram credenciais temporarias da role sem chave gravada. IMDSv2 vs SSRF. Aluno fez perguntas otimas: (1) como/pq bater no IP -> expliquei request HTTP concreta; (2) SACADA: 'PUT nao pode ser forjado? nao é so mais um step?' -> desfiz mostrando que nao e sobre forjar, e sobre o que SSRF PODE fazer (so GET com URL controlada) vs o que IMDSv2 exige (PUT+cabecalho+encadear token); se atacante ja tem shell o jogo ja era; (3) nao sabia o que e proxy -> expliquei (mensageiro/despachante) + trava de TTL de rede. Precisou de exemplo CONCRETO de request/resposta (IMDSv1 vaza JSON de creds vs IMDSv2 401) pra clicar - funcionou. PROXIMO: t6 (ciclo de vida: running/stopped/terminated e o que cobra em cada). Aluno base zero mas raciocina muito bem, questiona a fundo."
+    },
+    {
+      "beat": "p1",
+      "ts": "2026-07-31T00:11:31+00:00",
+      "text": "Sessao (tarde/noite 30/07): revisao 5/5 (t3+t4). t5 (metadata+IMDSv2) COMPLETO com exemplos concretos de request/resposta (SSRF: IMDSv1 vaza JSON de creds vs IMDSv2 401; por que SSRF nao monta PUT+cabecalho+token; proxy explicado). t6 (ciclo de vida) COMPLETO: running/stopped/terminated + custos, EIP ocioso, stop muda IP. t7 (recap) COMPLETO: 3 perguntas integrativas 3/3; aluno puxou modelo de cobranca do IPv4 (por HORA prorata, nao taxa fixa/foto num dia; mudanca de fev/2024 = todo IPv4 publico cobra). p1 (PRATICA A) FEITA COM SUCESSO no Console: criou key pair curso-key (ED25519), lancou t3.micro curso-web (i-0c9bea2a177e4571e) em us-east-1, AMI AL2023, SG curso-sg-ec2 (SSH=MyIP, HTTP=anywhere), 8GB gp3, user data instalou nginx + consultou metadata IMDSv2. Pagina no ar em http://52.55.100.253 (viu encoding UTF-8 quebrado - so cosmetico; e o Not secure do http puro - esperado). Combinamos SO 1 pratica/dia: dei STOP na instancia (nao terminate) - dentro do Free Tier = US/usr/bin/bash. Instancia STOPPED aguardando amanha. PROXIMO: p2 (SSH + explorar por dentro + ver 401 do IMDSv2 ao vivo). Ao retomar: dar START (aluno vai VER o IP mudar - passo 8 antecipado) e conectar via ssh -i ~/.ssh/curso-key.pem ec2-user@<novo-IP>. INSTANCIA E VOLUME EBS AINDA EXISTEM - lembrar do teardown no fim (p5)."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
