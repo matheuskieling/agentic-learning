@@ -288,6 +288,11 @@
       "beat": "p3",
       "ts": "2026-07-31T23:22:52+00:00",
       "text": "Sessao (noite 31/07): revisao 2/2 (ciclo de vida stop/start + IMDSv2 vs SSRF) -> marco pos-p1. PRATICA B (p2) FEITA COM SUCESSO. Deu START na curso-web (IP mudou 52.55.100.253 -> 23.22.241.237, aluno observou a troca). SSH 1a vez OK (ec2-user@IP, key ED25519, fingerprint gravado em known_hosts). Explorou por dentro: nginx active(running) enabled - expliquei que voltou no boot via systemd, NAO user data (que roda 1x); leu cloud-init-output.log (curto, so boot de hoje, sem reinstall = confirma user data 1x); viu IP privado 172.31.27.207 no log = mesmo do prompt. CLIMAX IMDSv2 AO VIVO: aluno PREVIU 401 sem token e acertou; PUT token + GET com token devolveu instance-id/type/public-ipv4 (bateram). Amarrei M02<->M04: e dali (iam/security-credentials/) que a role entregaria creds temporarias a CLI/SDK sem chave no disco. Checkpoint p2 OK, sem duvidas. Aluno pediu pra parar. Orientei STOP (nao terminate). INSTANCIA+EBS AINDA EXISTEM - teardown so no p5. PROXIMO: p3 (snapshot + ciclo de vida na pele)."
+    },
+    {
+      "beat": "p3",
+      "ts": "2026-07-31T23:25:57+00:00",
+      "text": "Adendo p2: aluno pediu pra dar STOP via CLI (nao Console) - passei 'aws ec2 stop-instances --instance-ids i-0c9bea2a177e4571e' + describe-instances com --query State.Name pra confirmar. Confirmou 'stopped'. 1o gostinho de CLC (aperitivo da p4). Credenciais CLI do M02 funcionando."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
