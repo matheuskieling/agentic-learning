@@ -226,8 +226,8 @@
       }
     ]
   },
-  "pos": 10,
-  "marco_sessao": 9,
+  "pos": 14,
+  "marco_sessao": 10,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -239,10 +239,10 @@
     "t7": "visto",
     "p1": "visto",
     "p2": "visto",
-    "p3": "pendente",
-    "p4": "pendente",
-    "p5": "pendente",
-    "q1": "pendente",
+    "p3": "visto",
+    "p4": "visto",
+    "p5": "visto",
+    "q1": "visto",
     "prova": "pendente",
     "fim": "pendente"
   },
@@ -256,7 +256,11 @@
     "t6": "2026-07-30T23:40:53+00:00",
     "t7": "2026-07-30T23:52:58+00:00",
     "p1": "2026-07-31T00:11:31+00:00",
-    "p2": "2026-07-31T23:22:52+00:00"
+    "p2": "2026-07-31T23:22:52+00:00",
+    "p3": "2026-08-04T00:31:48+00:00",
+    "p4": "2026-08-04T00:46:10+00:00",
+    "p5": "2026-08-04T00:52:57+00:00",
+    "q1": "2026-08-04T00:58:48+00:00"
   },
   "notes": [
     {
@@ -293,6 +297,11 @@
       "beat": "p3",
       "ts": "2026-07-31T23:25:57+00:00",
       "text": "Adendo p2: aluno pediu pra dar STOP via CLI (nao Console) - passei 'aws ec2 stop-instances --instance-ids i-0c9bea2a177e4571e' + describe-instances com --query State.Name pra confirmar. Confirmou 'stopped'. 1o gostinho de CLC (aperitivo da p4). Credenciais CLI do M02 funcionando."
+    },
+    {
+      "beat": "q1",
+      "ts": "2026-08-04T00:58:48+00:00",
+      "text": "Quiz da aula M04 (q1) FEITO de saideira: 10/10, GABARITOU sem hesitar. Aluno reconheceu por ter vivido (previu 401, viu IP trocar 23.22->3.94, rodou teardown). Antes do quiz: Pratica C (p4) e teardown (p5) FEITOS. p4=relançou tudo via CLL (ssm get-parameter p/ AMI, create-sg, run-instances c/ HttpTokens=required, wait instance-running, create-snapshot+wait). Pagina no ar (35.172.183.7), encoding limpo (ASCII). p5=TEARDOWN COMPLETO E VERIFICADO: terminou as 2 instancias (cli i-0a76.. + console i-0c9b..), deletou os 2 snapshots + 2 SGs, 4 listas de verificacao LIMPAS (volumes/snapshots/addresses vazios). CONTA ZERADA - nada mais existe na AWS exceto key pair curso-key (de proposito). PROXIMO: prova do modulo (AWS/provas/modulo-04/). Falta so a prova pra fechar o M04."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
