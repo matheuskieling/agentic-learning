@@ -1,27 +1,9 @@
 {
   "bank_path": "/home/mkieling/dev/courses/AWS/.sessions/revisao-bank.json",
   "bank": {
-    "titulo": "Revisão acumulada — 8 perguntas (módulos: 01, 02)",
+    "titulo": "Revisão acumulada — 10 perguntas (módulos: 01, 02, 03, 04)",
     "aprovacao": 70,
     "questoes": [
-      {
-        "pergunta": "Qual comando da AWS CLI confirma que suas credenciais estão funcionando, mostrando sua identidade (UserId, Account, ARN)?",
-        "opcoes": [
-          "aws configure list-regions",
-          "aws sts get-caller-identity",
-          "aws iam whoami",
-          "aws ec2 describe-instances"
-        ],
-        "correta": 1,
-        "explicacao": "`aws sts get-caller-identity` é o teste padrão de 'quem sou eu' após configurar a CLI.",
-        "feedbacks": [
-          "Esse comando não é o teste de identidade; e 'configure list-regions' nem existe nesse formato.",
-          "Correto: é o jeito canônico de checar que a CLI está autenticada e ver sua identidade.",
-          "Não existe 'aws iam whoami'. O comando certo é 'aws sts get-caller-identity'.",
-          "describe-instances lista EC2 (e pode falhar/vir vazio) — não é um teste de identidade."
-        ],
-        "qid": "m01-prova#6"
-      },
       {
         "pergunta": "Qual a diferença entre uma Região e uma Zona de Disponibilidade (AZ)?",
         "opcoes": [
@@ -33,6 +15,18 @@
         "correta": 1,
         "explicacao": "Uma Região contém várias AZs; cada AZ é um/mais datacenters com energia e rede independentes.",
         "qid": "m01-quiz#1"
+      },
+      {
+        "pergunta": "O que significa o 'implicit deny' do IAM?",
+        "opcoes": [
+          "Toda ação é negada por padrão, a menos que alguma policy a permita",
+          "O root nega ações automaticamente",
+          "Policies inline negam mais que as gerenciadas",
+          "Ações fora da sua região são negadas"
+        ],
+        "correta": 0,
+        "explicacao": "O ponto de partida é negar tudo. Sem um Allow aplicável, a resposta é AccessDenied.",
+        "qid": "m02-quiz#5"
       },
       {
         "pergunta": "Qual peça do IAM é uma identidade assumível que fornece credenciais TEMPORÁRIAS?",
@@ -65,22 +59,34 @@
         "qid": "m02-prova#9"
       },
       {
-        "pergunta": "Ao rodar 'aws sts assume-role', a resposta traz três credenciais. Qual delas NÃO existe nas access keys comuns de um IAM user?",
+        "pergunta": "Por que evitamos usar o usuário root da conta AWS no dia a dia?",
         "opcoes": [
-          "AccessKeyId",
-          "SecretAccessKey",
-          "SessionToken",
-          "Nenhuma: as credenciais são idênticas às de um user"
+          "Porque o root é mais lento que um usuário IAM",
+          "Porque o root pode tudo e não dá pra restringir; comprometê-lo seria catastrófico",
+          "Porque o root não consegue criar recursos",
+          "Porque a AWS cobra a mais pelo uso do root"
         ],
-        "correta": 2,
-        "explicacao": "O SessionToken é a marca das credenciais temporárias do STS — e elas ainda têm Expiration.",
+        "correta": 1,
+        "explicacao": "O root tem poder irrestrito. Use-o o mínimo (protegido por MFA) e opere com usuários IAM.",
         "feedbacks": [
-          "AccessKeyId existe nos dois casos (nas temporárias costuma começar com ASIA em vez de AKIA), então não é o diferencial.",
-          "SecretAccessKey também existe nos dois tipos de credencial.",
-          "Correto: o SessionToken só existe em credenciais temporárias do STS, junto com uma data de expiração. Sem ele, as credenciais temporárias não funcionam.",
-          "São diferentes: credenciais de role têm SessionToken e expiram; access keys de user são de longa duração."
+          "Não há diferença de 'velocidade'; o problema do root é o poder irrestrito.",
+          "Isso: root pode tudo e não pode ser limitado. Por isso: MFA nele e trabalhe com usuários IAM.",
+          "O root consegue criar recursos, sim — o problema é o risco, não a capacidade.",
+          "Não há cobrança extra por usar o root; a questão é segurança, não custo."
         ],
-        "qid": "m02-prova#6"
+        "qid": "m01-prova#7"
+      },
+      {
+        "pergunta": "Qual comando da CLI você usa para assumir uma role e receber credenciais temporárias?",
+        "opcoes": [
+          "aws iam assume-role",
+          "aws sts assume-role",
+          "aws iam get-role-credentials",
+          "aws configure assume"
+        ],
+        "correta": 1,
+        "explicacao": "É o STS (Security Token Service) que emite credenciais temporárias: aws sts assume-role --role-arn ... --role-session-name ...",
+        "qid": "m02-quiz#8"
       },
       {
         "pergunta": "Sua empresa exige que a permissão de deletar snapshots NUNCA funcione, nem para admins. Como garantir isso via IAM?",
@@ -101,28 +107,52 @@
         "qid": "m02-prova#5"
       },
       {
-        "pergunta": "Qual comando da CLI você usa para assumir uma role e receber credenciais temporárias?",
+        "pergunta": "O que torna uma subnet 'pública' na AWS?",
         "opcoes": [
-          "aws iam assume-role",
-          "aws sts assume-role",
-          "aws iam get-role-credentials",
-          "aws configure assume"
+          "Ter a palavra 'publica' no nome",
+          "Um checkbox 'public' nas configurações da subnet",
+          "A route table associada a ela ter uma rota 0.0.0.0/0 apontando para um Internet Gateway",
+          "Estar na primeira AZ da região"
         ],
-        "correta": 1,
-        "explicacao": "É o STS (Security Token Service) que emite credenciais temporárias: aws sts assume-role --role-arn ... --role-session-name ...",
-        "qid": "m02-quiz#8"
+        "correta": 2,
+        "explicacao": "Pública/privada é consequência do roteamento: existe caminho pro IGW? É pública. Nome e AZ não importam.",
+        "qid": "m03-quiz#1"
       },
       {
-        "pergunta": "O que significa o 'implicit deny' do IAM?",
+        "pergunta": "Qual comando da AWS CLI confirma que suas credenciais estão funcionando, mostrando sua identidade (UserId, Account, ARN)?",
         "opcoes": [
-          "Toda ação é negada por padrão, a menos que alguma policy a permita",
-          "O root nega ações automaticamente",
-          "Policies inline negam mais que as gerenciadas",
-          "Ações fora da sua região são negadas"
+          "aws configure list-regions",
+          "aws sts get-caller-identity",
+          "aws iam whoami",
+          "aws ec2 describe-instances"
         ],
-        "correta": 0,
-        "explicacao": "O ponto de partida é negar tudo. Sem um Allow aplicável, a resposta é AccessDenied.",
-        "qid": "m02-quiz#5"
+        "correta": 1,
+        "explicacao": "`aws sts get-caller-identity` é o teste padrão de 'quem sou eu' após configurar a CLI.",
+        "feedbacks": [
+          "Esse comando não é o teste de identidade; e 'configure list-regions' nem existe nesse formato.",
+          "Correto: é o jeito canônico de checar que a CLI está autenticada e ver sua identidade.",
+          "Não existe 'aws iam whoami'. O comando certo é 'aws sts get-caller-identity'.",
+          "describe-instances lista EC2 (e pode falhar/vir vazio) — não é um teste de identidade."
+        ],
+        "qid": "m01-prova#6"
+      },
+      {
+        "pergunta": "Ao rodar 'aws sts assume-role', a resposta traz três credenciais. Qual delas NÃO existe nas access keys comuns de um IAM user?",
+        "opcoes": [
+          "AccessKeyId",
+          "SecretAccessKey",
+          "SessionToken",
+          "Nenhuma: as credenciais são idênticas às de um user"
+        ],
+        "correta": 2,
+        "explicacao": "O SessionToken é a marca das credenciais temporárias do STS — e elas ainda têm Expiration.",
+        "feedbacks": [
+          "AccessKeyId existe nos dois casos (nas temporárias costuma começar com ASIA em vez de AKIA), então não é o diferencial.",
+          "SecretAccessKey também existe nos dois tipos de credencial.",
+          "Correto: o SessionToken só existe em credenciais temporárias do STS, junto com uma data de expiração. Sem ele, as credenciais temporárias não funcionam.",
+          "São diferentes: credenciais de role têm SessionToken e expiram; access keys de user são de longa duração."
+        ],
+        "qid": "m02-prova#6"
       }
     ]
   },
@@ -134,9 +164,11 @@
     4,
     5,
     6,
-    7
+    7,
+    8,
+    9
   ],
-  "pos": 8,
+  "pos": 10,
   "answers": [
     {
       "pos": 0,
@@ -148,7 +180,7 @@
     {
       "pos": 1,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
@@ -169,7 +201,7 @@
     {
       "pos": 4,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
@@ -190,7 +222,21 @@
     {
       "pos": 7,
       "escolha": [
-        0
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 8,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 9,
+      "escolha": [
+        2
       ],
       "acertou": true
     }
