@@ -1,0 +1,431 @@
+{
+  "titulo": "PROVA GERAL — Módulos 01 a 04 (estilo certificação AWS)",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "pergunta": "Uma empresa processa uma vez por ano um lote pesado que exige cerca de 200 servidores durante 3 dias. No resto do ano, a carga é mínima. No modelo antigo (datacenter próprio), o hardware ficava ocioso 362 dias. Qual característica da nuvem resolve isso e qual o efeito financeiro?",
+      "opcoes": [
+        "Elasticidade + pague-pelo-uso — sobe 200 servidores por 3 dias e desliga; troca CapEx (comprar) por OpEx (usar)",
+        "Responsabilidade compartilhada — a AWS assume o custo do pico porque gerencia a infraestrutura física",
+        "Free Tier — 200 instâncias por 3 dias cabem no nível gratuito de 12 meses",
+        "Alta disponibilidade — o hardware provisionado nunca falha, então não é preciso comprar sobressalentes"
+      ],
+      "correta": 0,
+      "explicacao": "Elasticidade = ajustar a capacidade ao que a carga pede, quando ela pede. Somada ao pague-pelo-uso, transforma um investimento antecipado (CapEx) em despesa operacional proporcional ao consumo (OpEx).",
+      "feedbacks": [
+        "Correto: elasticidade dá os 200 servidores só nos 3 dias, e o pague-pelo-uso cobra só esse período. É a troca clássica de CapEx por OpEx.",
+        "Responsabilidade compartilhada define quem cuida do quê em termos de segurança — não transfere custo de consumo para a AWS.",
+        "O Free Tier cobre volumes pequenos (ex.: 750h/mês de uma t2/t3.micro). 200 servidores por 3 dias está muito além disso — e Free Tier não é a característica arquitetural que resolve o problema.",
+        "Alta disponibilidade é sobre sobreviver a falhas, não sobre acompanhar picos de demanda. E hardware sempre falha — a nuvem lida com isso, não o elimina."
+      ]
+    },
+    {
+      "pergunta": "Uma aplicação precisa continuar no ar mesmo se um datacenter inteiro pegar fogo, mas os componentes conversam muito entre si e não toleram latência alta. Qual desenho atende aos dois requisitos ao mesmo tempo?",
+      "opcoes": [
+        "Usar duas subnets diferentes, ambas na mesma AZ",
+        "Distribuir entre us-east-1 e ap-southeast-2, com replicação entre as regiões",
+        "Concentrar tudo numa única AZ, mas com duas instâncias em racks diferentes",
+        "Distribuir os recursos entre duas AZs da mesma região"
+      ],
+      "correta": 3,
+      "explicacao": "AZs são datacenters (um ou mais) isolados em energia, refrigeração e rede, mas ligados por links de altíssima velocidade e baixa latência dentro da região. É exatamente o ponto de equilíbrio entre tolerar a perda de um datacenter e manter latência baixa.",
+      "feedbacks": [
+        "Duas subnets na mesma AZ é apenas separação lógica. A falha física da AZ derruba as duas — não há redundância real.",
+        "Duas regiões distantes atendem ao requisito de desastre, mas a latência entre continentes quebra o segundo requisito (componentes que conversam muito).",
+        "Racks diferentes dentro da MESMA AZ compartilham energia e rede. Se a AZ cai, os dois caem juntos — não atende ao requisito.",
+        "Correto: multi-AZ é a base da alta disponibilidade na AWS — isolamento físico suficiente para sobreviver à perda de um datacenter, com latência baixa entre as AZs."
+      ]
+    },
+    {
+      "pergunta": "Dois incidentes na mesma semana: (1) um bucket S3 foi configurado como público e vazou dados de clientes; (2) uma instância EC2 foi comprometida porque o kernel do sistema operacional estava sem um patch de segurança conhecido. Pelo Modelo de Responsabilidade Compartilhada, de quem é a responsabilidade em cada caso?",
+      "opcoes": [
+        "Bucket é do cliente; patch é da AWS, que mantém as AMIs atualizadas",
+        "Ambos são da AWS, que garante a segurança da nuvem",
+        "Ambos são do cliente: configuração de acesso e patch do SO em IaaS ficam do lado 'segurança NA nuvem'",
+        "Bucket é responsabilidade da AWS (é serviço gerenciado); patch é do cliente"
+      ],
+      "correta": 2,
+      "explicacao": "A AWS cuida da segurança DA nuvem (hardware, datacenter, rede física, virtualização). O cliente cuida da segurança NA nuvem: IAM, configuração dos serviços, criptografia e — em IaaS como o EC2 — o patch do sistema operacional convidado.",
+      "feedbacks": [
+        "A AWS publica AMIs atualizadas, mas depois do launch o SO da instância é do cliente. Manter o kernel corrigido em EC2 é responsabilidade dele.",
+        "Se ambos fossem da AWS, nenhum vazamento por má configuração seria possível — e a maioria dos incidentes reais é exatamente isso: erro de configuração do cliente.",
+        "Correto: os dois casos caem em 'segurança NA nuvem'. Config de acesso é sempre do cliente, e em IaaS (EC2) o patch do SO também é.",
+        "A AWS opera o S3, mas quem define se um bucket é público é o cliente. Configuração de acesso é sempre do lado do cliente."
+      ]
+    },
+    {
+      "pergunta": "Uma equipe vai hospedar em us-east-1 um serviço que entrega vídeos para usuários finais espalhados pela internet. No planejamento de custos, qual item costuma ser subestimado e estourar a previsão?",
+      "opcoes": [
+        "A quantidade de recursos criados, cobrada por unidade criada",
+        "O tráfego de saída para a internet (data transfer OUT), cobrado por GB enviado",
+        "O tráfego de entrada (data transfer IN), cobrado por GB recebido",
+        "O número de chamadas feitas pelo Console da AWS"
+      ],
+      "correta": 1,
+      "explicacao": "Na AWS, dados que ENTRAM geralmente não são cobrados; dados que SAEM para a internet são. Num serviço de vídeo, a saída é o volume dominante — e é a linha que surpreende na fatura.",
+      "feedbacks": [
+        "A AWS não cobra por 'ato de criar' um recurso; cobra pelo consumo dele (horas, GB·mês, requisições).",
+        "Correto: data transfer OUT é a pegadinha clássica de custo. Serviço de vídeo = muito byte saindo = fatura de rede relevante.",
+        "Data transfer IN é, em regra, gratuito na AWS. O custo mora na saída.",
+        "Uso do Console não é cobrado — o que custa são os recursos que você provisiona por meio dele."
+      ]
+    },
+    {
+      "pergunta": "Uma equipe precisa provisionar o MESMO ambiente (rede, instâncias, permissões) de forma idêntica em três contas diferentes, com histórico de mudanças versionado e possibilidade de recriar tudo do zero se necessário. Qual forma de acesso à AWS é a adequada?",
+      "opcoes": [
+        "IaC (Infraestrutura como Código) — descrever a infra em arquivos versionáveis e aplicá-los em cada conta",
+        "CLI executada manualmente comando a comando em cada conta",
+        "SDK — chamar a API da AWS a partir do código da aplicação",
+        "Console — mais visual, reduz erro humano ao clicar"
+      ],
+      "correta": 0,
+      "explicacao": "IaC descreve o estado desejado da infraestrutura em arquivos que vivem no Git: reprodutível em N contas, revisável em pull request, versionado e recriável do zero.",
+      "feedbacks": [
+        "Correto: IaC é justamente descrever a infra como código versionável — reprodutível entre contas e recriável do zero.",
+        "A CLI é reproduzível e automatizável (melhor que o Console), mas rodar comandos soltos à mão não dá estado desejado nem versionamento. É o embrião de IaC, não IaC.",
+        "SDK serve pra sua APLICAÇÃO falar com a AWS em tempo de execução. Não é a ferramenta para provisionar ambientes.",
+        "O Console é ótimo pra aprender e inspecionar, mas é o pior caminho pra repetir a mesma coisa três vezes sem divergência — e não deixa histórico versionado."
+      ]
+    },
+    {
+      "pergunta": "Um usuário IAM pertence a um group com a policy AdministratorAccess anexada. Além disso, ele tem uma policy inline com um Deny explícito para a ação s3:DeleteBucket. Ele consegue deletar um bucket?",
+      "opcoes": [
+        "Sim — AdministratorAccess é uma policy da AWS e tem precedência sobre policies inline",
+        "Não — o Deny explícito vence qualquer Allow, independentemente de quantas policies concedam a permissão",
+        "Depende — vence a policy que foi anexada por último",
+        "Sim — permissões de group e de user se somam, e a união dos Allows prevalece"
+      ],
+      "correta": 1,
+      "explicacao": "A ordem de avaliação do IAM é: Deny explícito > Allow > Deny implícito (padrão). Um único Deny explícito aplicável derruba todos os Allows — é por isso que ele serve como trava inquebrável.",
+      "feedbacks": [
+        "Não existe precedência por origem da policy (AWS managed, customer managed ou inline). O que importa é a lógica Deny > Allow > deny implícito.",
+        "Correto: Deny explícito sempre vence. Nem AdministratorAccess passa por cima dele.",
+        "IAM não tem ordem cronológica de precedência. A avaliação é sobre o conjunto de policies aplicáveis, não sobre quem chegou por último.",
+        "Allows realmente se somam — mas a soma só é avaliada DEPOIS de checar se existe algum Deny explícito, e ele derruba tudo."
+      ]
+    },
+    {
+      "pergunta": "Um desenvolvedor tenta executar 'aws sts assume-role' apontando para uma role da própria conta e recebe AccessDenied. A role tem AmazonEC2ReadOnlyAccess anexada e o usuário tem permissão sts:AssumeRole. Onde está o problema mais provável?",
+      "opcoes": [
+        "Na permission policy da role — AmazonEC2ReadOnlyAccess não permite assumir roles",
+        "Na trust policy da role — o Principal não inclui a identidade que está tentando assumir",
+        "Na NACL da subnet, que bloqueia a porta do endpoint do STS",
+        "No security group associado à role"
+      ],
+      "correta": 1,
+      "explicacao": "Toda role tem duas policies com papéis distintos: a trust policy diz QUEM pode assumir (o Principal), e as permission policies dizem O QUE ela pode fazer depois de assumida. Falha no momento de assumir aponta para a trust policy.",
+      "feedbacks": [
+        "A permission policy só entra em jogo DEPOIS que a role é assumida — ela define o que a sessão pode fazer, não quem pode entrar.",
+        "Correto: quem pode assumir a role é definido na trust policy (campo Principal + ação sts:AssumeRole). Falha ao ASSUMIR = olhar a trust policy.",
+        "NACL é firewall de subnet e não tem relação com uma negação de autorização do IAM. AccessDenied é resposta da API, não bloqueio de rede.",
+        "Roles são identidades IAM; não têm security group. Security group é firewall de instância/ENI."
+      ]
+    },
+    {
+      "pergunta": "Uma policy concede s3:GetObject com Resource = \"arn:aws:s3:::relatorios\". O usuário consegue enxergar o bucket na lista, mas recebe AccessDenied ao tentar baixar o arquivo relatorios/2026/janeiro.pdf. Qual a correção?",
+      "opcoes": [
+        "Exigir MFA na policy, pois downloads de objetos requerem autenticação multifator",
+        "Adicionar o campo Version com o valor 2012-10-17, que está ausente",
+        "Corrigir o Resource: objetos são identificados por \"arn:aws:s3:::relatorios/*\" — o ARN sem /* aponta para o bucket, não para o conteúdo",
+        "Trocar o ARN por um que inclua a região, já que o S3 é um serviço regional"
+      ],
+      "correta": 2,
+      "explicacao": "No S3, o bucket e os objetos são recursos DIFERENTES no ARN: 'arn:aws:s3:::bucket' (ações no bucket, como s3:ListBucket) e 'arn:aws:s3:::bucket/*' (ações nos objetos, como s3:GetObject). Muita policy precisa dos dois statements.",
+      "feedbacks": [
+        "MFA não é requisito padrão para baixar objetos. Ela só entra se você mesmo colocar uma Condition exigindo isso.",
+        "O Version é obrigatório na estrutura da policy, mas sua ausência não é o que causa esse AccessDenied específico — e o enunciado indica que a policy já está em vigor.",
+        "Correto: s3:GetObject atua sobre OBJETOS, cujo ARN é bucket/*. O ARN sem /* refere-se ao bucket em si e não cobre o download.",
+        "No ARN do S3 os campos de região e conta ficam vazios justamente porque o namespace de nomes de bucket é global. Não é o problema aqui."
+      ]
+    },
+    {
+      "pergunta": "Um desenvolvedor precisa de permissões elevadas por cerca de uma hora para executar uma manutenção pontual em produção. Qual a abordagem mais alinhada às boas práticas de IAM?",
+      "opcoes": [
+        "Anexar AdministratorAccess diretamente ao usuário dele, de forma inline, e remover depois",
+        "Fazer com que ele assuma uma role específica via STS, recebendo credenciais temporárias que expiram sozinhas",
+        "Compartilhar as credenciais do usuário root apenas durante a janela de manutenção",
+        "Gerar access keys de um usuário admin, entregar ao dev e deletá-las quando ele avisar que terminou"
+      ],
+      "correta": 1,
+      "explicacao": "Elevação temporária é exatamente o caso de uso de role + STS: a credencial já nasce com prazo de validade, some sozinha e a ação de assumir fica registrada. Nada depende de alguém lembrar de revogar.",
+      "feedbacks": [
+        "Funciona tecnicamente, mas depende de intervenção manual pra reverter, polui a auditoria com inline policies e não expira sozinha.",
+        "Correto: role + STS entrega credenciais temporárias com Expiration. Acabou a janela, o acesso morre sozinho — sem depender de ninguém lembrar.",
+        "As credenciais do root nunca devem ser compartilhadas, e o root não pode ser restringido por policy nenhuma. É a pior opção possível.",
+        "Chave permanente entregue 'por um tempinho' depende de alguém lembrar de revogar — e enquanto existir, pode vazar. É o antipadrão que roles resolvem."
+      ]
+    },
+    {
+      "pergunta": "Você criou a role 'app-s3-reader' com AmazonS3ReadOnlyAccess e uma trust policy que confia no serviço EC2. Ainda assim, a aplicação rodando na instância continua recebendo AccessDenied ao chamar o S3, e o metadata em iam/security-credentials/ não retorna nada. O que falta?",
+      "opcoes": [
+        "Gerar access keys para a role e configurá-las em ~/.aws/credentials na instância",
+        "Adicionar uma regra de saída no security group liberando a porta 443 para o S3",
+        "Anexar a role à instância (instance profile) — criar a role não a associa a nenhuma máquina",
+        "Desabilitar o IMDSv2, que impede a aplicação de ler credenciais do metadata"
+      ],
+      "correta": 2,
+      "explicacao": "Criar a role só define a identidade. Para a instância usá-la, é preciso associá-la à EC2 (instance profile). Só então o metadata passa a expor credenciais temporárias em iam/security-credentials/, de onde CLI e SDK as pegam automaticamente.",
+      "feedbacks": [
+        "Roles não têm access keys permanentes — esse é justamente o ponto delas. As credenciais são temporárias e vêm pelo metadata.",
+        "Security group por padrão libera toda a saída — e o sintoma seria timeout de rede, não AccessDenied vindo da API.",
+        "Correto: sem a role anexada à instância, o caminho iam/security-credentials/ do metadata fica vazio. Criar a role não a conecta a máquina nenhuma.",
+        "IMDSv2 não impede nada: os SDKs e a CLI já falam IMDSv2 nativamente (PUT do token + GET com o header). Desabilitá-lo só piora a segurança."
+      ]
+    },
+    {
+      "pergunta": "Ao inspecionar um servidor, você encontra um conjunto de credenciais em uso. Qual característica indica, com segurança, que são credenciais TEMPORÁRIAS emitidas pelo STS (e não uma chave permanente de IAM user)?",
+      "opcoes": [
+        "Existe um SessionToken junto do par de chaves, e a resposta traz um campo Expiration",
+        "O AccessKeyId começa com AKIA",
+        "Estão gravadas no arquivo ~/.aws/credentials",
+        "Foram criadas pelo usuário root da conta"
+      ],
+      "correta": 0,
+      "explicacao": "Credenciais do STS vêm em trio — AccessKeyId (prefixo ASIA), SecretAccessKey e SessionToken — acompanhadas de uma data de expiração. Chave permanente de IAM user é só o par, com prefixo AKIA e sem validade.",
+      "feedbacks": [
+        "Correto: SessionToken + Expiration (e o prefixo ASIA) são a assinatura das credenciais temporárias do STS.",
+        "AKIA é o prefixo das chaves PERMANENTES de IAM user. As temporárias do STS começam com ASIA.",
+        "O arquivo é só onde a credencial está guardada — pode conter qualquer um dos dois tipos. O local não diz nada sobre a natureza dela.",
+        "Quem criou a credencial não determina se ela é temporária. Aliás, o root nunca deveria ter access keys."
+      ]
+    },
+    {
+      "pergunta": "Um arquiteto planeja uma subnet /24 dentro de uma VPC 10.0.0.0/16 e precisa saber quantos endereços IPv4 poderá realmente atribuir a recursos. Qual o número correto e por quê?",
+      "opcoes": [
+        "65.536 — porque a subnet herda o tamanho do CIDR /16 da VPC",
+        "254 — descontando apenas o endereço de rede e o de broadcast, como numa rede local comum",
+        "256 — o /24 deixa 8 bits livres, e todos podem ser usados",
+        "251 — o /24 tem 256 endereços, e a AWS reserva 5 deles em toda subnet"
+      ],
+      "correta": 3,
+      "explicacao": "Um /24 tem 2^8 = 256 endereços. A AWS reserva 5 em cada subnet (rede, gateway do VPC router, DNS, um reservado para uso futuro e o broadcast), deixando 251 utilizáveis.",
+      "feedbacks": [
+        "A subnet é uma FATIA do CIDR da VPC. O /16 é o espaço total da VPC, não o da subnet.",
+        "Essa é a conta de uma rede local tradicional (−2). Na AWS a reserva é de 5, não de 2.",
+        "O total é 256, mas nem todos são atribuíveis: a AWS reserva 5 endereços em toda subnet.",
+        "Correto: 256 − 5 reservados pela AWS = 251 endereços utilizáveis. É uma diferença que importa ao dimensionar subnets pequenas."
+      ]
+    },
+    {
+      "pergunta": "Uma instância EC2 está numa subnet cuja route table tem a rota 0.0.0.0/0 apontando para um Internet Gateway anexado à VPC. O security group libera a porta 80 de 0.0.0.0/0 e o nginx está rodando. Ainda assim, ninguém consegue acessar o site pela internet. O que falta?",
+      "opcoes": [
+        "Uma regra de saída no security group permitindo o tráfego de resposta na porta 80",
+        "Um endereço IPv4 público (ou Elastic IP) na instância — sem ele não há como a internet endereçá-la",
+        "Um NAT Gateway na subnet pública, para traduzir o IP privado da instância",
+        "Uma NACL personalizada liberando a porta 80, pois a NACL padrão bloqueia tudo"
+      ],
+      "correta": 1,
+      "explicacao": "O checklist de alcançabilidade tem quatro itens: IGW anexado, rota 0.0.0.0/0 apontando pra ele, IP público na instância e security group liberando a porta. Três estão presentes; o que falta é o IP público.",
+      "feedbacks": [
+        "Security group é stateful: liberou a entrada, a resposta sai automaticamente. Não existe regra de saída a criar aqui.",
+        "Correto: sem IPv4 público (ou Elastic IP), não há endereço que a internet possa alcançar. É o quarto item do checklist.",
+        "NAT Gateway serve para a subnet PRIVADA SAIR para a internet — é mão única e não permite conexões vindas de fora.",
+        "A NACL padrão PERMITE todo o tráfego nos dois sentidos. Ela só bloqueia se alguém a tiver alterado — e o enunciado não indica isso."
+      ]
+    },
+    {
+      "pergunta": "Um colega criou duas subnets chamadas 'subnet-publica' e 'subnet-privada' e não entende por que a instância na 'subnet-publica' não alcança a internet. O que de fato define se uma subnet é pública?",
+      "opcoes": [
+        "Estar numa AZ que possui Edge Location",
+        "Ter o atributo enableDnsHostnames habilitado na VPC",
+        "O nome/tag atribuído à subnet no momento da criação",
+        "Ter, na route table associada a ela, uma rota 0.0.0.0/0 apontando para um Internet Gateway"
+      ],
+      "correta": 3,
+      "explicacao": "'Pública' não é um flag nem um nome: é consequência do roteamento. A subnet cuja route table tem caminho para o IGW é pública; sem essa rota, é privada — chame-a como quiser.",
+      "feedbacks": [
+        "Edge Locations são pontos de presença de CDN (CloudFront) e não têm relação com o roteamento de saída de uma subnet.",
+        "enableDnsHostnames faz a VPC atribuir nomes DNS aos recursos. Útil, mas não é o que dá saída para a internet.",
+        "O nome é puramente descritivo e não altera comportamento nenhum de rede. É a armadilha do enunciado.",
+        "Correto: é a rota 0.0.0.0/0 → IGW na route table associada que torna a subnet pública. Nome é só etiqueta."
+      ]
+    },
+    {
+      "pergunta": "Servidores de aplicação numa subnet PRIVADA precisam baixar atualizações de pacotes e chamar APIs externas na internet, sem jamais aceitar conexões vindas de fora. Qual solução atende e qual alerta de custo ela traz?",
+      "opcoes": [
+        "Criar uma rota 0.0.0.0/0 apontando para a route table da subnet pública; não há custo adicional",
+        "Um NAT Gateway na subnet PÚBLICA, com a subnet privada roteando 0.0.0.0/0 para ele — sem Free Tier, cobra por hora (~US$32/mês) e por GB processado, em cada AZ",
+        "Anexar um segundo Internet Gateway diretamente à subnet privada; custo desprezível",
+        "Atribuir Elastic IPs às instâncias privadas; grátis enquanto associadas a instâncias em execução"
+      ],
+      "correta": 1,
+      "explicacao": "O NAT Gateway fica na subnet pública com um Elastic IP e é mão única: só passa conexões iniciadas de dentro. É a resposta correta de arquitetura e o campeão de sangria silenciosa na fatura — daí a alternativa dos VPC gateway endpoints (grátis) quando o destino é S3 ou DynamoDB.",
+      "feedbacks": [
+        "Rotas apontam para gateways/dispositivos (IGW, NAT, peering), nunca para outra route table. A rota como descrita não existe.",
+        "Correto: NAT Gateway na subnet pública + rota da privada apontando pra ele. E o alerta é real: ~US$0,045/h por AZ mais o custo por GB, sem Free Tier.",
+        "Existe apenas um IGW por VPC, e ele é anexado à VPC (não a subnets). Além disso, dar rota pro IGW tornaria a subnet pública — o oposto do requisito.",
+        "Elastic IP em instância privada a exporia à internet, violando o requisito. E EIP ocioso, aliás, cobra."
+      ]
+    },
+    {
+      "pergunta": "Você liberou a porta 443 de entrada no security group de um servidor web. Precisa criar alguma regra adicional para que a RESPOSTA do servidor chegue de volta ao cliente? E se o mesmo controle fosse feito por NACL?",
+      "opcoes": [
+        "Em nenhum dos dois é preciso: a AWS trata respostas como tráfego interno",
+        "No security group é preciso liberar a saída; na NACL não, porque a NACL padrão libera tudo",
+        "No security group não é preciso (é stateful, a resposta sai automaticamente); numa NACL sim, porque ela é stateless e avalia cada sentido separadamente",
+        "Em ambos é preciso liberar as portas efêmeras de saída — SG e NACL funcionam igual"
+      ],
+      "correta": 2,
+      "explicacao": "Security group é stateful: ele lembra da conexão de entrada e deixa a resposta sair sem regra. NACL é stateless: cada sentido é avaliado isoladamente, então a resposta exige uma regra de saída — tipicamente liberando o intervalo de portas efêmeras.",
+      "feedbacks": [
+        "A NACL, por ser stateless, realmente pode bloquear o tráfego de resposta se não houver regra pra ele. Não é automático nos dois casos.",
+        "Está invertido: o SG é quem dispensa a regra de retorno. E o fato de a NACL padrão liberar tudo é circunstancial — se ela for personalizada, o retorno precisa de regra.",
+        "Correto: SG stateful dispensa a regra de retorno; NACL stateless exige liberar as portas efêmeras no sentido oposto.",
+        "Não funcionam igual — essa é justamente a distinção central entre os dois. SG é stateful, NACL é stateless."
+      ]
+    },
+    {
+      "pergunta": "Um banco de dados deve aceitar conexões na porta 5432 apenas vindas das instâncias da camada de aplicação. Essa camada escala automaticamente: instâncias nascem e morrem, e seus IPs mudam o tempo todo. Qual a melhor forma de escrever a regra de entrada no security group do banco?",
+      "opcoes": [
+        "Liberar 5432 para 0.0.0.0/0 e proteger o acesso apenas com senha forte no banco",
+        "Liberar 5432 para o CIDR inteiro da VPC (10.0.0.0/16)",
+        "Definir como origem o próprio security group da camada de aplicação",
+        "Manter uma lista de /32 com os IPs das instâncias e atualizá-la a cada evento de escala"
+      ],
+      "correta": 2,
+      "explicacao": "Security group pode referenciar outro security group como origem. A regra passa a significar 'quem pertence ao SG do app', independentemente do IP — funciona perfeitamente com auto scaling e nunca precisa ser atualizada.",
+      "feedbacks": [
+        "Expor um banco de dados à internet inteira é falha grave de segurança. Senha forte não substitui controle de rede.",
+        "Funciona, mas libera o banco para QUALQUER coisa dentro da VPC — inclusive recursos que nada têm a ver com a aplicação. Não é least privilege.",
+        "Correto: referenciar o SG do app como origem é o 'superpoder' dos security groups — a regra acompanha a escala sem manutenção.",
+        "É operacionalmente insustentável com escala automática: a lista fica desatualizada entre um evento e outro, causando falhas intermitentes."
+      ]
+    },
+    {
+      "pergunta": "Uma instância usa um volume de instance store (armazenamento local efêmero) para arquivos temporários de processamento. Qual afirmação descreve corretamente o comportamento desses dados?",
+      "opcoes": [
+        "Podem ser preservados criando um snapshot EBS do instance store antes do stop",
+        "Sobrevivem a stop/start, pois o disco local permanece associado ao mesmo hardware",
+        "Sobrevivem a um reboot da instância, mas são perdidos em stop e em terminate",
+        "São perdidos em qualquer reinicialização, inclusive reboot, porque residem em memória RAM"
+      ],
+      "correta": 2,
+      "explicacao": "Instance store é disco físico da máquina hospedeira, não RAM: um reboot não o apaga. Mas no stop (ou terminate) a instância deixa o hospedeiro, e o conteúdo se perde. Por isso serve só para dados descartáveis (cache, scratch).",
+      "feedbacks": [
+        "Snapshots são um recurso do EBS. Instance store não suporta snapshot — pra persistir, é preciso copiar os dados para EBS ou S3.",
+        "É justamente o contrário: o stop tira a instância daquele hospedeiro físico, e o instance store fica pra trás.",
+        "Correto: instance store é DISCO local (aguenta reboot), mas está preso ao hospedeiro — o stop/terminate leva os dados embora.",
+        "Instance store é disco, não RAM. Um reboot preserva o conteúdo; o que o destrói é sair do hospedeiro (stop/terminate)."
+      ]
+    },
+    {
+      "pergunta": "Uma instância foi lançada com user data que instala e habilita o nginx. Depois de um stop/start, o nginx voltou a rodar sozinho. Qual é a explicação correta?",
+      "opcoes": [
+        "O IMDSv2 reexecuta os scripts de bootstrap ao detectar mudança de IP público",
+        "O EBS restaura automaticamente os serviços que estavam ativos antes do stop",
+        "O user data é reexecutado a cada boot, reinstalando e iniciando o nginx",
+        "O user data rodou uma única vez, no primeiro boot, e nele o serviço foi habilitado (systemctl enable) — quem o sobe a cada boot é o systemd"
+      ],
+      "correta": 3,
+      "explicacao": "O user data é executado pelo cloud-init apenas no primeiro boot. O que faz o serviço voltar depois é ele ter sido habilitado no sistema (systemctl enable), fazendo o systemd iniciá-lo em todo boot — evidência de um bootstrap bem feito.",
+      "feedbacks": [
+        "IMDSv2 é o mecanismo de acesso ao metadata da instância. Não executa nem dispara scripts.",
+        "O EBS preserva o disco e, com ele, a configuração instalada. Mas ele não 'liga serviços' — quem faz isso é o init do sistema operacional.",
+        "Por padrão o user data roda só uma vez, no primeiro boot. Se rodasse sempre, o log em /var/log/cloud-init-output.log mostraria uma reinstalação a cada start — e não mostra.",
+        "Correto: user data uma vez no primeiro boot; nas próximas vezes é o systemd (por causa do enable) que sobe o nginx."
+      ]
+    },
+    {
+      "pergunta": "Sua equipe padronizou uma AMI customizada em us-east-1 e agora precisa lançar instâncias idênticas em sa-east-1. O que é necessário?",
+      "opcoes": [
+        "Copiar a AMI para sa-east-1; ela é um recurso regional e ganha um ID novo na região de destino, com custo de armazenamento dos snapshots lá",
+        "Criar um VPC peering entre as regiões para que a AMI fique acessível nas duas",
+        "Nada — AMIs são recursos globais e o mesmo ID funciona em qualquer região",
+        "Recriar a AMI do zero em sa-east-1, pois não existe mecanismo de cópia entre regiões"
+      ],
+      "correta": 0,
+      "explicacao": "AMI é regional: os snapshots que a compõem ficam armazenados na região. Copiar para outra região gera um novo AMI ID (o antigo não serve lá) e passa a custar armazenamento também no destino.",
+      "feedbacks": [
+        "Correto: é preciso copiar a AMI para a região de destino. Ela recebe um novo ID e passa a ocupar (e cobrar) armazenamento lá também.",
+        "VPC peering conecta REDES para tráfego por IP privado. Não tem nenhuma relação com disponibilidade de imagens.",
+        "AMIs são regionais, não globais. Um AMI ID de us-east-1 simplesmente não existe em sa-east-1.",
+        "A cópia entre regiões existe justamente para esse caso — recriar do zero seria trabalho desnecessário e propenso a divergência."
+      ]
+    },
+    {
+      "pergunta": "Um desenvolvedor perdeu o arquivo .pem da key pair usada numa instância EC2 em produção, e agora não consegue mais entrar por SSH. Os dados no volume raiz são críticos. Qual caminho recupera o acesso preservando os dados?",
+      "opcoes": [
+        "Parar a instância, desanexar o volume raiz, anexá-lo como volume secundário a outra instância acessível, editar o arquivo authorized_keys inserindo a nova chave pública e devolver o volume à instância original",
+        "Criar uma nova key pair com o mesmo nome — a instância passa a aceitá-la automaticamente",
+        "Abrir um chamado na AWS solicitando o reenvio do arquivo .pem original",
+        "Fazer terminate na instância e lançar outra com uma key pair nova, restaurando os dados depois"
+      ],
+      "correta": 0,
+      "explicacao": "A chave PÚBLICA mora dentro do disco da instância, em ~/.ssh/authorized_keys. Como a AWS não guarda a chave privada, o caminho é acessar esse arquivo por fora: mover o volume para outra instância, editar o authorized_keys e devolvê-lo.",
+      "feedbacks": [
+        "Correto: é o procedimento de resgate. A chave pública está no disco, então basta acessá-lo por outra instância e inserir a nova chave no authorized_keys.",
+        "O nome da key pair é só uma etiqueta na AWS. O que a instância confere é a chave PÚBLICA já gravada no disco dela; criar outra com o mesmo nome não muda nada lá dentro.",
+        "A AWS não armazena a chave privada — ela é exibida uma única vez, na criação. Não há como reenviá-la.",
+        "Terminate destrói a instância e, por padrão, o volume raiz junto — exatamente o oposto de preservar dados críticos."
+      ]
+    },
+    {
+      "pergunta": "Duas cargas de trabalho precisam de tipo de instância: (1) um cache Redis que mantém um grande conjunto de dados inteiramente em memória; (2) um serviço de transcodificação que satura a CPU continuamente. Quais famílias são as adequadas, respectivamente?",
+      "opcoes": [
+        "r (memory optimized) para o Redis e c (compute optimized) para a transcodificação",
+        "m (general purpose) para o Redis e t (burstable) para a transcodificação",
+        "t (burstable) para os dois, já que ambos têm picos de uso",
+        "c (compute optimized) para o Redis e r (memory optimized) para a transcodificação"
+      ],
+      "correta": 0,
+      "explicacao": "A família define a PROPORÇÃO de recursos: c tem pouca RAM por vCPU (~2 GB), m é equilibrada (~4 GB) e r é rica em memória (~8 GB por vCPU). Dado em memória pede r; CPU saturada continuamente pede c.",
+      "feedbacks": [
+        "Correto: r é memory optimized (muita RAM por vCPU) — ideal pro Redis; c é compute optimized — ideal pra CPU sustentada da transcodificação.",
+        "A m serviria de forma medíocre ao Redis, e a t seria péssima para transcodificação contínua, pelo esgotamento de créditos.",
+        "A família t é burstable e depende de créditos. Ambas as cargas descritas são SUSTENTADAS — os créditos se esgotariam e o desempenho cairia.",
+        "Está invertido: o cache em memória precisa de RAM (família r), e a transcodificação precisa de CPU (família c)."
+      ]
+    },
+    {
+      "pergunta": "Uma aplicação roda em EC2 numa subnet PRIVADA e precisa ler objetos de um bucket S3. Os requisitos: nenhuma credencial gravada na instância, nenhum tráfego passando pela internet pública e o menor custo possível. Qual combinação atende?",
+      "opcoes": [
+        "Elastic IP na instância + policy de bucket liberando esse IP de origem",
+        "Internet Gateway associado à subnet privada + role anexada à instância",
+        "IAM role anexada à instância (credenciais temporárias via metadata) + VPC gateway endpoint para o S3 (que não tem custo por hora nem por GB)",
+        "Access keys de um IAM user gravadas via user data + NAT Gateway para a saída"
+      ],
+      "correta": 2,
+      "explicacao": "A role resolve a credencial (temporária, entregue pelo metadata, nada em disco). O gateway endpoint do S3 resolve o caminho: o tráfego vai pela rede da AWS, sem passar pela internet, e — ao contrário do NAT Gateway — não cobra por hora nem por GB.",
+      "feedbacks": [
+        "Elastic IP exporia a instância e mandaria o tráfego pela internet pública — além de cobrar. Policy por IP de origem também é frágil.",
+        "A role está certa, mas dar rota pro IGW transformaria a subnet em pública, violando o requisito de não expor e de não trafegar pela internet.",
+        "Correto: role (sem segredo em disco) + gateway endpoint do S3 (tráfego interno e gratuito). É o desenho mais seguro e mais barato.",
+        "Viola dois requisitos: grava credencial permanente na instância (e ainda por cima em user data, que é legível pelo metadata) e joga o tráfego na internet pública via NAT, que custa caro."
+      ]
+    },
+    {
+      "pergunta": "Uma instância EC2 com nginx ativo está numa subnet pública, com IGW anexado, rota 0.0.0.0/0 → IGW e IPv4 público atribuído. Do próprio SSH você consegue rodar 'curl localhost' e ver a página, mas nenhum navegador externo carrega o site. Qual é a causa mais provável?",
+      "opcoes": [
+        "O security group da instância não tem regra de entrada liberando a porta 80",
+        "O nginx não está habilitado no systemd, então não responde a requisições externas",
+        "A AMI utilizada é arm64 e não é compatível com tráfego HTTP externo",
+        "O volume gp3 está sem espaço, impedindo o nginx de servir arquivos"
+      ],
+      "correta": 0,
+      "explicacao": "'curl localhost' funcionando prova que o serviço está no ar e escutando — o problema está no caminho de rede. Dos quatro itens do checklist (IGW, rota, IP público, SG), três foram confirmados no enunciado; sobra o security group.",
+      "feedbacks": [
+        "Correto: se responde no localhost mas não de fora, e IGW/rota/IP público estão OK, o culpado é o filtro mais próximo da instância — o security group.",
+        "O enunciado diz que o nginx está ativo e responde no localhost. O 'enable' do systemd afeta o próximo boot, não o atendimento agora.",
+        "Arquitetura do processador (arm64 vs x86_64) determina qual AMI a instância pode rodar — não tem relação alguma com tráfego HTTP.",
+        "Disco cheio produziria erro no próprio servidor; o 'curl localhost' teria falhado também."
+      ]
+    },
+    {
+      "pergunta": "Depois de encerrar um ambiente de estudos, a equipe fez terminate em todas as instâncias EC2 e deletou a VPC customizada. No mês seguinte, a fatura ainda veio diferente de zero. Quais itens são os suspeitos mais prováveis desse custo residual?",
+      "opcoes": [
+        "As key pairs criadas, que cobram por armazenamento de chave",
+        "Volumes EBS órfãos em estado 'available', snapshots não deletados e Elastic IPs alocados e não liberados",
+        "O histórico de uso das instâncias terminadas, cobrado retroativamente por 30 dias",
+        "As IAM roles e policies deixadas na conta, cobradas por identidade ativa"
+      ],
+      "correta": 1,
+      "explicacao": "Terminate mata a instância, mas volumes extras (DeleteOnTermination = false) viram 'available' e seguem cobrando por GB·mês; snapshots cobram por armazenamento; e Elastic IP alocado e não associado cobra por hora. Daí o teardown com verificação em quatro listas: instances, volumes, snapshots e addresses.",
+      "feedbacks": [
+        "Key pairs são gratuitas e reutilizáveis — por isso podem ficar na conta sem problema.",
+        "Correto: EBS órfão 'available', snapshots esquecidos e EIP alocado sem uso são os três vazamentos clássicos que sobrevivem ao terminate.",
+        "A AWS cobra pelo consumo no período em que ele ocorreu. Não existe cobrança retroativa por recursos já encerrados.",
+        "IAM (users, groups, roles, policies) e STS não têm custo. Foi justamente o que permitiu que a prática do módulo de IAM fosse 100% gratuita."
+      ]
+    }
+  ]
+}
