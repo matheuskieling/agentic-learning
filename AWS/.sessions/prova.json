@@ -1,228 +1,228 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/AWS/provas/modulo-03/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/AWS/provas/modulo-04/questions.json",
   "bank": {
-    "titulo": "PROVA — Módulo 03: Rede — VPC",
+    "titulo": "PROVA — Módulo 04: Compute — EC2",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Você precisa de uma VPC que comporte ~1000 hosts hoje, com espaço pra crescer, dividida em subnets de ~250 hosts. Qual combinação faz sentido?",
+        "pergunta": "Um serviço de análise roda cálculos pesados de CPU 24/7 numa t3.large e, após algumas horas, o desempenho despenca. Qual a explicação mais provável?",
         "opcoes": [
-          "VPC /28 com subnets /30",
-          "VPC /16 com subnets /24",
-          "VPC /24 com subnets /16",
-          "VPC /8 pública na internet"
+          "A AWS limita instâncias que rodam muito tempo",
+          "A família t é burstable: os créditos de CPU acabaram e a instância caiu pra linha de base — o caso pede família c",
+          "O volume gp3 ficou cheio",
+          "O security group está bloqueando a CPU"
         ],
         "correta": 1,
-        "explicacao": "/16 dá 65.536 IPs (sobra pra crescer) e cada /24 dá 251 usáveis (~250 hosts). Subnet sempre MENOR que a VPC.",
+        "explicacao": "Burstable = créditos pra picos. Carga contínua de 100% esgota os créditos; pra CPU sustentada, use compute optimized (c).",
         "feedbacks": [
-          "Um /28 tem só 16 IPs (11 usáveis) — não comporta nem 20 hosts, muito menos 1000. E /30 dentro dele é minúsculo.",
-          "Correto: /16 = 65.536 IPs de espaço, fatiado em /24s de 251 IPs usáveis cada — o padrão de mercado pra esse porte.",
-          "Impossível: a subnet (/16) seria MAIOR que a VPC (/24). O número depois da barra da subnet precisa ser maior ou igual ao da VPC.",
-          "Além do exagero (16 milhões de IPs), VPCs usam faixas PRIVADAS — não existem 'na internet'."
+          "A AWS não penaliza tempo de execução — o comportamento vem do modelo de créditos da própria família t.",
+          "Correto: a família t entrega picos via créditos acumulados no ócio. Carga contínua os drena e o clock cai pra linha de base. Workload de CPU sustentada = família c (compute optimized).",
+          "Disco cheio causa erros de escrita/aplicação, não queda gradual de desempenho de CPU.",
+          "Security group filtra tráfego de REDE — não tem nenhuma relação com desempenho de CPU."
         ]
       },
       {
-        "pergunta": "Uma instância na subnet 10.0.5.0/24 tem IP público, o security group libera a porta 80, mas ninguém da internet consegue acessá-la. A route table da subnet só tem a rota 10.0.0.0/16 → local. Qual o problema?",
+        "pergunta": "Você precisa lançar 10 servidores web idênticos, já configurados no boot, sem tocar em nenhum manualmente. Qual combinação resolve?",
         "opcoes": [
-          "Falta memória na instância",
-          "A subnet é privada: não há rota 0.0.0.0/0 para um Internet Gateway",
-          "O IP público expirou",
-          "A porta 80 exige NACL customizada"
+          "Lançar 10 instâncias e configurar cada uma via SSH",
+          "AMI base + user data com o script de instalação/configuração no launch",
+          "Criar 10 key pairs diferentes",
+          "Usar 10 Elastic IPs"
         ],
         "correta": 1,
-        "explicacao": "Sem rota pro IGW, o tráfego de/para a internet não tem caminho — IP público e SG liberado não bastam.",
+        "explicacao": "AMI (o molde) + user data (o bootstrap) = servidores descritos, não montados à mão. Base do Auto Scaling.",
         "feedbacks": [
-          "Recursos da máquina não impedem conectividade de rede — o sintoma seria lentidão, não inacessibilidade total.",
-          "Correto: das 4 condições (IGW anexado, rota 0.0.0.0/0→IGW, IP público, SG), falta a rota. Só a local não leva à internet.",
-          "IPs públicos não 'expiram' com a instância ligada. O problema está no roteamento da subnet.",
-          "A NACL default permite tudo — não é preciso customizar nada pra porta 80 funcionar."
+          "Funciona, mas é exatamente o trabalho manual e não-reproduzível que a nuvem elimina — e não escala pra 100 servidores.",
+          "Correto: a AMI dá o ponto de partida idêntico e o user data executa a configuração no primeiro boot de cada uma. É o padrão que alimenta Auto Scaling e IaC.",
+          "Key pairs cuidam do acesso SSH — não configuram nada dentro do servidor.",
+          "Elastic IPs são endereços fixos (pagos) — irrelevantes pra configuração automática."
         ]
       },
       {
-        "pergunta": "Por que o NAT Gateway deve ser criado numa subnet PÚBLICA, se quem o usa são as instâncias da subnet privada?",
+        "pergunta": "O user data da sua instância 'não funcionou': o nginx não subiu. Qual o PRIMEIRO passo de diagnóstico?",
         "opcoes": [
-          "Por convenção de nomenclatura da AWS",
-          "Porque ele mesmo precisa alcançar a internet via IGW pra encaminhar o tráfego das instâncias privadas",
-          "Porque subnets privadas não aceitam gateways",
-          "Não deve: o NAT vai na subnet privada"
+          "Terminar a instância e tentar outra região",
+          "Entrar via SSH e ler /var/log/cloud-init-output.log",
+          "Abrir um ticket de suporte na AWS",
+          "Reinstalar o sistema operacional"
         ],
         "correta": 1,
-        "explicacao": "O NAT é o intermediário: recebe o tráfego da privada e o envia à internet — logo, ELE precisa da rota pro IGW.",
+        "explicacao": "O cloud-init grava a saída do user data nesse log — erro de sintaxe, pacote não achado, tudo aparece lá.",
         "feedbacks": [
-          "Não é convenção: é necessidade funcional de roteamento.",
-          "Correto: o caminho é privada → NAT (na pública, com Elastic IP) → IGW → internet. Se o NAT ficasse numa subnet sem rota pro IGW, ele também estaria 'preso'.",
-          "Subnets privadas aceitam qualquer recurso — o problema é que um NAT lá dentro não teria como sair pra internet.",
-          "NAT em subnet privada é um erro clássico: ele fica sem caminho pro IGW e nada funciona."
+          "Trocar de região não muda nada: o script é o mesmo. Antes de destruir, diagnostique.",
+          "Correto: toda a execução do user data (stdout/stderr) vai pra /var/log/cloud-init-output.log. Shebang faltando, typo no pacote, erro de rede — está tudo lá.",
+          "O suporte não vai depurar seu script — e o Basic plan nem cobre isso. O log local responde em segundos.",
+          "Desnecessário e drástico: o SO está bem; o script é que precisa ser lido e corrigido."
         ]
       },
       {
-        "pergunta": "Numa NACL customizada você liberou a entrada TCP 443 (regra 100), mas os clientes não recebem resposta do servidor. Qual a causa provável?",
+        "pergunta": "Um app web numa instância EC2 tem uma vulnerabilidade de SSRF. Com IMDSv2 (token obrigatório), por que o ataque clássico de roubo de credenciais da role falha?",
         "opcoes": [
-          "Falta liberar a SAÍDA nas portas efêmeras (1024-65535), pois NACL é stateless",
-          "NACLs não suportam a porta 443",
-          "A regra deveria ter número menor que 100",
-          "Falta habilitar DNS hostnames na VPC"
+          "Porque o IMDSv2 desativa completamente o metadata",
+          "Porque obter o token exige uma requisição PUT com header específico, que um SSRF típico (GET) não consegue forjar",
+          "Porque o IMDSv2 exige senha do usuário root",
+          "Porque as credenciais da role deixam de existir no metadata"
         ],
-        "correta": 0,
-        "explicacao": "Stateless = ida e volta avaliadas separadamente. A resposta sai por uma porta efêmera e precisa de regra própria.",
+        "correta": 1,
+        "explicacao": "O fluxo de sessão (PUT + header + token) quebra o padrão do SSRF, que normalmente só induz GETs simples.",
         "feedbacks": [
-          "Correto: diferente do SG (stateful), a NACL não 'lembra' da conexão. A resposta ao cliente sai pelas ephemeral ports e precisa de regra de saída explícita.",
-          "NACLs suportam qualquer porta TCP/UDP — 443 inclusive.",
-          "O número só define a ordem de avaliação entre regras; 100 funciona perfeitamente se nenhuma regra anterior negar.",
-          "DNS hostnames afeta nomes DNS de instâncias, não o fluxo de pacotes numa NACL."
+          "O metadata continua ativo e útil — o IMDSv2 só muda o COMO se acessa (sessão com token).",
+          "Correto: SSRF clássico faz o servidor emitir um GET a uma URL controlada. Sem conseguir fazer o PUT com o header do token, o atacante recebe 401 e as credenciais ficam protegidas.",
+          "Não existe senha no IMDS — a proteção é o token de sessão.",
+          "As credenciais da role continuam disponíveis via metadata (é assim que o SDK as usa) — apenas atrás do token."
         ]
       },
       {
-        "pergunta": "Arquitetura: app em EC2 e banco PostgreSQL (porta 5432). Qual a melhor regra no security group do banco?",
+        "pergunta": "Cenário de custo: instância t3.micro STOPPED há 3 meses, com volume gp3 de 100 GB e um Elastic IP associado a ela. O que está sendo cobrado?",
         "opcoes": [
-          "Allow 5432 de 0.0.0.0/0",
-          "Allow 5432 tendo como origem o security group do app",
-          "Allow todas as portas do CIDR da VPC",
-          "Deny 5432 de todos, exceto o IP fixo da instância do app"
+          "Nada, pois a instância está parada",
+          "Somente o Elastic IP",
+          "O volume EBS de 100 GB e o Elastic IP (ocioso, já que a instância está parada)",
+          "As horas de compute da t3.micro"
         ],
-        "correta": 1,
-        "explicacao": "Referenciar o SG do app como origem: instâncias podem mudar de IP/escalar e a regra continua valendo.",
+        "correta": 2,
+        "explicacao": "Stopped zera o compute, mas EBS cobra por GB·mês e o EIP numa instância parada é considerado ocioso — cobra também.",
         "feedbacks": [
-          "Banco aberto pro mundo é a receita de desastre — mesmo em subnet privada, é o antipadrão nº 1.",
-          "Correto: é o 'superpoder' dos SGs — a origem é a identidade (quem carrega o SG do app), não um IP. Escala e sobrevive a trocas de IP.",
-          "Amplo demais: qualquer recurso da VPC (inclusive comprometido) alcançaria o banco em qualquer porta. Least privilege também vale na rede.",
-          "SGs não têm regras Deny (só Allow) — e amarrar a IP fixo quebra quando a instância for substituída."
+          "O mito clássico: 'parada = grátis'. O disco persiste (e cobra), e o EIP ocioso também.",
+          "O EIP cobra, sim — mas os 100 GB de gp3 são a parte maior da fatura silenciosa aqui.",
+          "Correto: compute zerado, mas ~100 GB de EBS + Elastic IP ocioso cobram todo mês. 3 meses disso já dói — por isso terminate + verificação.",
+          "Compute é exatamente o que NÃO cobra quando o estado é stopped."
         ]
       },
       {
-        "pergunta": "Você tem peering entre VPC-A ↔ VPC-B e VPC-B ↔ VPC-C. Uma instância na VPC-A precisa falar com outra na VPC-C. O que acontece?",
+        "pergunta": "Você deu STOP e depois START numa instância (sem Elastic IP) e o monitoramento externo perdeu o servidor. Por quê?",
         "opcoes": [
-          "Funciona: o tráfego passa pela VPC-B automaticamente",
-          "Não funciona: peering não é transitivo; é preciso um peering direto A↔C (ou um Transit Gateway)",
-          "Funciona apenas se as três VPCs estiverem na mesma AZ",
-          "Funciona se a VPC-B tiver um IGW"
+          "A instância mudou de região no restart",
+          "O IP público mudou no start — IPs dinâmicos são devolvidos no stop",
+          "O security group foi resetado",
+          "O DNS da VPC foi desabilitado"
         ],
         "correta": 1,
-        "explicacao": "Peering é ponto-a-ponto e não transitivo. A↔C exige conexão própria — ou um hub (Transit Gateway).",
+        "explicacao": "Stop devolve o IP público dinâmico; o start atribui outro. IP estável exige Elastic IP (com o custo dele).",
         "feedbacks": [
-          "É exatamente o que o peering NÃO faz: a VPC-B não roteia tráfego de terceiros entre as outras duas.",
-          "Correto: não-transitividade é a limitação central do peering. Cada par se conecta diretamente; em escala, o Transit Gateway vira o hub.",
-          "AZs não têm relação com peering — VPCs são regionais e o peering pode até ser entre regiões.",
-          "IGW é porta pra internet, não roteador entre peerings — não torna o peering transitivo."
+          "Instâncias nunca mudam de região (nem de AZ) — no máximo de host físico dentro da mesma AZ.",
+          "Correto: o IPv4 público dinâmico não sobrevive ao stop/start. Quem aponta pro IP antigo perde o alvo — os remédios são Elastic IP ou DNS (Route 53).",
+          "Security groups não se alteram com stop/start — a associação permanece.",
+          "Os atributos de DNS da VPC não mudam sozinhos com o ciclo da instância."
         ]
       },
       {
-        "pergunta": "Qual sequência de comandos CLI cria uma subnet PÚBLICA funcional numa VPC nova?",
+        "pergunta": "Um volume EBS com dados importantes está em us-east-1a, e você precisa desses dados numa instância em us-east-1b. Qual o caminho correto?",
         "opcoes": [
-          "create-vpc → create-subnet → pronto: subnets novas já saem públicas",
-          "create-vpc → create-subnet → create-internet-gateway → attach-internet-gateway → create-route-table → create-route (0.0.0.0/0→IGW) → associate-route-table",
-          "create-vpc → create-nat-gateway → associate-route-table",
-          "create-subnet → authorize-security-group-ingress na porta 80"
+          "Desanexar o volume e anexar direto na instância da outra AZ",
+          "Criar um snapshot do volume e, a partir dele, criar um volume novo em us-east-1b",
+          "Arrastar o volume pra outra AZ no console",
+          "Impossível mover dados entre AZs"
         ],
         "correta": 1,
-        "explicacao": "É a cadeia completa: sem IGW anexado + rota default + associação, a subnet continua privada.",
+        "explicacao": "EBS é zonal: só anexa na mesma AZ. Snapshot (que 'vive' na região) → novo volume na AZ desejada.",
         "feedbacks": [
-          "Subnets novas numa VPC customizada nascem PRIVADAS — sem IGW nem rota, não há caminho pra internet.",
-          "Correto: cada comando é uma peça — o gateway existe, está anexado, a rota aponta pra ele e a subnet usa essa route table. Faltando um elo, não funciona.",
-          "NAT Gateway serve pra SAÍDA da subnet privada — não torna nada público (e custa caro).",
-          "Security group controla tráfego na instância, mas não cria o caminho de roteamento que define uma subnet pública."
+          "Não dá: volume EBS é preso à AZ de criação — o attach em outra AZ falha.",
+          "Correto: o snapshot é regional (armazenado no S3), então ele atravessa a fronteira da AZ. Dele você materializa um volume novo onde quiser — inclusive em outra região, copiando o snapshot.",
+          "Não existe 'mover' volume entre AZs — a migração é sempre via snapshot.",
+          "É possível — e rotineiro — via snapshots."
         ]
       },
       {
-        "pergunta": "Depois de um laboratório, você deletou a VPC de testes mas o comando 'aws ec2 describe-addresses' ainda lista um Elastic IP. O que isso significa?",
+        "pergunta": "Sua aplicação num EC2 precisa chamar a API do S3. Auditoria encontrou um arquivo ~/.aws/credentials dentro da instância com access keys de um IAM user. Qual a correção adequada?",
         "opcoes": [
-          "Nada: Elastic IPs são sempre gratuitos",
-          "Há um EIP alocado e ocioso na conta, que está sendo cobrado — é preciso fazer Release",
-          "É um bug do describe-addresses",
-          "O EIP será liberado automaticamente em 24h"
+          "Criptografar o arquivo de credenciais dentro da instância",
+          "Anexar uma IAM role à instância (instance profile) com as permissões de S3, remover o arquivo e revogar as chaves",
+          "Mover as chaves para o user data",
+          "Trocar as chaves por chaves do usuário root"
         ],
         "correta": 1,
-        "explicacao": "IPv4 público aloca­do custa (~US$ 3,60/mês) mesmo sem uso. Teardown inclui release de EIPs.",
+        "explicacao": "Role na instância = credenciais temporárias via metadata, rotação automática, nada gravado. Chave fixa em servidor é o antipadrão.",
         "feedbacks": [
-          "Regra atual da AWS: TODO IPv4 público custa ~US$ 0,005/h — ocioso ou não. Gratuito ele não é.",
-          "Correto: o EIP sobrevive à VPC (é da conta, não da VPC) e cobra enquanto existir. release-address encerra a cobrança — por isso a verificação final do teardown.",
-          "O comando reflete a realidade: o endereço segue alocado à sua conta.",
-          "Não há liberação automática — o EIP fica (e cobra) até você fazer o Release."
+          "Criptografar suaviza mas não resolve: a chave de longa duração continua existindo (e a aplicação precisa lê-la em claro pra usar).",
+          "Correto: com a role anexada, o SDK/CLI busca credenciais temporárias no metadata automaticamente. Sem segredo em disco, com rotação automática e least privilege na role. As chaves antigas: revogadas.",
+          "Piorou: user data é legível por qualquer processo da instância via metadata — segredos jamais vão lá.",
+          "O root nem deve TER access keys — seria trocar um risco grave por um catastrófico."
         ]
       },
       {
-        "pergunta": "De DENTRO da VPC, uma instância resolve o DNS público de outra instância da mesma VPC. Que IP ela recebe, e por que isso é bom?",
+        "pergunta": "Comparando 't3.micro' e 't4g.micro', o que o 'g' do segundo indica, e qual a implicação prática?",
         "opcoes": [
-          "O IP público — o tráfego sempre sai pra internet e volta",
-          "O IP privado — o tráfego fica dentro da VPC, mais rápido e sem custo de saída",
-          "Um erro de resolução: DNS público não resolve internamente",
-          "O IP do Internet Gateway"
+          "GPU dedicada — precisa de driver",
+          "Processador Graviton (ARM64) — melhor preço-desempenho, mas a AMI precisa ser arm64",
+          "Geração 'gold', com SLA maior",
+          "Armazenamento local maior"
         ],
         "correta": 1,
-        "explicacao": "O resolvedor da VPC devolve o IP privado pra nomes públicos de instâncias da própria rede — tráfego interno.",
+        "explicacao": "Sufixo g = Graviton (ARM da AWS). Mais barato por desempenho; exige imagem compilada pra arm64.",
         "feedbacks": [
-          "Seria desperdício: sair pra internet pra falar com o vizinho custaria latência e transferência de dados.",
-          "Correto: é o comportamento inteligente do Route 53 Resolver da VPC — mesmo usando o nome público, a conversa interna fica interna.",
-          "Resolve sim — e melhor: devolve o endereço privado quando a consulta vem de dentro.",
-          "O IGW não tem IP 'endereçável' pra instâncias — ele é um componente de tradução na borda da VPC."
+          "GPU é indicada pela FAMÍLIA (g5, p4...), não pelo sufixo 'g' após o número da geração.",
+          "Correto: t4g roda em chips Graviton (ARM). Costuma ser ~20% mais barato com desempenho igual/superior — só lembre de escolher a AMI de arquitetura arm64.",
+          "Não existe classificação 'gold' em tipos de instância.",
+          "Armazenamento local é indicado pelo sufixo/família 'd' (ex.: m5d), não pelo 'g'."
         ]
       },
       {
-        "pergunta": "Um user quer 'só bloquear uma faixa de IPs atacantes (203.0.113.0/24) pra TODA a subnet'. Qual ferramenta é a adequada?",
+        "pergunta": "No launch via CLI, qual parâmetro garante que a instância nasça exigindo IMDSv2 (recusando o metadata sem token)?",
         "opcoes": [
-          "Security group com regra Deny para o CIDR",
-          "NACL com regra Deny para o CIDR, numerada antes das regras Allow",
-          "Deletar a route table da subnet",
-          "Desabilitar o DNS support da VPC"
+          "--imds-version 2",
+          "--metadata-options HttpTokens=required",
+          "--secure-metadata true",
+          "--disable-imds-v1"
         ],
         "correta": 1,
-        "explicacao": "SGs não têm Deny. Bloqueio explícito por CIDR na borda da subnet é o caso de uso clássico da NACL.",
+        "explicacao": "run-instances --metadata-options \"HttpTokens=required,HttpEndpoint=enabled\" = IMDSv2 only.",
         "feedbacks": [
-          "Security groups só possuem regras Allow — não existe 'Deny' num SG. É a limitação que a NACL cobre.",
-          "Correto: NACLs aceitam Deny e avaliam em ordem numérica — um Deny 90 antes do Allow 100 barra a faixa na borda da subnet inteira.",
-          "Isso derrubaria TODO o tráfego da subnet (inclusive o legítimo) — a subnet ficaria órfã na main route table, e o ataque nem é questão de rota.",
-          "DNS não tem relação com bloqueio de pacotes por origem."
+          "Esse parâmetro não existe na CLI do EC2.",
+          "Correto: HttpTokens=required faz o IMDS recusar chamadas sem token de sessão (o 401 que vimos na prática). É o padrão nas AMIs/instâncias novas, mas explicitar documenta a intenção.",
+          "Parâmetro inexistente — a opção real vive dentro de --metadata-options.",
+          "Também não existe; o controle é HttpTokens (required vs optional)."
         ]
       },
       {
-        "pergunta": "No teardown via CLI, 'aws ec2 delete-vpc' falha com DependencyViolation. Qual a explicação e a ação correta?",
+        "pergunta": "Após o teardown, 'aws ec2 describe-volumes' mostra um volume 'available' de 50 GB que ninguém lembra de ter criado. O que provavelmente aconteceu e o que fazer?",
         "opcoes": [
-          "É um erro transitório: repetir o comando até passar",
-          "Ainda existem recursos dentro da VPC (IGW anexado, subnets, SGs não-default...); deletar as dependências primeiro, na ordem",
-          "VPCs não podem ser deletadas via CLI, só pelo Console",
-          "É preciso usar --force no delete-vpc"
+          "É um volume da AWS, pode ignorar",
+          "Era um volume EXTRA (não-raiz) de alguma instância terminada — por padrão ele sobrevive ao terminate e segue cobrando; deletar (após confirmar o conteúdo)",
+          "Volumes 'available' são gratuitos",
+          "Ele se auto-deleta em 30 dias"
         ],
         "correta": 1,
-        "explicacao": "A VPC só deleta vazia: detach/delete do IGW, subnets, route tables não-main, SGs não-default antes.",
+        "explicacao": "DeleteOnTermination é true só no volume raiz; volumes adicionais ficam órfãos ('available') e cobram por GB·mês.",
         "feedbacks": [
-          "Repetir não resolve: o erro é determinístico enquanto as dependências existirem.",
-          "Correto: a ordem do teardown existe por causa disso — SGs → route tables (desassociar) → IGW (detach → delete) → subnets → VPC.",
-          "A CLI deleta VPCs normalmente (delete-vpc) — o Console é que oferece a conveniência da cascata.",
-          "Não existe --force no delete-vpc; a limpeza das dependências é obrigatória."
+          "A AWS não cria volumes 'do nada' na sua conta — available significa: seu, sem instância, cobrando.",
+          "Correto: o padrão de DeleteOnTermination difere — raiz morre com a instância, extras sobrevivem. Volume 'available' órfão = custo silencioso; snapshot se precisar do conteúdo e delete.",
+          "'Available' = alocado e cobrando por GB·mês, mesmo sem uso — não é grátis.",
+          "Não existe auto-limpeza: ele cobraria pra sempre até alguém deletar."
         ]
       },
       {
-        "pergunta": "Por que a prática recomendada é criar VPC customizada em vez de usar a default VPC pra cargas sérias?",
+        "pergunta": "Uma AMI do Marketplace parece perfeita pro seu caso. Além do preço da instância, o que você DEVE verificar antes de usá-la?",
         "opcoes": [
-          "Porque a default VPC é mais cara",
-          "Porque na default tudo é público por padrão; a customizada permite desenhar isolamento (subnets privadas) sob medida",
-          "Porque a default VPC não suporta security groups",
-          "Porque a default VPC só existe em us-east-1"
+          "Se ela funciona em qualquer região sem cópia",
+          "Se há custo adicional de licença por hora embutido no uso da AMI",
+          "Se ela dispensa security group",
+          "Se ela aceita apenas instâncias xlarge"
         ],
         "correta": 1,
-        "explicacao": "A default existe pra conveniência: subnets todas públicas e IP público automático. Produção pede isolamento desenhado.",
+        "explicacao": "AMIs do Marketplace frequentemente cobram licença por hora ALÉM do compute — a fatura vem em dobro pra quem não lê.",
         "feedbacks": [
-          "Não há diferença de preço entre VPCs (ambas são gratuitas) — a diferença é de postura de segurança.",
-          "Correto: na default, um banco criado 'sem pensar' nasce em subnet pública com IP público. Na customizada, você decide o que é exposto e o que fica na subnet privada.",
-          "A default VPC suporta SGs normalmente — vem até com um SG default.",
-          "Existe uma default VPC em CADA região da conta."
+          "AMIs são regionais como quaisquer outras — e isso não é custo, apenas logística de cópia.",
+          "Correto: muitos produtos do Marketplace embutem cobrança de software por hora/uso sobre o preço da instância. O custo real aparece na página do produto — leia antes do launch.",
+          "Nenhuma instância dispensa security group — toda ENI tem pelo menos um.",
+          "Restrições de tipo existem em alguns produtos, mas não são a regra — o ponto crítico universal é a licença."
         ]
       }
     ]
   },
   "order": [
-    1,
-    11,
-    2,
+    3,
+    5,
     4,
-    9,
     6,
     7,
-    0,
-    5,
+    1,
     8,
     10,
-    3
+    11,
+    0,
+    9,
+    2
   ],
   "pos": 12,
   "answers": [
@@ -243,7 +243,7 @@
     {
       "pos": 2,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
@@ -306,7 +306,7 @@
     {
       "pos": 11,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     }

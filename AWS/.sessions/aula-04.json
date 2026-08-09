@@ -226,7 +226,7 @@
       }
     ]
   },
-  "pos": 14,
+  "pos": 15,
   "marco_sessao": 10,
   "status": {
     "intro": "visto",
@@ -243,7 +243,7 @@
     "p4": "visto",
     "p5": "visto",
     "q1": "visto",
-    "prova": "pendente",
+    "prova": "visto",
     "fim": "pendente"
   },
   "concluido_em": {
@@ -260,7 +260,8 @@
     "p3": "2026-08-04T00:31:48+00:00",
     "p4": "2026-08-04T00:46:10+00:00",
     "p5": "2026-08-04T00:52:57+00:00",
-    "q1": "2026-08-04T00:58:48+00:00"
+    "q1": "2026-08-04T00:58:48+00:00",
+    "prova": "2026-08-09T14:17:18+00:00"
   },
   "notes": [
     {
@@ -302,6 +303,16 @@
       "beat": "q1",
       "ts": "2026-08-04T00:58:48+00:00",
       "text": "Quiz da aula M04 (q1) FEITO de saideira: 10/10, GABARITOU sem hesitar. Aluno reconheceu por ter vivido (previu 401, viu IP trocar 23.22->3.94, rodou teardown). Antes do quiz: Pratica C (p4) e teardown (p5) FEITOS. p4=relançou tudo via CLL (ssm get-parameter p/ AMI, create-sg, run-instances c/ HttpTokens=required, wait instance-running, create-snapshot+wait). Pagina no ar (35.172.183.7), encoding limpo (ASCII). p5=TEARDOWN COMPLETO E VERIFICADO: terminou as 2 instancias (cli i-0a76.. + console i-0c9b..), deletou os 2 snapshots + 2 SGs, 4 listas de verificacao LIMPAS (volumes/snapshots/addresses vazios). CONTA ZERADA - nada mais existe na AWS exceto key pair curso-key (de proposito). PROXIMO: prova do modulo (AWS/provas/modulo-04/). Falta so a prova pra fechar o M04."
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-08-09T13:53:45+00:00",
+      "text": "PROVA do Modulo 04 FEITA: 12/12 (100%) - GABARITOU. Zero hesitacao, todas as respostas de primeira (SSRF/IMDSv2, IP dinamico no stop/start, custo de stopped+EBS+EIP ocioso, snapshot como ponte entre AZs, role vs chave em disco, AMI+user data, Graviton arm64, volume orfao DeleteOnTermination, licenca de Marketplace, burstable t vs c, HttpTokens=required, cloud-init-output.log). M04 FECHADO: quiz 10/10 + prova 12/12. Aluno pediu, ANTES de ir pro M05, uma PROVA GERAL M01-M04 estilo AWS com muitas questoes cobrindo tudo."
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-08-09T14:17:18+00:00",
+      "text": "PROVA GERAL M01-M04 criada e aplicada: 25 questoes ineditas estilo certificacao (5 fundamentos, 6 IAM, 6 VPC, 5 EC2, 3 INTEGRATIVAS), corte 72%. Aluno fez 25/25 (100%). Banco novo em AWS/provas/geral-01-04/questions.json. ATENCAO: a 1a versao do banco saiu com gabarito em ciclo C,A,D,B repetido - eu avisei o aluno, ele confirmou que NAO percebeu o padrao e respondeu por conhecimento; banco JA CORRIGIDO (opcoes reembaralhadas, distribuicao 7/7/7/4). Aluno dominou as integrativas (role+gateway endpoint p/ S3 de subnet privada; curl localhost OK mas externo nao = SG; custo residual EBS orfao/snapshot/EIP). PROXIMO: fechamento do M04 e emendar Modulo 05 (Escalabilidade & Balanceamento - ASG, Launch Templates, ALB/NLB)."
     }
   ],
   "iniciado_em": "2026-07-30T00:35:57+00:00"
