@@ -1,0 +1,257 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/AWS/05-escalabilidade-balanceamento/roteiro.json",
+  "roteiro": {
+    "modulo": "05",
+    "titulo": "Escalabilidade & Balanceamento",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — do servidor solitário à frota elástica",
+        "pontos": [
+          "Objetivo: transformar 'um EC2 rezando pra não cair' numa frota que escala e se cura sozinha",
+          "Peças do módulo: Launch Template (receita), ASG (frota), ELB (porta de entrada)",
+          "Ao fim: prática real com ALB + ASG em 2 AZs, quiz e prova",
+          "Aviso desde já: ALB cobra por hora — teardown rigoroso no fim da prática"
+        ],
+        "checkpoint": "Confirme que o aluno completou os módulos 03 (VPC) e 04 (EC2) e está pronto",
+        "ref": "05-escalabilidade-balanceamento/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "Escalabilidade vertical vs. horizontal",
+        "pontos": [
+          "Vertical (scale up): máquina maior — simples, mas tem teto e continua ponto único de falha",
+          "Horizontal (scale out): mais máquinas — sem teto prático, resiliente, o caminho da nuvem",
+          "Analogia: trocar o fusca por caminhão vs. contratar mais entregadores",
+          "Pré-requisito do horizontal: app stateless (estado fora da instância: banco, cache, S3)",
+          "Armadilha: sessão em memória/disco local quebra ao escalar; sticky session só adia"
+        ],
+        "checkpoint": "Pergunte: por que escalar horizontalmente exige app (quase) stateless?",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#1-escalabilidade-vertical-vs-horizontal"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "Launch Templates — a receita da instância",
+        "pontos": [
+          "Template = tudo que você preencheria à mão: AMI, tipo, SG, key pair, user data, tags",
+          "Versionado: mudou a receita → nova versão; deu ruim → rollback pra anterior",
+          "Substitui as Launch Configurations (deprecadas) — hoje é só Launch Template",
+          "User data roda uma vez no primeiro boot; alternativa: golden AMI pré-assada"
+        ],
+        "checkpoint": "Confirme que ficou claro por que o ASG precisa de uma 'receita' versionada",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#2-launch-templates--a-receita-da-instância"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Auto Scaling Groups: min/max/desired e auto-healing",
+        "pontos": [
+          "ASG responde: quantas instâncias (min/max/desired), como (launch template), onde (subnets/AZs)",
+          "Desired = alvo atual; políticas mexem nele, sempre dentro de [min, max]; max é trava de custo",
+          "Superpoder mesmo sem política: auto-healing — instância morre, ASG repõe pra manter desired",
+          "Espalhar por múltiplas AZs = alta disponibilidade de verdade"
+        ],
+        "checkpoint": "Teste: min=2/desired=3/max=6, terminei uma instância na mão — o que acontece?",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#3-auto-scaling-groups-asg--a-frota-que-se-gerencia-sozinha"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "Políticas de scaling e health checks do ASG",
+        "pontos": [
+          "Target tracking = termostato ('CPU média em 50%') — o padrão recomendado",
+          "Step (degraus por alarme), scheduled (por horário), predictive (ML antecipa o pico)",
+          "Cooldown/warmup evitam flapping: instância nova demora a aparecer nas métricas",
+          "Health check EC2 (máquina ligada?) vs. ELB (app respondendo?) — com LB, sempre habilitar ELB",
+          "Armadilha: app travada + check só EC2 = ASG acha tudo lindo e ALB sem targets"
+        ],
+        "checkpoint": "Pergunte qual política usaria pra carga de horário comercial e por que health check ELB",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#3-auto-scaling-groups-asg--a-frota-que-se-gerencia-sozinha"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "ELB: ALB vs. NLB vs. GWLB — quando usar cada",
+        "pontos": [
+          "Load balancer = ponto de entrada único (DNS) distribuindo pra targets saudáveis em 2+ AZs",
+          "ALB = camada 7 (HTTP): roteia por path/host/header — o padrão pra web e APIs",
+          "NLB = camada 4 (TCP/UDP): performance extrema, IP fixo (EIP) — jogos, IoT, TCP puro",
+          "GWLB = camada 3: encadeia appliances de inspeção (firewalls de terceiros)",
+          "Classic Load Balancer aposentado — não usar"
+        ],
+        "checkpoint": "Dê cenários (API web, jogo UDP, firewall) e peça pro aluno escolher o LB",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#4-elastic-load-balancing-elb--distribuindo-o-tráfego"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "Anatomia do ALB: listeners, regras, target groups e health checks",
+        "pontos": [
+          "Listener = porta/protocolo em que o LB escuta (HTTP:80, HTTPS:443 com cert do ACM)",
+          "Regras avaliadas por prioridade: path /api/* → TG backends; host admin.* → TG admin; default",
+          "Target group = destinos (instância/IP/Lambda) + config de health check; só healthy recebe",
+          "Health check: intervalo, timeout, healthy/unhealthy thresholds; endpoint /health barato e honesto",
+          "Connection draining (deregistration delay): prazo pras conexões em andamento antes do target sair"
+        ],
+        "checkpoint": "Peça pro aluno explicar o caminho de uma requisição: listener → regra → TG → target",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#4-elastic-load-balancing-elb--distribuindo-o-tráfego"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "ASG + ALB: o casamento (e as armadilhas)",
+        "pontos": [
+          "Anexar o target group ao ASG = registro/desregistro automático das instâncias",
+          "Ciclo completo do auto-healing: app morre → ALB marca unhealthy → ASG repõe → nova se registra",
+          "Usuário acessa o DNS do ALB, nunca o IP de instância",
+          "Armadilha de SG: instância aceita tráfego DO SG do ALB (referência), não de 0.0.0.0/0",
+          "Armadilha de custo: ALB cobra por hora de existência (~US$16/mês esquecido)"
+        ],
+        "checkpoint": "Recap rápido da teoria e pergunte: 'podemos partir pra prática na AWS?'",
+        "ref": "05-escalabilidade-balanceamento/teoria.md#5-asg--alb-o-casamento"
+      },
+      {
+        "id": "p1",
+        "fase": "pratica",
+        "titulo": "Security groups + Launch Template",
+        "pontos": [
+          "Aviso de custo: t3.micro é Free Tier; ALB cobra por hora — prática de uma sessão + teardown",
+          "Criar m05-alb-sg (80 da internet) e m05-web-sg (80 vindo DO m05-alb-sg)",
+          "Criar launch template m05-web-lt: AL2023, t3.micro, user data com nginx + hostname/AZ",
+          "Explicar o user data: é ele que vai nos deixar VER o balanceamento"
+        ],
+        "acao": "Guiar SGs e launch template no Console, passo a passo",
+        "checkpoint": "Confirme SGs e template criados antes de seguir",
+        "ref": "05-escalabilidade-balanceamento/pratica.md#parte-a--security-groups-console"
+      },
+      {
+        "id": "p2",
+        "fase": "pratica",
+        "titulo": "Target group + ALB",
+        "pontos": [
+          "Criar target group m05-web-tg (HTTP:80, health check /, intervalos curtos) sem registrar targets",
+          "Criar ALB m05-alb: internet-facing, 2 subnets públicas em AZs diferentes, SG do ALB",
+          "Listener HTTP:80 → forward pro target group",
+          "Copiar o DNS name do ALB — é a porta de entrada"
+        ],
+        "acao": "Guiar criação do TG e do ALB no Console",
+        "checkpoint": "Confirme o ALB em provisioning/active e o DNS name copiado",
+        "ref": "05-escalabilidade-balanceamento/pratica.md#parte-c--target-group--alb-console"
+      },
+      {
+        "id": "p3",
+        "fase": "pratica",
+        "titulo": "Auto Scaling Group + frota nascendo",
+        "pontos": [
+          "Criar ASG m05-web-asg: template, mesmas 2 subnets, attach no target group",
+          "Habilitar health check ELB com grace period 90s (tempo do user data terminar)",
+          "Tamanhos: desired=2, min=2, max=4",
+          "Acompanhar: Activity do ASG lançando e targets saindo de initial pra healthy"
+        ],
+        "acao": "Guiar criação do ASG e observar os targets ficarem healthy",
+        "checkpoint": "Confirme 2 targets healthy no target group antes de seguir",
+        "ref": "05-escalabilidade-balanceamento/pratica.md#parte-d--auto-scaling-group-console"
+      },
+      {
+        "id": "p4",
+        "fase": "pratica",
+        "titulo": "Ver o balanceamento + simular falha",
+        "pontos": [
+          "curl em loop no DNS do ALB: hostnames/AZs alternando = balanceamento ao vivo",
+          "Terminar UMA instância na mão e rodar o curl: respostas continuam (zero downtime)",
+          "Ver na Activity o ASG lançando a substituta sozinho (auto-healing)",
+          "Curl de novo em 2-3 min: hostname novo na rotação"
+        ],
+        "acao": "Guiar o teste com curl e a simulação de falha",
+        "checkpoint": "Confirme que o aluno viu a reposição automática — é o clímax do módulo",
+        "ref": "05-escalabilidade-balanceamento/pratica.md#parte-e--testar-o-balanceamento-"
+      },
+      {
+        "id": "p5",
+        "fase": "pratica",
+        "titulo": "CLI (fixar) + TEARDOWN rigoroso",
+        "pontos": [
+          "CLI: describe-auto-scaling-groups, describe-target-health, set-desired-capacity 3 → curl → 2",
+          "Observar draining no scale in (deregistration delay em ação)",
+          "TEARDOWN na ordem: ASG (zera e deleta) → ALB → target group → launch template → SGs",
+          "Verificação final: describe-load-balancers vazio, nenhuma instância running",
+          "Reforçar: ALB esquecido = ~US$16/mês"
+        ],
+        "acao": "Guiar os comandos CLI e executar o teardown completo com verificação",
+        "checkpoint": "Só siga após confirmar teardown verificado; feche o checklist do módulo",
+        "ref": "05-escalabilidade-balanceamento/pratica.md#parte-g--teardown-obrigatório--o-alb-cobra-por-hora"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz da aula",
+        "pontos": [
+          "Fixar o conteúdo com o quiz interativo (10 questões)",
+          "Eu conduzo as perguntas no chat e tiro dúvidas a cada uma"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/apps/modulo-05/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+        "ref": "AWS/apps/modulo-05/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do módulo",
+        "pontos": [
+          "Avaliação de fim de módulo (12 questões de cenário, feedback por alternativa)",
+          "Aprovação 70%; só seguir pro Módulo 06 após passar"
+        ],
+        "acao": "Rodar: python3 engine/session.py start AWS/provas/modulo-05/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 06; se não, revise os pontos errados",
+        "ref": "AWS/provas/modulo-05/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 05",
+        "pontos": [
+          "Recap: escala horizontal, launch template, ASG com auto-healing, ALB balanceando em 2 AZs",
+          "Você viu com os próprios olhos uma falha real ser reposta sem intervenção",
+          "Checagem final: teardown confirmado? Nada rodando?",
+          "Próximo: Módulo 06 — Storage: S3 & cia (buckets, versionamento, lifecycle, site estático)"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 06 ou parar por aqui",
+        "ref": "AWS/CLAUDE.md#plano-completo-do-curso"
+      }
+    ]
+  },
+  "pos": 1,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "pendente",
+    "t2": "pendente",
+    "t3": "pendente",
+    "t4": "pendente",
+    "t5": "pendente",
+    "t6": "pendente",
+    "t7": "pendente",
+    "p1": "pendente",
+    "p2": "pendente",
+    "p3": "pendente",
+    "p4": "pendente",
+    "p5": "pendente",
+    "q1": "pendente",
+    "prova": "pendente",
+    "fim": "pendente"
+  },
+  "concluido_em": {
+    "intro": "2026-08-11T23:51:09+00:00"
+  },
+  "notes": [
+    {
+      "beat": "intro",
+      "ts": "2026-08-11T23:51:04+00:00",
+      "text": "Sessao (11/08): M04 FECHADO (beat fim concluido) - modulo perfeito: quiz 10/10, prova 12/12, prova geral M01-M04 25/25, Anki 10/10. Revisao da ultima sessao DISPENSADA pelo aluno (marco rodado ate pos-p5) por ja ter feito prova geral + Anki cobrindo o mesmo conteudo. Iniciada aula-05 (Escalabilidade & Balanceamento). Beat 1 (intro) COMPLETO: ensinei o problema (1 instancia = ponto unico de falha + tamanho fixo), escalar vertical vs horizontal, analogia padaria/atendente unico e 'gado vs bichinho de estimacao', e o papel das 3 pecas (Launch Template=receita, ASG=capataz da frota, ELB=recepcionista com health check). Avisei do custo por hora do ALB (teardown OBRIGATORIO, fazer a pratica numa sentada so). CHECKPOINT 2/2: aluno definiu subnet (fatia da VPC, publica se rota 0.0.0.0/0 -> IGW) e user data (script do 1o boot) corretamente. Refinei 2 pontos: (a) subnet vive em UMA AZ apenas -> 'espalhar em 2 AZs' = ter subnets em 2 AZs, e o ALB EXIGE >=2 subnets em AZs distintas (gancho pra pratica); (b) o molde e o Launch Template, user data e um CAMPO dele - tabela AMI (com o que nasce) / user data (o que faz ao acordar) / LT (envelope). Virada mental plantada: na frota o bootstrap automatico e a UNICA forma de configuracao (ninguem da SSH as 4h da manha; maquina mal configurada e reprovada no health check). Aluno pediu apenas 1 beat hoje. PROXIMO: beat 2 (t1) - vertical vs horizontal a fundo."
+    }
+  ],
+  "iniciado_em": "2026-08-11T23:36:47+00:00"
+}
