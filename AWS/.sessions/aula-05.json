@@ -223,12 +223,12 @@
       }
     ]
   },
-  "pos": 2,
-  "marco_sessao": 1,
+  "pos": 3,
+  "marco_sessao": 2,
   "status": {
     "intro": "visto",
     "t1": "visto",
-    "t2": "pendente",
+    "t2": "visto",
     "t3": "pendente",
     "t4": "pendente",
     "t5": "pendente",
@@ -245,7 +245,8 @@
   },
   "concluido_em": {
     "intro": "2026-08-11T23:51:09+00:00",
-    "t1": "2026-08-13T01:03:03+00:00"
+    "t1": "2026-08-13T01:03:03+00:00",
+    "t2": "2026-08-13T23:09:01+00:00"
   },
   "notes": [
     {
@@ -262,6 +263,16 @@
       "beat": "t1",
       "ts": "2026-08-13T01:03:03+00:00",
       "text": "[t1] Aluno perguntou 'o que e essa camada?'. Ensinado o modelo OSI na pratica (analogia da carta): L3=rede/IP (endereco no envelope, route tables), L4=transporte/TCP-UDP (porta = apartamento; TCP=carta registrada, UDP=panfleto), L7=aplicacao/HTTP (o conteudo da carta - URL, headers, cookies). Amarrado ao modulo: NLB(L4) nao abre o envelope -> rapido, stickiness so por IP; ALB(L7) le a requisicao -> roteia por URL, cookie, termina HTTPS; GWLB(L3). Regra dada: quanto mais alta a camada, mais entende e mais caro custa. Cross-links plantados: SG/NACL sao L3-L4 (nao bloqueiam SQL injection) vs WAF que e L7 (modulo 13)."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-08-13T23:01:34+00:00",
+      "text": "[t1->revisao] Revisao da ultima sessao FEITA (2 perguntas). Q1 (cenario vertical): acertou 'vertical'; nos problemas nao resolvidos deu 'alta disponibilidade e resiliencia' (mesmo problema dito 2x) - com uma pista completou sozinho com TETO da familia + PARADA/reboot pra redimensionar. Q2 (sticky session, multipla escolha): acertou B e intuiu que o trafego pode ir pra outra instancia, mas nao soube o CASO. Ensinado o mecanismo: sticky prende na instancia; carrinho se perde quando a instancia deixa de existir - (a) falha/health check reprovado, (b) SCALE-IN do ASG (a propria elasticidade destroi o estado), (c) deploy/troca de versao. Frase-chave dada: sticky transforma bug permanente em bug intermitente; solucao real = estado fora (DynamoDB/ElastiCache/banco). Conceito solido."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-08-13T23:09:01+00:00",
+      "text": "[t2] Beat t2 (Launch Templates) COMPLETO. Ensinado: LT = formulario do EC2 salvo (AMI, tipo, key pair, SG, user data, IAM profile, tags, EBS); verbo muda de 'lancar' para 'descrever'. VERSIONAMENTO como ponto central: v1/v2/v3 coexistem = rollback de infra de graca (analogia git revert); ASG pode apontar pra versao fixa, $Latest ou $Default - producao seria usa FIXA ($Latest muda producao sem decisao humana); trocar versao NAO mexe nas instancias vivas, vale pras proximas -> gancho pro instance refresh no beat do ASG. Launch Configuration deprecada/imutavel = alternativa errada em prova. User data (1x no 1o boot, flexivel mas LENTO - 3min por instancia doi durante pico) vs golden AMI (boot em segundos, exige pipeline pra reassar). CHECKPOINT respondido CORRETAMENTE: aluno disse que sem versionamento o rollback viraria backup manual toda vez - reforcei 'rollback deixa de ser disciplina humana e vira propriedade do sistema'. DUVIDA EXCELENTE do aluno: 'se o LT fixa a subnet, nao perco multi-AZ?'. Esclarecido: LT = COMO a maquina e; ASG = ONDE e QUANTAS (lista de subnets, uma por AZ, com balanceamento automatico e AZ rebalancing). Deixar o campo subnet VAZIO no LT usado por ASG (AWS recomenda nao especificar rede/ENI ali; conflita) - LEMBRAR DISSO NA PRATICA p1. SG continua no LT porque SG e da VPC inteira, nao de uma AZ (subnet e AZ-especifica, SG nao). PROXIMO: beat t3 (ASG: min/max/desired e auto-healing)."
     }
   ],
   "iniciado_em": "2026-08-11T23:36:47+00:00"
