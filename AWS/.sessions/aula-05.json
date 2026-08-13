@@ -223,11 +223,11 @@
       }
     ]
   },
-  "pos": 1,
-  "marco_sessao": 0,
+  "pos": 2,
+  "marco_sessao": 1,
   "status": {
     "intro": "visto",
-    "t1": "pendente",
+    "t1": "visto",
     "t2": "pendente",
     "t3": "pendente",
     "t4": "pendente",
@@ -244,13 +244,24 @@
     "fim": "pendente"
   },
   "concluido_em": {
-    "intro": "2026-08-11T23:51:09+00:00"
+    "intro": "2026-08-11T23:51:09+00:00",
+    "t1": "2026-08-13T01:03:03+00:00"
   },
   "notes": [
     {
       "beat": "intro",
       "ts": "2026-08-11T23:51:04+00:00",
       "text": "Sessao (11/08): M04 FECHADO (beat fim concluido) - modulo perfeito: quiz 10/10, prova 12/12, prova geral M01-M04 25/25, Anki 10/10. Revisao da ultima sessao DISPENSADA pelo aluno (marco rodado ate pos-p5) por ja ter feito prova geral + Anki cobrindo o mesmo conteudo. Iniciada aula-05 (Escalabilidade & Balanceamento). Beat 1 (intro) COMPLETO: ensinei o problema (1 instancia = ponto unico de falha + tamanho fixo), escalar vertical vs horizontal, analogia padaria/atendente unico e 'gado vs bichinho de estimacao', e o papel das 3 pecas (Launch Template=receita, ASG=capataz da frota, ELB=recepcionista com health check). Avisei do custo por hora do ALB (teardown OBRIGATORIO, fazer a pratica numa sentada so). CHECKPOINT 2/2: aluno definiu subnet (fatia da VPC, publica se rota 0.0.0.0/0 -> IGW) e user data (script do 1o boot) corretamente. Refinei 2 pontos: (a) subnet vive em UMA AZ apenas -> 'espalhar em 2 AZs' = ter subnets em 2 AZs, e o ALB EXIGE >=2 subnets em AZs distintas (gancho pra pratica); (b) o molde e o Launch Template, user data e um CAMPO dele - tabela AMI (com o que nasce) / user data (o que faz ao acordar) / LT (envelope). Virada mental plantada: na frota o bootstrap automatico e a UNICA forma de configuracao (ninguem da SSH as 4h da manha; maquina mal configurada e reprovada no health check). Aluno pediu apenas 1 beat hoje. PROXIMO: beat 2 (t1) - vertical vs horizontal a fundo."
+    },
+    {
+      "beat": "t1",
+      "ts": "2026-08-13T01:00:13+00:00",
+      "text": "[t1] Aluno perguntou a diferenca entre ALB e ELB (achou que eram concorrentes). Esclarecido: ELB = familia/servico (Elastic Load Balancing), ALB/NLB/GWLB/CLB = tipos. Tabela dos 4 tipos + camada dada em aula, com gancho pro beat t5. Tambem esclarecido que stickiness nao e exclusiva do ALB: ALB usa cookie (L7), NLB usa IP de origem (L4), CLB cookie (legado) - o mecanismo muda com a camada. Checkpoint do t1 respondido CORRETAMENTE (stateless = requisicao funciona independente da maquina; exemplo do login perdido entre maquina 1 e 5)."
+    },
+    {
+      "beat": "t1",
+      "ts": "2026-08-13T01:03:03+00:00",
+      "text": "[t1] Aluno perguntou 'o que e essa camada?'. Ensinado o modelo OSI na pratica (analogia da carta): L3=rede/IP (endereco no envelope, route tables), L4=transporte/TCP-UDP (porta = apartamento; TCP=carta registrada, UDP=panfleto), L7=aplicacao/HTTP (o conteudo da carta - URL, headers, cookies). Amarrado ao modulo: NLB(L4) nao abre o envelope -> rapido, stickiness so por IP; ALB(L7) le a requisicao -> roteia por URL, cookie, termina HTTPS; GWLB(L3). Regra dada: quanto mais alta a camada, mais entende e mais caro custa. Cross-links plantados: SG/NACL sao L3-L4 (nao bloqueiam SQL injection) vs WAF que e L7 (modulo 13)."
     }
   ],
   "iniciado_em": "2026-08-11T23:36:47+00:00"
