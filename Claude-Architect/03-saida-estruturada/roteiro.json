@@ -1,0 +1,154 @@
+{
+  "modulo": "03",
+  "titulo": "Saída estruturada, validação com retry e Batch API",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — o que vamos fazer neste módulo",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e conduza o código de aplicação na linguagem salva (se não houver, pergunte e grave); os arquivos usam C# como referência-base; JSON fica como é",
+        "Objetivo: task statements 4.3 (saída estruturada), 4.4 (validação com retry) e 4.5 (Batch API)",
+        "Este módulo é quase todo o cenário 6 (Structured Data Extraction) e parte do cenário 5 (CI)",
+        "Ao fim: quiz (15) e prova (20 em estilo cenário, 70%)"
+      ],
+      "checkpoint": "Confirme que o aluno está pronto para começar",
+      "ref": "03-saida-estruturada/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Por que saída estruturada + tool como schema",
+      "pontos": [
+        "Texto livre sai malformado, sem campo, com nome/tipo errado ou com texto em volta; regex/try-catch é frágil",
+        "Três caminhos: tool cujo input_schema é a saída; strict: true; output_config.format",
+        "Tool como schema: a tool não executa nada; o input do tool_use É o seu JSON",
+        "Forçar a tool: tool_choice {type: tool} valia em modelos anteriores; nos novos any/tool retornam 400 → auto + instrução nomeando a tool + strict (e verifique se a chamada veio), ou structured outputs",
+        "Como cai: cenário 6 — 'migramos de modelo e o tool_choice forçado começou a dar 400'"
+      ],
+      "checkpoint": "Pergunte: o tool_choice forçado deu 400 após a migração e a tool só existia para obter JSON. Qual a alternativa mais limpa?",
+      "ref": "03-saida-estruturada/teoria.md#2-tool-como-schema-extração-via-tool-use"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "strict: true e output_config.format",
+      "pontos": [
+        "strict: true na tool → input segue o schema exatamente; exige additionalProperties: false em todo objeto. Opcionais são permitidas, mas contam para um limite por request [volátil]; prefira tudo em required + nullable para o que pode faltar",
+        "Structured outputs: output_config.format com json_schema → a resposta segue o schema; o output_format de topo está depreciado",
+        "Quando usar: só o JSON da resposta → output_config.format; argumentos válidos num loop de tools → strict",
+        "Mesmo com schema, cheque stop_reason: max_tokens pode truncar; refusal pode não seguir o schema",
+        "Como cai: cenários 5 e 6 — 'JSON precisa sempre validar no parser do CI'"
+      ],
+      "checkpoint": "Pergunte: qual a exigência obrigatória de um schema para usar strict, e por que preferir required + nullable a campos opcionais?",
+      "ref": "03-saida-estruturada/teoria.md#3-strict-true-e-output_configformat"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Schema ≠ semântica; nullable, other e unclear",
+      "pontos": [
+        "Conformidade com schema ≠ correção semântica: total pode ser número e não bater com os itens; valide em código",
+        "Campo nullable para dado que pode faltar (evita inventar)",
+        "Enum com 'other' + campo de detalhe para categoria fora da lista",
+        "Enum com 'unclear' para fonte ambígua/ilegível (evita chute)",
+        "Por quê: schema que obriga valor força o modelo a escolher algo — e ele inventa"
+      ],
+      "checkpoint": "Pergunte: o modelo inventa o número do pedido de compra quando ele não existe na fatura. Que mudança de schema resolve?",
+      "ref": "03-saida-estruturada/teoria.md#4-schema--semântica-padrões-de-schema"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Limites do strict: o que validar no código",
+      "pontos": [
+        "Strict suporta só um subconjunto de JSON Schema [detalhe volátil]",
+        "Não suportados: minimum/maximum/multipleOf, minLength/maxLength, restrições de array além de minItems 0/1, recursão, enum com tipos complexos, $ref externo",
+        "Suportados: tipos básicos, enum simples, const, $ref interno, formats comuns, additionalProperties: false, anyOf/allOf com limitações, pattern com regex simples (sem backreference/lookaround)",
+        "Recurso não suportado em schema cru → 400; os helpers do SDK movem a restrição para a descrição do campo e validam localmente",
+        "Regra de prova: o que o strict não suporta, seu código valida (e isso alimenta o retry). Como cai: cenário 6 — 'ligamos strict e o schema com minimum/maxLength passou a dar 400'"
+      ],
+      "checkpoint": "Pergunte: o time ligou strict num schema com minimum: 1 e maxLength: 9 e tomou 400. Desligar o strict é a correção? O que fazer?",
+      "ref": "03-saida-estruturada/teoria.md#5-limites-do-strict-o-que-validar-no-seu-código"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Loop de validação com retry (4.4)",
+      "pontos": [
+        "Ciclo: extrai → valida (schema + semântica) → devolve os erros ESPECÍFICOS no prompt → tenta de novo até um limite → falha explícita",
+        "Feedback específico ('total 1.250 difere da soma 1.205; confira o item 3'), não 'tente de novo'",
+        "Extraia valor declarado E calculado para detectar discrepância",
+        "Retry não recupera informação ausente da fonte → null (+ revisão humana), não mais tentativas",
+        "detected_pattern permite medir quais padrões geram achados úteis; limite é backstop; nunca gravar dado inválido"
+      ],
+      "checkpoint": "Pergunte: após 3 retries o CNPJ continua errado, e o documento não traz o CNPJ. O que fazer?",
+      "ref": "03-saida-estruturada/teoria.md#6-loop-de-validação-com-retry-task-statement-44"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Batch API: fatos (4.5)",
+      "pontos": [
+        "50% mais barata, até 24h, sem SLA",
+        "custom_id por request; resultados fora de ordem → case por custom_id",
+        "Não suporta loop multi-turn de tools dentro de um request",
+        "Poll de processing_status até ended; resultados: succeeded, errored, canceled, expired",
+        "Pegadinha mais comum: usar batch onde alguém está esperando"
+      ],
+      "checkpoint": "Pergunte: por que casar os resultados pela posição no arquivo é um bug?",
+      "ref": "03-saida-estruturada/teoria.md#7-batch-api-task-statement-45"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Batch: quando usar, quando não, e como operar",
+      "pontos": [
+        "Use: análise noturna, relatório semanal, processamento em massa, avaliação offline",
+        "Não use: pré-merge/passo bloqueante de CI, tempo real, depuração interativa, loop de tools multi-turn",
+        "Refine o prompt numa amostra síncrona antes do volume",
+        "Reenvie só os custom_id que falharam; combine com o loop de validação",
+        "Como cai: cenário 5 ('cortar custo do review de PR com batch' → não) e 6 ('50 mil contratos até o fim da semana' → sim, após amostra)"
+      ],
+      "checkpoint": "Dê os dois casos (gate de PR × varredura noturna de segurança) e peça ao aluno qual vai para batch e por quê",
+      "ref": "03-saida-estruturada/teoria.md#8-batch-quando-usar-quando-não-e-como-operar"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação do módulo",
+      "pontos": [
+        "15 questões curtas sobre saída estruturada, strict, padrões de schema, retry e Batch API",
+        "Depois de cada resposta, explique por que as erradas são tentadoras"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-03/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+      "ref": "Claude-Architect/apps/modulo-03/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do módulo",
+      "pontos": [
+        "20 questões em estilo de cenário, feedback por alternativa, algumas 'Escolha DUAS'",
+        "Aprovação 70%; só seguir para o Módulo 04 após passar"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-03/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 04; se não, revise os pontos errados na teoria",
+      "ref": "Claude-Architect/provas/modulo-03/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 03",
+      "pontos": [
+        "Recap: 3 caminhos de estrutura; strict exige additionalProperties: false (prefira required + nullable); schema ≠ semântica; nullable/other/unclear; faixas e tamanhos não suportados (400 no schema cru) → validar em código; retry com erros específicos e limite; retry não cria dado; Batch 50%/24h/custom_id/sem multi-turn/nunca bloqueante",
+        "Com os Módulos 01–03, você cobriu quase todo o D4 (20% da prova)",
+        "Revise a 'Cola de véspera' do teoria.md",
+        "Próximo: Módulo 04 — Design de tools: descrições, erros estruturados, tool_choice e tool search"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 04 ou parar por aqui",
+      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+    }
+  ]
+}

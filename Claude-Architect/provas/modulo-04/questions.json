@@ -1,0 +1,361 @@
+{
+  "titulo": "Módulo 04 — Prova: Design de tools (estilo cenário)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Uma operadora de telefonia tem um agente de suporte (Agent SDK) com as tools `get_account` (\"Retrieves account data\") e `get_invoice` (\"Retrieves invoice data\"). Nos logs, quando o cliente pergunta \"por que minha conta veio mais alta?\", o agente chama `get_account` em 40% dos casos e não acha valores de fatura. Qual a MELHOR primeira ação?",
+      "opcoes": [
+        "Adicionar um classificador de intenção que analisa a pergunta e roteia para a tool certa antes de o modelo decidir",
+        "Incluir 10 exemplos few-shot no system prompt mostrando perguntas de cobrança chamando `get_invoice`",
+        "Reescrever as descrições dizendo o que cada tool devolve, quando usar cada uma e como diferem",
+        "Fundir as duas tools numa `get_customer_everything` que devolve conta e faturas juntas"
+      ],
+      "correta": 2,
+      "explicacao": "A descrição é o critério de seleção. Descrições vagas e quase iguais causam roteamento errado; a correção mais simples é dizer propósito, retorno e diferença entre elas.",
+      "feedbacks": [
+        "Mais complexo que o necessário: adiciona um componente para compensar uma interface ambígua que continua ambígua.",
+        "Tentador e às vezes ajuda, mas ataca o sintoma; a definição da tool continua sem dizer quando usá-la.",
+        "Correto: correção mais simples que resolve, na própria interface.",
+        "Fundir pode ser válido para tools redundantes, mas aqui os propósitos são distintos; devolver tudo gasta contexto e esconde a diferença."
+      ]
+    },
+    {
+      "pergunta": "Uma equipe de plataforma escreve a tool `buscar_incidentes` para o agente de produtividade dos devs. Querem que o modelo a escolha bem e saiba lidar com o retorno. Quais DOIS elementos devem estar na `description`? (Escolha DUAS.)",
+      "opcoes": [
+        "O nome do time que mantém a tool, o link para o repositório e o canal de suporte interno",
+        "Quando usar e quando NÃO usar, incluindo a diferença para `buscar_alertas`",
+        "O histórico de versões da tool",
+        "O que acontece com zero resultados (lista vazia, não é erro) e a entrada com exemplo",
+        "A instrução 'sempre chame esta tool primeiro, antes de qualquer outra', para garantir que ela seja usada"
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Boa descrição: propósito/quando usar, formato de entrada com exemplo, saída, casos de borda (zero resultados) e diferença para tools parecidas.",
+      "feedbacks": [
+        "Útil para humanos, irrelevante para a decisão do modelo; ocupa contexto.",
+        "Correto: diferenciar das vizinhas evita roteamento errado.",
+        "Não ajuda a escolher nem a usar a tool.",
+        "Correto: bordas e entrada com exemplo reduzem chamadas erradas e interpretação errada de vazio.",
+        "Ordem fixa não é critério de seleção; se é regra obrigatória, vai em código."
+      ]
+    },
+    {
+      "pergunta": "Um pipeline de extração de notas fiscais usa uma tool `registrar_nota` cujo `input_schema` é a saída desejada. Às vezes o modelo envia `valor_total` como string (\"1.234,56\") e inclui um campo `observacao_extra` que não existe no schema, quebrando o parser. Qual a correção mais direta?",
+      "opcoes": [
+        "Ativar `strict: true` na tool, com `additionalProperties: false` em todo objeto do schema",
+        "Adicionar ao system prompt: 'use apenas os campos do schema e envie números sem formatação brasileira'",
+        "Fazer um segundo modelo revisar o JSON antes do parser",
+        "Trocar o parser por um mais tolerante, que ignore campos desconhecidos e converta strings numéricas automaticamente"
+      ],
+      "correta": 0,
+      "explicacao": "`strict: true` garante que os argumentos seguem o schema exatamente: tipos certos e nenhum campo extra.",
+      "feedbacks": [
+        "Correto: problema de forma, resolvido com garantia de schema.",
+        "Prompt é probabilístico; continua falhando às vezes.",
+        "Um segundo modelo para checar o primeiro é mais complexo que o necessário.",
+        "Esconde o problema e aceita dado malformado no pipeline."
+      ]
+    },
+    {
+      "pergunta": "No mesmo pipeline de notas fiscais, já com `strict: true`, a auditoria encontrou notas em que `valor_total` não bate com a soma dos itens e `data_emissao` é posterior à data de recebimento. O que fazer?",
+      "opcoes": [
+        "Adicionar `minimum` e `maximum` no schema para `valor_total`",
+        "Trocar para `tool_choice` forçado na tool de extração",
+        "Adicionar exemplos few-shot com notas corretas até as inconsistências pararem de aparecer nos testes",
+        "Validar soma e datas no código e devolver os erros específicos ao modelo num retry"
+      ],
+      "correta": 3,
+      "explicacao": "Strict garante forma, não semântica. Soma e coerência de datas são regras de negócio: valide em código e reenvie os erros específicos.",
+      "feedbacks": [
+        "Faixas numéricas não são suportadas pelo strict e, de todo modo, não verificariam a soma.",
+        "Forçar a tool garante que ela seja chamada, não que os valores estejam certos.",
+        "Pode reduzir, mas não garante; regra crítica vai em código.",
+        "Correto: validação semântica + retry com os erros."
+      ]
+    },
+    {
+      "pergunta": "Num sistema de pesquisa multiagente, o subagent de busca acadêmica recebe timeout da API de artigos e devolve `[]`. O coordenador escreve no relatório: \"não há estudos sobre o tema\". Quais DUAS mudanças corrigem o problema? (Escolha DUAS.)",
+      "opcoes": [
+        "Devolver `tool_result` com `is_error: true`, categoria transitória, `isRetryable: true` e a consulta tentada",
+        "Instruir o coordenador a desconfiar de qualquer lista vazia vinda de subagents e repetir a busca três vezes antes de concluir",
+        "Aumentar o timeout da API para 5 minutos",
+        "Remover o subagent de busca e deixar o coordenador buscar diretamente",
+        "No subagent, tentar o transitório localmente com backoff e só então propagar a falha com contexto"
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Vazio ≠ falha: timeout é erro estruturado e retentável. O subagent tenta recuperação local e só propaga o que não resolveu, com contexto.",
+      "feedbacks": [
+        "Correto: sinaliza a falha de forma que o coordenador não a confunda com 'nada encontrado'.",
+        "Trata vazio legítimo como suspeito e gera retries inúteis; o problema é a tool mascarar o erro.",
+        "Pode reduzir timeouts, mas quando acontecer o erro continua mascarado.",
+        "Não resolve a supressão e piora a distribuição de responsabilidades.",
+        "Correto: recuperação local de transitório é papel do subagent."
+      ]
+    },
+    {
+      "pergunta": "Um agente de suporte de e-commerce tenta `emitir_reembolso` de R$ 2.000; a política limita reembolsos automáticos a R$ 500. A tool devolve `{\"error\": \"failed\"}` e o agente tenta mais 6 vezes antes de desistir. Qual a MELHOR correção na tool?",
+      "opcoes": [
+        "Devolver HTTP 500 com stack trace completo para o agente entender a gravidade da falha",
+        "Erro de negócio com `isRetryable: false` e a explicação do limite, para o agente informar ou escalar",
+        "Configurar o agente para tentar no máximo 2 vezes qualquer tool que falhe, e então pedir desculpas ao cliente",
+        "Fazer a tool reembolsar R$ 500 e devolver sucesso"
+      ],
+      "correta": 1,
+      "explicacao": "Erro de negócio não é retentável; com categoria e explicação o agente decide explicar a política ou escalar.",
+      "feedbacks": [
+        "O modelo não vê status HTTP do seu backend; vê o `tool_result`. E 'grave' não diz o que fazer.",
+        "Correto.",
+        "Limite arbitrário de tentativas é backstop, não correção; o agente ainda não sabe por que falhou.",
+        "Executa uma ação financeira diferente da pedida, em silêncio."
+      ]
+    },
+    {
+      "pergunta": "A tool `consultar_crm` passou a falhar porque o token de serviço expirou. O agente responde ao cliente \"não encontrei seu cadastro\". Como a tool deveria sinalizar essa falha?",
+      "opcoes": [
+        "Sucesso com resultado vazio, já que nenhum dado foi retornado",
+        "Erro de validação, para o modelo ajustar o ID do cliente",
+        "Erro transitório retentável, para o modelo tentar de novo em loop com backoff até o token ser renovado",
+        "Erro de permissão, não retentável, citando a credencial expirada, para o agente escalar"
+      ],
+      "correta": 3,
+      "explicacao": "Token expirado é permissão: insistir não resolve, e a falha não pode virar 'não encontrado'.",
+      "feedbacks": [
+        "Esse é exatamente o erro: vazio ≠ falha.",
+        "A entrada estava certa; o modelo vai 'corrigir' um ID que não tinha problema.",
+        "O token não volta sozinho; retry em loop desperdiça chamadas.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Na extração de contratos, a tool `buscar_cliente_por_cnpj` recebe \"12.345.678/0001-90\" mas o backend aceita só dígitos. Hoje devolve `{\"error\": \"Operation failed\"}` e o modelo desiste. O que melhorar?",
+      "opcoes": [
+        "Erro de validação dizendo que o CNPJ deve ter só 14 dígitos, para o modelo corrigir e tentar de novo",
+        "Devolver erro de permissão para forçar escalonamento",
+        "Marcar como erro transitório e retentável, para que o retry automático com backoff exponencial resolva a falha",
+        "Remover a validação do backend e aceitar o CNPJ em qualquer formato, normalizando depois em lote"
+      ],
+      "correta": 0,
+      "explicacao": "Erro de validação é corrigível: com a mensagem específica, o modelo ajusta a entrada e tenta de novo.",
+      "feedbacks": [
+        "Correto: erro específico transforma falha em correção.",
+        "Não é falta de acesso; escalar um erro de formato desperdiça um humano.",
+        "Repetir a mesma entrada vai falhar sempre.",
+        "Ataca o lado errado e pode introduzir dados inconsistentes."
+      ]
+    },
+    {
+      "pergunta": "Num sistema de pesquisa com coordenador e 4 subagents, um dos subagents falha definitivamente (fonte fora do ar o dia todo). Os outros três trouxeram material suficiente para boa parte do relatório. Qual o comportamento esperado?",
+      "opcoes": [
+        "Abortar o workflow inteiro e devolver erro ao usuário",
+        "Gerar o relatório normalmente com as três fontes, sem mencionar a que falhou, para não confundir o leitor",
+        "Seguir com o parcial, anotar no relatório a lacuna e o motivo, e oferecer alternativa",
+        "Repetir o subagent indefinidamente até a fonte voltar"
+      ],
+      "correta": 2,
+      "explicacao": "Não aborte o workflow por uma falha: continue com o parcial, anote a lacuna, ofereça alternativa.",
+      "feedbacks": [
+        "Joga fora trabalho válido por causa de uma etapa.",
+        "Supressão silenciosa: o leitor acha que a cobertura está completa.",
+        "Correto.",
+        "Falha não transitória; retry infinito trava o sistema."
+      ]
+    },
+    {
+      "pergunta": "Um agente de produtividade tem 18 tools (git, CI, tickets, wiki, deploy, métricas, chat...). Ele frequentemente chama a tool errada, mesmo depois de as descrições terem sido revisadas. As tarefas se agrupam claramente em pesquisa, análise e ações. Qual a MELHOR arquitetura?",
+      "opcoes": [
+        "Manter um agente e trocar para um modelo maior",
+        "Coordenador + subagents especializados (pesquisa, análise, ação), cada um com 4–5 tools coesas",
+        "Um subagent por tool, 18 no total, coordenados por um agente central",
+        "Descrever no system prompt uma árvore de decisão detalhada de qual tool usar em cada tipo de situação"
+      ],
+      "correta": 1,
+      "explicacao": "Com muitas tools a seleção degrada; descrições não bastam. Distribua em subagents especializados com 4–5 tools cada.",
+      "feedbacks": [
+        "Ataca o sintoma; o problema é volume de opções na decisão.",
+        "Correto.",
+        "Extremo oposto: overhead de coordenação sem ganho.",
+        "Árvore de decisão por fora contraria o modelo decidir; prompt longo e frágil."
+      ]
+    },
+    {
+      "pergunta": "O time conectou 7 servidores MCP ao agente; as definições de tools somam ~45k tokens e o agente usa, na maioria das sessões, só 4 delas. A latência subiu e a seleção piorou. O que fazer?",
+      "opcoes": [
+        "Remover 5 servidores MCP e manter só os 2 mais usados",
+        "Resumir todas as descrições para uma linha cada",
+        "Trocar o array `tools` a cada turno, enviando só as tools que um classificador julgar relevantes para a intenção",
+        "Tool search com `defer_loading: true`, mantendo carregadas as ~4 tools frequentes"
+      ],
+      "correta": 3,
+      "explicacao": "Catálogo grande / vários MCP / >10k tokens: tool search carrega sob demanda e preserva o cache; mantenha as frequentes carregadas.",
+      "feedbacks": [
+        "Perde capacidade que às vezes é necessária.",
+        "Piora a seleção (descrição é o critério) e não resolve o volume.",
+        "Invalida o prompt cache a cada turno e exige um classificador por fora.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Depois de ativar tool search, um engenheiro marcou TODAS as tools com `defer_loading: true`, inclusive `buscar_pedido`, usada em 90% das conversas. O que esperar e como corrigir?",
+      "opcoes": [
+        "Busca extra em quase todo turno; deixe as 3–5 tools frequentes não deferidas",
+        "Nenhum impacto; deferir tudo é a configuração recomendada",
+        "O prompt cache passa a ser invalidado a cada turno; volte a carregar todas as tools no request",
+        "O modelo deixa de poder chamar `buscar_pedido`; remova o tool search"
+      ],
+      "correta": 0,
+      "explicacao": "Pelo menos uma tool precisa ficar não deferida, e as frequentes devem ficar carregadas para evitar buscas desnecessárias.",
+      "feedbacks": [
+        "Correto.",
+        "A recomendação é justamente manter as frequentes carregadas.",
+        "Deferir não invalida o cache; o problema é custo de descoberta.",
+        "Ela continua encontrável pela busca; remover o tool search joga fora o benefício."
+      ]
+    },
+    {
+      "pergunta": "Um pipeline de extração usava `tool_choice: {\"type\": \"tool\", \"name\": \"extrair_fatura\"}` para garantir JSON. Ao migrar para um modelo mais novo, todo request passou a retornar 400. O objetivo da tool era só obter JSON no schema. Qual a MELHOR correção?",
+      "opcoes": [
+        "Trocar para `tool_choice: any`",
+        "Voltar ao modelo anterior permanentemente, já que ele aceita todas as opções de `tool_choice`",
+        "Usar structured outputs (`output_config.format` com `json_schema`) no lugar da tool forçada",
+        "Usar prefill do assistant começando a resposta com `{` para obrigar o modelo a produzir JSON"
+      ],
+      "correta": 2,
+      "explicacao": "[volátil, mas é o ponto] Em modelos novos `any`/`tool` forçado retornam 400. Se o forçar existia só para obter JSON, structured outputs é o caminho (ou `auto` + instrução + `strict`).",
+      "feedbacks": [
+        "`any` também retorna 400 nesses modelos.",
+        "Contorna sem resolver e trava a evolução.",
+        "Correto.",
+        "Prefill também retorna 400 nos modelos novos."
+      ]
+    },
+    {
+      "pergunta": "Um agente de atendimento usa `tool_choice: {\"type\": \"any\"}` (modelo que aceita). Clientes reclamam que, ao dizer apenas \"obrigado!\", o agente dispara uma consulta de pedido sem sentido. Qual a correção?",
+      "opcoes": [
+        "Adicionar uma tool `responder_texto` para o modelo chamar quando quiser apenas conversar com o cliente",
+        "Usar `tool_choice: auto`, deixando o modelo decidir entre chamar tool ou responder em texto",
+        "Usar `tool_choice: none` em todos os turnos",
+        "Usar `disable_parallel_tool_use: true`"
+      ],
+      "correta": 1,
+      "explicacao": "`any` obriga a chamar alguma tool. Agente conversacional precisa de `auto` (padrão).",
+      "feedbacks": [
+        "Gambiarra que mantém o problema de raiz (forçar tool).",
+        "Correto.",
+        "Impede o agente de usar tools quando precisa.",
+        "Limita a quantidade, mas continua obrigando uma chamada."
+      ]
+    },
+    {
+      "pergunta": "Um agente de suporte às vezes emite, na mesma resposta, `atualizar_endereco` e `recalcular_frete` em paralelo; o frete é calculado com o endereço antigo. Qual o ajuste mais simples?",
+      "opcoes": [
+        "Trocar para `tool_choice: none`",
+        "Remover `recalcular_frete` do agente",
+        "Instruir no system prompt: 'nunca chame duas tools ao mesmo tempo; espere o resultado de cada uma'",
+        "Configurar `disable_parallel_tool_use: true` para limitar a uma chamada por resposta"
+      ],
+      "correta": 3,
+      "explicacao": "`disable_parallel_tool_use: true` limita a uma chamada por resposta, forçando a sequência.",
+      "feedbacks": [
+        "Impede qualquer chamada de tool.",
+        "Perde funcionalidade necessária.",
+        "Prompt é probabilístico; o parâmetro é determinístico.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O agente de pesquisa usa web search server-side. Em consultas amplas, a resposta às vezes chega incompleta; o log mostra `stop_reason: \"pause_turn\"` e o código trata qualquer stop_reason diferente de `tool_use` como fim. O que corrigir?",
+      "opcoes": [
+        "Ao receber `pause_turn`, reenviar a conversa com a resposta do assistant para o modelo continuar",
+        "Aumentar `max_tokens` para 32k, porque a resposta está sendo cortada antes de o modelo terminar a pesquisa",
+        "Diminuir `max_uses` da web search para o loop terminar antes",
+        "Tratar `pause_turn` como erro e escalar"
+      ],
+      "correta": 0,
+      "explicacao": "`pause_turn` indica que o loop server-side atingiu o teto de iterações; reenviar a resposta permite continuar.",
+      "feedbacks": [
+        "Correto.",
+        "Confunde com `max_tokens`; o teto atingido é de iterações server-side.",
+        "Pioraria a cobertura da pesquisa.",
+        "Não é erro; é continuação esperada."
+      ]
+    },
+    {
+      "pergunta": "Um coordenador verifica a saúde do subagent de pesquisa checando se a chamada à Messages API retornou HTTP 200. Mesmo assim, alguns relatórios saem sem nenhuma fonte, e a web search aparentemente 'não rodou'. O que provavelmente está acontecendo?",
+      "opcoes": [
+        "A API devolveu HTTP 429 e o SDK converteu para 200",
+        "A web search falhou e o erro veio com HTTP 200, dentro do bloco de resultado que o código não lê",
+        "O modelo recusou a busca, e o código deveria checar um header de `refusal` na resposta HTTP antes de seguir",
+        "A web search só funciona com `tool_choice: any`"
+      ],
+      "correta": 1,
+      "explicacao": "Erros de tools server-side vêm com HTTP 200 e um objeto de erro dentro do resultado (ex.: `max_uses_exceeded`). É preciso inspecionar o bloco.",
+      "feedbacks": [
+        "Invenção; o SDK não faz isso.",
+        "Correto.",
+        "Recusa vem por `stop_reason`, não por header; e não explica o sintoma.",
+        "Web search não depende de `tool_choice` forçado."
+      ]
+    },
+    {
+      "pergunta": "Um subagent de pesquisa tem web fetch habilitado (sem web search). O prompt pede 'leia a página de preços da concorrente', sem informar a URL, e o fetch falha. Por quê?",
+      "opcoes": [
+        "Web fetch exige `strict: true`",
+        "Web fetch é uma tool client-side, então precisa ser executada pelo seu próprio código, não pela API",
+        "Web fetch só busca URLs já presentes na conversa; não inventa nem descobre URLs",
+        "Faltou `tool_choice: tool` apontando para o web fetch"
+      ],
+      "correta": 2,
+      "explicacao": "Web fetch não é crawler: busca URLs que vieram do usuário ou de resultados anteriores (ex.: de uma web search). Forneça a URL ou habilite web search antes.",
+      "feedbacks": [
+        "Strict é para tools customizadas.",
+        "Web fetch é server-side.",
+        "Correto.",
+        "Forçar a chamada não cria uma URL válida."
+      ]
+    },
+    {
+      "pergunta": "Um agente de produtividade recebeu numa resposta três `tool_use` (`toolu_1`, `toolu_2`, `toolu_3`); `toolu_2` falhou por timeout. Quais DUAS afirmações descrevem a devolução correta? (Escolha DUAS.)",
+      "opcoes": [
+        "Enviar três mensagens `user` separadas, uma para cada `tool_result`, na ordem em que as execuções terminaram",
+        "Omitir `toolu_2` e reenviar só os resultados bem-sucedidos para não confundir o modelo",
+        "Todos os `tool_result` vão numa única mensagem `user`, cada um referenciando o `tool_use_id` exato",
+        "Reemitir a chamada de `toolu_2` pelo próprio client com novo ID antes de responder",
+        "O resultado de `toolu_2` vai com `is_error: true` e conteúdo descrevendo o timeout"
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Paralelo: todos os resultados numa única mensagem `user`, com `tool_use_id` exatos; o que falhou também recebe resultado, com `is_error: true`.",
+      "feedbacks": [
+        "Separar em várias mensagens quebra o padrão de devolução.",
+        "Todo `tool_use` precisa de resultado; omitir gera request inválido e esconde a falha.",
+        "Correto.",
+        "IDs são gerados pelo modelo; o client não cria chamadas.",
+        "Correto: o modelo raciocina sobre a recuperação."
+      ]
+    },
+    {
+      "pergunta": "Um assistente de devs monta, a cada turno, o array `tools` só com as tools 'relevantes' segundo um classificador. A conta da API subiu e `usage.cache_read_input_tokens` é sempre 0. Qual a causa e a correção?",
+      "opcoes": [
+        "O system prompt está abaixo do mínimo de tokens para cachear; aumente-o com mais instruções e exemplos",
+        "Variar `tools` muda o prefixo (tools → system → messages) e invalida o cache; mantenha-o estável",
+        "O cache só funciona com `tool_choice: none`, então desative as tools nos turnos de conversa",
+        "O classificador adiciona latência; troque-o por um modelo menor e mais rápido para escolher as tools"
+      ],
+      "correta": 1,
+      "explicacao": "O cache casa o prefixo exato na ordem tools → system → messages; variar `tools` por request invalida tudo.",
+      "feedbacks": [
+        "Pode haver mínimo de tokens, mas o enunciado aponta o array variável como mudança a cada request.",
+        "Correto.",
+        "Não existe essa exigência.",
+        "Ataca latência, não a invalidação do cache."
+      ]
+    }
+  ]
+}

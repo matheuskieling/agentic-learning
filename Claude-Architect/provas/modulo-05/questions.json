@@ -1,0 +1,361 @@
+{
+  "titulo": "Módulo 05 — Prova: MCP (estilo cenário)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Numa fintech, cada dev do time adicionou o servidor MCP do Jira com `claude mcp add --transport http jira https://mcp.jira.interno/mcp`. Um dev novo clona o repositório e o Claude Code dele não enxerga o Jira. Qual a MELHOR correção?",
+      "opcoes": [
+        "Pedir ao dev novo que copie o `~/.claude.json` de um colega que já tem o Jira configurado e funcionando",
+        "Readicionar com `--scope project` (grava no `.mcp.json` da raiz) e commitar o arquivo",
+        "Colocar a configuração do server no `CLAUDE.md` do projeto",
+        "Adicionar o server em `.claude/settings.local.json` e commitar esse arquivo para todo o time"
+      ],
+      "correta": 1,
+      "explicacao": "Sem `--scope`, o padrão é local (só aquele dev, em `~/.claude.json`). Para o time inteiro, escopo project = `.mcp.json` versionado.",
+      "feedbacks": [
+        "Copia configurações pessoais (e possivelmente credenciais) de outra pessoa; não escala.",
+        "Correto.",
+        "CLAUDE.md é instrução para o modelo, não configuração de servers.",
+        "Esse arquivo não é onde ficam os servers MCP e, por definição, é pessoal (gitignored)."
+      ]
+    },
+    {
+      "pergunta": "Um time adicionou ao `.mcp.json` a entrada `\"observabilidade\": { \"url\": \"https://mcp.obs.exemplo.com/mcp\" }`. O server não conecta e o `/mcp` mostra falha ao iniciar. O que corrigir?",
+      "opcoes": [
+        "Trocar a URL para `http://` em vez de `https://`",
+        "Mudar o transporte para SSE, que é o padrão para remotos",
+        "Rodar o Claude Code com `--debug` até o server conectar",
+        "Declarar `\"type\": \"http\"` na entrada"
+      ],
+      "correta": 3,
+      "explicacao": "Entrada com `url` mas sem `type` é lida como stdio e falha. Servidor remoto sempre declara `type`.",
+      "feedbacks": [
+        "Rebaixar a segurança não resolve a causa.",
+        "SSE é legado e não é a causa.",
+        "`--debug` ajuda a diagnosticar, não corrige.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Uma consultoria quer compartilhar via git o servidor MCP do GitHub, que exige um token pessoal de cada dev. Quais DUAS práticas atendem? (Escolha DUAS.)",
+      "opcoes": [
+        "No `.mcp.json`, usar `\"headers\": { \"Authorization\": \"Bearer ${GITHUB_TOKEN}\" }`",
+        "Commitar o token de um usuário de serviço no `.mcp.json`, já que o repositório é privado e só o time acessa",
+        "Pôr o `.mcp.json` no `.gitignore` e mandar o arquivo por e-mail",
+        "Cada dev define `GITHUB_TOKEN` no próprio ambiente (ou usa OAuth via `/mcp`)",
+        "Gravar o token no `CLAUDE.md` para o modelo repassá-lo ao server"
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Segredos entram por `${VAR}` no arquivo versionado; o valor vem do ambiente de cada dev (ou de OAuth).",
+      "feedbacks": [
+        "Correto: o arquivo é compartilhável sem segredo.",
+        "Repositório privado não é cofre; segredo literal versionado vaza.",
+        "Perde o compartilhamento e espalha o arquivo por canal pior.",
+        "Correto: completa a expansão de variável.",
+        "Expõe o segredo ao contexto do modelo e ao repositório."
+      ]
+    },
+    {
+      "pergunta": "O agente de produtividade usa um server MCP de banco de dados com a tool `run_query`. Nos logs, antes de responder qualquer pergunta, ele faz 15–20 chamadas tentando descobrir quais tabelas e colunas existem. Qual a MELHOR melhoria no server?",
+      "opcoes": [
+        "Aumentar o limite de chamadas por turno",
+        "Colar o schema completo do banco no system prompt de todas as sessões, para o modelo já saber as tabelas",
+        "Expor o schema e o catálogo de tabelas como resources que podem ser navegados e lidos",
+        "Criar uma tool `guess_table` que tenta adivinhar o nome da tabela"
+      ],
+      "correta": 2,
+      "explicacao": "Resources são conteúdo somente leitura e navegável; um catálogo reduz chamadas exploratórias às cegas.",
+      "feedbacks": [
+        "Permite mais tentativas às cegas em vez de eliminá-las.",
+        "Estático e caro: gasta contexto em toda sessão, mesmo quando não é usado.",
+        "Correto.",
+        "Mais uma tool para adivinhar; o problema é a falta de catálogo."
+      ]
+    },
+    {
+      "pergunta": "Uma dev quer testar, só no projeto atual, um servidor MCP experimental que só ela vai usar, sem afetar o time nem os outros projetos dela. Como adicionar?",
+      "opcoes": [
+        "`claude mcp add` sem `--scope` (escopo local, o padrão)",
+        "`claude mcp add --scope project`",
+        "`claude mcp add --scope user`",
+        "Editar o `.mcp.json` do projeto e simplesmente não commitar essa mudança"
+      ],
+      "correta": 0,
+      "explicacao": "Local é o padrão: só você, só este projeto, guardado em `~/.claude.json`.",
+      "feedbacks": [
+        "Correto.",
+        "Gravaria no `.mcp.json` compartilhado.",
+        "Valeria para todos os projetos dela.",
+        "Frágil: o arquivo versionado fica sujo e o server acaba commitado por acidente."
+      ]
+    },
+    {
+      "pergunta": "Um dev usa um server MCP pessoal de anotações em todos os repositórios em que trabalha e não quer configurar repo a repo nem expor aos colegas. Qual escopo?",
+      "opcoes": [
+        "local",
+        "project",
+        "managed",
+        "user"
+      ],
+      "correta": 3,
+      "explicacao": "User = todos os seus projetos, em `~/.claude.json`, sem compartilhar.",
+      "feedbacks": [
+        "Local vale só para o projeto atual.",
+        "Project compartilha com o time via git.",
+        "Managed é política da organização, definida pelo admin.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Um dev leu que o escopo 'local' do MCP é pessoal e colocou a definição do server em `.claude/settings.local.json`. O server não aparece. Qual a explicação?",
+      "opcoes": [
+        "O arquivo precisa ser commitado no repositório para que o Claude Code passe a considerá-lo",
+        "O escopo local do MCP fica em `~/.claude.json`, não em `settings.local.json`",
+        "Servers definidos como locais só funcionam com o transporte SSE, que precisa ser declarado em `type`",
+        "Falta aprovar o server com `/mcp`, já que todo server novo precisa de aprovação antes de aparecer"
+      ],
+      "correta": 1,
+      "explicacao": "Pegadinha clássica: escopo local do MCP ≠ `.claude/settings.local.json`.",
+      "feedbacks": [
+        "Arquivo local é justamente o que não se commita, e não é onde ficam os servers.",
+        "Correto.",
+        "Escopo e transporte são independentes.",
+        "Não há o que aprovar: o server nem foi lido daquele arquivo."
+      ]
+    },
+    {
+      "pergunta": "O server MCP interno de uma empresa exige um token de SSO que expira a cada 60 minutos. Hoje os devs colam o token em `headers` e, a cada hora, o server para de responder. Qual a MELHOR solução?",
+      "opcoes": [
+        "Pedir ao time de segurança tokens de longa duração que não expiram, específicos para o servidor MCP",
+        "Trocar o transporte para stdio",
+        "Usar `headersHelper` com um comando que obtém um token novo a cada geração dos headers",
+        "Reiniciar o Claude Code a cada hora"
+      ],
+      "correta": 2,
+      "explicacao": "`headersHelper` gera os headers dinamicamente: é o mecanismo para credencial de curta duração.",
+      "feedbacks": [
+        "Enfraquece a segurança para contornar um problema de configuração.",
+        "O server é remoto; mudar o transporte não se aplica.",
+        "Correto.",
+        "Paliativo manual que não resolve."
+      ]
+    },
+    {
+      "pergunta": "Um dev clona um repositório open source cujo `.mcp.json` declara um server stdio que roda `node scripts/server.js`. Quais DUAS afirmações estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "O server roda automaticamente assim que o Claude Code abre, sem perguntar nada",
+        "Servers vindos do `.mcp.json` (escopo project) pedem aprovação na sessão interativa antes de rodar",
+        "Para agilizar o onboarding, o recomendado é pré-aprovar todos os servers de projeto em todas as máquinas do time",
+        "O server é ignorado porque `.mcp.json` só aceita servidores remotos",
+        "A aprovação existe porque o arquivo pode iniciar um processo arbitrário; revise o comando antes"
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Servers de projeto pedem aprovação: um repositório não pode executar processos na sua máquina sem consentimento.",
+      "feedbacks": [
+        "Exatamente o que a aprovação evita.",
+        "Correto.",
+        "Remove a proteção para repositórios não confiáveis.",
+        "`.mcp.json` aceita stdio (`command`/`args`/`env`) e remotos.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Um dev .NET escreveu um server MCP stdio com o SDK `ModelContextProtocol`. O server conecta e cai logo em seguida, com erro de parse no client. O código usa `Console.WriteLine` para logar cada requisição. Qual a causa provável?",
+      "opcoes": [
+        "Em stdio, o stdout é o canal do JSON-RPC; os logs precisam ir para stderr",
+        "O SDK de C# só suporta Streamable HTTP",
+        "Faltou declarar `\"type\": \"stdio\"` no `.mcp.json`",
+        "O server precisa implementar a primitiva de sampling para ser aceito pelo Claude Code"
+      ],
+      "correta": 0,
+      "explicacao": "No transporte stdio, qualquer texto no stdout corrompe as mensagens JSON-RPC; logue em stderr.",
+      "feedbacks": [
+        "Correto.",
+        "O SDK suporta stdio (`WithStdioServerTransport`).",
+        "Com `command` o stdio é implícito; não explica o erro de parse.",
+        "Sampling é opcional e é primitiva do client."
+      ]
+    },
+    {
+      "pergunta": "Uma empresa de SaaS publica um servidor MCP remoto que autentica usuários com OAuth 2.0. Como os devs devem configurá-lo no Claude Code?",
+      "opcoes": [
+        "Como stdio, passando o token OAuth obtido manualmente na variável `env`",
+        "Como SSE, que é o transporte remoto que suporta o fluxo OAuth no Claude Code",
+        "Com `headers` contendo usuário e senha do dev codificados em base64",
+        "Como Streamable HTTP (`\"type\": \"http\"`) e autenticar pelo `/mcp` na sessão"
+      ],
+      "correta": 3,
+      "explicacao": "Streamable HTTP é o transporte remoto com OAuth; o login é feito via `/mcp`, e o Claude Code guarda e renova o token.",
+      "feedbacks": [
+        "O server é remoto; stdio é processo local.",
+        "SSE é legado; OAuth está no Streamable HTTP.",
+        "Credencial literal e sem o fluxo OAuth que o server exige.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O time de segurança de um banco quer garantir que os devs só usem servidores MCP aprovados pela empresa, sem depender de cada um configurar corretamente. Qual mecanismo?",
+      "opcoes": [
+        "Um `.mcp.json` em cada repositório da empresa listando só os servers aprovados pela segurança",
+        "Uma regra no `CLAUDE.md` da empresa proibindo outros servers",
+        "Configuração managed (política da organização) com os servers permitidos/negados",
+        "Escopo user configurado na máquina de cada dev"
+      ],
+      "correta": 2,
+      "explicacao": "Managed é o escopo de governança empurrado pelo admin; vale independentemente do que o dev configurar.",
+      "feedbacks": [
+        "Os devs ainda podem adicionar servers local/user por fora.",
+        "Prompt é probabilístico; regra de segurança vai em configuração/código.",
+        "Correto.",
+        "Depende de cada um e pode ser alterado pelo próprio dev."
+      ]
+    },
+    {
+      "pergunta": "A tool `get_logs` de um server MCP devolve ~60k tokens de log bruto; o Claude Code mostra aviso e trunca a saída, e o agente perde a parte do erro. Qual a MELHOR correção de arquitetura?",
+      "opcoes": [
+        "Aumentar `MAX_MCP_OUTPUT_TOKENS` para 100k, para que o log inteiro caiba sem truncamento",
+        "Fazer o server filtrar e paginar (nível, período, limite) e devolver só o relevante",
+        "Pedir ao modelo para ignorar as primeiras linhas do log",
+        "Trocar o transporte para Streamable HTTP, que não tem limite"
+      ],
+      "correta": 1,
+      "explicacao": "[volátil nos números] A saída de MCP tem aviso e truncamento. A correção de arquiteto é o server devolver menos e de forma mais útil.",
+      "feedbacks": [
+        "Ajuda pontualmente, mas lota o contexto e degrada o resto da sessão.",
+        "Correto.",
+        "O texto já chegou truncado; o modelo não recupera o que foi cortado.",
+        "O limite é do host, não do transporte."
+      ]
+    },
+    {
+      "pergunta": "Um server MCP de documentação precisa gerar um resumo de um documento longo antes de devolvê-lo, mas a empresa não quer que o server tenha a própria API key de LLM. Qual primitiva permite isso?",
+      "opcoes": [
+        "Sampling: o server pede uma completion ao modelo do host",
+        "Elicitation: o server pede o resumo ao usuário",
+        "Resources: o server publica o documento inteiro e o modelo o lê e resume",
+        "Roots: o server pede acesso ao diretório do documento"
+      ],
+      "correta": 0,
+      "explicacao": "Sampling permite ao server solicitar completions ao modelo do host, sem credencial própria.",
+      "feedbacks": [
+        "Correto.",
+        "Elicitation pede input ao usuário, não ao modelo.",
+        "Resolveria a leitura, mas não gera o resumo dentro do server.",
+        "Roots trata de limites de acesso, não de geração."
+      ]
+    },
+    {
+      "pergunta": "Um server MCP de infraestrutura tem a tool `apagar_ambiente`. Antes de apagar, ele precisa que o usuário digite o nome do ambiente para confirmar, no meio da execução. Qual primitiva do protocolo?",
+      "opcoes": [
+        "Sampling",
+        "Prompts do server",
+        "Roots",
+        "Elicitation"
+      ],
+      "correta": 3,
+      "explicacao": "Elicitation: o server pede input/confirmação ao usuário através do client durante a operação.",
+      "feedbacks": [
+        "Sampling pede completion ao modelo, que não pode confirmar pelo usuário.",
+        "Prompts são templates invocados pelo usuário, não confirmação no meio da execução.",
+        "Roots define limites de URI/filesystem.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Num agente de suporte que consome três servidores MCP (pedidos, CRM, logística) via Agent SDK, quais DUAS afirmações sobre a arquitetura estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Antes de listar tools, cada client envia `initialize` negociando versão e capabilities",
+        "O modelo abre as conexões com os três servers e envia `tools/call` diretamente a cada um deles",
+        "O host mantém três clients, um por server",
+        "Um único client multiplexa os três servers, para economizar conexões e simplificar a autenticação",
+        "`tools/call` pode ser enviado antes do `initialize` se a tool já for conhecida"
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "Host com um client por server (1:1); cada conexão começa pelo handshake `initialize` → `notifications/initialized`.",
+      "feedbacks": [
+        "Correto.",
+        "O modelo emite `tool_use`; quem fala JSON-RPC com o server é o client do host.",
+        "Correto.",
+        "A arquitetura é 1:1.",
+        "O handshake é obrigatório antes de qualquer operação."
+      ]
+    },
+    {
+      "pergunta": "O time de SRE quer distribuir, via o próprio server MCP de incidentes, um roteiro padronizado de investigação que os devs disparam quando querem, como um comando. Qual primitiva usar?",
+      "opcoes": [
+        "Uma tool `investigar_incidente` que o modelo decide chamar quando achar oportuno",
+        "Resource com o roteiro em markdown",
+        "Um prompt do server, que vira o slash command `/mcp__incidentes__<nome>`",
+        "Elicitation pedindo ao dev para colar o roteiro"
+      ],
+      "correta": 2,
+      "explicacao": "Prompts são templates reutilizáveis invocados pelo usuário; no Claude Code viram slash commands.",
+      "feedbacks": [
+        "Tool é decidida pelo modelo; o pedido é invocação explícita pelo usuário.",
+        "Seria só leitura; não vira comando invocável.",
+        "Correto.",
+        "Inverte o fluxo: o roteiro deveria vir do server."
+      ]
+    },
+    {
+      "pergunta": "Um dev tem o server `docs` definido no `.mcp.json` do projeto apontando para produção e, também, um `docs` no escopo local apontando para um servidor de teste. Qual o Claude Code usa nesse projeto?",
+      "opcoes": [
+        "O do `.mcp.json`, porque project sempre vence",
+        "O do escopo local, porque local > project > user",
+        "Os dois, renomeados automaticamente para `docs` e `docs-1`",
+        "Nenhum; nomes duplicados desativam o server"
+      ],
+      "correta": 1,
+      "explicacao": "Com nomes iguais, o escopo mais específico vence: local > project > user.",
+      "feedbacks": [
+        "Inverte a precedência.",
+        "Correto.",
+        "Não há renomeação automática.",
+        "Não há desativação; vale a precedência."
+      ]
+    },
+    {
+      "pergunta": "Um dev roda `claude mcp add planilhas npx -y @empresa/planilhas-mcp` e recebe erro de opção desconhecida `-y`. Como corrigir?",
+      "opcoes": [
+        "`claude mcp add planilhas -- npx -y @empresa/planilhas-mcp`",
+        "`claude mcp add --transport http planilhas npx -y @empresa/planilhas-mcp`",
+        "`claude mcp add --scope project planilhas npx -y @empresa/planilhas-mcp`",
+        "Remover o `-y` e confirmar a instalação manualmente toda vez"
+      ],
+      "correta": 0,
+      "explicacao": "O `--` separa as opções do `claude` do comando do server stdio; sem ele, `-y` é lido como flag do `claude`.",
+      "feedbacks": [
+        "Correto.",
+        "É um server stdio local; HTTP pede URL.",
+        "Escopo não resolve o parse das flags.",
+        "Contorna em vez de corrigir e quebra em uso não interativo."
+      ]
+    },
+    {
+      "pergunta": "Um dev conectou 9 servidores MCP ao Claude Code e percebe que as definições de tools ocupariam boa parte do contexto. Ele pensa em remover servers que usa só às vezes. O que considerar primeiro?",
+      "opcoes": [
+        "Remover os servers menos usados, pois é a única forma de economizar contexto no Claude Code",
+        "Juntar os 9 servers num só para ter um client apenas",
+        "Pedir no CLAUDE.md para o modelo ignorar as tools dos servers raros",
+        "Contar com o tool search de MCP, que carrega as definições sob demanda"
+      ],
+      "correta": 3,
+      "explicacao": "[volátil no detalhe] No Claude Code, o tool search de MCP fica ativo por padrão e evita carregar todas as definições de início.",
+      "feedbacks": [
+        "Perde capacidade sem necessidade.",
+        "Retrabalho grande; e um client por server é a arquitetura, não o problema.",
+        "As definições continuariam ocupando contexto; prompt não remove tools.",
+        "Correto."
+      ]
+    }
+  ]
+}

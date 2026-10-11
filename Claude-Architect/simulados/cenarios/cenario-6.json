@@ -1,0 +1,401 @@
+{
+  "titulo": "Cenário 6 — Structured Data Extraction",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis processa por dia cerca de 20 mil documentos de clientes (faturas de fornecedores, contratos e formulários de cadastro) e grava os dados extraídos pelo Claude direto no ERP.\n\nHoje o prompt pede \"devolva os dados da fatura em JSON\". Em ~2% dos casos o JSON vem malformado, com campo faltando ou com nome de campo diferente, e a integração com o ERP quebra. Qual é a melhor correção?",
+      "opcoes": [
+        "Reforçar no prompt: \"responda APENAS com JSON válido, contendo exatamente estes campos\".",
+        "Repetir a chamada até o JSON ser parseado com sucesso, sem alterar o prompt.",
+        "Criar uma etapa de reparo com expressões regulares que corrige aspas, vírgulas e nomes de campo divergentes antes de gravar, mantendo o prompt atual intacto.",
+        "Usar structured outputs (`output_config.format` com `json_schema`) ou uma tool de extração com `strict: true`, para que a saída siga o schema."
+      ],
+      "correta": 3,
+      "explicacao": "Para garantir forma, use mecanismos que impõem o schema: structured outputs ou tool use com `strict: true`. Instrução em texto é probabilística.",
+      "feedbacks": [
+        "Ajuda, mas continua probabilístico; os 2% caem, não zeram.",
+        "Retry cego custa mais e não garante campos nem nomes corretos; só que o texto seja JSON parseável.",
+        "Reparo heurístico é frágil e pode \"consertar\" para um valor errado sem ninguém perceber.",
+        "Correta: a conformidade com o schema passa a ser garantida pelo mecanismo, não pela obediência ao prompt."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis já usa structured outputs com schema estrito para extrair faturas. Todos os documentos passam na validação de schema.\n\nMesmo assim, a contabilidade encontra faturas em que o `valor_total` extraído não bate com a soma dos `itens`. Qual é a melhor resposta arquitetural?",
+      "opcoes": [
+        "Adicionar validação semântica em código (soma dos itens versus total, datas coerentes, impostos plausíveis) e, havendo falha, reenviar ao Claude com os erros específicos.",
+        "Considerar o problema resolvido, já que a saída está 100% conforme o schema.",
+        "Acrescentar ao prompt: \"confira se o total bate com a soma dos itens\" e confiar no resultado.",
+        "Ativar `strict: true` também nos campos numéricos, para que o total fique consistente com os itens."
+      ],
+      "correta": 0,
+      "explicacao": "Conformidade com schema ≠ correção semântica. Regras de consistência entre campos se validam em código, com retry que devolve os erros específicos.",
+      "feedbacks": [
+        "Correta: valida o significado, não só a forma, e realimenta o modelo com o erro concreto.",
+        "É exatamente a confusão que a prova cobra: schema válido não significa dado correto.",
+        "Instrução ajuda, mas regra que vai para o ERP precisa de checagem determinística.",
+        "Strict garante tipo e estrutura; não sabe nada sobre a relação aritmética entre campos."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "No pipeline da Fiscalis, o validador exige o CNPJ do emissor. Quando ele falta, o sistema reenvia ao Claude a mensagem \"o campo cnpj_emissor está vazio; extraia-o do documento\", até três vezes.\n\nEm faturas digitalizadas em que o CNPJ está ilegível (rasgado ou borrado), o terceiro retry passou a trazer CNPJs com formato válido que não existem no documento. O que mudar?",
+      "opcoes": [
+        "Permitir `null` no campo quando a informação não está legível no documento e encaminhar esses casos para revisão humana, em vez de insistir no retry.",
+        "Trocar para um modelo maior apenas nas tentativas de retry.",
+        "Endurecer a mensagem de retry: \"o CNPJ é obrigatório; você deve encontrá-lo\".",
+        "Aumentar o número de retries para dez, dando mais chances ao modelo de encontrar o CNPJ."
+      ],
+      "correta": 0,
+      "explicacao": "Retry recupera erros de extração, não informação que não está na fonte. Exigir o valor induz invenção; o certo é `null` + revisão humana.",
+      "feedbacks": [
+        "Correta: aceita a ausência honestamente e põe um humano onde o dado realmente falta.",
+        "Nenhum modelo lê o que está ilegível; o problema é a fonte, não a capacidade.",
+        "Exigir o que não existe é a receita da alucinação que já está acontecendo.",
+        "Mais retries só aumentam a pressão para inventar um valor plausível."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O schema da Fiscalis tem `tipo_documento` como enum com `fatura`, `nota_credito` e `boleto`. Clientes começaram a enviar recibos, notas de débito e faturas proforma.\n\nEsses documentos estão sendo classificados à força como `fatura` ou `boleto`, contaminando os relatórios. Qual é o melhor ajuste no schema?",
+      "opcoes": [
+        "Adicionar `outro` ao enum, com um campo `tipo_documento_detalhe` para descrever o tipo encontrado.",
+        "Ampliar o enum para cerca de 40 tipos de documento fiscal, tentando antecipar tudo o que os clientes podem enviar no futuro.",
+        "Trocar o enum por string livre, para que o modelo escreva qualquer tipo.",
+        "Remover o campo e inferir o tipo depois pelo nome do arquivo enviado."
+      ],
+      "correta": 0,
+      "explicacao": "Enum com \"other\" + campo de detalhe evita classificação forçada e preserva a informação para evoluir o enum depois.",
+      "feedbacks": [
+        "Correta: evita o encaixe forçado e mantém o dado estruturado e analisável.",
+        "Nunca cobre tudo, e tipos raros com nomes parecidos aumentam a confusão; o problema volta no próximo tipo novo.",
+        "Perde a padronização: \"Fatura\", \"fatura proforma\" e \"invoice\" viram valores diferentes nos relatórios.",
+        "Nome de arquivo é uma fonte pouco confiável e joga fora o que o modelo consegue ver no documento."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis também extrai dados de contratos de prestação de serviço. Muitos contratos não têm data de término e alguns têm cláusulas de renovação ambíguas.\n\nO modelo está inventando datas de término e chutando `renovacao_automatica: true/false` nos contratos ambíguos. Quais duas mudanças no schema reduzem esse chute? (Escolha DUAS.)",
+      "opcoes": [
+        "Remover `renovacao_automatica` do schema e pedir esse dado em texto livre no fim da resposta.",
+        "Tornar `data_termino` nullable e instruir a usar `null` quando o contrato não define o término.",
+        "Tornar todos os campos obrigatórios e não nulos, para forçar uma extração completa.",
+        "Mudar `renovacao_automatica` para enum `sim` / `nao` / `incerto`, acompanhado de um campo com o trecho da cláusula usado como evidência.",
+        "Dar a `data_termino` um valor padrão de 12 meses após a assinatura quando ela não estiver no texto."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Campo nullable evita inventar valor ausente; um valor \"unclear\"/\"incerto\" no enum evita chute binário em caso ambíguo. Evidência ajuda a revisão.",
+      "feedbacks": [
+        "Sai da saída estruturada e perde a validação, sem resolver a ambiguidade.",
+        "Correta: dá ao modelo uma saída honesta para dado ausente.",
+        "Inverte a solução: obrigatoriedade sem saída para \"não existe\" é o que provoca a invenção.",
+        "Correta: o valor de incerteza tira a obrigação de escolher um lado num caso ambíguo.",
+        "Um padrão fabricado é invenção sistemática, pior que o chute ocasional."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis tem um loop de validação: quando uma extração falha nas regras de negócio, o pipeline reenvia o documento com a mensagem \"a extração anterior está inválida, tente novamente\".\n\nOs retries corrigem pouco: o modelo costuma repetir os mesmos erros. Qual é a mudança mais eficaz?",
+      "opcoes": [
+        "Trocar de modelo a cada tentativa, para variar a forma de leitura do documento.",
+        "Incluir no retry a extração anterior e os erros específicos (campo, regra violada, valor encontrado e esperado), mantendo um limite de tentativas antes de falhar com erro.",
+        "Aumentar o limite de tentativas, porque mais rodadas aumentam a chance de acerto.",
+        "Reenviar exatamente o mesmo request, porque a variação natural do modelo pode produzir uma saída diferente."
+      ],
+      "correta": 1,
+      "explicacao": "O retry eficaz devolve os erros concretos para o modelo corrigir, com teto de tentativas e falha explícita depois.",
+      "feedbacks": [
+        "Troca uma variável aleatória por outra; não diz ao modelo o que corrigir.",
+        "Correta: o modelo só corrige o que sabe que está errado.",
+        "Sem feedback específico, mais tentativas repetem o mesmo erro e aumentam o custo.",
+        "Retry idêntico é retry cego; trata o erro como transitório quando ele é de conteúdo."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis precisa detectar faturas de fornecedores com erros de soma, que viram disputas comerciais. Hoje o schema tem um único campo `valor_total`.\n\nQual desenho de extração ajuda a detectar essas discrepâncias de forma confiável?",
+      "opcoes": [
+        "Extrair só os itens e recalcular o total em código, descartando o total impresso.",
+        "Pedir ao modelo que confira a soma e, quando houver divergência, devolva em `valor_total` o valor que considerar mais correto para o documento.",
+        "Extrair só o total impresso, que é o valor legalmente válido do documento.",
+        "Extrair o `total_declarado` impresso e comparar em código com a soma dos itens extraídos, sinalizando divergências."
+      ],
+      "correta": 3,
+      "explicacao": "Extrair o valor declarado e confrontá-lo com o calculado expõe a discrepância. Fundir os dois num campo esconde justamente o que se quer detectar.",
+      "feedbacks": [
+        "Perde o valor declarado; não há como provar a divergência ao fornecedor.",
+        "O modelo \"reconcilia\" em silêncio e a discrepância some.",
+        "Sem os itens não há como verificar a soma; a discrepância passa despercebida.",
+        "Correta: guarda as duas versões e torna a divergência visível e mensurável."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis quer endurecer o schema estrito da extração: CNPJ no padrão `^\\d{14}$`, `aliquota_iss` entre 2 e 5 e `descricao` com no máximo 200 caracteres.\n\nAo adicionar `pattern`, `minimum`/`maximum` e `maxLength` ao schema cru usado com structured outputs, a API passa a rejeitar o request com HTTP 400. Quais duas ações compõem a abordagem correta? (Escolha DUAS.)",
+      "opcoes": [
+        "Manter no schema estrito só o que ele suporta: tipos, campos obrigatórios, `additionalProperties: false`, enums e o `pattern` simples do CNPJ.",
+        "Repetir as restrições na descrição de cada campo, o que faz o modo estrito passar a aplicá-las.",
+        "Retirar o modo estrito para o request voltar a passar, já que ele é incompatível com validação de valores.",
+        "Usar `oneOf` com uma variante por faixa válida de alíquota, para o modo estrito conseguir impor os limites.",
+        "Validar em código a faixa da alíquota e o tamanho da descrição, devolvendo os erros ao modelo num retry quando violados."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "O modo estrito suporta um subconjunto de JSON Schema: faixas numéricas (`minimum`/`maximum`), tamanho de string (`minLength`/`maxLength`), restrições de array e recursão não são suportados (num schema cru, 400). `pattern` funciona para regex simples como `^\\d{14}$`. O schema garante a forma; o código garante as regras de valor.",
+      "feedbacks": [
+        "Correta: o schema estrito continua garantindo estrutura (e o `pattern` simples), dentro do subconjunto suportado.",
+        "Descrição orienta o modelo, mas não vira restrição imposta; continua probabilístico.",
+        "Ataca o sintoma: o 400 vem das restrições não suportadas, não do strict. Perde a garantia de estrutura; as duas coisas convivem.",
+        "`oneOf` não está entre as construções documentadas como suportadas, e enumerar faixas numéricas assim não funciona; troca uma limitação por outra.",
+        "Correta: regras de valor que o modo estrito não impõe ficam no seu código, com retry informativo."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "O extrator de faturas da Fiscalis foi escrito com uma tool `registrar_fatura` cujo `input_schema` é o formato de saída, forçada com `tool_choice: {\"type\": \"tool\", \"name\": \"registrar_fatura\"}`.\n\nAo migrar para um modelo mais novo, as chamadas passaram a retornar HTTP 400 por causa do `tool_choice` forçado. O objetivo do forçar era só garantir JSON no formato do schema. Qual é a melhor alternativa?",
+      "opcoes": [
+        "Usar structured outputs (`output_config.format`) com o JSON schema da fatura.",
+        "Fazer prefill da resposta do assistant com `{` para induzir a saída em JSON, mantendo a tool `registrar_fatura` declarada.",
+        "Manter o modelo antigo indefinidamente para preservar o `tool_choice` forçado.",
+        "Usar `tool_choice: none` e pedir no prompt que a resposta siga o schema da tool."
+      ],
+      "correta": 0,
+      "explicacao": "Quando o forçar existia só para obter JSON, structured outputs é a substituição direta. Outra opção é `auto` + instrução nomeando a tool + `strict: true`. Suporte varia por modelo.",
+      "feedbacks": [
+        "Correta: atende ao objetivo real (JSON conforme schema) com o mecanismo feito para isso.",
+        "Prefill do assistant também retorna 400 nos modelos novos; troca um erro por outro.",
+        "Adia o problema e bloqueia a evolução do sistema; não é decisão de arquitetura sustentável.",
+        "`none` proíbe a tool e cai em instrução de texto, sem garantia de formato."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "A tool de extração da Fiscalis tem as propriedades `data_emissao` e `data_competencia`, ambas do tipo string, sem descrição.\n\nEm notas de serviço, o modelo troca as duas datas com frequência. Qual é a correção mais simples que resolve?",
+      "opcoes": [
+        "Adicionar a cada propriedade uma descrição com a definição da data, onde ela costuma aparecer e o formato esperado.",
+        "Separar a extração das duas datas em duas chamadas diferentes ao modelo.",
+        "Renomear as propriedades para inglês, porque o modelo entende melhor nomes em inglês.",
+        "Treinar um classificador que identifica qual data é qual no documento antes da extração e passa o resultado ao modelo como dica."
+      ],
+      "correta": 0,
+      "explicacao": "Descrições de propriedade orientam o preenchimento da mesma forma que a descrição da tool orienta a seleção. Definição, pistas de localização e formato resolvem a ambiguidade.",
+      "feedbacks": [
+        "Correta: resolve a ambiguidade na própria definição da interface, com mudança mínima.",
+        "Duplica custo e latência sem esclarecer a diferença entre as datas.",
+        "O problema é semântico (qual data é qual), não de idioma.",
+        "Muito mais complexo que o necessário para uma ambiguidade que a descrição resolve."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "O agente de conciliação da Fiscalis usa a tool `consultar_fornecedor(cnpj)` para validar se o emissor da fatura está cadastrado. Quando o cadastro está fora do ar, a tool devolve `[]`.\n\nO agente passou a marcar dezenas de faturas legítimas como \"fornecedor não cadastrado\" durante uma instabilidade. Qual é a correção na tool?",
+      "opcoes": [
+        "Devolver a mensagem \"Operation failed\" sempre que algo der errado, para o agente saber que houve problema.",
+        "Distinguir os casos: devolver `[]` só quando a consulta rodou e não achou nada; em timeout ou indisponibilidade, devolver erro estruturado (`isError`, categoria transitória, `isRetryable: true`, ação tentada).",
+        "Manter `[]` na falha, mas instruir o agente a desconfiar de resultados vazios.",
+        "Fazer a tool lançar uma exceção que interrompe o pipeline inteiro de conciliação."
+      ],
+      "correta": 1,
+      "explicacao": "Vazio ≠ falha. Resultado vazio é informação; falha de backend é erro estruturado, com categoria e indicação de retry, para o agente decidir a recuperação.",
+      "feedbacks": [
+        "Erro genérico esconde o diagnóstico: o agente não sabe se deve tentar de novo, esperar ou escalar.",
+        "Correta: o agente recebe o que precisa para separar \"não existe\" de \"não consegui verificar\".",
+        "Suprimir o erro e depender de desconfiança do modelo é o anti-padrão de supressão silenciosa.",
+        "Uma falha transitória não deve derrubar todo o workflow; erro estruturado permite retry e continuação com parcial."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "O agente único da Fiscalis tem 17 tools: OCR, classificação, extração de fatura, extração de contrato, cinco consultas ao ERP, lançamento contábil, envio de e-mail, abertura de chamado, entre outras.\n\nEle frequentemente chama a tool errada (por exemplo, extração de contrato numa fatura) e às vezes faz lançamentos antes de validar. Qual mudança de arquitetura é a mais adequada?",
+      "opcoes": [
+        "Aumentar o `effort` para o modelo raciocinar melhor sobre qual tool usar.",
+        "Reescrever as descrições das 17 tools com exemplos e casos de borda, mantendo o agente único para não complicar a arquitetura.",
+        "Ativar `tool_choice: any`, para garantir que o agente sempre chame alguma tool.",
+        "Dividir em agentes especializados com poucas tools cada, coordenados por um orquestrador."
+      ],
+      "correta": 3,
+      "explicacao": "Com muitas tools visíveis na decisão, a seleção degrada. A diretriz é ~4–5 tools por agente; especializar agentes reduz a confusão. Melhorar descrições sozinho não basta nessa escala.",
+      "feedbacks": [
+        "Mais raciocínio não remove a sobrecarga de opções na decisão.",
+        "Ajuda na margem, mas com 17 tools no mesmo agente a seleção continua degradada.",
+        "Forçar uma chamada não ajuda a escolher a certa; só impede respostas em texto.",
+        "Correta: cada agente decide entre poucas tools relevantes ao seu papel."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis recebe formulários de cadastro preenchidos à mão, com layouts variados. Os campos mais problemáticos são os de endereço, em que o modelo mistura complemento, bairro e cidade.\n\nQual uso de exemplos no prompt tende a melhorar mais a extração desses formulários?",
+      "opcoes": [
+        "Incluir três exemplos quase idênticos do caso fácil, sem explicação, apenas entrada e saída.",
+        "Não usar exemplos e acrescentar mais parágrafos de instrução sobre como interpretar endereços.",
+        "Incluir de 2 a 4 exemplos variados de casos difíceis (endereço em uma linha só, complemento ausente, abreviações), cada um com a entrada, a saída esperada e o raciocínio.",
+        "Incluir 50 exemplos do layout mais comum, para o modelo decorar o padrão."
+      ],
+      "correta": 2,
+      "explicacao": "Few-shot funciona melhor com poucos exemplos direcionados aos casos de borda, variados e com raciocínio, para ensinar o padrão em vez de ser decorado.",
+      "feedbacks": [
+        "Exemplos parecidos e sem raciocínio não cobrem as bordas nem explicam o critério.",
+        "Para ambiguidade de formato, exemplos concretos costumam ser mais eficazes que prosa.",
+        "Correta: cobre as fronteiras reais e mostra o raciocínio que generaliza.",
+        "Muitos exemplos do caso comum custam caro e não ensinam os casos que falham."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fiscalis vai reprocessar 300 mil faturas históricas de 2021 a 2025 com o novo schema, sem prazo apertado. O processamento diário de faturas novas continua em tempo real.\n\nQuais duas práticas são adequadas para o reprocessamento? (Escolha DUAS.)",
+      "opcoes": [
+        "Passar também o processamento diário em tempo real para a Batch API, unificando o pipeline.",
+        "Casar os resultados com as faturas pela ordem em que os requests foram enviados.",
+        "Refinar e validar o prompt numa amostra representativa (vários tipos de documento) antes de submeter o volume completo.",
+        "Usar a Batch API com `custom_id` igual ao identificador do documento, para casar cada resultado com sua fatura.",
+        "Dentro de cada request do batch, deixar o modelo chamar uma tool de consulta ao ERP para completar dados faltantes."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Reprocessamento sem urgência é caso típico de batch, com casamento por `custom_id` e refinamento do prompt numa amostra antes de gastar com volume.",
+      "feedbacks": [
+        "O fluxo diário é tempo real; a janela de até 24h sem SLA não atende.",
+        "Resultados de batch podem vir fora de ordem; casar por posição atribui dados à fatura errada.",
+        "Correta: erro de prompt descoberto depois de 300 mil documentos custa caro.",
+        "Correta: 50% mais barato e correlação confiável pelo `custom_id`.",
+        "Um request de batch não suporta loop multi-turn de tools; os dados precisam ir no request ou ser completados depois."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "O dashboard da Fiscalis mostra 97% de acurácia na extração, medida sobre uma amostra rotulada de 2.000 documentos de todos os tipos.\n\nMesmo assim, o time de cadastro reclama que quase metade dos formulários manuscritos chega com erros. Qual é o próximo passo correto?",
+      "opcoes": [
+        "Aumentar a amostra rotulada uniformemente para 10 mil documentos e recalcular a média.",
+        "Quebrar a métrica por tipo de documento e por campo, para localizar onde a acurácia realmente cai antes de mudar algo.",
+        "Trocar o modelo de todo o pipeline por um maior e mais recente, para subir a acurácia geral e, com ela, a dos manuscritos.",
+        "Considerar a reclamação um caso isolado, já que a acurácia agregada está muito acima da meta."
+      ],
+      "correta": 1,
+      "explicacao": "Métrica agregada esconde falha por segmento: 97% no geral pode conviver com ~45% em manuscritos. Meça por tipo e campo antes de mexer.",
+      "feedbacks": [
+        "Uma média mais precisa continua sendo uma média; o segmento ruim continua diluído.",
+        "Correta: medir antes de mexer, no nível em que o problema aparece.",
+        "Mexe sem medir: caro e sem garantia de atacar o segmento que falha.",
+        "É o anti-padrão da métrica agregada que mascara falha por tipo de documento."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "A Fiscalis tem capacidade de revisar manualmente cerca de 8% das extrações. Hoje a amostra é sorteada uniformemente entre todos os documentos.\n\nFaturas acima de R$ 100 mil e formulários manuscritos concentram quase todos os erros caros. Como redistribuir a revisão humana?",
+      "opcoes": [
+        "Revisar apenas os primeiros 8% de documentos que chegam a cada dia.",
+        "Manter o sorteio uniforme, que é estatisticamente imparcial.",
+        "Amostragem estratificada por risco: percentuais maiores para faturas de alto valor e tipos com pior acurácia medida, menores para tipos de baixo risco, mantendo alguma amostra em todos os estratos.",
+        "Revisar só os documentos em que o modelo declarar baixa confiança na própria extração."
+      ],
+      "correta": 2,
+      "explicacao": "A revisão humana deve ser estratificada por risco, mantendo amostragem mínima nos estratos de baixo risco para detectar regressões.",
+      "feedbacks": [
+        "A ordem de chegada não tem relação com o risco.",
+        "Imparcial, mas gasta a maior parte da capacidade em documentos de baixo risco.",
+        "Correta: concentra o esforço humano onde o erro é mais provável e mais caro.",
+        "Confiança autodeclarada não calibrada não é critério confiável de triagem."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "A Fiscalis passou a pedir ao Claude uma confiança de 0 a 1 para cada campo extraído. O plano é aprovar automaticamente todo campo com confiança ≥ 0,9.\n\nO que precisa acontecer antes de usar esse limiar em produção?",
+      "opcoes": [
+        "Pedir ao modelo para ser mais rigoroso ao atribuir confiança, reduzindo os valores altos.",
+        "Nada: o modelo conhece o próprio grau de certeza, então 0,9 já significa 90% de acerto.",
+        "Calibrar as confianças de cada campo contra um conjunto rotulado, por tipo de documento, antes de definir o limiar.",
+        "Trocar a confiança por campo por uma única confiança por documento, mais estável e mais simples de usar como limiar de aprovação."
+      ],
+      "correta": 2,
+      "explicacao": "Confiança por campo é útil, mas só tem significado depois de calibrada contra dados rotulados. Sem isso, o limiar é arbitrário.",
+      "feedbacks": [
+        "Ajusta a escala por instrução, sem medir; continua sem calibração.",
+        "Confiança autodeclarada é mal calibrada; tratá-la como probabilidade é o anti-padrão.",
+        "Correta: transforma um número autodeclarado num sinal medido.",
+        "Perde a granularidade: um documento pode ter campos certos e um campo crítico errado."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "Ao extrair contratos de fornecimento, a Fiscalis encontra anexos de preço em que o mesmo item aparece com valores unitários diferentes em duas tabelas (por exemplo, R$ 12,40 na tabela 2 e R$ 13,10 na tabela 5).\n\nComo a extração deve tratar esse conflito?",
+      "opcoes": [
+        "Usar o valor da última tabela do anexo, assumindo que ela reflete a versão mais recente da negociação entre as partes.",
+        "Calcular a média dos dois valores e registrar só o resultado.",
+        "Registrar os dois valores com a localização de cada um, marcar o item como conflitante e encaminhá-lo para revisão.",
+        "Usar o maior valor, que é a escolha conservadora para a empresa compradora."
+      ],
+      "correta": 2,
+      "explicacao": "Em conflito entre fontes, preserve os valores divergentes com proveniência. Não escolha um em silêncio nem tire média.",
+      "feedbacks": [
+        "Suposição não documentada sobre ordem; também escolhe em silêncio.",
+        "Média cria um valor que não existe em nenhuma das fontes.",
+        "Correta: mantém a informação e a rastreabilidade para quem decide.",
+        "Escolher em silêncio esconde o conflito; o critério nem é objetivo."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "A Fiscalis extrai cláusulas de contratos com 200 a 300 páginas, enviando o documento inteiro numa só chamada. Multas e reajustes costumam estar no meio do documento.\n\nOs campos de multa e índice de reajuste são os que mais falham, enquanto os dados da primeira e da última página saem corretos. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Repetir a instrução de extração três vezes no prompt, para reforçar a atenção do modelo.",
+        "Pedir primeiro um resumo do contrato inteiro e depois extrair multa e reajuste a partir desse resumo.",
+        "Usar um modelo com janela maior, já que o problema é o tamanho do documento.",
+        "Segmentar o contrato pelas seções/cláusulas, extrair os campos de cada parte com um prompt focado e consolidar em código, mantendo a referência à cláusula de origem."
+      ],
+      "correta": 3,
+      "explicacao": "Informação no meio de contexto longo tende a ser perdida (lost in the middle). Dividir por seção com prompts focados resolve; resumo intermediário perde valores exatos.",
+      "feedbacks": [
+        "Repetir a instrução não muda a posição da informação no contexto.",
+        "Resumo perde exatamente valores, percentuais e datas, que é o que se quer extrair.",
+        "O documento já cabe na janela; janela maior não elimina o efeito de lost in the middle.",
+        "Correta: cada chamada tem contexto enxuto e foco claro, e a proveniência é preservada."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "O agente de contas a pagar da Fiscalis extrai a fatura e a lança no ERP com a tool `lancar_no_erp`. A política financeira diz que faturas acima de R$ 50 mil só podem ser lançadas com aprovação humana.\n\nA regra está no system prompt, mas uma auditoria encontrou três lançamentos de mais de R$ 50 mil sem aprovação. Como impor a política?",
+      "opcoes": [
+        "Reescrever a regra no system prompt com mais ênfase, repetindo-a no início e no fim e incluindo exemplos de faturas acima do limite.",
+        "Bloquear em código: um hook `PreToolUse` que nega `lancar_no_erp` acima de R$ 50 mil sem aprovação registrada.",
+        "Auditar os lançamentos mensalmente e estornar os que violarem a política.",
+        "Pedir ao agente que declare sua confiança antes de cada lançamento e bloquear quando ela for baixa."
+      ],
+      "correta": 1,
+      "explicacao": "Regra com consequência financeira vai para código determinístico (hook/pré-requisito). Prompt é probabilístico e tem taxa de falha não nula.",
+      "feedbacks": [
+        "Continua best-effort; a auditoria já mostrou que o prompt falha.",
+        "Correta: a política vira uma barreira que o modelo não consegue contornar.",
+        "Detecta depois do dano; a política exige prevenção.",
+        "Confiança autodeclarada é mal calibrada e não tem relação com o valor da fatura."
+      ]
+    }
+  ]
+}

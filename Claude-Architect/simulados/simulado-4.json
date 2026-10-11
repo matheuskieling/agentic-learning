@@ -1,0 +1,1191 @@
+{
+  "titulo": "Simulado 4 — CCAR-F (60 questões · 120 min)",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Cenário: a AeroLumen, companhia aérea regional, opera um agente de atendimento construído com o Claude Agent SDK. Pelo chat do app, ele resolve reembolsos, remarcações e problemas de bagagem usando tools MCP internas: get_passenger, lookup_booking, verify_identity, process_refund, rebook_flight e escalate_to_human. Restrições do negócio: nenhuma alteração de reserva ou reembolso pode acontecer antes da verificação de identidade; reembolsos acima de R$ 2.000 exigem aprovação humana; dados pessoais estão sob a LGPD; a meta é resolver 70% dos casos sem humano, sem escalonamentos desnecessários.\n\nNa auditoria mensal, a equipe descobre que em cerca de 2% das conversas o agente chamou process_refund antes de verify_identity, apesar de o system prompt dizer, em maiúsculas, que a verificação é obrigatória. Qual é a correção mais adequada?",
+      "opcoes": [
+        "Reforçar o system prompt com três exemplos few-shot mostrando a ordem correta das chamadas e repetir a regra no fim do prompt, onde ela recebe mais atenção.",
+        "Um hook PreToolUse que intercepta process_refund e devolve permissionDecision \"deny\", com motivo, enquanto a sessão não tiver um verify_identity bem-sucedido registrado.",
+        "Um job diário em que um segundo modelo revisa os transcripts do dia e sinaliza reembolsos feitos sem verificação, para estorno manual.",
+        "Um hook PostToolUse em process_refund que confere, logo após a chamada, se houve verificação de identidade na sessão e, se não houve, devolve ao modelo uma mensagem de erro pedindo que verifique."
+      ],
+      "correta": 1,
+      "explicacao": "Consequência financeira/compliance → enforcement programático antes da execução (PreToolUse com deny). Prompt e few-shot são best-effort; auditoria posterior e PostToolUse chegam tarde.",
+      "feedbacks": [
+        "Tentadora porque costuma reduzir a taxa de erro. Mas continua probabilística (anti-padrão 3: regra crítica só em prompt). 2% virar 0,5% ainda é reembolso sem identidade verificada.",
+        "Correta. Regra com consequência financeira e de compliance precisa de enforcement determinístico. O hook bloqueia sempre, e o motivo devolvido orienta o modelo a verificar a identidade primeiro.",
+        "Detecta depois que o dinheiro já saiu. É auditoria, não prevenção, e é mais complexa que o necessário.",
+        "Pegadinha de evento: PostToolUse roda depois que a tool executou, então o reembolso já foi processado. O bloqueio tem que acontecer antes da execução, em PreToolUse."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "No agente da AeroLumen, conversas longas (40+ turnos, vários voos e reembolsos parciais) passam pelo resumo automático do contexto. Depois disso, o agente passa a citar localizadores trocados e valores arredondados (\"cerca de R$ 1.800\" em vez de R$ 1.837,40). O que resolve a causa?",
+      "opcoes": [
+        "Manter um bloco de case facts (localizadores, valores exatos, datas, IDs) que nunca é resumido e vai em todo turno.",
+        "Instruir o resumidor, no prompt de compaction, a preservar com exatidão todos os números, localizadores e identificadores, sem arredondar nem parafrasear nenhum valor.",
+        "Migrar para um modelo com janela de 1M de tokens e desligar o resumo, mantendo o histórico completo.",
+        "Fazer o agente chamar lookup_booking de novo antes de cada resposta para recarregar os dados da reserva."
+      ],
+      "correta": 0,
+      "explicacao": "Case facts: valores exatos, datas e IDs ficam num bloco que nunca é resumido.",
+      "feedbacks": [
+        "Correta. Resumo perde exatamente valores, datas e IDs. Um bloco de case facts que nunca é parafraseado preserva os dados exatos independentemente de quantas vezes o resto for comprimido.",
+        "Tentadora e até ajuda, mas é probabilística: o resumo continua sendo uma paráfrase e ainda pode arredondar ou trocar valores. Não garante o que precisa ser exato.",
+        "Ataca o sintoma errado: janela maior custa todos os tokens a cada turno e piora o lost in the middle; os dados exatos ficariam enterrados no meio de uma conversa enorme.",
+        "Gasta chamadas e contexto a cada turno e não cobre fatos que vieram da conversa (valores combinados, reembolsos parciais já acordados). Ruído em vez de um registro estável."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "Na AeroLumen, um passageiro escreve em maiúsculas, xinga e ameaça expor a empresa nas redes porque a taxa de marcação de assento (R$ 38) foi cobrada duas vezes. A política permite estornar automaticamente taxas duplicadas. Um analista propõe escalar toda conversa cujo score de sentimento fique abaixo de -0,7. Qual é a melhor conduta?",
+      "opcoes": [
+        "Escalar pelo score de sentimento, porque cliente muito irritado tem risco reputacional e merece atendimento humano prioritário.",
+        "Pedir ao modelo que informe sua confiança de 0 a 1 na resolução e escalar quando ela ficar abaixo de 0,8.",
+        "Resolver: confirmar a duplicidade e estornar a taxa pelo fluxo normal, sem escalar.",
+        "Responder primeiro com empatia e, se o score de sentimento não melhorar em dois turnos, escalar automaticamente para um supervisor."
+      ],
+      "correta": 2,
+      "explicacao": "Sentimento ≠ complexidade. Escale por pedido explícito, exceção/lacuna de política ou falta de progresso.",
+      "feedbacks": [
+        "Anti-padrão 5: escalar por sentimento. Raiva alta não torna o problema difícil; o humano faria o mesmo estorno, só que mais tarde.",
+        "Anti-padrão 4: confiança autodeclarada é mal calibrada; o modelo pode dizer 0,95 errando ou 0,6 acertando. Não é um critério de escalonamento confiável.",
+        "Correta. Sentimento não é complexidade: o caso é simples e coberto pela política. Escalar aqui só aumenta fila e tempo de resolução.",
+        "Parece equilibrada, mas continua usando sentimento como gatilho. O critério deveria ser a natureza do problema (política coberta, progresso), não o humor do cliente."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "A AeroLumen quer critérios explícitos de escalonamento imediato para o agente. Quais situações devem disparar escalate_to_human logo de cara? (Escolha DUAS.)",
+      "opcoes": [
+        "O passageiro está furioso com uma franquia de bagagem cobrada conforme a tarifa contratada e ameaça cancelar o programa de fidelidade.",
+        "O passageiro, calmo e educado, pede reembolso integral de uma tarifa não reembolsável alegando uma internação hospitalar, situação que a política atual não prevê.",
+        "O modelo relata confiança de 0,42 na própria classificação do tipo de problema.",
+        "O passageiro escreve \"quero falar com uma pessoa\" logo na segunda mensagem, antes de o agente tentar qualquer coisa.",
+        "A conversa passou de 25 turnos, mas o agente segue avançando: já remarcou dois trechos e falta um."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Gatilhos imediatos: pedido explícito de humano e exceção/lacuna de política. Sentimento, confiança autodeclarada e tamanho da conversa não são.",
+      "feedbacks": [
+        "Sentimento alto com caso simples e coberto: o agente explica a regra da tarifa. Escalar seria o anti-padrão 5.",
+        "Correta. Exceção/lacuna de política: o agente não tem autoridade para criar regra nova. Tom calmo não muda isso.",
+        "Anti-padrão 4: confiança autodeclarada não é calibrada. O caminho é perguntar/esclarecer, não escalar.",
+        "Correta. Pedido explícito de humano é gatilho imediato; insistir em resolver antes contraria o cliente.",
+        "Tamanho da conversa não é critério; há progresso. O gatilho correto é ausência de progresso após tentativas razoáveis."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "No agente da AeroLumen, o wrapper MCP de lookup_booking captura qualquer exceção e devolve [] para \"não quebrar o agente\". Num pico, o backend de reservas deu timeout e o agente disse a dezenas de passageiros que \"não existe reserva com esse localizador\". Qual é o redesenho correto?",
+      "opcoes": [
+        "Instruir o agente a, sempre que receber lista vazia, chamar lookup_booking mais duas vezes antes de concluir que a reserva não existe.",
+        "Busca que rodou sem achar → sucesso com lista vazia; timeout → erro estruturado (transient, isRetryable true).",
+        "Fazer o wrapper tentar três vezes com backoff e, se todas falharem, devolver lista vazia normalmente.",
+        "Trocar o [] por uma string \"Operation failed\" com isError true, sem outros campos, para que o agente saiba que algo deu errado."
+      ],
+      "correta": 1,
+      "explicacao": "Resultado vazio é informação; timeout é falha. Erro estruturado com categoria e retentabilidade.",
+      "feedbacks": [
+        "Trata o sintoma: retenta também vazios legítimos (localizador digitado errado), e o timeout continua indistinguível de \"não achei\".",
+        "Correta. Vazio ≠ falha. O modelo precisa saber se a busca rodou; com erro transitório estruturado ele pode tentar de novo ou avisar que o sistema está instável, sem afirmar algo falso.",
+        "Retry local para transitório é bom, mas terminar em lista vazia continua sendo supressão silenciosa (anti-padrão 7): o agente segue afirmando que a reserva não existe.",
+        "Melhor que esconder, mas é erro genérico (anti-padrão 6): sem categoria nem isRetryable, o modelo não sabe se retenta, corrige a entrada ou escala."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "Na AeroLumen, o passageiro pede reembolso de uma passagem tarifa Light, não reembolsável por contrato. Como process_refund deve responder para o agente reagir bem?",
+      "opcoes": [
+        "Erro de validação, indicando que o campo fare_class não é aceito, para o agente corrigir a entrada e tentar de novo.",
+        "Erro transitório com isRetryable true, para o agente tentar novamente mais tarde caso a política mude.",
+        "Sucesso com valor reembolsado R$ 0,00, deixando o agente deduzir pela quantia que a tarifa não é reembolsável.",
+        "Erro de negócio estruturado: isRetryable false, regra violada e alternativa (crédito de viagem)."
+      ],
+      "correta": 3,
+      "explicacao": "Categorias: transitório (retry), validação (corrigir entrada), negócio (explicar/escalar), permissão (escalar).",
+      "feedbacks": [
+        "Categoria errada: a entrada está correta; o que impede é a política. Rotular como validação induz o modelo a \"consertar\" o pedido e tentar de novo.",
+        "Política não é instabilidade de serviço. Marcar como retentável gera retries inúteis e falsas promessas ao cliente.",
+        "Mascara uma recusa como sucesso. O modelo pode informar \"reembolso processado\" e o cliente fica confuso. Falha de negócio deve ser explícita.",
+        "Correta. Erro de negócio não é retentável; com a regra e a alternativa no resultado, o agente explica a política ao cliente e oferece o crédito em vez de insistir."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Na AeroLumen, escalate_to_human hoje envia só \"cliente precisa de ajuda com reembolso\". Os atendentes humanos, que não veem o chat, reclamam que precisam refazer todas as perguntas. Qual é a melhor mudança?",
+      "opcoes": [
+        "Anexar ao ticket o transcript completo da conversa, com os tool results, para que o atendente tenha todo o contexto disponível sem perder nenhum detalhe.",
+        "Pedir ao passageiro, antes de transferir, que descreva o problema novamente com suas palavras para registrar no ticket.",
+        "Passar o ID da sessão para o atendente reabrir a conversa no painel e ler o histórico quando precisar.",
+        "Um resumo estruturado: identidade, localizador, problema, ações tomadas, motivo do bloqueio, recomendação e valor."
+      ],
+      "correta": 3,
+      "explicacao": "Handoff = resumo estruturado (cliente, problema, ações, bloqueio, recomendação, valor).",
+      "feedbacks": [
+        "Tentadora (\"nada se perde\"), mas joga 40 turnos no colo do humano, que não vai lê-los. O que falta é síntese organizada, não volume.",
+        "Transfere o trabalho para o cliente e piora a experiência; o agente já tem as informações.",
+        "Só dá acesso ao mesmo histórico longo; não resolve o problema de ter de reconstruir o caso.",
+        "Correta. O humano normalmente não lê o transcript; um handoff estruturado deixa o caso pronto para decisão sem retrabalho."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "O agente da AeroLumen cresceu para 17 tools (bagagem, milhas, reembolso, remarcação, assentos, FAQ, pets...) e a taxa de tool errada subiu, principalmente entre tools de domínios vizinhos. Qual é a melhor arquitetura?",
+      "opcoes": [
+        "Reescrever as 17 descrições dizendo quando usar cada tool, com exemplo de entrada e como ela difere das tools vizinhas do mesmo domínio.",
+        "Coordenador roteando para subagents especializados, cada um com 4 a 5 tools do seu domínio.",
+        "Configurar tool_choice \"any\" para obrigar o agente a sempre chamar alguma tool antes de responder.",
+        "Subir o effort para \"max\" para o modelo raciocinar mais antes de escolher a tool."
+      ],
+      "correta": 1,
+      "explicacao": "Tools demais num agente só → divida em subagents especializados com 4–5 tools cada.",
+      "feedbacks": [
+        "É a primeira coisa a tentar com 2–3 tools sobrepostas, mas com 17 tools melhorar descrições sozinho não basta (anti-padrão 8).",
+        "Correta. Com ~17 tools a seleção degrada; dividir em especialistas mantém poucas tools visíveis na decisão, que é a diretriz.",
+        "Obrigar a chamar não melhora a escolha de qual chamar; e em modelos novos \"any\" pode nem ser aceito.",
+        "Mais raciocínio não compensa um espaço de decisão grande e sobreposto; custa mais e ataca o sintoma."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "No loop do agente da AeroLumen, o código encerra o turno assim que a resposta contém um bloco de texto. Logs mostram respostas como \"Vou verificar sua reserva agora.\" seguidas de um tool_use que nunca é executado. Qual é a correção?",
+      "opcoes": [
+        "Decidir pelo stop_reason: \"tool_use\" executa as tools e continua; \"end_turn\" encerra.",
+        "Detectar frases como \"vou verificar\" ou \"um momento\" e, nesses casos, manter o loop aberto.",
+        "Instruir o modelo, no system prompt, a nunca escrever texto na mesma resposta em que chama uma tool.",
+        "Manter a regra atual e adicionar um limite de 10 iterações como critério principal de parada."
+      ],
+      "correta": 0,
+      "explicacao": "stop_reason decide o loop; texto + tool_use na mesma resposta é normal.",
+      "feedbacks": [
+        "Correta. content pode misturar texto e tool_use; ter texto não significa que terminou. Quem decide é o stop_reason.",
+        "Anti-padrão 1: decidir o fim do loop lendo linguagem natural. Quebra com qualquer variação de frase.",
+        "Tenta mudar o comportamento legítimo do modelo via prompt em vez de corrigir o código; e continua frágil.",
+        "Anti-padrão 2: limite de iterações é backstop, não mecanismo principal; e não corrige o tool_use ignorado."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "No agente da AeroLumen, get_passenger (\"busca dados do passageiro\") e search_customer (\"procura informações do cliente\") vêm de times diferentes e o modelo alterna entre elas de forma inconsistente. Quais correções atacam a causa? (Escolha DUAS.)",
+      "opcoes": [
+        "Adicionar antes do agente um classificador de intenção, treinado com conversas rotuladas, que decide qual das duas tools deve ser usada em cada mensagem do passageiro.",
+        "Forçar tool_choice para get_passenger em todo primeiro turno da conversa.",
+        "Colocar no system prompt 30 exemplos de mensagens de clientes com a tool correta para cada uma.",
+        "Fundir as duas numa única tool com parâmetro explícito de chave de busca (CPF, e-mail ou número de fidelidade), eliminando a sobreposição.",
+        "Se precisarem existir separadas, renomeá-las por propósito e dizer na descrição quando usar cada uma e como difere da outra."
+      ],
+      "corretas": [
+        3,
+        4
+      ],
+      "explicacao": "Sobreposição → funda ou separe com nomes e descrições diferenciadoras.",
+      "feedbacks": [
+        "Solução mais complexa que o necessário: um componente extra para compensar descrições ruins.",
+        "Força uma escolha fixa mesmo quando não cabe, e em modelos novos o forçar pode retornar 400.",
+        "Muitos exemplos, decorados, para remendar a sobreposição; não generaliza e incha o prompt.",
+        "Correta. Tools sobrepostas causam roteamento errado; fundir remove a ambiguidade na raiz.",
+        "Correta. A descrição é o critério de seleção; diferenciar explicitamente as vizinhas é a correção mais simples quando ambas são necessárias."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D4",
+      "pergunta": "O agente da AeroLumen tem system prompt de 14 mil tokens (políticas) e tools estáveis, mas usage.cache_read_input_tokens fica em zero em todo request. Quais causas explicam isso? (Escolha DUAS.)",
+      "opcoes": [
+        "A mensagem do usuário muda a cada turno, porque cada passageiro escreve algo diferente.",
+        "Foram usados quatro breakpoints de cache_control (tools, system, histórico e última mensagem), que é o máximo permitido pela API.",
+        "A primeira linha do system prompt é \"Data e hora atuais: {agora}\", preenchida a cada request.",
+        "As requests chegam a cada 20 segundos, bem dentro do TTL padrão de 5 minutos.",
+        "O array tools é montado a partir de um conjunto (set) cuja ordem varia entre execuções e conforme o nível de fidelidade do passageiro."
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Estável primeiro, volátil depois; timestamp e tools não determinísticas são invalidadores silenciosos.",
+      "feedbacks": [
+        "A parte volátil depois do último breakpoint pode mudar à vontade; é exatamente o desenho correto.",
+        "Quatro é o limite permitido, não um problema. Usar breakpoints não invalida o cache.",
+        "Correta. Timestamp no prefixo muda a cada request e invalida tudo dali para frente.",
+        "Requests frequentes dentro do TTL são o cenário ideal para leitura de cache.",
+        "Correta. Cache casa prefixo exato na ordem tools → system → messages; tools variando de ordem ou conteúdo invalidam o cache."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "A AeroLumen ativou compaction server-side no agente para sessões muito longas. Depois do primeiro evento de compaction, o agente passa a agir como se a conversa tivesse começado do zero. O código de integração acrescenta ao histórico apenas o texto da resposta (os blocos do tipo \"text\"). Qual é a correção?",
+      "opcoes": [
+        "Acrescentar ao histórico o response.content inteiro, incluindo o bloco de compaction, e não só o texto.",
+        "Trocar compaction por context editing com clear_tool_uses, que remove só os resultados antigos de tool e por isso preserva melhor a narrativa da conversa.",
+        "Usar a memory tool para gravar o transcript inteiro a cada turno e reler no turno seguinte.",
+        "Desligar a compaction e aumentar max_tokens para que as respostas comportem mais contexto."
+      ],
+      "correta": 0,
+      "explicacao": "Com compaction, devolva o response.content completo; histórico append-only.",
+      "feedbacks": [
+        "Correta. O resumo compactado vem num bloco próprio; ao guardar só o texto, o estado de compaction se perde em silêncio e o contexto anterior desaparece.",
+        "Context editing limpa resultados antigos de tool; não resume a narrativa. E não corrige o bug de descartar blocos da resposta.",
+        "Memory é para achados entre sessões, não para remendar histórico mal montado; reler o transcript inteiro desfaz o ganho da compaction.",
+        "max_tokens limita a saída, não a janela de entrada. Confunde os dois tetos."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "O get_passenger da AeroLumen é um servidor MCP de um fornecedor externo e devolve 40 campos, incluindo número completo de cartão e passaporte. A equipe quer que o modelo receba só os campos necessários, com PII mascarada, sem depender do fornecedor. Qual é o mecanismo certo?",
+      "opcoes": [
+        "Instruir no system prompt que o agente nunca repita número de cartão, passaporte ou outros dados sensíveis ao passageiro, mesmo quando ele pedir explicitamente.",
+        "Um hook PreToolUse em get_passenger que remove os campos sensíveis da chamada.",
+        "Ativar context editing para limpar os resultados antigos de get_passenger após alguns turnos.",
+        "Um hook PostToolUse que filtra os campos e mascara cartão e passaporte antes de o modelo ver o resultado."
+      ],
+      "correta": 3,
+      "explicacao": "PostToolUse: normalizar, cortar campos e mascarar PII antes de o modelo ver.",
+      "feedbacks": [
+        "O dado já entrou no contexto; o prompt só tenta evitar que saia, de forma probabilística (anti-padrão 3).",
+        "PreToolUse atua sobre a entrada da chamada, antes de existir resultado; não há o que mascarar ali.",
+        "Limpa depois que o modelo já leu os 40 campos com PII; não impede a exposição nem enxuga a decisão atual.",
+        "Correta. PostToolUse normaliza e limpa resultados deterministicamente; enxuga o contexto e protege PII."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Num turno, o agente da AeroLumen emitiu dois tool_use na mesma resposta (lookup_booking e get_passenger). O código executa ambos e envia cada tool_result numa mensagem user separada; quando lookup_booking falha, ele simplesmente não envia resultado para ela. O que está errado?",
+      "opcoes": [
+        "O correto é configurar disable_parallel_tool_use true, porque chamadas paralelas não são suportadas com tools MCP.",
+        "Todos os tool_result numa única mensagem user, com os tool_use_id exatos; o que falhou vai com is_error true.",
+        "Tudo certo no envio; só falta, quando uma tool falha, encerrar o loop e pedir ao passageiro que tente mais tarde.",
+        "As mensagens separadas estão certas, pois cada tool tem seu próprio ciclo; o único problema é que a tool que falhou deveria receber um tool_result vazio."
+      ],
+      "correta": 1,
+      "explicacao": "Paralelo: todos os tool_result numa mensagem user, ids exatos, falha com is_error.",
+      "feedbacks": [
+        "Paralelo é suportado; desligá-lo só esconde o bug de montagem e deixa o atendimento mais lento.",
+        "Correta. Tool use paralelo: um resultado por tool_use_id, todos juntos; omitir o que falhou deixa a chamada sem resposta e impede o modelo de raciocinar sobre a recuperação.",
+        "Abortar o fluxo por uma falha desperdiça o resultado que deu certo; o modelo deveria receber o erro e decidir.",
+        "Resultado vazio de uma falha é supressão silenciosa; e mensagens separadas quebram o pareamento esperado."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D3",
+      "pergunta": "A equipe que desenvolve o agente da AeroLumen usa Claude Code e quer um subagent \"auditor de transcripts\" com prompt próprio, restrito a leitura (Read, Grep, Glob), disponível para todos os devs do repositório. Onde e como defini-lo?",
+      "opcoes": [
+        "Em ~/.claude/agents/auditor.md na máquina de cada dev, com o mesmo frontmatter.",
+        "Em .claude/agents/auditor.md, versionado, com frontmatter definindo descrição, tools permitidas e prompt próprio.",
+        "Usar o subagent nativo Explore, que já é somente leitura, e colar o prompt de auditoria no CLAUDE.md.",
+        "Como uma seção no CLAUDE.md do projeto descrevendo o papel de auditor e pedindo que o Claude não edite arquivos ao auditar."
+      ],
+      "correta": 1,
+      "explicacao": "Subagent customizado do time → .claude/agents/ versionado, tools no frontmatter.",
+      "feedbacks": [
+        "Funciona para quem configurou, mas é pessoal: não é compartilhado nem versionado com o time.",
+        "Correta. Subagents customizados ficam em .claude/agents/ (projeto, compartilhado via git), com tools restritas no frontmatter.",
+        "Explore é somente leitura, mas não carrega um papel próprio; misturar instrução de auditoria no CLAUDE.md polui todas as sessões.",
+        "Não cria um subagent isolado e a restrição de leitura fica só em prompt; não é determinística."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: o escritório Andrade & Teles Advogados usa um sistema multiagente para produzir relatórios de due diligence em operações de M&A. Um coordenador recebe o pedido (empresa-alvo, período, escopo), delega a subagents de pesquisa (registros públicos e processos judiciais, notícias, análise financeira) e a um subagent de síntese. Restrições: toda afirmação do relatório precisa de fonte e data; divergências entre fontes têm de aparecer para os sócios; o relatório sai em até 4 horas.\n\nO coordenador delega com prompts como \"Analise os riscos da empresa-alvo\". Os subagents devolvem textos genéricos, às vezes sobre outra empresa de nome parecido. Qual é a melhor correção?",
+      "opcoes": [
+        "Aumentar max_turns dos subagents para que tenham mais iterações para descobrir sozinhos de qual empresa se trata.",
+        "Permitir que os subagents consultem diretamente uns aos outros para alinhar qual é a empresa-alvo.",
+        "Adicionar ao system prompt dos subagents a instrução \"confirme sempre que está pesquisando a empresa correta antes de começar qualquer busca\".",
+        "Passar no prompt de delegação razão social, CNPJ, período, escopo, achados até aqui e formato de saída."
+      ],
+      "correta": 3,
+      "explicacao": "Subagents não herdam contexto: passe tudo explicitamente no prompt de delegação.",
+      "feedbacks": [
+        "Mais iterações não trazem a informação que nunca foi passada; só aumentam custo e chance de errar de empresa.",
+        "Subagents conversando entre si quebram o hub-and-spoke; o problema é o coordenador não passar o contexto.",
+        "Pedir confirmação sem dar o dado (CNPJ, razão social) não resolve: o subagent não tem com o que confirmar.",
+        "Correta. O contexto do subagent é isolado: ele não herda o histórico do coordenador. Tudo o que precisa tem de ir no prompt."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "No sistema da Andrade & Teles, os três subagents de pesquisa são independentes entre si, mas o log mostra que o coordenador chama um Agent por turno, esperando cada um terminar. O relatório leva 3h40. Qual mudança reduz o tempo sem alterar a arquitetura?",
+      "opcoes": [
+        "Fazer o coordenador emitir as três chamadas Agent na mesma resposta, para que rodem em paralelo.",
+        "Enviar as três pesquisas pela Batch API, que processa os requests em paralelo com 50% de desconto.",
+        "Criar três coordenadores, cada um responsável por um subagent, rodando em processos separados.",
+        "Diminuir o max_tokens de cada subagent para que cada um termine mais rápido."
+      ],
+      "correta": 0,
+      "explicacao": "Vários Agent na mesma resposta do coordenador = execução paralela.",
+      "feedbacks": [
+        "Correta. Paralelismo vem de vários Agent na mesma resposta; turnos separados são sequenciais.",
+        "Batch não tem SLA e pode levar até 24h; e não suporta o loop multi-turn de tools de cada subagent.",
+        "Complexidade desnecessária e perde o ponto único de agregação e tratamento de erros.",
+        "Corta saídas no meio (stop_reason max_tokens) e não muda a execução sequencial."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Num pedido de \"riscos regulatórios\" da empresa-alvo (indústria farmacêutica), o coordenador da Andrade & Teles decompôs só em \"registros na ANVISA\". O relatório omitiu autuações ambientais e passivos trabalhistas relevantes. Qual é a correção mais adequada?",
+      "opcoes": [
+        "Instruir o subagent de síntese a ser abrangente e cobrir todos os riscos regulatórios possíveis do setor, sem deixar nenhuma frente de fora do relatório final.",
+        "Aumentar o número de resultados que o subagent de registros públicos traz por busca.",
+        "Ampliar a decomposição e checar cobertura contra uma lista explícita das frentes regulatórias do setor.",
+        "Rodar o pipeline inteiro duas vezes e unir os resultados das duas execuções."
+      ],
+      "correta": 2,
+      "explicacao": "Decomposição estreita → amplie e cheque cobertura explicitamente.",
+      "feedbacks": [
+        "Sem pesquisa das frentes omitidas, a síntese só pode inventar ou ficar genérica; o problema nasceu na decomposição.",
+        "Mais resultados sobre ANVISA continuam sendo ANVISA; não cobre as frentes que nunca foram delegadas.",
+        "Correta. É a decomposição estreita demais; a correção é ampliar a decomposição e verificar cobertura de forma explícita.",
+        "Repetir a mesma decomposição estreita produz as mesmas lacunas, pelo dobro do custo."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Para economizar tokens, um engenheiro da Andrade & Teles propõe que o subagent financeiro envie achados diretamente ao subagent de processos judiciais, sem passar pelo coordenador. Qual é a avaliação correta?",
+      "opcoes": [
+        "Rejeitar: no hub-and-spoke toda comunicação passa pelo coordenador.",
+        "Aceitar, desde que os subagents usem o mesmo formato JSON de mensagem para evitar mal-entendidos.",
+        "Aceitar, porque reduz a carga de contexto do coordenador, que é o gargalo do sistema.",
+        "Aceitar apenas para achados de alto risco, que precisam chegar mais rápido ao outro subagent."
+      ],
+      "correta": 0,
+      "explicacao": "Hub-and-spoke: toda comunicação passa pelo coordenador.",
+      "feedbacks": [
+        "Correta. Comunicação direta entre subagents é anti-padrão: perde rastreabilidade, tratamento central de erro e controle do que é passado adiante.",
+        "O formato não é o problema; é a topologia. Mesmo com JSON, o coordenador perde a visão e o controle.",
+        "O custo de contexto se resolve com saídas enxutas e estruturadas, não removendo o ponto de controle.",
+        "Justamente o achado crítico precisa passar pelo coordenador, que decide a redelegação e a síntese."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Ao avaliar a síntese, o coordenador da Andrade & Teles percebe que não há nada sobre processos ajuizados em 2024, embora a empresa tenha tido uma recuperação judicial noticiada naquele ano. O que ele deve fazer?",
+      "opcoes": [
+        "Rodar todo o pipeline de novo com o mesmo pedido, para dar outra chance aos subagents.",
+        "Pedir ao subagent de síntese que complete a seção sobre 2024 com o que for mais provável a partir das notícias, marcando claramente como \"estimado\".",
+        "Redelegar ao subagent de processos uma consulta direcionada (2024, recuperação judicial) e ressintetizar.",
+        "Entregar o relatório como está, já que a notícia de 2024 pode não ter impacto jurídico relevante."
+      ],
+      "correta": 2,
+      "explicacao": "Coordenador avalia, detecta lacuna e redelega de forma direcionada.",
+      "feedbacks": [
+        "Repete tudo, inclusive o que já estava bom, sem dirigir a pesquisa à lacuna.",
+        "Preenche com conteúdo sem fonte, violando a regra de que toda afirmação tem fonte e data.",
+        "Correta. Refinamento iterativo: roda, avalia, identifica lacuna, redelega de forma direcionada e sintetiza de novo.",
+        "Lacuna conhecida e silenciosa; no mínimo deveria ser pesquisada ou anotada."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "O coordenador da Andrade & Teles, implementado com o Agent SDK, tem AgentDefinition para os quatro subagents, mas nunca os aciona: faz todas as buscas sozinho e estoura o contexto. O que é mais provável que esteja faltando?",
+      "opcoes": [
+        "Um hook SubagentStop configurado, sem o qual o SDK não inicia subagents.",
+        "Instruir no prompt do coordenador \"delegue sempre que possível\", porque o modelo não delega por padrão.",
+        "A tool WebSearch no coordenador, para que ele saiba quando a busca é grande o bastante para delegar.",
+        "A tool Agent na lista allowedTools do coordenador, que é por onde ele cria subagents."
+      ],
+      "correta": 3,
+      "explicacao": "Coordenador precisa de Agent em allowedTools para spawnar subagents.",
+      "feedbacks": [
+        "SubagentStop reage ao fim de um subagent; não é pré-requisito para criá-los.",
+        "Pode até ajudar na decisão, mas sem a tool Agent disponível não há como delegar.",
+        "Dar mais tools de busca ao coordenador reforça o problema: ele vai buscar sozinho.",
+        "Correta. Subagents são criados pela tool Agent (antes Task); sem ela em allowedTools, o coordenador não consegue delegar."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "No sistema da Andrade & Teles, a tool search_court_records do subagent de processos às vezes devolve 503. Hoje o subagent repassa \"Search failed\" e o coordenador aborta o relatório inteiro. Quais mudanças são corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "O subagent faz retry local com backoff em erros transitórios e só propaga ao coordenador o que não conseguiu resolver.",
+        "Em caso de 503, o subagent devolver lista vazia de processos com status de sucesso, para que o relatório siga sem bloqueio e os sócios recebam no prazo.",
+        "O coordenador, ao receber qualquer erro, refazer automaticamente o relatório inteiro do zero.",
+        "Padronizar o erro como \"Operation failed\" com isError true para todos os subagents.",
+        "Propagar erro estruturado (categoria, consulta tentada, parciais) e o coordenador seguir com o parcial, anotando a lacuna."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Retry local de transitório + propagação estruturada com parcial; nunca abortar tudo nem silenciar.",
+      "feedbacks": [
+        "Correta. Recuperação local de transitórios evita incomodar o coordenador com falhas que somem em segundos.",
+        "Supressão silenciosa (anti-padrão 7): o relatório diria \"nenhum processo\" sobre uma busca que não rodou.",
+        "Desperdiça todo o trabalho bem-sucedido por causa de uma etapa; é a variação cara do abortar.",
+        "Padronizado, mas genérico (anti-padrão 6): sem categoria nem consulta tentada, o coordenador não sabe o que fazer.",
+        "Correta. Erro com contexto permite decisão; não abortar o workflow por uma etapa preserva o resto do trabalho."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "O subagent de notícias da Andrade & Teles usa a tool server-side de web fetch. Ele tenta buscar URLs que \"deduz\" (por exemplo, montando o endereço da página de um tribunal) e as chamadas falham. Qual é a explicação e a correção?",
+      "opcoes": [
+        "O limite max_uses do web fetch foi atingido; aumente-o para permitir mais buscas por request.",
+        "Tools server-side não acessam sites de tribunais por restrição de segurança; troque por um servidor MCP de scraping hospedado internamente.",
+        "Web fetch só acessa URLs já presentes na conversa; traga-as antes via web search ou pelo prompt.",
+        "A falha vem com stop_reason \"pause_turn\"; basta reenviar a resposta para continuar."
+      ],
+      "correta": 2,
+      "explicacao": "Web fetch busca apenas URLs já presentes na conversa.",
+      "feedbacks": [
+        "O sintoma não é cota; é a URL não estar presente na conversa.",
+        "Não há tal restrição por tipo de site; trocar de stack ataca o problema errado.",
+        "Correta. Web fetch não é crawler; a URL precisa estar presente no contexto, vinda do usuário, do prompt ou de um resultado de busca.",
+        "pause_turn indica teto de iterações do loop server-side, não URL inválida."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "O subagent de notícias da Andrade & Teles faz muitas buscas server-side numa mesma requisição. Algumas respostas voltam com stop_reason \"pause_turn\" e o código trata como fim, entregando achados incompletos. O que fazer?",
+      "opcoes": [
+        "Tratar pause_turn como erro transitório e refazer a requisição original do zero com backoff.",
+        "Reenviar a conversa com a resposta pausada anexada, para o modelo continuar.",
+        "Aumentar max_tokens, porque pause_turn indica que a saída foi cortada.",
+        "Tratar como recusa de segurança e registrar a consulta para revisão manual."
+      ],
+      "correta": 1,
+      "explicacao": "pause_turn → reenvie para continuar; não é erro, nem corte, nem recusa.",
+      "feedbacks": [
+        "Joga fora o progresso já feito e pode bater no mesmo teto de novo.",
+        "Correta. pause_turn significa que o loop server-side bateu no teto de iterações; reenviar a resposta faz o trabalho continuar.",
+        "Isso é stop_reason max_tokens, outro caso. Confundir os dois é a pegadinha.",
+        "Recusa é stop_reason \"refusal\". pause_turn é operacional, não de segurança."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Na síntese da Andrade & Teles, o relatório anual da empresa-alvo informa receita de R$ 412 mi e uma reportagem cita R$ 380 mi. Quais práticas o subagent de síntese deve seguir? (Escolha DUAS.)",
+      "opcoes": [
+        "Usar a média dos dois valores, R$ 396 mi, indicando que é uma estimativa conciliada.",
+        "Escolher o relatório anual por ser fonte primária auditada e omitir a reportagem do texto, para não confundir os sócios com um número menos confiável.",
+        "Checar a data de referência de cada número antes de chamar de conflito; períodos diferentes não se contradizem.",
+        "Se o conflito for real, apresentar os dois valores com suas fontes e datas, marcando o ponto como contestado.",
+        "Escolher sempre o valor mais recente pela data de publicação, registrando só essa fonte."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Conflito: cheque período; se real, mostre ambos com fonte e data. Nunca média nem escolha silenciosa.",
+      "feedbacks": [
+        "Tirar média cria um número que nenhuma fonte disse; é exatamente o que não se deve fazer.",
+        "Escolher em silêncio esconde a divergência que a regra do escritório exige mostrar.",
+        "Correta. Dados temporais: registre \"dados de\", publicação e coleta. Muitas \"contradições\" são só períodos diferentes.",
+        "Correta. Conflito se anota com fontes; os sócios decidem com a informação completa.",
+        "Critério mecânico e silencioso; a publicação mais recente pode citar um exercício mais antigo."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Os subagents da Andrade & Teles devolvem resumos em prosa corrida. Na síntese final, os sócios não conseguem saber de onde veio cada afirmação. Qual é a melhor correção?",
+      "opcoes": [
+        "Pedir ao subagent de síntese que, ao final, busque novamente as fontes de cada afirmação e acrescente uma seção de referências bibliográficas completa.",
+        "Achados estruturados por subagent: afirmação, evidência, fonte, data e tipo de fonte, preservados na síntese.",
+        "Anexar ao relatório os transcripts completos de cada subagent como apêndice de auditoria.",
+        "Instruir os subagents a escrever \"segundo fontes públicas\" antes de cada afirmação."
+      ],
+      "correta": 1,
+      "explicacao": "Proveniência: afirmação + evidência + fonte + data, estruturado, preservado até a síntese.",
+      "feedbacks": [
+        "Reconstruir fonte depois é caro e sujeito a atribuição errada; a proveniência deve viajar com o achado.",
+        "Correta. Separar conteúdo de metadados faz a atribuição sobreviver à agregação.",
+        "Volume não é proveniência: ninguém consegue mapear afirmação → fonte em milhares de linhas.",
+        "Atribuição vaga não identifica documento nem data; não atende à regra do escritório."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "O subagent de síntese da Andrade & Teles recebe 130 mil tokens de saídas concatenadas dos subagents. Achados relevantes que estavam no meio desse bloco não aparecem no relatório. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Migrar a síntese para um modelo com janela de contexto maior, para que todo o material dos subagents caiba com bastante folga e nada seja truncado.",
+        "Repetir no final do prompt: \"leia com atenção todo o material, inclusive o do meio\".",
+        "Ativar context editing com clear_tool_uses no subagent de síntese.",
+        "Saídas enxutas e estruturadas dos subagents, com achados-chave no início e cabeçalhos por seção."
+      ],
+      "correta": 3,
+      "explicacao": "Lost in the middle: corte o volume, ponha o crítico no início, use cabeçalhos.",
+      "feedbacks": [
+        "Caber não é o problema; o modelo já recebe tudo. Janela maior tende a piorar o lost in the middle.",
+        "Instrução genérica não muda como a atenção se distribui num bloco enorme e desestruturado.",
+        "A síntese não tem histórico de tools para limpar; o material chega no prompt. Ferramenta certa para outro problema.",
+        "Correta. Ataca o lost in the middle por dois lados: menos volume e o crítico no começo, com estrutura."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D3",
+      "pergunta": "A equipe da Andrade & Teles prototipa o fluxo no Claude Code e criou a skill /due-diligence, que faz dezenas de buscas e lê muitos documentos. Depois de usá-la, a conversa principal fica lotada de saída de busca. Qual ajuste resolve?",
+      "opcoes": [
+        "Adicionar disable-model-invocation: true, para que a skill só rode quando chamada manualmente.",
+        "Adicionar context: fork ao frontmatter, rodando a skill num subagent isolado.",
+        "Mover o conteúdo da skill para o CLAUDE.md do projeto, para estar sempre disponível.",
+        "Rodar /compact logo depois de cada uso da skill para limpar a conversa."
+      ],
+      "correta": 1,
+      "explicacao": "Skill pesada e ruidosa → context: fork (subagent isolado).",
+      "feedbacks": [
+        "Controla quem pode invocar, não onde a saída vai parar; a conversa continua lotada.",
+        "Correta. context: fork executa a skill num subagent com contexto próprio; o ruído das buscas fica lá dentro.",
+        "Carregaria o procedimento em toda sessão e continuaria executando no contexto principal.",
+        "Remédio reativo que perde detalhes; o certo é não deixar o ruído entrar no contexto principal."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "O subagent de análise da Andrade & Teles classifica riscos como \"alto\", \"médio\" ou \"baixo\" com a instrução \"use seu bom senso jurídico\". O mesmo processo trabalhista recebe classificações diferentes em execuções distintas. Qual é a melhor correção?",
+      "opcoes": [
+        "Pedir ao modelo que informe sua confiança em cada classificação e descartar as abaixo de 0,7.",
+        "Critérios explícitos por nível (o que conta, o que não conta) com exemplos de fronteira.",
+        "Rodar a classificação três vezes e adotar a maioria.",
+        "Adicionar \"seja conservador ao classificar riscos\" ao prompt."
+      ],
+      "correta": 1,
+      "explicacao": "Critérios explícitos + exemplos de fronteira batem \"use seu bom senso\".",
+      "feedbacks": [
+        "Confiança autodeclarada não é calibrada e não define o que é \"alto\"; só filtra ao acaso.",
+        "Correta. Critério explícito com casos limítrofes é o que dá consistência; \"bom senso\" gera variação.",
+        "Mais caro e só estabiliza em torno de um critério que continua indefinido.",
+        "Mesma vagueza de \"bom senso\"; não diz onde fica a fronteira."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "O subagent de processos da Andrade & Teles extrai número do processo, vara e valor da causa de andamentos processuais. Quando o valor da causa não aparece no documento, ele inventa um valor plausível. Qual uso de few-shot ajuda mais?",
+      "opcoes": [
+        "Vinte exemplos de andamentos completos, todos com valor da causa presente, para reforçar o formato.",
+        "Um único exemplo perfeito, para não induzir o modelo a copiar detalhes dos exemplos.",
+        "Nenhum exemplo; apenas a instrução \"não invente valores\" em destaque.",
+        "2 a 4 exemplos variados com raciocínio, incluindo um com valor ausente e saída null."
+      ],
+      "correta": 3,
+      "explicacao": "Few-shot: 2–4 exemplos variados com raciocínio, incluindo o caso de borda.",
+      "feedbacks": [
+        "Muitos exemplos iguais ensinam que o campo sempre existe, reforçando a invenção.",
+        "Um exemplo não cobre as bordas; o caso ausente continua sem demonstração.",
+        "Ajuda pouco sem mostrar o comportamento esperado nem um campo que aceite null.",
+        "Correta. Few-shot direcionado, com raciocínio e cobrindo o caso de borda, ensina o padrão \"ausente → null\"."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Cenário: o Hospital Santa Aurora mantém um monorepo com o prontuário eletrônico (backend .NET e frontend Angular). O time de plataforma integrou o Claude Code ao pipeline do GitHub Actions para revisar PRs, gerar testes e rodar uma auditoria noturna de segurança. Restrições: dados de pacientes (LGPD) jamais podem aparecer em logs ou comentários; o review de PR precisa sair em menos de 10 minutos porque bloqueia o merge; o job não pode alterar o repositório sem passar por PR; o orçamento mensal de API é fixo.\n\nO primeiro job do Santa Aurora executa claude \"revise este PR\" no runner e fica parado até o timeout de 6 horas do GitHub Actions. Qual é a correção?",
+      "opcoes": [
+        "Adicionar --max-turns 5 para que a sessão termine após poucas iterações.",
+        "Usar --permission-mode bypassPermissions para que nenhuma aprovação trave o job.",
+        "Executar em modo não interativo com -p (--print), passando o prompt e as flags de CI.",
+        "Definir a variável de ambiente CI=true para o Claude Code detectar o pipeline."
+      ],
+      "correta": 2,
+      "explicacao": "Em CI, -p é obrigatório; sem ele o processo trava esperando input.",
+      "feedbacks": [
+        "Limita turnos de uma execução, mas a sessão interativa continua esperando o usuário.",
+        "Ataca prompts de permissão, não a sessão interativa; e é perigoso como rotina.",
+        "Correta. Sem -p o Claude Code abre sessão interativa e espera input que nunca chega.",
+        "Não é o mecanismo para não interatividade; o modo de impressão é explícito com -p."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "O job de review do Santa Aurora precisa produzir saída que um script transforme em comentários inline no PR (arquivo, linha, severidade, mensagem). Hoje o prompt pede \"responda em JSON\" e o parsing falha em 4% das execuções. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Manter o pedido em prosa e acrescentar uma regex que extraia o primeiro bloco entre chaves da resposta.",
+        "--output-format json com --json-schema descrevendo a lista de achados.",
+        "Usar --output-format stream-json e concatenar os eventos de texto para montar o JSON final.",
+        "Repetir a execução até o parsing dar certo, com no máximo cinco tentativas."
+      ],
+      "correta": 1,
+      "explicacao": "Saída de CI para máquina: --output-format json + --json-schema.",
+      "feedbacks": [
+        "Remendo frágil: continua dependendo de texto livre bem formado.",
+        "Correta. Garante saída aderente ao schema em vez de depender de o texto vir bem formado.",
+        "stream-json serve para acompanhar eventos; não impõe schema ao conteúdo.",
+        "Retry cego sem atacar a causa custa tempo do orçamento de 10 minutos e dinheiro."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "O time do Santa Aurora quer reduzir custo usando a Batch API. Quais cargas são adequadas a ela? (Escolha DUAS.)",
+      "opcoes": [
+        "A auditoria noturna de segurança sobre os 1.200 arquivos do backend, lida na manhã seguinte.",
+        "O review de PR que bloqueia o merge e precisa sair em menos de 10 minutos.",
+        "O job que corrige testes falhando iterando com Read, Edit e Bash até passarem.",
+        "O relatório semanal de dívida técnica por módulo, consolidado toda segunda-feira.",
+        "A revisão de um hotfix de produção que precisa ser mergeado em 15 minutos."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Batch: massa, sem prazo, sem multi-turn. Nunca pré-merge/bloqueante.",
+      "feedbacks": [
+        "Correta. Massa de trabalho sem prazo imediato: cabe na janela de até 24h com 50% de desconto.",
+        "Batch não tem SLA e pode levar até 24h; nunca em passo bloqueante de CI.",
+        "Exige loop multi-turn de tools, que a Batch API não suporta dentro de um request.",
+        "Correta. Periódico, tolerante a atraso e sem interação: perfil típico de batch.",
+        "Urgente e bloqueante; o desconto não compensa uma janela sem garantia."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "No Santa Aurora, um job gera testes de unidade com Claude e, na mesma sessão, pede \"agora revise os testes que você escreveu\". O review aprova quase tudo, mas a equipe acha testes que só verificam o próprio mock. O que mudar?",
+      "opcoes": [
+        "Manter a mesma sessão, mas trocar o prompt de review por um mais rigoroso com checklist detalhado.",
+        "Retomar a sessão de geração com --resume e pedir o review depois de um intervalo.",
+        "Revisar numa sessão nova, que recebe só o diff e os critérios de qualidade.",
+        "Subir o effort da sessão de geração para que os testes já saiam melhores e dispensem o review."
+      ],
+      "correta": 2,
+      "explicacao": "Review em sessão nova: a sessão que escreveu não revisa.",
+      "feedbacks": [
+        "Checklist ajuda, mas na mesma sessão o viés continua (anti-padrão 9).",
+        "Retomar carrega exatamente o mesmo contexto enviesado.",
+        "Correta. Quem gerou não questiona as próprias decisões; sessão independente remove o viés do contexto de raciocínio.",
+        "Melhorar a geração é bom, mas não substitui revisão independente."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Um PR do Santa Aurora alterou 38 arquivos (controllers, serviços, DTOs, componentes Angular). O review em uma só passada deixou passar um contrato quebrado entre DTO e componente e comentou o mesmo padrão de forma contraditória em arquivos diferentes. Qual estratégia corrige isso?",
+      "opcoes": [
+        "Passo 1 por arquivo; passo 2, com prompt separado, cruza os achados para checar integração.",
+        "Usar um modelo com janela maior para que todos os 38 arquivos caibam numa passada com folga.",
+        "Rodar o mesmo review de passada única três vezes e unir os comentários.",
+        "Dividir o PR entre três revisores que analisam grupos de arquivos e publicam seus comentários diretamente."
+      ],
+      "correta": 0,
+      "explicacao": "PR grande: passo por arquivo + passo de integração.",
+      "feedbacks": [
+        "Correta. Review multi-pass evita diluição de atenção e inconsistência, e o passo de integração pega o bug cross-file.",
+        "Caber não resolve diluição de atenção; o problema é o desenho do review, não o tamanho da janela.",
+        "Triplica custo e repete a mesma diluição; ainda gera comentários contraditórios.",
+        "Melhora o local, mas ninguém olha a integração entre grupos: o contrato quebrado continua passando."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "O job de review do Santa Aurora deveria ser somente leitura, mas em duas execuções o Claude editou arquivos \"para corrigir o problema\". Qual configuração resolve de forma determinística?",
+      "opcoes": [
+        "Acrescentar \"nunca edite arquivos\" via --append-system-prompt.",
+        "Rodar com --permission-mode acceptEdits, para que as edições fiquem registradas no log.",
+        "--allowedTools só com Read, Grep e Glob, e --disallowedTools para Edit, Write e Bash.",
+        "Reduzir --max-turns para 3, para não sobrar turno para editar."
+      ],
+      "correta": 2,
+      "explicacao": "Somente leitura em CI → restrinja tools; não confie em prompt.",
+      "feedbacks": [
+        "Probabilístico: reduz, mas não impede (anti-padrão 3).",
+        "acceptEdits aprova edições automaticamente; é o oposto do que se quer.",
+        "Correta. A restrição de tools é imposta pelo harness; o modelo nem consegue editar.",
+        "Limite de turnos não impede uma edição logo no início e pode cortar o review."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Os reviews do Santa Aurora ignoram convenções do time (usar ILogger com mensagens estruturadas, nunca logar dados de paciente). As convenções existem no ~/.claude/CLAUDE.md do tech lead, onde funcionam bem localmente. Qual é a causa e a correção?",
+      "opcoes": [
+        "O runner não tem o CLAUDE.md do usuário; mover as convenções para o CLAUDE.md do projeto.",
+        "Mover as convenções para CLAUDE.local.md na raiz, que é carregado em qualquer ambiente.",
+        "Copiar as convenções para o auto memory (MEMORY.md) do Claude Code no runner.",
+        "Passar o conteúdo do arquivo do tech lead via --append-system-prompt lendo de um secret do GitHub."
+      ],
+      "correta": 0,
+      "explicacao": "Regra de time → CLAUDE.md de projeto, versionado.",
+      "feedbacks": [
+        "Correta. CLAUDE.md de usuário é pessoal; regra de time vai no nível de projeto, versionada com o código.",
+        "CLAUDE.local.md é pessoal e gitignored; não chega ao runner.",
+        "Auto memory é local da máquina e não versionado; não é onde regra de time deve morar.",
+        "Funciona mal: duplica a fonte de verdade fora do repositório e não beneficia os devs localmente."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "No monorepo do Santa Aurora, projetos de teste ficam espalhados (src/*/Tests, libs/*/Tests e novos módulos surgem todo mês). O time quer que as convenções de teste (xUnit, nomes, AAA) carreguem só quando o Claude mexe em arquivos de teste. Qual é a melhor opção?",
+      "opcoes": [
+        "Um CLAUDE.md dentro de cada diretório de testes com as mesmas convenções, criado à medida que os novos módulos forem surgindo.",
+        "Uma seção grande no CLAUDE.md da raiz com todas as convenções de teste.",
+        "Um arquivo em .claude/rules/ com frontmatter paths: apontando para o glob dos arquivos de teste.",
+        "Uma skill /convencoes-teste que o dev invoca quando lembrar."
+      ],
+      "correta": 2,
+      "explicacao": "Convenção que atravessa diretórios → .claude/rules/ com paths.",
+      "feedbacks": [
+        "Duplica conteúdo e não cobre automaticamente os módulos que vão surgir.",
+        "Carrega em toda sessão, mesmo quando não há teste envolvido; gasta contexto.",
+        "Correta. Regra por caminho cobre diretórios atuais e futuros e só carrega quando arquivos que batem são tocados.",
+        "Depende de alguém lembrar; não é carregamento automático por caminho."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "O review do Santa Aurora comenta em quatro categorias. A categoria \"estilo\" tem 60% de falsos positivos e os devs passaram a ignorar todos os comentários, inclusive os de segurança, que são precisos. Qual é a melhor ação?",
+      "opcoes": [
+        "Manter todas as categorias e acrescentar \"seja conservador nos comentários de estilo\".",
+        "Exibir só comentários com confiança autodeclarada acima de 0,8 em todas as categorias.",
+        "Rebaixar os comentários de estilo a \"sugestão\" sem mudar o critério que os gera.",
+        "Desligar \"estilo\", refinar o critério com exemplos de fronteira e só então religar."
+      ],
+      "correta": 3,
+      "explicacao": "Categoria ruidosa: desligue, refine com critério explícito, religue.",
+      "feedbacks": [
+        "Vago; não define a fronteira e o ruído continua.",
+        "Confiança autodeclarada mal calibrada; pode cortar achados de segurança verdadeiros.",
+        "Muda o rótulo, não a qualidade; os devs continuam aprendendo a ignorar o bot.",
+        "Correta. Uma categoria ruidosa corrói a confiança nas boas; desligue, refine com critério explícito, religue."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D5",
+      "pergunta": "O painel do Santa Aurora mostra que 94% dos comentários do review automatizado foram aceitos pelos devs no trimestre. O time de segurança desconfia da qualidade em migrations do EF Core. Quais ações são adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Quebrar a métrica por categoria de achado e por tipo de arquivo (migrations, controllers, componentes) antes de concluir que o review está bom.",
+        "Aumentar uniformemente a amostra auditada de 2% para 10% de todos os PRs.",
+        "Montar a amostra de auditoria humana estratificada por risco, com taxa maior em migrations e código que toca dados de paciente.",
+        "Manter o processo, já que 94% de aceitação comprova a qualidade do review.",
+        "Pedir ao Claude que inclua em cada comentário sua confiança de 0 a 1 e concentrar a auditoria humana apenas nos comentários marcados com confiança baixa."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "Desagregue a métrica e estratifique a amostragem por risco.",
+      "feedbacks": [
+        "Correta. Métrica agregada esconde falha por segmento (anti-padrão 10).",
+        "Mais amostra uniforme gasta esforço onde o risco é baixo e pode sub-representar migrations.",
+        "Correta. Amostragem estratificada concentra revisão onde o erro custa mais.",
+        "Aceitação agregada não mede falsos negativos nem a qualidade por tipo de arquivo.",
+        "Confiança autodeclarada não é calibrada; não substitui estratificação por risco."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "O Santa Aurora precisa garantir que o Claude, no CI, nunca rode git push e nunca leia appsettings.Production.json (connection strings). Qual é a implementação mais adequada?",
+      "opcoes": [
+        "Uma regra no CLAUDE.md do projeto: \"nunca faça push e nunca leia arquivos de produção\".",
+        "Um hook PostToolUse que detecta o push ou a leitura e reverte a ação.",
+        "O mesmo hook PreToolUse, configurado em .claude/settings.local.json para não expor a lógica de bloqueio no repositório.",
+        "Hook PreToolUse em .claude/settings.json versionado, bloqueando esses padrões antes da execução."
+      ],
+      "correta": 3,
+      "explicacao": "Segurança → PreToolUse bloqueando antes, em settings de projeto versionado.",
+      "feedbacks": [
+        "Prompt é probabilístico (anti-padrão 3); segurança precisa de bloqueio determinístico.",
+        "Tarde demais: o conteúdo do arquivo já entrou no contexto e o push já saiu.",
+        "settings.local.json é gitignored; não chega ao runner do CI.",
+        "Correta. Regra de segurança em código, antes da execução, configurada no nível de projeto para valer em toda execução."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Um job do Santa Aurora corrige testes falhando. Na execução seguinte, ele usa --resume da sessão anterior, mas entre as duas execuções um dev fez push alterando 6 dos arquivos envolvidos, e o Claude passa a editar com base no conteúdo antigo. O que fazer?",
+      "opcoes": [
+        "Sessão nova com resumo estruturado do que foi feito, dizendo explicitamente quais arquivos mudaram.",
+        "Continuar com --resume, porque o histórico ajuda o Claude a lembrar das tentativas anteriores.",
+        "Usar --fork-session a partir da sessão anterior para não contaminá-la.",
+        "Rodar /compact na sessão retomada antes de continuar."
+      ],
+      "correta": 0,
+      "explicacao": "Mudou o mundo → sessão nova + resumo estruturado + o que mudou.",
+      "feedbacks": [
+        "Correta. Resumir vale quando os tool results ainda valem; arquivos mudaram, então comece do zero com resumo e diga o que mudou.",
+        "O histórico contém leituras de arquivos que não existem mais naquela forma; o modelo age sobre dados velhos.",
+        "O fork herda o mesmo histórico desatualizado; protege a original, não corrige o problema.",
+        "Comprimir resultados velhos não os torna atuais; ainda sem dizer o que mudou."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "A auditoria noturna do Santa Aurora às vezes entra em ciclos longos e uma execução chegou a 180 turnos. Qual é o papel correto de --max-turns (e de um teto de orçamento) nesse job?",
+      "opcoes": [
+        "Ser o mecanismo principal de término: definir 20 turnos para que o job sempre termine nesse ponto.",
+        "Não usar limite, porque o modelo decide quando parar e qualquer teto interfere no resultado.",
+        "Backstop contra execução descontrolada; o término vem de tarefa delimitada com critério claro.",
+        "Trocar o limite por instrução no prompt: \"termine em no máximo 20 passos\"."
+      ],
+      "correta": 2,
+      "explicacao": "--max-turns/orçamento = backstop, não mecanismo principal.",
+      "feedbacks": [
+        "Anti-padrão 2: limite arbitrário como critério principal corta trabalho válido ou deixa passar trabalho incompleto como se estivesse concluído.",
+        "Sem backstop, um ciclo acaba com o orçamento fixo; o limite existe para isso.",
+        "Correta. Limite de iterações é backstop válido; o mecanismo principal é tarefa e critério claros.",
+        "Prompt não é teto confiável; e o modelo não controla com precisão quantos turnos vai usar."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D2",
+      "pergunta": "No Santa Aurora, o job da auditoria precisa achar todos os usos de um método obsoleto (PatientRepository.GetRaw). A primeira versão leu os 1.200 arquivos e estourou o contexto. Qual é a abordagem correta?",
+      "opcoes": [
+        "Grep pelo nome do método, ler só os arquivos encontrados e seguir os imports conforme necessário.",
+        "Glob em **/*.cs para listar todos os arquivos C# e ler cada resultado, filtrando os que realmente chamam o método obsoleto.",
+        "Ler primeiro todos os arquivos do diretório Data/ e depois o restante se sobrar contexto.",
+        "Migrar o job para um modelo com janela de 1M para caberem os 1.200 arquivos."
+      ],
+      "correta": 0,
+      "explicacao": "Codebase: grep pelos pontos de entrada, leia só o relevante.",
+      "feedbacks": [
+        "Correta. Exploração incremental: grep → lê → segue → lê. Gasta contexto só com o relevante.",
+        "Glob localiza arquivos por nome, não por conteúdo; ler tudo é o mesmo anti-padrão.",
+        "Ainda é ler de antemão, apostando numa hipótese sobre onde está o uso.",
+        "Caro a cada turno e piora o lost in the middle; o problema é a estratégia."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "O time do Santa Aurora pede ao Claude Code um parser de datas para prontuários (formatos \"dd/MM/yyyy\", \"dd/MM/yy HH:mm\" e datas parciais como \"03/2024\"). As descrições em prosa geram implementações que erram as bordas a cada tentativa. Qual é a abordagem mais eficaz?",
+      "opcoes": [
+        "TDD: testes que falham com exemplos concretos (inclusive datas parciais), iterando até passarem.",
+        "Reescrever a especificação em prosa com mais detalhes sobre cada formato.",
+        "Pedir que o Claude gere cinco implementações diferentes e escolher a que parecer melhor.",
+        "Usar plan mode para que o Claude desenhe a arquitetura do parser antes de codificar."
+      ],
+      "correta": 0,
+      "explicacao": "Refinamento iterativo: exemplos concretos e TDD.",
+      "feedbacks": [
+        "Correta. Exemplos concretos e TDD dão um alvo verificável; superam descrições em prosa.",
+        "Mais prosa mantém a ambiguidade que já está falhando.",
+        "Sem critério objetivo de escolha; caro e sem convergência.",
+        "Plan mode serve a mudanças amplas; aqui falta alvo concreto, não arquitetura."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Cenário: a Conecta Insumos, marketplace B2B de insumos industriais, recebe cerca de 40 mil documentos por mês de fornecedores: notas fiscais em PDF, pedidos de compra, laudos técnicos e canhotos de entrega (alguns manuscritos e digitalizados). Um pipeline com Claude extrai os dados em JSON e carrega no ERP. Restrições: o ERP rejeita registros inválidos; dado ausente não pode ser inventado; conciliação financeira exige valores exatos; o custo por documento precisa cair 30% neste ano.\n\nHoje o prompt pede \"responda apenas com JSON válido\" e cerca de 3% das saídas vêm malformadas ou sem campos obrigatórios. A Conecta usa um modelo recente. Qual é a melhor correção?",
+      "opcoes": [
+        "Fazer prefill da resposta do assistant com \"{\" para forçar o início de um JSON.",
+        "Adicionar uma etapa que corrige JSON malformado com regex e completa campos faltantes com valores padrão.",
+        "Structured outputs (output_config.format) ou tool de extração com strict: true.",
+        "Repetir a chamada até o JSON fazer parse, com no máximo cinco tentativas."
+      ],
+      "correta": 2,
+      "explicacao": "Saída estruturada: structured outputs ou tool com strict.",
+      "feedbacks": [
+        "Prefill retorna 400 em modelos novos; e mesmo onde funciona não garante campos e tipos.",
+        "Remendo que inventa dados quando completa campos com padrão, violando a restrição.",
+        "Correta. Conformidade com schema garantida pela API, em vez de depender de texto livre bem formado.",
+        "Retry cego custa mais e não ataca a causa."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Conecta, com structured outputs ativo, 100% das saídas passam no schema, mas em 2,5% das notas o valor_total não bate com a soma dos itens e o ERP rejeita. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Nada a fazer no pipeline: o strict garante os dados; as divergências são erro do fornecedor.",
+        "Acrescentar ao prompt \"confira se o total bate com a soma dos itens\".",
+        "Subir o effort para \"max\" em todas as extrações para reduzir erros de leitura.",
+        "Validar soma e datas em código e, se falhar, retry com os erros específicos."
+      ],
+      "correta": 3,
+      "explicacao": "Schema válido ≠ semântica correta: valide em código + retry com erro específico.",
+      "feedbacks": [
+        "Strict garante forma, não aritmética. Parte das divergências é leitura errada do modelo.",
+        "Ajuda, mas é best-effort; a verificação deterministicamente correta é em código.",
+        "Encarece todos os 40 mil documentos sem detectar os casos que falham.",
+        "Correta. Conformidade com schema ≠ correção semântica; valide em código e faça retry com erro específico."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Conecta, muitas notas não trazem o número do pedido de compra. O schema exige pedido_compra como string e o modelo preenche com números plausíveis, que depois não existem no ERP. Qual é a correção?",
+      "opcoes": [
+        "Manter o campo obrigatório e adicionar um loop de retry até o modelo encontrar o número.",
+        "Adicionar um pattern de regex ao schema strict para aceitar só o formato real de pedido.",
+        "Tornar pedido_compra nullable e instruir null quando não estiver no documento.",
+        "Incluir exemplos few-shot em que notas sem pedido aparecem com um número de pedido preenchido."
+      ],
+      "correta": 2,
+      "explicacao": "Dado que pode faltar → campo nullable; retry não cria informação.",
+      "feedbacks": [
+        "Retry não recupera informação que não está na fonte; só gera outra invenção.",
+        "Um `pattern` simples até é suportado no strict, mas só garante formato: um número inventado no formato certo passaria. Não ataca a causa (campo obrigatório sem saída para \"não há\").",
+        "Correta. Campo nullable dá ao modelo uma saída legítima para \"não há\"; obrigar string força a invenção.",
+        "Ensina exatamente o comportamento errado."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O loop de validação da Conecta, ao falhar, reenvia o mesmo prompt com \"o resultado anterior estava inválido, tente de novo\". A taxa de sucesso na segunda tentativa quase não muda. O que melhorar?",
+      "opcoes": [
+        "Aumentar o número máximo de retries de 2 para 6.",
+        "Trocar o modelo a cada retry, alternando entre dois modelos.",
+        "Retry com os erros específicos (campo, valor, regra) e, no limite, falha explícita para revisão.",
+        "No limite de tentativas, gravar no ERP a última saída com uma flag de \"baixa confiança\"."
+      ],
+      "correta": 2,
+      "explicacao": "Retry útil = erros específicos no prompt + limite + falha explícita.",
+      "feedbacks": [
+        "Mais tentativas sem informação nova repetem o mesmo erro, com custo maior.",
+        "Complexidade sem atacar a causa: nenhum dos dois sabe o que estava errado.",
+        "Correta. Erro específico orienta a correção; limite com falha explícita evita loop e dado ruim no ERP.",
+        "Grava dado sabidamente inválido; a restrição é não carregar registro inválido."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O campo tipo_documento da Conecta é um enum de 6 valores. Fornecedores novos enviam documentos que não se encaixam (ex.: carta de correção eletrônica) e eles acabam forçados em \"nota_fiscal\". Qual é o melhor ajuste no schema?",
+      "opcoes": [
+        "Adicionar \"other\" com campo de detalhe e \"unclear\" para documentos ambíguos.",
+        "Transformar o campo em string livre para aceitar qualquer tipo.",
+        "Acrescentar ao prompt \"escolha a categoria mais próxima quando não tiver certeza\".",
+        "Criar um enum com 40 valores cobrindo todos os documentos fiscais existentes."
+      ],
+      "correta": 0,
+      "explicacao": "Enum: \"other\" + detalhe e \"unclear\" para não chutar.",
+      "feedbacks": [
+        "Correta. Enum com saída \"other\" + detalhe e \"unclear\" evita que o modelo chute a categoria mais próxima.",
+        "Perde a validação e a padronização que o ERP precisa.",
+        "Oficializa o chute, que é exatamente o problema.",
+        "Inchado, ainda finito, e aumenta confusão entre valores vizinhos."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Conecta quer detectar notas em que a leitura ou o próprio documento estão inconsistentes antes da conciliação. Quais práticas ajudam? (Escolha DUAS.)",
+      "opcoes": [
+        "Confiar no strict: true do schema, que já rejeita valores numéricos fora de faixa, datas impossíveis e contradições entre campos relacionados.",
+        "Extrair o valor declarado no documento e também calcular em código o valor a partir dos itens, sinalizando discrepância.",
+        "Validar em código contradições entre campos, como data de vencimento anterior à de emissão ou CNPJ do emitente que não existe no cadastro.",
+        "Pedir ao modelo um campo confianca_geral de 0 a 1 e conciliar só os documentos acima de 0,9.",
+        "Usar minLength e pattern no schema strict para garantir o formato do CNPJ."
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "Declarado vs. calculado + validação semântica em código.",
+      "feedbacks": [
+        "Strict não suporta faixas numéricas nem lógica entre campos.",
+        "Correta. Valor declarado vs. calculado revela erro de leitura ou de documento.",
+        "Correta. Validação semântica e de entidades referenciadas é feita em código.",
+        "Confiança autodeclarada não calibrada; não detecta a discrepância concreta.",
+        "`minLength` não é suportado pelo strict (400 no schema cru); `pattern` simples funcionaria, mas só garante o formato do CNPJ, não detecta leitura ou documento inconsistente."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Conecta processa o backlog mensal pela Batch API. O script associou cada resultado ao documento pela posição na lista de resultados e várias notas ficaram com dados de outras. Além disso, 3% dos requests vieram como errored. Qual é o procedimento correto?",
+      "opcoes": [
+        "Ordenar os resultados por horário de conclusão para reconstruir a ordem de envio.",
+        "Casar pelo custom_id e reenviar só os custom_id que falharam.",
+        "Reenviar o batch inteiro sempre que houver errored, para manter a consistência da ordem.",
+        "Trocar para chamadas síncronas, que preservam a ordem e não têm erros."
+      ],
+      "correta": 1,
+      "explicacao": "Batch: case por custom_id; reenvie só os que falharam.",
+      "feedbacks": [
+        "Não há garantia de que a conclusão siga a ordem de envio; continua frágil.",
+        "Correta. Resultados podem vir fora de ordem; custom_id é a chave. Reprocesse só os que falharam.",
+        "Paga de novo pelos 97% que deram certo e não resolve o casamento por posição.",
+        "Perde os 50% de desconto, contrariando a meta de custo; síncrono também falha."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "A tool de extração da Conecta foi marcada com strict: true e a API passou a rejeitar a definição. O input_schema tem 14 propriedades, só 9 em required, e não declara additionalProperties. Qual é o ajuste correto?",
+      "opcoes": [
+        "Remover do schema as 5 propriedades opcionais, mantendo só as obrigatórias.",
+        "Declarar additionalProperties: false; as 5 opcionais podem ficar, mas o ideal é tê-las em required como nullable.",
+        "Declarar additionalProperties: true para permitir as opcionais.",
+        "Desistir do strict e validar tudo no código, já que strict não serve para campos opcionais."
+      ],
+      "correta": 1,
+      "explicacao": "Strict exige additionalProperties: false em todo objeto. Opcionais são permitidas (contam para um limite por request [volátil]); a recomendação é required + nullable.",
+      "feedbacks": [
+        "Perde dados que o negócio precisa quando existem.",
+        "Correta. O que falta é additionalProperties: false. Opcionais não impedem o strict, mas required + nullable deixa a ausência explícita.",
+        "O oposto do requisito do strict.",
+        "Premissa falsa: strict aceita opcionais (dentro de um limite); abrir mão dele é desnecessário."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "Ao migrar o pipeline da Conecta para um modelo mais novo, as chamadas com tool_choice {\"type\": \"tool\", \"name\": \"extract_invoice\"} passaram a retornar HTTP 400. O forçar existia só para obter JSON no formato do schema. Qual é a melhor saída?",
+      "opcoes": [
+        "Trocar para tool_choice \"any\", que tem o mesmo efeito com menos restrições.",
+        "Voltar permanentemente ao modelo anterior, já que a forma do request ficou incompatível com a nova versão da API.",
+        "Usar tool_choice \"none\" e pedir o JSON em texto livre.",
+        "Structured outputs com o mesmo schema (ou auto + instrução + strict), testando o request."
+      ],
+      "correta": 3,
+      "explicacao": "Forçar tool para obter JSON → structured outputs nos modelos novos.",
+      "feedbacks": [
+        "Nos mesmos modelos, \"any\" também é rejeitado.",
+        "Desiste da migração por um ajuste simples.",
+        "Volta ao problema de JSON malformado que o forçar resolvia.",
+        "Correta. Em modelos novos o forçar pode retornar 400; se o objetivo era JSON, structured outputs é o caminho direto."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "A Conecta quer compartilhar com todo o time o servidor MCP remoto do ERP (HTTP com token) usado no desenvolvimento do pipeline com Claude Code. Quais práticas estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Declarar só a url, sem type, porque o Claude Code deduz HTTP quando há url.",
+        "Declarar o server em .mcp.json na raiz do repositório com \"type\": \"http\" e a url.",
+        "Configurar no escopo local do MCP, em .claude/settings.local.json, para ser compartilhado com o time.",
+        "Comitar o token literal no .mcp.json, já que o repositório é privado.",
+        "Colocar o token em headers como \"Bearer ${ERP_TOKEN}\", com a variável definida no ambiente de cada dev."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": ".mcp.json com type explícito + segredos via ${VAR}.",
+      "feedbacks": [
+        "Pegadinha: sem type, a entrada é lida como stdio e falha.",
+        "Correta. Escopo project, compartilhado via git; servidor remoto precisa de type declarado.",
+        "Dupla confusão: o escopo local fica em ~/.claude.json e não é compartilhado; também não é o settings.local.json.",
+        "Segredo em arquivo versionado vaza com o histórico; repositório privado não muda isso.",
+        "Correta. Segredo via expansão de variável, nunca literal no arquivo versionado."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D3",
+      "pergunta": "Na Conecta, a skill /reprocessar-lote <data> dispara um batch caro e grava arquivos de controle. O time notou que o Claude a invoca sozinho quando alguém só menciona \"lote\" na conversa. Qual ajuste no frontmatter resolve?",
+      "opcoes": [
+        "user-invocable: false, para tirá-la do menu de comandos.",
+        "disable-model-invocation: true, deixando a skill só para invocação manual.",
+        "context: fork, para que a execução fique isolada num subagent.",
+        "Reescrever a description para ficar mais vaga, reduzindo as chances de auto-carregamento."
+      ],
+      "correta": 1,
+      "explicacao": "Skill com efeito colateral → disable-model-invocation: true.",
+      "feedbacks": [
+        "Faz o contrário: esconde do usuário e mantém a invocação pelo modelo.",
+        "Correta. Skill com efeito colateral caro deve ser invocável só manualmente.",
+        "Isola o contexto, mas não impede a invocação automática.",
+        "Probabilístico e piora a documentação; o controle determinístico existe."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D3",
+      "pergunta": "A Conecta vai migrar 45 prompts de extração, espalhados em vários serviços, de tool_choice forçado para structured outputs, ajustando schemas, validações e testes. Como usar o Claude Code?",
+      "opcoes": [
+        "Execução direta arquivo por arquivo, pedindo cada conversão conforme forem encontrados.",
+        "Rodar em bypassPermissions para acelerar as 45 edições sem interrupções.",
+        "Criar uma regra em .claude/rules/ dizendo \"use structured outputs\" e esperar que as edições aconteçam naturalmente.",
+        "Começar em plan mode: explorar os usos, propor a abordagem e a ordem da migração para aprovação, e só então editar."
+      ],
+      "correta": 3,
+      "explicacao": "Mudança grande e multiarquivo → plan mode.",
+      "feedbacks": [
+        "Sem visão do todo, decisões de schema/validação ficam inconsistentes entre serviços.",
+        "Não é rotina para mudança longa; tira o controle justamente onde ele importa.",
+        "Regra orienta edições futuras; não planeja nem executa uma migração.",
+        "Correta. Mudança multiarquivo com decisões de desenho é o caso típico de plan mode."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "O fluxo da Conecta é sempre o mesmo: classificar o tipo de documento → extrair com o schema do tipo → validar → carregar no ERP. Um engenheiro propõe trocá-lo por um agente autônomo que decide os passos a cada documento. Qual é a avaliação correta?",
+      "opcoes": [
+        "Manter prompt chaining: passos fixos e conhecidos são mais previsíveis e baratos.",
+        "Adotar o agente autônomo, porque ele lida melhor com tipos de documento novos.",
+        "Adotar um coordenador com subagents para cada passo, conversando entre si.",
+        "Manter a cadeia, mas pedir ao modelo, a cada passo, que decida se o próximo passo é necessário."
+      ],
+      "correta": 0,
+      "explicacao": "Passos fixos e conhecidos → prompt chaining.",
+      "feedbacks": [
+        "Correta. Decomposição dinâmica é para investigação aberta; passos fixos pedem chaining.",
+        "Tipos novos se resolvem no schema (\"other\"/\"unclear\"); autonomia aqui só acrescenta variância.",
+        "Complexidade desnecessária para um fluxo linear, e com comunicação direta entre subagents.",
+        "Reintroduz decisão dinâmica onde ela não agrega; validação e carga são sempre necessárias."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "A Conecta tem um coordenador com subagents de OCR para manuscritos, extração de tabelas, laudos técnicos e notas fiscais. Hoje todo documento passa pelos quatro, inclusive PDFs digitais simples. Qual é a melhor mudança?",
+      "opcoes": [
+        "O coordenador classifica o documento e aciona só os subagents de que aquele documento precisa.",
+        "Rodar os quatro em paralelo, para que o tempo total fique igual ao do subagent mais lento.",
+        "Juntar os quatro subagents num só agente com todas as tools.",
+        "Manter todos, mas mandar só a primeira página aos subagents irrelevantes."
+      ],
+      "correta": 0,
+      "explicacao": "Coordenador aciona só os subagents necessários.",
+      "feedbacks": [
+        "Correta. Acione só os subagents que a tarefa precisa; o resto é custo e ruído.",
+        "Melhora o tempo, mas mantém o custo de quatro execuções por documento.",
+        "Volta ao problema de tools demais num agente.",
+        "Continua acionando o que não precisa; só reduz o dano."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "A Conecta quer reduzir revisão humana aprovando automaticamente documentos em que o modelo declara \"confiança: alta\" num campo da saída. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Aprovar automaticamente tudo com \"confiança: alta\", porque o modelo conhece a própria incerteza.",
+        "Exigir que o modelo justifique a confiança alta e aprovar quando a justificativa for convincente.",
+        "Confiança por campo calibrada em conjunto rotulado + amostragem estratificada por risco.",
+        "Revisar 5% de todos os documentos, sorteados uniformemente, e aprovar o restante."
+      ],
+      "correta": 2,
+      "explicacao": "Confiança calibrada por campo + amostragem estratificada por risco.",
+      "feedbacks": [
+        "Anti-padrão 4: confiança autodeclarada é mal calibrada.",
+        "Justificativa convincente não é calibração; continua autodeclarado.",
+        "Correta. Confiança só significa algo se calibrada; estratificar por risco direciona a revisão para onde erra mais.",
+        "Amostra uniforme sub-representa canhotos manuscritos, onde a acurácia costuma ser bem menor."
+      ]
+    }
+  ]
+}

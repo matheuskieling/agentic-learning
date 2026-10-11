@@ -1,0 +1,361 @@
+{
+  "titulo": "Módulo 03 — Prova: saída estruturada, validação com retry e Batch API",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Cenário Structured Data Extraction: um pipeline pede 'responda apenas com JSON' e faz parse da resposta. Em 4% dos documentos o parse falha porque vem texto antes do JSON ou falta um campo. Qual a MELHOR correção?",
+      "opcoes": [
+        "Usar structured outputs (output_config.format com o JSON schema da extração)",
+        "Extrair o JSON com uma regex que procura o primeiro '{' e o último '}'",
+        "Repetir a instrução 'APENAS JSON' no início e no fim do prompt",
+        "Fazer prefill do assistant com '{'"
+      ],
+      "correta": 0,
+      "explicacao": "Structured outputs garante resposta conforme o schema; as outras são remendos ou inválidas nos modelos novos.",
+      "feedbacks": [
+        "Correta.",
+        "Remendo frágil: resolve o texto em volta, não o campo faltando.",
+        "Ênfase não dá garantia estrutural.",
+        "Prefill retorna 400 nos modelos novos e não garante schema."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: o extrator usava uma tool registrar_nota com tool_choice: {type: tool, name: registrar_nota} apenas para obter JSON. Após migrar para um modelo mais novo, todas as chamadas retornam 400. O que fazer?",
+      "opcoes": [
+        "Trocar para tool_choice: {type: any}",
+        "Voltar para o modelo anterior",
+        "Usar structured outputs com o mesmo schema",
+        "Remover o schema e validar o texto com try/catch, repetindo a chamada se falhar"
+      ],
+      "correta": 2,
+      "explicacao": "Nos modelos novos, any/tool forçados dão 400; quando forçar existia só para JSON, structured outputs é o substituto.",
+      "feedbacks": [
+        "any também é forçado e também retorna 400.",
+        "Evita o problema sem resolvê-lo; há substituto direto.",
+        "Correta.",
+        "Perde a garantia estrutural."
+      ]
+    },
+    {
+      "pergunta": "Cenário Customer Support: o agente chama create_ticket num loop de tools. Às vezes envia campos extras ou o campo priority como string livre em vez dos valores aceitos, e o backend rejeita. Qual a MELHOR correção?",
+      "opcoes": [
+        "Validar no backend e devolver 'Operation failed' ao modelo",
+        "Ativar strict: true na tool, com enum em priority e additionalProperties: false",
+        "Trocar a tool por structured outputs na resposta final",
+        "Adicionar ao prompt uma lista dos campos permitidos"
+      ],
+      "correta": 1,
+      "explicacao": "Num loop de tools, strict garante argumentos que seguem o schema exatamente.",
+      "feedbacks": [
+        "Erro genérico (anti-padrão) e não previne o problema.",
+        "Correta.",
+        "Structured outputs formata a resposta, não os argumentos de uma ação no meio do loop.",
+        "Prompt ajuda, mas não garante."
+      ]
+    },
+    {
+      "pergunta": "Um dev ligou strict: true numa tool cujo schema tem 5 propriedades, só 3 em required, e não declara additionalProperties. O dado de 2 dessas propriedades às vezes não existe na fonte. Qual ajuste é o mais adequado?",
+      "opcoes": [
+        "Nenhum: strict infere o resto",
+        "Remover required de todas as propriedades, para que o strict trate tudo como opcional",
+        "Adicionar minimum/maximum aos campos numéricos",
+        "Declarar additionalProperties: false e, de preferência, pôr tudo em required com nullable onde pode faltar"
+      ],
+      "correta": 3,
+      "explicacao": "additionalProperties: false é obrigatório para strict. Opcionais são permitidas (contam para um limite), mas required + nullable deixa a ausência explícita.",
+      "feedbacks": [
+        "Strict não infere; additionalProperties: false é obrigatório.",
+        "Não resolve a exigência que falta e multiplica opcionais, que contam para um limite e deixam a ausência ambígua.",
+        "Restrições numéricas não são suportadas pelo strict (400 no schema cru).",
+        "Correta."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: com strict ativo, 100% das faturas validam no schema. A auditoria encontrou 2% com total diferente da soma dos itens. Qual a MELHOR ação?",
+      "opcoes": [
+        "Adicionar ao schema uma descrição 'o total deve ser a soma dos itens'",
+        "Trocar strict por structured outputs",
+        "Validar a soma em código e reenviar com o erro específico (valores e item suspeito)",
+        "Aceitar, pois o schema validou"
+      ],
+      "correta": 2,
+      "explicacao": "Schema ≠ semântica: regras de negócio são validadas no código e alimentam o retry.",
+      "feedbacks": [
+        "Descrição no schema é só orientação; não garante a regra.",
+        "Os dois garantem formato, não semântica.",
+        "Correta.",
+        "Confunde conformidade com correção."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: muitas notas fiscais não trazem o número do pedido de compra. O schema tem pedido_compra como string obrigatória, e o modelo preenche valores plausíveis inventados. Qual a correção?",
+      "opcoes": [
+        "Tornar pedido_compra nullable (few-shot: ausente = null)",
+        "Remover o campo do schema",
+        "Adicionar retry até o campo vir preenchido, com limite de 3 tentativas",
+        "Instruir o modelo a 'não inventar'"
+      ],
+      "correta": 0,
+      "explicacao": "Campo obrigatório não nullable força o modelo a inventar; nullable dá a saída honesta.",
+      "feedbacks": [
+        "Correta.",
+        "Perde o dado quando ele existe.",
+        "Retry não cria dado ausente; reforça a invenção.",
+        "Instrução não remove a pressão do schema."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: o campo tipo_contrato tem enum [compra, venda, locação]. Contratos de comodato estão saindo como 'locação', distorcendo relatórios. Qual ajuste?",
+      "opcoes": [
+        "Adicionar 'unclear' ao enum",
+        "Remover o enum e aceitar texto livre",
+        "Adicionar few-shot com exemplos de locação para o modelo aprender a fronteira",
+        "Adicionar 'outro' ao enum + campo de detalhe nullable"
+      ],
+      "correta": 3,
+      "explicacao": "'other' + detalhe evita forçar uma categoria errada e preserva a informação.",
+      "feedbacks": [
+        "'unclear' é para fonte ambígua; comodato é claro, só não está na lista.",
+        "Perde a padronização e a garantia estrutural.",
+        "Exemplos de locação não ensinam onde colocar comodato.",
+        "Correta."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: em digitalizações ruins, não dá para saber se o contrato foi assinado. O campo assinado é boolean e o modelo responde true ou false aleatoriamente nesses casos. Qual a melhor modelagem?",
+      "opcoes": [
+        "Manter boolean e pedir para o modelo ser conservador",
+        "Usar um enum [assinado, nao_assinado, unclear]",
+        "Tornar o campo uma string livre",
+        "Remover o campo e conferir manualmente todos os contratos"
+      ],
+      "correta": 1,
+      "explicacao": "'unclear' evita chute quando a fonte não permite decidir, e permite rotear esses casos para revisão.",
+      "feedbacks": [
+        "Vago; continua forçando um palpite binário.",
+        "Correta.",
+        "Perde estrutura e padronização.",
+        "Desproporcional: só os ilegíveis precisam de revisão."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: o time ligou strict numa tool cujo schema define quantidade com minimum: 1 e cep com maxLength: 9. Os requests passaram a retornar 400. Qual a MELHOR ação?",
+      "opcoes": [
+        "Desligar o strict, já que ele é incompatível com o schema",
+        "Abrir chamado: é bug da API",
+        "Tirar essas restrições do schema (ou deixar o helper do SDK movê-las para a descrição) e validá-las no código",
+        "Trocar a tool por prefill do assistant com o JSON parcial"
+      ],
+      "correta": 2,
+      "explicacao": "minimum e maxLength não são suportados pelo strict: no schema cru dão 400. Remova-os do schema (helpers do SDK fazem isso e validam localmente) e imponha a regra no seu código.",
+      "feedbacks": [
+        "Perde a garantia de formato só para manter restrições que a API nem imporia.",
+        "Comportamento documentado: recurso não suportado em schema cru retorna 400.",
+        "Correta.",
+        "Prefill retorna 400 nos modelos novos e não garante schema."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: o loop de retry envia 'A extração não passou na validação. Tente novamente.' e a taxa de correção no 2º intento é só 10%. Qual a MELHOR melhoria?",
+      "opcoes": [
+        "Aumentar o número de tentativas para 5",
+        "Incluir os erros específicos (campo, regra, valores)",
+        "Trocar para um modelo maior só nos retries, mantendo o menor na primeira tentativa",
+        "Aumentar effort apenas nos retries"
+      ],
+      "correta": 1,
+      "explicacao": "Erros específicos dizem ao modelo o que e onde corrigir; mensagem genérica produz a mesma resposta.",
+      "feedbacks": [
+        "Mais tentativas sem informação repetem o erro.",
+        "Correta.",
+        "Mais caro, sem atacar a falta de informação no feedback.",
+        "Mais raciocínio sem saber o que está errado ajuda pouco."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: o campo data_entrega falha na validação (obrigatório pelo negócio). Após 3 retries com erro específico, segue vazio ou inventado. A análise mostra que esses documentos simplesmente não informam a data. O que fazer?",
+      "opcoes": [
+        "Aceitar null no campo e encaminhar o documento para a fila de revisão humana",
+        "Aumentar o limite de retries para 10",
+        "Preencher com a data de emissão como padrão",
+        "Instruir o modelo a estimar a data com base no prazo usual"
+      ],
+      "correta": 0,
+      "explicacao": "Retry não recupera informação ausente da fonte; o honesto é null e, se o negócio exige, revisão.",
+      "feedbacks": [
+        "Correta.",
+        "Mais retries, mesma ausência: só aumenta custo e chance de invenção.",
+        "Dado fabricado com aparência de verdadeiro.",
+        "Induz alucinação explicitamente."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: num pico, um documento corrompido ficou em loop de retry por horas, gerando custo alto. O código só sai do loop quando a validação passa. Qual o desenho correto?",
+      "opcoes": [
+        "Remover a validação para documentos corrompidos",
+        "Aumentar o timeout da API",
+        "Gravar o último resultado, mesmo inválido, após 1 hora, marcando-o como 'pendente'",
+        "Limitar as tentativas e, ao esgotar, falhar explicitamente"
+      ],
+      "correta": 3,
+      "explicacao": "O limite é backstop; ao esgotar, falha explícita, nunca dado inválido gravado nem descartado em silêncio.",
+      "feedbacks": [
+        "Deixa passar dado inválido.",
+        "Não resolve o loop sem fim.",
+        "Grava dado inválido como se fosse bom.",
+        "Correta."
+      ]
+    },
+    {
+      "pergunta": "Cenário CI: um scanner de segurança com Claude gera achados que os devs descartam com frequência. O time quer saber quais tipos de padrão geram achados úteis e quais são descartados, para refinar o prompt. Qual mudança de saída ajuda?",
+      "opcoes": [
+        "Adicionar um campo confidence de 0 a 100 e descartar automaticamente os achados abaixo de 60",
+        "Gerar um relatório em texto livre ao final",
+        "Campo detected_pattern em cada achado, medido por padrão",
+        "Reduzir o número de achados por PR"
+      ],
+      "correta": 2,
+      "explicacao": "detected_pattern permite medir por padrão e refinar ou desligar os ruidosos.",
+      "feedbacks": [
+        "Confiança autodeclarada é mal calibrada e não identifica o padrão.",
+        "Texto livre não é mensurável.",
+        "Correta.",
+        "Corta sem saber o que é ruído."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: a auditoria quer identificar faturas em que o total impresso diverge dos itens (erro do fornecedor). Hoje o modelo extrai só total e, às vezes, 'corrige' o valor sozinho. Qual a melhor modelagem?",
+      "opcoes": [
+        "Extrair total_declarado e soma_itens_calculada, e comparar em código",
+        "Instruir o modelo a sempre recalcular o total",
+        "Extrair só os itens e calcular o total no código, ignorando o impresso",
+        "Pedir ao modelo um campo booleano 'parece_correto'"
+      ],
+      "correta": 0,
+      "explicacao": "Declarado + calculado expõe a discrepância em vez de escondê-la.",
+      "feedbacks": [
+        "Correta.",
+        "Esconde a divergência que a auditoria quer achar.",
+        "Perde o valor declarado; não há como detectar a divergência.",
+        "Julgamento opaco e não verificável."
+      ]
+    },
+    {
+      "pergunta": "Cenário CI: o review automático de PR custa caro. Um engenheiro propõe enviar os reviews pela Batch API para economizar 50%. O review é um check obrigatório antes do merge. Qual a avaliação?",
+      "opcoes": [
+        "Boa ideia: 50% de economia sem perda de qualidade",
+        "Inadequada para o gate (até 24h, sem SLA); serve para varredura noturna",
+        "Boa ideia, desde que o batch tenha só um request por PR",
+        "Inadequada porque a Batch API não suporta saída estruturada nos requests do lote"
+      ],
+      "correta": 1,
+      "explicacao": "Batch não tem SLA e pode levar até 24h; não serve para passo bloqueante.",
+      "feedbacks": [
+        "Ignora a latência: o PR ficaria parado por horas.",
+        "Correta.",
+        "Tamanho do lote não cria SLA.",
+        "O motivo está errado: batch funciona com saída estruturada; o problema é a latência."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: a empresa precisa extrair 50 mil contratos históricos até o fim da semana. O prompt foi escrito ontem e ainda não foi testado em documentos reais. Qual o plano mais adequado?",
+      "opcoes": [
+        "Enviar os 50 mil no batch agora, para ganhar tempo",
+        "Processar os 50 mil de forma síncrona em paralelo",
+        "Enviar em 50 batches de mil e corrigir o prompt entre eles conforme os erros aparecem",
+        "Refinar o prompt numa amostra síncrona, depois rodar o volume no batch"
+      ],
+      "correta": 3,
+      "explicacao": "Refine numa amostra antes do volume; depois, batch é ideal (sem pressa de minutos, 50% mais barato).",
+      "feedbacks": [
+        "Arrisca pagar por 50 mil extrações com um prompt falho.",
+        "Paga o dobro sem necessidade de tempo real.",
+        "Usa o volume como laboratório: lento e caro.",
+        "Correta."
+      ]
+    },
+    {
+      "pergunta": "Cenário Structured Data Extraction: num batch noturno, o prompt deixa o modelo chamar a tool consultar_fornecedor para enriquecer a extração. Muitos resultados chegam incompletos, terminando num tool_use sem resposta. Qual a causa e a correção?",
+      "opcoes": [
+        "Bug de timeout; aumentar max_tokens",
+        "Batch não roda loop multi-turn de tools; pôr os dados no request ou ir síncrono",
+        "Faltou strict: true na tool consultar_fornecedor, então os argumentos saíram inválidos e a chamada foi abortada",
+        "Os custom_id estão duplicados"
+      ],
+      "correta": 1,
+      "explicacao": "Cada request do batch é uma chamada única; ninguém devolve o tool_result dentro do batch.",
+      "feedbacks": [
+        "Não é truncamento: o stop_reason seria tool_use.",
+        "Correta.",
+        "strict valida argumentos; não cria o loop que o batch não tem.",
+        "custom_id duplicado não explica tool_use sem resposta."
+      ]
+    },
+    {
+      "pergunta": "Sobre saída estruturada, quais DUAS afirmações estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Conformidade com o schema não garante que os valores estejam semanticamente corretos",
+        "Com strict: true, minimum e maxLength passam a ser garantidos pela API",
+        "O parâmetro de topo output_format é o caminho recomendado para structured outputs",
+        "Para usar strict, todo objeto do schema precisa de additionalProperties: false",
+        "Enum fechado sem 'other' é a melhor forma de evitar classificações erradas"
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Schema ≠ semântica; strict exige additionalProperties: false em todo objeto.",
+      "feedbacks": [
+        "Correta.",
+        "Restrições numéricas e de tamanho não são suportadas pelo strict (400 no schema cru).",
+        "output_format de topo está depreciado; use output_config.format.",
+        "Correta.",
+        "Enum fechado força escolha errada quando a categoria não está na lista."
+      ]
+    },
+    {
+      "pergunta": "Você está desenhando o loop de validação de um extrator. Quais DUAS práticas são corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Repetir até a validação passar, sem limite",
+        "Usar a mesma mensagem genérica em todos os retries para não enviesar o modelo",
+        "Validar schema e também regras semânticas (somas, datas impossíveis, contradições entre campos)",
+        "Insistir em retry quando o campo obrigatório não existe na fonte",
+        "Ao esgotar o limite, falhar explicitamente e encaminhar para revisão"
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Valide forma e significado; limite como backstop e falha explícita no fim.",
+      "feedbacks": [
+        "Loop sem limite: custo descontrolado.",
+        "Mensagem genérica não diz o que corrigir.",
+        "Correta.",
+        "Retry não recupera informação ausente.",
+        "Correta."
+      ]
+    },
+    {
+      "pergunta": "Um time opera a extração semanal de relatórios pela Batch API. Quais DUAS práticas estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Ler os resultados assim que o batch é criado, na ordem do arquivo de entrada",
+        "Fazer poll de processing_status até ended e casar cada resultado pelo custom_id",
+        "Ao ver alguns errored, reenviar o batch inteiro",
+        "Usar o batch também para o painel de consulta em tempo real dos gerentes",
+        "Reenviar apenas os custom_id com resultado errored ou expired"
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Poll até ended, casar por custom_id e reenviar só o que falhou.",
+      "feedbacks": [
+        "Resultados só ficam prontos ao fim e chegam fora de ordem.",
+        "Correta.",
+        "Reprocessa sucessos e dobra o custo sem necessidade.",
+        "Tempo real não combina com batch (até 24h, sem SLA).",
+        "Correta."
+      ]
+    }
+  ]
+}

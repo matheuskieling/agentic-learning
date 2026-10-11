@@ -1,0 +1,261 @@
+{
+  "titulo": "Módulo 10 — Quiz: gestão de contexto e prompt caching",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Por que uma conversa longa fica mais cara a cada turno na Messages API?",
+      "opcoes": [
+        "Porque o modelo cobra uma taxa fixa por turno que cresce com o número de turnos",
+        "Porque a API é stateless: o histórico inteiro é reenviado e cobrado a cada request",
+        "Porque o modelo gera respostas mais longas quando o histórico cresce",
+        "Porque o cache de prompt expira ao fim de cada turno e o prefixo inteiro precisa ser escrito de novo, com prêmio de escrita"
+      ],
+      "correta": 1,
+      "explicacao": "A Messages API não guarda estado: cada request leva todo o histórico, e todos esses tokens de entrada são cobrados de novo (exceto o que vier do cache).",
+      "feedbacks": [
+        "Não existe taxa por turno; a cobrança é por token.",
+        "Correto. Stateless = reenviar e pagar o histórico a cada turno.",
+        "O tamanho da resposta não cresce por causa do histórico; o custo vem do input reenviado.",
+        "O cache não expira a cada turno (TTL de minutos, renovado na leitura); e cache barateia, não encarece."
+      ]
+    },
+    {
+      "pergunta": "Uma regra crítica ('nunca reembolsar acima de 500 sem aprovação') está no meio de um system prompt de 30 mil tokens e às vezes é ignorada. Qual a correção de contexto mais direta?",
+      "opcoes": [
+        "Trocar para um modelo com janela maior, para que o prompt de 30 mil tokens ocupe uma fração menor do contexto",
+        "Repetir a regra em vários pontos do meio do prompt",
+        "Aumentar o max_tokens para o modelo ter espaço para raciocinar",
+        "Mover a regra para o começo, sob um cabeçalho claro (e impô-la em código)"
+      ],
+      "correta": 3,
+      "explicacao": "Lost in the middle: informação no meio de contextos longos recebe menos atenção. Posicione o crítico no começo com cabeçalho. E regra financeira crítica deve ser imposta em código (hook), não só no prompt.",
+      "feedbacks": [
+        "Janela maior não melhora a atenção ao meio; tende a piorar e encarece.",
+        "Repetir no meio continua no meio; e aumenta ruído.",
+        "max_tokens limita a saída; não muda a atenção ao input.",
+        "Correto. Posição e estrutura atacam o lost in the middle; código garante a regra."
+      ]
+    },
+    {
+      "pergunta": "Depois de um resumo automático, o agente de suporte passou a chamar process_refund com o order_id errado. Qual a correção recomendada?",
+      "opcoes": [
+        "Manter um bloco de CASE FACTS (IDs, valores, datas) fora do resumo e reinjetá-lo a cada turno",
+        "Instruir o sumarizador a 'preservar todos os detalhes importantes, especialmente IDs e valores', e revisar o prompt de resumo",
+        "Desativar o resumo e deixar a conversa crescer indefinidamente",
+        "Pedir ao cliente o order_id novamente a cada chamada de tool"
+      ],
+      "correta": 0,
+      "explicacao": "Resumos perdem valores exatos e IDs. Fatos transacionais vão num bloco persistente de case facts que nunca é resumido.",
+      "feedbacks": [
+        "Correto. Case facts tiram o dado exato do alcance do resumo.",
+        "Sumarização continua probabilística; é o anti-padrão de confiar no resumo.",
+        "A conversa vai estourar a janela e degradar; não resolve.",
+        "Péssima experiência e não ataca a causa (perda no resumo)."
+      ]
+    },
+    {
+      "pergunta": "No Claude Code, qual destes tem MAIS chance de se perder após um /compact?",
+      "opcoes": [
+        "O conteúdo do CLAUDE.md do projeto",
+        "As mensagens mais recentes da conversa, que são as primeiras a serem resumidas pelo /compact",
+        "A mensagem de erro literal de um stack trace lido no início da sessão",
+        "O que foi gravado no arquivo de memória"
+      ],
+      "correta": 2,
+      "explicacao": "CLAUDE.md, system prompt, mensagens recentes e memória sobrevivem. Detalhes antigos, resultados de tool do início e textos exatos (como mensagens de erro) podem se perder.",
+      "feedbacks": [
+        "O CLAUDE.md é recarregado; sobrevive.",
+        "Mensagens recentes são preservadas.",
+        "Correto. Texto exato do início da sessão é o tipo de detalhe que o resumo perde.",
+        "Memória fica em disco; sobrevive."
+      ]
+    },
+    {
+      "pergunta": "Qual é um sinal típico de degradação de contexto numa sessão longa de exploração de codebase?",
+      "opcoes": [
+        "O agente passa a usar Grep em vez de Read",
+        "O agente pede permissão para editar arquivos",
+        "O agente passa a criar subagents para tarefas paralelas em vez de fazer a exploração diretamente na sessão principal",
+        "Respostas vagas como 'segue os padrões típicos' em vez de citar a classe específica já lida"
+      ],
+      "correta": 3,
+      "explicacao": "Sinais de degradação: respostas genéricas em vez de código específico, inconsistência e esquecer descobertas.",
+      "feedbacks": [
+        "Usar Grep é exploração saudável, não degradação.",
+        "Pedir permissão é comportamento do modo de permissão, não sinal de contexto.",
+        "Delegar a subagents é uma mitigação, não um sintoma.",
+        "Correto. Genérico onde deveria ser específico é o sintoma clássico."
+      ]
+    },
+    {
+      "pergunta": "Um coordenador de longa duração precisa poder retomar o trabalho se o processo cair no meio. O que implementar?",
+      "opcoes": [
+        "Um manifesto em local conhecido com tarefas, status e caminhos dos resultados parciais",
+        "Um limite de iterações mais baixo",
+        "Um TTL de cache de 1 hora",
+        "Um system prompt pedindo ao modelo para 'lembrar onde parou' e retomar a partir da última tarefa concluída"
+      ],
+      "correta": 0,
+      "explicacao": "Estado salvo em local conhecido + manifesto do coordenador permite que uma nova sessão leia e retome após crash.",
+      "feedbacks": [
+        "Correto. O estado precisa estar fora da conversa.",
+        "Limite de iterações não salva estado.",
+        "Cache não é persistência de estado de trabalho.",
+        "O modelo não tem memória entre processos; prompt não salva estado."
+      ]
+    },
+    {
+      "pergunta": "Um agente faz centenas de chamadas de busca; os resultados antigos já foram sintetizados e só ocupam espaço. Qual mecanismo é o mais adequado?",
+      "opcoes": [
+        "Memory tool, movendo os resultados antigos para arquivos fora da conversa",
+        "Compaction",
+        "Bloco de case facts",
+        "Context editing (limpar tool results antigos)"
+      ],
+      "correta": 3,
+      "explicacao": "Context editing limpa resultados antigos de tool (e/ou thinking). Ideal para loops agênticos verbosos cujos resultados já foram consumidos.",
+      "feedbacks": [
+        "Memory tool persiste entre sessões; não reduz o contexto atual.",
+        "Compaction resume a narrativa; aqui basta descartar resultados já usados.",
+        "Case facts guarda valores exatos; não libera espaço.",
+        "Correto. Limpar tool results velhos é exatamente o caso de uso."
+      ]
+    },
+    {
+      "pergunta": "O time habilitou compaction server-side, mas o histórico continua crescendo até estourar. O código faz messages.Add(resposta.Content[0].Text). Qual a causa?",
+      "opcoes": [
+        "O limiar de compaction está alto demais; ele precisa ser reduzido para disparar antes de o histórico crescer",
+        "Anexa só o texto e descarta o bloco de compaction; é preciso anexar o response.content inteiro",
+        "Compaction não funciona com tools",
+        "Falta um breakpoint de cache no último bloco"
+      ],
+      "correta": 1,
+      "explicacao": "Com compaction, a resposta traz um bloco de compaction. Extrair só o texto perde esse estado em silêncio.",
+      "feedbacks": [
+        "Mesmo com limiar adequado, o bloco descartado impede a compaction de agir.",
+        "Correto. Anexe o response.content inteiro.",
+        "Compaction funciona em loops com tools.",
+        "Cache não tem relação com o crescimento do histórico."
+      ]
+    },
+    {
+      "pergunta": "Qual mecanismo serve para que preferências descobertas sobre um cliente estejam disponíveis no PRÓXIMO atendimento, dias depois?",
+      "opcoes": [
+        "Memory tool (arquivos persistentes fora da conversa)",
+        "Context editing",
+        "Compaction, que resume o atendimento anterior num bloco reaproveitável",
+        "Prompt caching com TTL de 1 hora"
+      ],
+      "correta": 0,
+      "explicacao": "Memory tool guarda achados em arquivos persistentes entre sessões; você implementa o armazenamento.",
+      "feedbacks": [
+        "Correto. Persistência entre sessões.",
+        "Context editing apaga; não persiste nada.",
+        "Compaction vive dentro de uma conversa.",
+        "Cache não é memória de negócio e expira em minutos/1 hora."
+      ]
+    },
+    {
+      "pergunta": "Qual a diferença essencial entre task budget e max_tokens?",
+      "opcoes": [
+        "Task budget é cobrado em dólares; max_tokens em tokens",
+        "Task budget é visível ao modelo, que se organiza para caber; max_tokens é invisível e corta no meio",
+        "Task budget vale só para Batch API",
+        "max_tokens limita a tarefa agêntica inteira; task budget limita cada resposta individual e corta quando atinge o teto"
+      ],
+      "correta": 1,
+      "explicacao": "Teto visível → o modelo planeja e termina de forma ordenada. Teto invisível → truncamento com stop_reason max_tokens.",
+      "feedbacks": [
+        "Ambos são em tokens.",
+        "Correto.",
+        "Não tem relação com Batch API.",
+        "Invertido: max_tokens é por resposta; task budget é para a tarefa agêntica."
+      ]
+    },
+    {
+      "pergunta": "Como uma recusa por segurança chega ao seu código na Messages API?",
+      "opcoes": [
+        "Como HTTP 400 com tipo invalid_request_error",
+        "Como HTTP 403",
+        "Como HTTP 200 com stop_reason 'refusal'",
+        "Como exceção de timeout no SDK"
+      ],
+      "correta": 2,
+      "explicacao": "A recusa chega com HTTP 200 e stop_reason refusal. Por isso é preciso checar stop_reason antes de ler content.",
+      "feedbacks": [
+        "400 é para request malformado, não para recusa.",
+        "403 é permissão/autenticação.",
+        "Correto. Status de sucesso, conteúdo de recusa.",
+        "Recusa não é timeout."
+      ]
+    },
+    {
+      "pergunta": "Em que ordem o prefixo de prompt caching é renderizado?",
+      "opcoes": [
+        "system → tools → messages",
+        "messages → system → tools",
+        "tools → system → messages",
+        "A ordem não importa; o cache é por bloco independente"
+      ],
+      "correta": 2,
+      "explicacao": "tools → system → messages. Uma mudança nas tools invalida o system e as mensagens em cache.",
+      "feedbacks": [
+        "Tools vêm antes do system.",
+        "Mensagens são a parte final do prefixo.",
+        "Correto.",
+        "O cache casa prefixo exato; a ordem é tudo."
+      ]
+    },
+    {
+      "pergunta": "O system prompt começa com 'Agora: 2026-10-11T14:02:37Z' e tem cache_control no fim. O que acontece?",
+      "opcoes": [
+        "O cache funciona normalmente, porque o timestamp é curto",
+        "O cache ignora automaticamente datas no prefixo",
+        "A API retorna 400, porque não é permitido conteúdo variável dentro de um bloco marcado com cache_control",
+        "Todo request paga a escrita de cache e nunca há leitura, porque o prefixo muda sempre"
+      ],
+      "correta": 3,
+      "explicacao": "Qualquer byte diferente no prefixo invalida o cache. Com timestamp no system, cada request escreve e nenhum lê: fica mais caro que sem cache.",
+      "feedbacks": [
+        "Tamanho não importa; basta um byte diferente.",
+        "Não existe normalização de datas; o casamento é exato.",
+        "Não há erro: a invalidação é silenciosa.",
+        "Correto. Invalidador silencioso clássico."
+      ]
+    },
+    {
+      "pergunta": "Repetidos requests mostram cache_read_input_tokens = 0 e cache_creation_input_tokens = 0, com cache_control no system de ~300 tokens. Causa mais provável?",
+      "opcoes": [
+        "Prefixo abaixo do mínimo cacheável do modelo: não cacheia, em silêncio",
+        "Timestamp no system",
+        "O TTL de 5 minutos expirou entre os requests e o cache foi descartado antes da leitura",
+        "Excesso de breakpoints"
+      ],
+      "correta": 0,
+      "explicacao": "Se nem a escrita acontece, o prefixo não atingiu o mínimo cacheável. Abaixo do mínimo não há erro, apenas zero.",
+      "feedbacks": [
+        "Correto. Escrita zero aponta para prefixo pequeno demais.",
+        "Timestamp causaria escrita a cada request (creation > 0), não zero.",
+        "TTL expirado causaria nova escrita, não zero.",
+        "Mais de 4 breakpoints daria erro, não silêncio."
+      ]
+    },
+    {
+      "pergunta": "Qual destes NÃO invalida o prompt caching?",
+      "opcoes": [
+        "Montar a lista de tools dinamicamente por request",
+        "Serializar o system a partir de um dicionário com ordem de chaves não determinística",
+        "Colocar a pergunta do usuário depois do último breakpoint",
+        "Incluir o ID da sessão no início do system"
+      ],
+      "correta": 2,
+      "explicacao": "O volátil depois do último breakpoint é exatamente o desenho correto. As outras três são invalidadores silenciosos.",
+      "feedbacks": [
+        "Tools variando mudam o início do prefixo: invalida tudo.",
+        "Ordem de chaves instável muda bytes do prefixo.",
+        "Correto. Estável primeiro, volátil depois.",
+        "ID de sessão no prefixo torna cada sessão um prefixo diferente."
+      ]
+    }
+  ]
+}

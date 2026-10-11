@@ -1,0 +1,265 @@
+{
+  "titulo": "Módulo 08 — Configurando o Claude Code (quiz de fixação)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "A regra \"toda rota nova precisa de teste de integração\" deve valer para todos os devs do repositório. Onde ela deve ficar?",
+      "opcoes": [
+        "No `~/.claude/CLAUDE.md` de cada dev",
+        "No `CLAUDE.md` da raiz do projeto, versionado no git",
+        "No `CLAUDE.local.md` da raiz do projeto",
+        "Na auto memory (`MEMORY.md`) do projeto"
+      ],
+      "correta": 1,
+      "explicacao": "Instrução do time vai no CLAUDE.md do projeto (./CLAUDE.md ou ./.claude/CLAUDE.md), que é versionado e chega a todos ao clonar.",
+      "feedbacks": [
+        "Tentador porque 'funciona', mas o arquivo do usuário é pessoal: cada dev teria que copiar à mão, e quem não copiar não recebe a regra.",
+        "Correto: o CLAUDE.md do projeto é compartilhado via git e carregado para todos.",
+        "O CLAUDE.local.md é pessoal e fica no .gitignore, então o time não recebe.",
+        "A auto memory é escrita pelo próprio Claude e é local da máquina; não é canal de regra do time."
+      ]
+    },
+    {
+      "pergunta": "Um repositório tem `AGENTS.md` (usado por outro agente de código) e também `CLAUDE.md` na raiz. O que o Claude Code carrega por padrão e como unificar?",
+      "opcoes": [
+        "Carrega os dois e concatena; não é preciso fazer nada",
+        "Carrega só o AGENTS.md, porque é o padrão aberto",
+        "Carrega o que tiver sido modificado mais recentemente",
+        "Carrega só o CLAUDE.md; para aproveitar o AGENTS.md, importe-o com `@AGENTS.md` dentro do CLAUDE.md"
+      ],
+      "correta": 3,
+      "explicacao": "AGENTS.md só é lido quando não há CLAUDE.md. Com ambos, o CLAUDE.md vence; o jeito simples de ter uma fonte só é `@AGENTS.md` no CLAUDE.md.",
+      "feedbacks": [
+        "Parece razoável, mas por padrão o AGENTS.md é ignorado quando existe CLAUDE.md.",
+        "Inverte a regra: o CLAUDE.md é que tem prioridade.",
+        "Não existe critério por data de modificação.",
+        "Correto: CLAUDE.md vence; o @import traz o AGENTS.md junto."
+      ]
+    },
+    {
+      "pergunta": "Um arquivo `.claude/rules/testes.md` tem frontmatter `paths: [\"**/*Tests.cs\"]`. Quando ele entra no contexto?",
+      "opcoes": [
+        "Quando o Claude lê ou edita um arquivo que casa com o glob",
+        "Sempre, no início da sessão, como o CLAUDE.md",
+        "Só quando o usuário digita `/testes`",
+        "Só quando um subagent Explore é acionado"
+      ],
+      "correta": 0,
+      "explicacao": "Rule com `paths` é condicional: carrega quando o Claude toca (Read/Write/Edit) um arquivo que bate com o padrão. Sem `paths`, carrega sempre.",
+      "feedbacks": [
+        "Correto: carregamento condicional por caminho.",
+        "Esse é o comportamento de uma rule SEM `paths`.",
+        "Confunde rule com skill/comando; rules não são invocadas por `/`.",
+        "Não tem relação com subagents."
+      ]
+    },
+    {
+      "pergunta": "O repositório tem `.claude/commands/deploy.md` e `.claude/skills/deploy/SKILL.md`, com conteúdos diferentes. O que acontece com `/deploy`?",
+      "opcoes": [
+        "Os dois rodam em sequência",
+        "O comando vence, porque é o formato mais antigo",
+        "A skill vence",
+        "O Claude Code recusa iniciar por conflito de nome"
+      ],
+      "correta": 2,
+      "explicacao": "Comandos e skills foram fundidos; ambos criam `/deploy`. Em conflito de nome, a skill vence.",
+      "feedbacks": [
+        "Não há composição de conteúdos; um só vence.",
+        "É a pegadinha: o formato legado continua funcionando, mas perde no conflito.",
+        "Correto.",
+        "Não há erro de inicialização por isso."
+      ]
+    },
+    {
+      "pergunta": "A skill `/deploy-prod` foi disparada pelo Claude por conta própria durante uma conversa sobre deploy. Qual ajuste resolve de forma direta?",
+      "opcoes": [
+        "Remover a `description` da skill",
+        "Adicionar `disable-model-invocation: true` no frontmatter",
+        "Adicionar `user-invocable: false` no frontmatter",
+        "Escrever no CLAUDE.md \"não rode deploy sem pedir\""
+      ],
+      "correta": 1,
+      "explicacao": "`disable-model-invocation: true` faz com que só o usuário possa invocar a skill: o certo para ações com efeito colateral.",
+      "feedbacks": [
+        "Gambiarra: a description serve para orientar; sem ela a skill fica mal documentada e o controle não é explícito.",
+        "Correto: só você invoca.",
+        "É o oposto: `user-invocable: false` esconde do menu e deixa SÓ o Claude invocar.",
+        "Instrução em prompt é probabilístico; existe um controle determinístico no frontmatter."
+      ]
+    },
+    {
+      "pergunta": "O que `context: fork` faz no frontmatter de uma skill?",
+      "opcoes": [
+        "Roda a skill num subagent isolado, que não vê o histórico da conversa e devolve o resultado",
+        "Cria um fork do repositório git antes de executar",
+        "Duplica a sessão atual para que o usuário possa comparar duas respostas",
+        "Faz a skill ser relida do disco a cada turno"
+      ],
+      "correta": 0,
+      "explicacao": "`context: fork` executa a skill em um subagent com contexto próprio (opcionalmente do tipo definido em `agent`); o histórico da conversa não vai junto.",
+      "feedbacks": [
+        "Correto.",
+        "Confusão com 'fork' do git; não tem relação com o repositório.",
+        "Não é bifurcação de sessão para comparar respostas.",
+        "O corpo da skill não é relido; e isso não tem relação com `context: fork`."
+      ]
+    },
+    {
+      "pergunta": "A mesma chave escalar (ex.: `model`) está em `~/.claude/settings.json`, `.claude/settings.json` e `.claude/settings.local.json`, sem managed nem flag de CLI. Qual valor vale?",
+      "opcoes": [
+        "O de `~/.claude/settings.json`, porque é do usuário",
+        "O de `.claude/settings.json`, porque é do time",
+        "O primeiro arquivo lido em ordem alfabética",
+        "O de `.claude/settings.local.json`"
+      ],
+      "correta": 3,
+      "explicacao": "Precedência: managed > linha de comando > local do projeto > projeto compartilhado > usuário. Sem managed/CLI, o local vence.",
+      "feedbacks": [
+        "O nível do usuário é o de MENOR precedência.",
+        "O compartilhado perde para o local do projeto.",
+        "Não existe ordem alfabética na precedência.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O `.claude/settings.json` do projeto tem `deny: [\"Bash(git push *)\"]` e o `settings.local.json` de um dev tem `allow: [\"Bash(git push *)\"]`. O `git push` roda sem bloqueio?",
+      "opcoes": [
+        "Sim, porque o local tem precedência sobre o projeto",
+        "Sim, mas só depois de um prompt de confirmação",
+        "Não: deny é avaliado antes de allow e allow não abre exceção num deny",
+        "Depende de qual regra é mais específica"
+      ],
+      "correta": 2,
+      "explicacao": "Regras são avaliadas deny → ask → allow; o primeiro que casa decide, independentemente do nível ou da especificidade.",
+      "feedbacks": [
+        "Precedência de nível vale para chaves escalares; listas de permissão se mesclam e o deny vence.",
+        "Não vira prompt: deny bloqueia.",
+        "Correto.",
+        "Especificidade não muda a ordem de avaliação."
+      ]
+    },
+    {
+      "pergunta": "O que a regra de permissão `Bash(dotnet test *)` libera?",
+      "opcoes": [
+        "Qualquer comando que comece com `dotnet test`, como `dotnet test --filter Unit`",
+        "Somente o comando exato `dotnet test *` com asterisco literal",
+        "Qualquer comando `dotnet`, inclusive `dotnet publish`",
+        "Somente testes, porque o Claude Code entende a semântica de \"test\""
+      ],
+      "correta": 0,
+      "explicacao": "O ` *` final faz casamento por prefixo. A forma `:*` (ex.: `Bash(npm run test:*)`) é equivalente.",
+      "feedbacks": [
+        "Correto.",
+        "O asterisco é curinga, não literal.",
+        "O prefixo é `dotnet test`, não `dotnet`.",
+        "A regra é casamento de texto, não semântica."
+      ]
+    },
+    {
+      "pergunta": "Em qual tarefa o plan mode é a escolha mais adequada?",
+      "opcoes": [
+        "Adicionar um null check numa linha indicada por um stack trace",
+        "Migrar a biblioteca de logging usada em 45 arquivos, com duas abordagens possíveis",
+        "Renomear uma constante num único arquivo",
+        "Corrigir um erro de digitação numa mensagem de log"
+      ],
+      "correta": 1,
+      "explicacao": "Plan mode é para mudança multi-arquivo, arquitetural ou com várias abordagens válidas: explora, propõe e só edita após aprovação.",
+      "feedbacks": [
+        "Escopo pequeno e claro: execução direta.",
+        "Correto.",
+        "Trivial; plan mode seria só atrito.",
+        "Trivial; execução direta."
+      ]
+    },
+    {
+      "pergunta": "Quais afirmações sobre os subagents nativos Explore e Plan são verdadeiras? (Escolha DUAS.)",
+      "opcoes": [
+        "Podem editar arquivos quando o pai está em acceptEdits",
+        "São somente leitura",
+        "Herdam o histórico completo da conversa principal",
+        "Mantêm o contexto principal limpo, devolvendo só a conclusão da exploração",
+        "Precisam ser definidos manualmente em `.claude/agents/` antes do uso"
+      ],
+      "corretas": [1, 3],
+      "explicacao": "Explore e Plan são nativos, somente leitura, e trabalham em contexto isolado devolvendo só o resultado.",
+      "feedbacks": [
+        "Write/Edit são negados a eles, qualquer que seja o modo do pai.",
+        "Correto: somente leitura.",
+        "Subagent tem contexto isolado; não herda o histórico.",
+        "Correto: é o principal valor deles.",
+        "São nativos (built-in); `.claude/agents/` é para customizados."
+      ]
+    },
+    {
+      "pergunta": "Um subagent customizado tem `permissionMode: bypassPermissions`, mas a sessão principal está em `default`. O que acontece?",
+      "opcoes": [
+        "O subagent roda em bypass, porque o frontmatter dele tem prioridade",
+        "A sessão principal passa a bypass também",
+        "O Claude Code recusa carregar o subagent",
+        "O subagent não ganha bypass: ele não pode escalar além do modo da conversa principal"
+      ],
+      "correta": 3,
+      "explicacao": "A permissão do pai desce: subagent não escala privilégio. Um subagent com bypassPermissions numa sessão default não ganha bypass.",
+      "feedbacks": [
+        "É exatamente o que a regra impede.",
+        "Nada sobe do subagent para o pai.",
+        "Ele carrega normalmente; só não ganha o modo pedido.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O dev quer saber quais arquivos chamam o método `CalcularFrete`. Qual tool nativa é a mais adequada?",
+      "opcoes": [
+        "Glob com `**/*.cs`",
+        "Read em todos os arquivos `.cs`",
+        "Grep por `CalcularFrete`",
+        "WebFetch na documentação interna"
+      ],
+      "correta": 2,
+      "explicacao": "Grep busca conteúdo; Glob só acha arquivos por nome/padrão.",
+      "feedbacks": [
+        "Glob lista arquivos por nome, não olha o conteúdo.",
+        "Ler tudo de antemão é o anti-padrão clássico: gasta contexto.",
+        "Correto.",
+        "Não responde onde o código chama o método."
+      ]
+    },
+    {
+      "pergunta": "O `Edit` falhou porque o trecho `return null;` aparece 7 vezes no arquivo. Qual a melhor próxima ação?",
+      "opcoes": [
+        "Ampliar o `old_string` com linhas ao redor até ficar único (ou `replace_all` se a ideia é trocar todas)",
+        "Repetir o mesmo Edit até funcionar",
+        "Trocar para Bash com `sed -i` sem olhar o arquivo",
+        "Desistir e pedir ao usuário que edite manualmente"
+      ],
+      "correta": 0,
+      "explicacao": "Edit exige trecho único. Amplie o contexto do trecho, use `replace_all` quando for trocar todas, ou leia e reescreva o arquivo.",
+      "feedbacks": [
+        "Correto.",
+        "A mesma entrada vai falhar do mesmo jeito.",
+        "Contorna o problema às cegas e pode trocar ocorrências erradas.",
+        "Desnecessário: há correção simples."
+      ]
+    },
+    {
+      "pergunta": "Quais itens entram no contexto já no início da sessão, sem depender de qual arquivo o Claude toque? (Escolha DUAS.)",
+      "opcoes": [
+        "O `CLAUDE.md` da raiz do projeto",
+        "O `CLAUDE.md` de um subdiretório abaixo do diretório de trabalho",
+        "Uma rule em `.claude/rules/` sem frontmatter `paths`",
+        "Uma rule em `.claude/rules/` com `paths: [\"src/api/**\"]`",
+        "O corpo completo de todas as skills do projeto"
+      ],
+      "corretas": [0, 2],
+      "explicacao": "CLAUDE.md do projeto e rules sem `paths` carregam no início. CLAUDE.md de subdiretório e rules com `paths` carregam sob demanda; de skills, só a descrição fica disponível até a invocação.",
+      "feedbacks": [
+        "Correto.",
+        "Subdiretório abaixo carrega sob demanda, quando o Claude toca arquivos de lá.",
+        "Correto.",
+        "Com `paths`, só carrega ao tocar arquivo que casa.",
+        "O corpo da skill só entra quando ela é invocada; antes, só a descrição orienta o auto-carregamento."
+      ]
+    }
+  ]
+}

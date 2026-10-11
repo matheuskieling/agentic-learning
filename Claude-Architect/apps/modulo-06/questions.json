@@ -1,0 +1,263 @@
+{
+  "titulo": "Módulo 06 — Quiz: o loop agêntico, hooks e handoff",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Qual campo da resposta da Messages API deve decidir se o loop agêntico continua ou termina?",
+      "opcoes": [
+        "O último bloco `text` do `content`, procurando sinais como \"concluído\"",
+        "O `stop_reason`",
+        "O número de blocos em `content`",
+        "O `usage.output_tokens` comparado com o `max_tokens`"
+      ],
+      "correta": 1,
+      "explicacao": "`stop_reason` é o contrato da API: `tool_use` → executa e continua; `end_turn` → terminou. O texto é ambíguo e não é sinal de parada.",
+      "feedbacks": [
+        "Anti-padrão clássico nº 1: decidir a parada lendo linguagem natural. O modelo pode escrever \"pronto\" e ainda pedir uma tool no mesmo turno.",
+        "Correto. `stop_reason` é o sinal estruturado que dirige o loop.",
+        "Contar blocos não diz nada: uma resposta final pode ter um bloco só, e uma com tools pode ter vários.",
+        "Comparar tokens só ajudaria a detectar corte, e para isso o próprio `stop_reason: max_tokens` já existe."
+      ]
+    },
+    {
+      "pergunta": "A resposta veio com `stop_reason: \"max_tokens\"`. O que isso indica?",
+      "opcoes": [
+        "O modelo terminou normalmente e usou exatamente o orçamento",
+        "A janela de contexto encheu",
+        "A resposta foi cortada no teto de saída e está incompleta",
+        "Uma tool server-side atingiu o teto de iterações"
+      ],
+      "correta": 2,
+      "explicacao": "`max_tokens` = cortou no limite de SAÍDA no meio da resposta. Continue a geração ou aumente o teto; nunca trate como completa.",
+      "feedbacks": [
+        "Terminar normalmente é `end_turn`. `max_tokens` significa corte, não conclusão.",
+        "Janela cheia antes do teto de saída é `model_context_window_exceeded`, outro valor.",
+        "Correto. A saída está truncada (JSON cortado, frase pela metade).",
+        "Isso é `pause_turn`, ligado a loops de tool server-side."
+      ]
+    },
+    {
+      "pergunta": "Seu agente usa a tool server-side de web search e a resposta chega com `stop_reason: \"pause_turn\"`. O que fazer?",
+      "opcoes": [
+        "Reenviar a conversa, anexando a resposta como turno do assistant, para o modelo continuar",
+        "Tratar como erro e abortar a tarefa",
+        "Montar um `tool_result` para a web search e devolver",
+        "Encerrar e mostrar o texto parcial como resposta final"
+      ],
+      "correta": 0,
+      "explicacao": "`pause_turn` = o loop server-side bateu no teto de iterações. Reenvie para que o modelo retome de onde parou.",
+      "feedbacks": [
+        "Correto. Basta reenviar com a resposta anexada; o modelo continua o trabalho.",
+        "Não é erro: é uma pausa prevista pelo protocolo.",
+        "Tools server-side são executadas pela Anthropic; você não monta `tool_result` para elas.",
+        "A tarefa não terminou. Mostrar o parcial como final entrega trabalho incompleto."
+      ]
+    },
+    {
+      "pergunta": "Por que um código que só checa `HTTP 200` pode tratar uma recusa de segurança como \"sucesso vazio\"?",
+      "opcoes": [
+        "Porque recusas vêm com HTTP 400 e o código não trata 400",
+        "Porque a recusa só aparece no header da resposta",
+        "Porque a recusa vem como um bloco `tool_use` especial",
+        "Porque a recusa chega com HTTP 200 e `stop_reason: \"refusal\"`"
+      ],
+      "correta": 3,
+      "explicacao": "A recusa é uma resposta válida da API (HTTP 200). Só olhando `stop_reason` dá para distingui-la de uma resposta normal.",
+      "feedbacks": [
+        "Recusa não é erro HTTP; se fosse 400, o código que checa 200 nem trataria como sucesso.",
+        "A recusa é sinalizada no corpo, pelo `stop_reason`, não por header.",
+        "Não existe `tool_use` de recusa; o sinal é `stop_reason: refusal`.",
+        "Correto. Por isso se checa `stop_reason` antes de ler `content`."
+      ]
+    },
+    {
+      "pergunta": "O `content` de uma resposta tem um bloco `text` (\"Vou consultar seu pedido.\") e um bloco `tool_use`. O que o loop deve fazer?",
+      "opcoes": [
+        "Mostrar o texto ao usuário e encerrar, porque já há resposta textual",
+        "Executar a tool, devolver o `tool_result` e continuar o loop",
+        "Descartar o texto e reenviar pedindo só o `tool_use`",
+        "Pedir ao modelo que escolha entre responder ou chamar a tool"
+      ],
+      "correta": 1,
+      "explicacao": "Texto e `tool_use` misturados são normais. O `stop_reason` será `tool_use`: execute e continue. Ter texto não significa que terminou.",
+      "feedbacks": [
+        "Erro clássico: ter texto não é sinal de fim. A tool pedida nunca seria executada.",
+        "Correto. O texto é narração; o `tool_use` é a ação pedida.",
+        "O conteúdo misto é válido e o texto deve permanecer no histórico.",
+        "O modelo já decidiu: chamou a tool. Não há escolha a refazer."
+      ]
+    },
+    {
+      "pergunta": "O modelo pediu três tools na mesma resposta. Como os resultados devem voltar?",
+      "opcoes": [
+        "Três mensagens `user`, uma por resultado, na ordem de execução",
+        "Só o resultado da primeira tool; o modelo pede as outras depois",
+        "Uma única mensagem `user` com três `tool_result`, cada um com o `tool_use_id` exato",
+        "Um único `tool_result` concatenando as três saídas"
+      ],
+      "correta": 2,
+      "explicacao": "Tool use paralelo: todos os `tool_result` numa única mensagem `user`, cada um casado pelo `tool_use_id` do pedido.",
+      "feedbacks": [
+        "Espalhar resultados em várias mensagens `user` quebra o protocolo.",
+        "Todos os `tool_use` precisam de resposta; faltar resultado gera erro.",
+        "Correto. Um resultado por pedido, ids exatos, uma mensagem.",
+        "Concatenar perde o vínculo entre cada pedido e seu resultado."
+      ]
+    },
+    {
+      "pergunta": "Uma tool deu timeout. Qual é a forma certa de informar o modelo?",
+      "opcoes": [
+        "Devolver `tool_result` com `is_error: true` e uma mensagem explicando a falha",
+        "Omitir o `tool_result` dessa tool para não confundir o modelo",
+        "Devolver `tool_result` com conteúdo vazio, como se não houvesse dados",
+        "Lançar exceção e reiniciar a conversa do zero"
+      ],
+      "correta": 0,
+      "explicacao": "A falha também recebe resultado, com `is_error: true`, para o modelo raciocinar sobre a recuperação (tentar de novo, outra tool, escalar).",
+      "feedbacks": [
+        "Correto. Erro explícito permite ao modelo decidir como se recuperar.",
+        "Omitir resultado quebra o protocolo e esconde o problema.",
+        "Vazio como sucesso é supressão silenciosa: o modelo conclui \"não há dados\" quando a busca nem rodou.",
+        "Abortar tudo por uma falha desperdiça o trabalho feito; o modelo pode se recuperar."
+      ]
+    },
+    {
+      "pergunta": "Um time configurou o loop para parar após exatamente 5 iterações em todas as tarefas. Qual o problema?",
+      "opcoes": [
+        "Nenhum, desde que o número seja escolhido com base na média histórica",
+        "O problema é só de custo: 5 iterações são caras demais",
+        "Limite de iterações é proibido em qualquer forma",
+        "Um limite fixo como critério principal corta tarefas longas e não reflete o fim real; deve ser só backstop"
+      ],
+      "correta": 3,
+      "explicacao": "Limite arbitrário como mecanismo principal de parada é anti-padrão. Um teto alto como backstop (com alerta) é aceitável; o fim normal é `end_turn`.",
+      "feedbacks": [
+        "A média não resolve: tarefas acima dela seriam cortadas no meio.",
+        "O problema não é custo, é correção: o critério de parada é arbitrário.",
+        "Exagero: como rede de segurança contra loop infinito, um teto é correto.",
+        "Correto. Backstop sim; critério de parada, não."
+      ]
+    },
+    {
+      "pergunta": "Qual a diferença essencial entre task budget e `max_tokens`?",
+      "opcoes": [
+        "Task budget vale por resposta; `max_tokens` vale para a tarefa inteira",
+        "Task budget é visível ao modelo, que se organiza para caber; `max_tokens` é invisível e corta no meio",
+        "Os dois são equivalentes; muda só o nome",
+        "`max_tokens` limita a entrada; task budget limita a saída"
+      ],
+      "correta": 1,
+      "explicacao": "Task budget [volátil, beta] é um orçamento da tarefa que o modelo enxerga e respeita planejando. `max_tokens` é um teto de saída por resposta que o modelo não vê.",
+      "feedbacks": [
+        "Invertido: `max_tokens` é por resposta; o budget é da tarefa.",
+        "Correto. Visível (organiza) vs. invisível (corta).",
+        "Não são equivalentes: o comportamento ao atingir o limite é oposto.",
+        "`max_tokens` é teto de saída, não de entrada."
+      ]
+    },
+    {
+      "pergunta": "Uma equipe precisa de um agente com 4 tools internas, sem acesso a arquivos, sem subagents nem sessões retomáveis. Qual forma de construir é a mais adequada?",
+      "opcoes": [
+        "Claude Agent SDK, por ser o mais completo",
+        "Managed Agents, para não ter de escrever código",
+        "Loop manual na Messages API ou Tool Runner do SDK",
+        "Um orquestrador com um subagent por tool"
+      ],
+      "correta": 2,
+      "explicacao": "Escolha a forma mais simples que atende. Sem hooks, subagents, sessões ou tools de arquivo, loop manual/Tool Runner bastam.",
+      "feedbacks": [
+        "O Agent SDK traz o harness inteiro do Claude Code; aqui é complexidade sem necessidade.",
+        "Managed Agents servem quando você não quer operar a execução/sandbox; o enunciado não pede isso.",
+        "Correto. A mais simples que resolve.",
+        "Subagent por tool é decomposição desnecessária para 4 tools."
+      ]
+    },
+    {
+      "pergunta": "Uma regra diz que reembolsos só podem ser processados após verificar a identidade. Como garanti-la?",
+      "opcoes": [
+        "Enforcement programático, como um hook `PreToolUse` ou um pré-requisito dentro da tool de reembolso",
+        "Repetir a regra em maiúsculas no system prompt e na mensagem do usuário",
+        "Adicionar três exemplos few-shot de verificação antes do reembolso",
+        "Um segundo modelo que revisa a conversa antes de cada reembolso"
+      ],
+      "correta": 0,
+      "explicacao": "Regra com consequência financeira exige garantia determinística: código (hook/pré-requisito). Prompt, few-shot e revisor LLM são probabilísticos.",
+      "feedbacks": [
+        "Correto. Determinístico: sem verificação, a tool não roda.",
+        "Ênfase no prompt reduz a taxa de falha, mas não a zera.",
+        "Few-shot melhora a média; não é garantia.",
+        "Outro LLM continua probabilístico e adiciona custo e latência."
+      ]
+    },
+    {
+      "pergunta": "Num hook do tipo `command` no `PreToolUse`, o script termina com exit code 2. O que acontece?",
+      "opcoes": [
+        "A tool roda normalmente e o erro é só registrado em log",
+        "A sessão inteira é encerrada",
+        "O hook é ignorado e o próximo hook decide",
+        "A tool é bloqueada e o stderr volta ao Claude como motivo"
+      ],
+      "correta": 3,
+      "explicacao": "Exit 0 passa; exit 2 bloqueia e devolve o stderr ao Claude, que lê o motivo e se ajusta. Outros códigos são erro não bloqueante.",
+      "feedbacks": [
+        "Esse é o comportamento de outros códigos de saída (erro não bloqueante), não do 2.",
+        "O bloqueio é da ação, não da sessão; o Claude continua trabalhando.",
+        "Exit 2 tem significado próprio: bloquear.",
+        "Correto. Bloqueio com feedback para o modelo."
+      ]
+    },
+    {
+      "pergunta": "Você quer que o resultado de uma tool de CRM chegue ao modelo com o número do cartão mascarado. Qual evento de hook usar?",
+      "opcoes": [
+        "`PreToolUse`",
+        "`PostToolUse`",
+        "`UserPromptSubmit`",
+        "`Stop`"
+      ],
+      "correta": 1,
+      "explicacao": "`PostToolUse` roda depois da tool e é o lugar para normalizar, limpar e anotar o resultado (ex.: mascarar PII).",
+      "feedbacks": [
+        "`PreToolUse` age antes da execução; o resultado ainda não existe.",
+        "Correto. Pós-execução, tratando o que o modelo vai ver.",
+        "`UserPromptSubmit` trata o prompt do usuário, não a saída de tools.",
+        "`Stop` dispara quando o agente vai encerrar o turno."
+      ]
+    },
+    {
+      "pergunta": "Um hook precisa valer para todos os desenvolvedores do repositório. Onde configurá-lo?",
+      "opcoes": [
+        "`~/.claude/settings.json` de cada desenvolvedor",
+        "`.claude/settings.local.json`",
+        "`.claude/settings.json` do projeto, versionado no git",
+        "No CLAUDE.md, como instrução"
+      ],
+      "correta": 2,
+      "explicacao": "Settings de projeto (`.claude/settings.json`) são compartilhados pelo git. `settings.local.json` é pessoal e gitignored; `~/.claude` é do usuário.",
+      "feedbacks": [
+        "Exigiria que cada pessoa configurasse manualmente; nada garante que todos o façam.",
+        "O `.local` é pessoal e fica fora do git.",
+        "Correto. Projeto = compartilhado com o time.",
+        "CLAUDE.md é instrução (probabilística), não executa hook."
+      ]
+    },
+    {
+      "pergunta": "Quais itens devem constar no handoff de um agente de suporte para um atendente humano? (Escolha DUAS.)",
+      "opcoes": [
+        "O transcript completo, sem edição, para não perder nada",
+        "As ações já tomadas pelo agente e o motivo do escalonamento",
+        "O nível de confiança autodeclarado pelo modelo na própria análise",
+        "A identidade do cliente (e se já foi verificada), o problema e a ação recomendada",
+        "A pontuação de sentimento do cliente como justificativa principal"
+      ],
+      "corretas": [1, 3],
+      "explicacao": "Handoff = resumo estruturado: cliente/verificação, problema, pedido, causa raiz, ações tomadas, por que escalou, ação recomendada, valor.",
+      "feedbacks": [
+        "Transcript bruto obriga o humano a reler tudo; o objetivo é destacar o que importa.",
+        "Correto. Evita que o humano repita o que já foi feito.",
+        "Confiança autodeclarada é mal calibrada; não é base para decisão.",
+        "Correto. Identidade, problema e recomendação são o núcleo do handoff.",
+        "Sentimento não é critério de escalonamento nem informação central do caso."
+      ]
+    }
+  ]
+}
