@@ -1,0 +1,396 @@
+{
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-01/questions.json",
+  "bank": {
+    "titulo": "Módulo 01 — Quiz: o exame, a Messages API e a superfície de request",
+    "aprovacao": 70,
+    "questoes": [
+      {
+        "pergunta": "Quantos cenários aparecem numa aplicação da prova CCAR-F?",
+        "opcoes": [
+          "Os 6 cenários do banco, sempre",
+          "4 cenários sorteados de um banco de 6",
+          "2 cenários fixos e 2 sorteados",
+          "Um cenário por domínio do exame, ou seja, 5 cenários no total"
+        ],
+        "correta": 1,
+        "explicacao": "A prova sorteia 4 dos 6 cenários do banco, e as questões se penduram neles.",
+        "feedbacks": [
+          "Errado: são 6 no banco, mas só 4 entram em cada aplicação.",
+          "Correto: 4 de 6, sorteados.",
+          "Errado: não há cenários fixos; todos vêm do sorteio.",
+          "Errado: cenários não correspondem 1:1 a domínios; um cenário mistura vários domínios."
+        ]
+      },
+      {
+        "pergunta": "Qual domínio tem o MAIOR peso na prova?",
+        "opcoes": [
+          "D4 — Prompt engineering & saída estruturada",
+          "D3 — Configuração & workflows do Claude Code",
+          "D2 — Design de tools & integração MCP",
+          "D1 — Arquitetura agêntica & orquestração"
+        ],
+        "correta": 3,
+        "explicacao": "D1 pesa 27%; D3 e D4 pesam 20% cada, D2 18% e D5 15%.",
+        "feedbacks": [
+          "Errado: D4 pesa 20%.",
+          "Errado: D3 pesa 20%.",
+          "Errado: D2 pesa 18%.",
+          "Correto: D1 = 27%, mais de um quarto da prova."
+        ]
+      },
+      {
+        "pergunta": "Você está com 3 minutos restantes e 4 questões sem resposta. Qual a melhor conduta?",
+        "opcoes": [
+          "Marcar uma alternativa em todas, já que não há penalidade por chute",
+          "Deixar em branco as que não sabe, para não perder pontos",
+          "Responder só as de resposta única e deixar as 'Escolha DUAS' em branco",
+          "Revisar as já respondidas em vez de responder as novas"
+        ],
+        "correta": 0,
+        "explicacao": "Sem penalidade por chute, resposta em branco é ponto perdido com certeza; chutar só pode ajudar.",
+        "feedbacks": [
+          "Correto: sem penalidade, sempre marque.",
+          "Errado: não há desconto por erro; branco vale zero de qualquer forma.",
+          "Errado: mesmo nas de múltipla resposta, chutar tem chance de acerto; branco não tem.",
+          "Errado: revisar não compensa deixar questões sem resposta."
+        ]
+      },
+      {
+        "pergunta": "Uma alternativa propõe impor o limite de reembolso de US$ 500 apenas com uma instrução enfática no system prompt. Que princípio da prova ela viola?",
+        "opcoes": [
+          "Medir antes de mexer",
+          "Usar few-shot para casos de borda",
+          "Regra crítica (financeira) vai em código determinístico, não em prompt",
+          "Preferir sempre o modelo mais capaz"
+        ],
+        "correta": 2,
+        "explicacao": "Prompt é probabilístico, com taxa de falha não nula. Limite financeiro exige enforcement determinístico (hook/validação).",
+        "feedbacks": [
+          "Errado: medir é importante, mas o problema aqui é onde a regra é imposta.",
+          "Errado: few-shot continua sendo prompt; não dá garantia.",
+          "Correto: consequência financeira → hook ou validação em código.",
+          "Errado: nenhum modelo transforma prompt em garantia."
+        ]
+      },
+      {
+        "pergunta": "Qual destas é a forma CORRETA de o loop decidir se o agente terminou?",
+        "opcoes": [
+          "Procurar a palavra 'FINAL' no texto da resposta",
+          "Checar o stop_reason da resposta",
+          "Parar quando a resposta não tiver nenhum bloco de texto",
+          "Parar após 10 iterações"
+        ],
+        "correta": 1,
+        "explicacao": "stop_reason é o sinal de controle do loop: tool_use continua, end_turn termina.",
+        "feedbacks": [
+          "Errado: anti-padrão #1, ler linguagem natural para decidir o fim.",
+          "Correto: stop_reason decide.",
+          "Errado: presença ou ausência de texto não indica fim; texto e tool_use podem coexistir.",
+          "Errado: anti-padrão #2, limite arbitrário como mecanismo principal (só serve de backstop)."
+        ]
+      },
+      {
+        "pergunta": "A resposta do modelo contém um bloco text ('Vou verificar o pedido') e um bloco tool_use. O que isso significa?",
+        "opcoes": [
+          "Ainda não terminou: execute a tool e devolva o resultado",
+          "O modelo terminou; o tool_use é só informativo",
+          "A resposta está malformada e deve ser descartada",
+          "Você deve escolher entre exibir o texto ou executar a tool"
+        ],
+        "correta": 0,
+        "explicacao": "content pode misturar text e tool_use. Com stop_reason tool_use, execute a tool e continue o loop.",
+        "feedbacks": [
+          "Correto: ter texto não significa que terminou.",
+          "Errado: tool_use é um pedido de execução, não um comentário.",
+          "Errado: misturar blocos é normal e válido.",
+          "Errado: não há escolha; o texto é preâmbulo e a tool precisa rodar."
+        ]
+      },
+      {
+        "pergunta": "O modelo pediu 3 tools na mesma resposta e uma delas falhou. Como devolver os resultados?",
+        "opcoes": [
+          "Três mensagens user separadas, uma por tool_result",
+          "Só os dois resultados de sucesso, omitindo o que falhou",
+          "Uma mensagem user com o primeiro resultado e reenviar o restante depois",
+          "Uma mensagem user com os três tool_result (falha com is_error: true)"
+        ],
+        "correta": 3,
+        "explicacao": "Todos os tool_result vão numa única mensagem user, cada um com seu tool_use_id; a falha recebe is_error: true para o modelo raciocinar sobre a recuperação.",
+        "feedbacks": [
+          "Errado: espalhar resultados em várias mensagens quebra o protocolo e desestimula chamadas paralelas.",
+          "Errado: omitir a falha é suprimir erro (anti-padrão #7) e deixa um tool_use sem resultado.",
+          "Errado: todos os resultados pendentes devem ir juntos.",
+          "Correto: uma mensagem, três resultados, falha sinalizada."
+        ]
+      },
+      {
+        "pergunta": "O que liga um tool_result ao pedido de tool que o originou?",
+        "opcoes": [
+          "O nome da tool",
+          "A ordem dos blocos na mensagem",
+          "O tool_use_id igual ao id do bloco tool_use",
+          "O índice da mensagem no histórico"
+        ],
+        "correta": 2,
+        "explicacao": "Cada tool_result referencia o id exato do tool_use correspondente em tool_use_id.",
+        "feedbacks": [
+          "Errado: a mesma tool pode ser chamada várias vezes; o nome não identifica a chamada.",
+          "Errado: a ligação é por id, não por posição.",
+          "Correto: tool_use_id exato.",
+          "Errado: índice de mensagem não é usado para isso."
+        ]
+      },
+      {
+        "pergunta": "Uma extração passou a devolver JSON cortado no final em documentos longos. Qual stop_reason você espera ver?",
+        "opcoes": [
+          "max_tokens",
+          "stop_sequence",
+          "refusal",
+          "pause_turn"
+        ],
+        "correta": 0,
+        "explicacao": "Saída truncada no teto de saída gera stop_reason max_tokens; aumente o limite ou continue.",
+        "feedbacks": [
+          "Correto: bateu no teto de saída.",
+          "Errado: stop_sequence indica que o modelo bateu numa sequência de parada configurada, não truncamento.",
+          "Errado: refusal é recusa por segurança.",
+          "Errado: pause_turn é do loop de tools server-side."
+        ]
+      },
+      {
+        "pergunta": "Por que uma recusa do modelo pode passar despercebida em código que só verifica o status HTTP?",
+        "opcoes": [
+          "Porque a recusa vem com HTTP 500",
+          "Porque a recusa chega com HTTP 200 e stop_reason refusal",
+          "Porque a recusa só aparece nos logs do servidor",
+          "Porque a recusa vem como exceção de timeout"
+        ],
+        "correta": 1,
+        "explicacao": "Recusa é uma resposta bem-sucedida do ponto de vista HTTP; o sinal está em stop_reason: refusal.",
+        "feedbacks": [
+          "Errado: não é erro de servidor.",
+          "Correto: HTTP 200 + stop_reason refusal.",
+          "Errado: ela vem na própria resposta.",
+          "Errado: não é timeout."
+        ]
+      },
+      {
+        "pergunta": "Qual afirmação sobre o Tool Runner está correta?",
+        "opcoes": [
+          "É o mesmo produto que o Claude Agent SDK",
+          "Hospeda o loop e um sandbox por sessão na infraestrutura da Anthropic, com configs versionadas",
+          "Traz tools nativas como Read, Edit e Bash",
+          "Um helper do SDK da API que roda o loop das suas tools, na sua infra"
+        ],
+        "correta": 3,
+        "explicacao": "O Tool Runner automatiza request → executar → repetir só para as suas tools. Tools nativas são do Agent SDK; hospedagem é do Managed Agents.",
+        "feedbacks": [
+          "Errado: Tool Runner ≠ Agent SDK (pegadinha clássica).",
+          "Errado: isso descreve o Managed Agents.",
+          "Errado: tools nativas vêm com o Agent SDK.",
+          "Correto: só o loop, só as suas tools, na sua infra."
+        ]
+      },
+      {
+        "pergunta": "Em modelos recentes, como se pede ao modelo que decida sozinho quanto pensar?",
+        "opcoes": [
+          "thinking: {type: enabled, budget_tokens: 8000}",
+          "temperature: 0",
+          "thinking: {type: adaptive}",
+          "Um prefill do assistant começando com '<thinking>'"
+        ],
+        "correta": 2,
+        "explicacao": "Adaptive thinking substitui budget_tokens; nos modelos novos budget_tokens retorna 400.",
+        "feedbacks": [
+          "Errado: budget_tokens é o formato antigo e retorna 400 nos modelos novos.",
+          "Errado: temperatura não controla raciocínio e é rejeitada nos modelos novos.",
+          "Correto: adaptive.",
+          "Errado: prefill retorna 400 nos modelos novos."
+        ]
+      },
+      {
+        "pergunta": "Onde o parâmetro effort é colocado no request?",
+        "opcoes": [
+          "No topo do request, ao lado de model",
+          "Dentro de output_config",
+          "Dentro do bloco thinking",
+          "No system prompt, como texto"
+        ],
+        "correta": 1,
+        "explicacao": "effort fica em output_config (low/medium/high/xhigh/max).",
+        "feedbacks": [
+          "Errado: não é parâmetro de topo.",
+          "Correto: output_config.effort.",
+          "Errado: thinking só define o modo (adaptive).",
+          "Errado: effort é parâmetro da API, não instrução textual."
+        ]
+      },
+      {
+        "pergunta": "Um time vai migrar para um modelo mais novo. Qual é o passo que o exame espera?",
+        "opcoes": [
+          "Trocar o model ID direto em produção e monitorar a taxa de erros 400 nas primeiras horas",
+          "Copiar os mesmos parâmetros, já que a API é a mesma",
+          "Aumentar max_tokens para compensar mudanças",
+          "Testar a forma do request no modelo novo e re-calibrar effort"
+        ],
+        "correta": 3,
+        "explicacao": "Parâmetros aceitos mudam por modelo (budget_tokens, sampling, prefill, tool_choice forçado podem dar 400); teste e re-calibre antes.",
+        "feedbacks": [
+          "Errado: descobrir 400 em produção é exatamente o que se quer evitar.",
+          "Errado: o endpoint é o mesmo, mas a superfície aceita muda por modelo.",
+          "Errado: não ataca o problema de parâmetros rejeitados.",
+          "Correto: teste a forma do request e re-calibre."
+        ]
+      },
+      {
+        "pergunta": "Um dev quer garantir JSON consistente num modelo novo. Quais DUAS abordagens são válidas? (Escolha DUAS.)",
+        "opcoes": [
+          "Prefill do assistant começando com '{'",
+          "temperature: 0 e top_p: 0.1",
+          "Structured outputs via output_config.format com um JSON schema",
+          "Aumentar budget_tokens para o modelo pensar mais no formato",
+          "Instrução clara de formato no system prompt"
+        ],
+        "corretas": [
+          2,
+          4
+        ],
+        "explicacao": "Prefill, sampling e budget_tokens são rejeitados nos modelos novos. Structured outputs dá garantia de schema; instrução no system é o substituto textual.",
+        "feedbacks": [
+          "Errado: prefill retorna 400 nos modelos novos.",
+          "Errado: parâmetros de sampling são rejeitados nos modelos novos e não garantem formato.",
+          "Correto: garantia estrutural.",
+          "Errado: budget_tokens retorna 400 nos modelos novos e não garante formato.",
+          "Correto: substituto recomendado para prefill quando não se usa structured outputs."
+        ]
+      }
+    ]
+  },
+  "order": [
+    6,
+    14,
+    13,
+    2,
+    9,
+    7,
+    8,
+    10,
+    3,
+    5,
+    1,
+    4,
+    11,
+    0,
+    12
+  ],
+  "pos": 15,
+  "answers": [
+    {
+      "pos": 0,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 1,
+      "escolha": [
+        2,
+        4
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 2,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 3,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 4,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 5,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 6,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 7,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 8,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 9,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 10,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 11,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 12,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 13,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 14,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    }
+  ],
+  "done": true
+}
