@@ -1,0 +1,401 @@
+{
+  "titulo": "Cenário 5 — Claude Code for Continuous Integration",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "A Orbital Logística roda o Claude Code nos pipelines de GitHub Actions do seu monorepo para revisar pull requests e gerar testes.\n\nO primeiro job de review foi escrito como `claude \"Revise o diff deste PR e liste problemas\"`. O job fica parado até estourar o timeout de 60 minutos, sem produzir saída. Qual é a correção?",
+      "opcoes": [
+        "Aumentar o timeout do job para 120 minutos, porque diffs grandes demoram para ser analisados.",
+        "Rodar em modo não interativo com `-p` (`--print`), que processa o prompt, imprime o resultado e encerra.",
+        "Adicionar `--permission-mode bypassPermissions`, para que o agente nunca pare esperando aprovação de ferramentas durante o job.",
+        "Encadear `yes |` antes do comando, respondendo automaticamente a qualquer pergunta interativa."
+      ],
+      "correta": 1,
+      "explicacao": "Sem `-p` o Claude Code abre a sessão interativa e espera input indefinidamente. `-p` é a primitiva para uso em scripts e CI.",
+      "feedbacks": [
+        "Ataca o sintoma: o processo nunca vai terminar sozinho em modo interativo, com qualquer timeout.",
+        "Correta: o processo trava porque está em modo interativo; `-p` resolve.",
+        "Tentadora porque prompts de permissão também travam, mas a sessão continuaria interativa; além disso, bypass não é a postura certa para CI.",
+        "Gambiarra que não transforma a sessão em não interativa e pode aprovar ações indesejadas."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Na Orbital Logística, o job de review do Claude Code roda com `-p` e a etapa seguinte do pipeline publica cada achado como comentário de linha no PR.\n\nHoje essa etapa extrai os achados do texto livre com expressões regulares e quebra sempre que a redação muda. Qual é a melhor solução?",
+      "opcoes": [
+        "Reforçar no prompt: \"responda SOMENTE com JSON válido, sem texto antes ou depois\".",
+        "Trocar para `--output-format stream-json`, que já entrega cada achado como um objeto separado.",
+        "Usar `--output-format json` com `--json-schema` descrevendo os achados e consumir o JSON validado.",
+        "Adicionar uma segunda chamada ao Claude que converte o texto livre da primeira em JSON antes da etapa de publicação."
+      ],
+      "correta": 2,
+      "explicacao": "Para consumo por máquina, use saída JSON com schema: o resultado vem estruturado e conforme o formato que a próxima etapa espera.",
+      "feedbacks": [
+        "Melhora, mas continua probabilístico: instrução em prompt não garante formato.",
+        "`stream-json` emite eventos da execução (mensagens, tool calls) em streaming; não estrutura o conteúdo do review nos campos que a etapa precisa.",
+        "Correta: saída estruturada com schema elimina o parsing frágil.",
+        "Mais custo e mais um ponto de falha para resolver algo que a própria invocação resolve com schema."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "A Orbital Logística quer que o job de review no CI rode sem intervenção humana, sem travar em pedidos de permissão, sem conseguir alterar o repositório e sem rodar indefinidamente.\n\nQuais duas configurações atendem esses requisitos? (Escolha DUAS.)",
+      "opcoes": [
+        "Instrução no prompt: \"não edite nenhum arquivo e termine o mais rápido possível\".",
+        "`--allowedTools` liberando só as tools de leitura (Read, Grep, Glob) e o comando de teste específico do projeto.",
+        "Um token do GitHub com permissão de administrador, para que o agente nunca esbarre em falta de acesso.",
+        "`--max-turns` com um limite compatível com o tamanho típico de um review, como teto de segurança.",
+        "`--permission-mode bypassPermissions`, para que nenhuma tool peça aprovação."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Em CI, restrinja as tools explicitamente (mínimo privilégio, sem prompts de permissão para o que está liberado) e use `--max-turns` como backstop contra execução sem fim.",
+      "feedbacks": [
+        "Regra crítica por prompt é probabilística; não impede edição nem garante término.",
+        "Correta: libera o necessário sem perguntas e impede edição de forma determinística.",
+        "Viola mínimo privilégio e amplia o estrago possível de uma ação errada.",
+        "Correta: teto de turnos é um backstop válido (não o mecanismo principal de término, que continua sendo o fim natural da tarefa).",
+        "Remove os prompts, mas também todos os controles: o agente poderia editar ou executar qualquer coisa."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Na Orbital Logística, o job de review usa `claude -p --output-format json --max-turns 25`. A etapa seguinte aprova o check do PR quando a lista de achados está vazia.\n\nNum PR muito grande, a execução bate no limite de turnos antes de terminar e o resultado vem sem achados. O check fica verde. Como o pipeline deveria tratar esse caso?",
+      "opcoes": [
+        "Procurar no texto do resultado palavras como \"LGTM\" ou \"aprovado\" para decidir o status do check.",
+        "Repetir automaticamente a execução com o mesmo limite até ela terminar sem atingi-lo, quantas vezes forem necessárias, e só então publicar o status do check.",
+        "Verificar o status/subtipo do resultado JSON e, se a execução não terminou normalmente, marcar o check como falho ou inconclusivo, nunca como aprovado.",
+        "Considerar a ausência de achados como aprovação, já que o agente analisou o que conseguiu dentro do limite."
+      ],
+      "correta": 2,
+      "explicacao": "Execução interrompida não é sucesso vazio. O pipeline deve olhar o status estruturado do resultado (como se olha `stop_reason` num loop) e propagar a falha em vez de silenciá-la.",
+      "feedbacks": [
+        "Decidir término lendo linguagem natural é anti-padrão; use o campo estruturado de status.",
+        "Retry sem limite pode nunca convergir num PR que é grande demais; o problema pede tratamento explícito (e talvez review multi-pass).",
+        "Correta: distingue \"nada encontrado\" de \"não terminou\" e evita aprovação silenciosa.",
+        "É o anti-padrão de tratar falha como vazio: o review simplesmente não aconteceu por inteiro."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Os devs da Orbital Logística querem mencionar `@claude` em comentários de pull request para pedir explicações e pequenas correções, com o mínimo de infraestrutura própria para manter.\n\nQual abordagem atende melhor?",
+      "opcoes": [
+        "Pedir que cada dev rode o Claude Code localmente e cole a resposta no PR.",
+        "Construir um servidor de webhooks próprio que recebe os eventos do GitHub e chama `claude -p` para cada menção, com controle total sobre o fluxo.",
+        "Usar a integração gerenciada do GitHub Actions (`claude-code-action`), configurada no workflow do repositório.",
+        "Agendar um job a cada 10 minutos que lê todos os comentários novos e envia um lote para a Batch API."
+      ],
+      "correta": 2,
+      "explicacao": "Para o caso padrão de interagir com PRs/issues no GitHub, a integração gerenciada resolve com menos manutenção. `-p` é a primitiva quando se precisa de controle total.",
+      "feedbacks": [
+        "Não automatiza nada e não atende ao pedido de integração no PR.",
+        "Funciona, mas é mais complexo que o necessário; reinventa o que a integração gerenciada já oferece.",
+        "Correta: atende o requisito com a solução mais simples e pronta.",
+        "A Batch API tem janela de até 24h e não é para interação; a resposta a uma menção precisa ser rápida."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Um pipeline da Orbital Logística tem duas etapas: uma sessão `claude -p` gera a correção de um bug e, em seguida, a mesma sessão é retomada com `--resume` e recebe o pedido \"agora revise criticamente o código que você escreveu\".\n\nA etapa de revisão quase nunca aponta problemas, mas os humanos encontram vários depois. Qual é a melhor mudança?",
+      "opcoes": [
+        "Aumentar o `effort` da etapa de revisão, para que o modelo raciocine mais profundamente sobre cada uma das decisões tomadas no código que ele mesmo acabou de escrever.",
+        "Fazer a revisão numa invocação independente (sessão nova, sem o histórico de geração), recebendo apenas o diff e os critérios de revisão.",
+        "Rodar a revisão duas vezes seguidas na mesma sessão e unir os achados.",
+        "Manter a mesma sessão, mas reforçar no prompt: \"seja extremamente crítico e encontre pelo menos três problemas\"."
+      ],
+      "correta": 1,
+      "explicacao": "Quem gerou o código carrega o contexto de raciocínio que justificou as decisões e tende a não questioná-las. Revisão deve acontecer em sessão independente.",
+      "feedbacks": [
+        "Mais esforço na mesma sessão continua enviesado pelo raciocínio que produziu o código.",
+        "Correta: elimina o viés do contexto de raciocínio da geração.",
+        "Repetir no mesmo contexto repete o mesmo viés.",
+        "Forçar uma cota de problemas gera falsos positivos e não remove o viés da sessão que escreveu o código."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "A Orbital Logística recebe PRs de refatoração com 40 a 60 arquivos. O job atual de review passa o diff inteiro ao Claude numa única chamada.\n\nOs reviews desses PRs são inconsistentes: alguns arquivos recebem análise detalhada, outros nenhuma, e bugs que envolvem dois módulos passam despercebidos. Qual arquitetura de review resolve?",
+      "opcoes": [
+        "Usar um modelo com janela de contexto maior, para que o diff inteiro caiba com folga numa chamada só.",
+        "Acrescentar ao prompt: \"revise todos os arquivos com o mesmo nível de detalhe e atenção a bugs entre módulos\".",
+        "Dividir o diff em lotes fixos de 10 arquivos, revisar cada lote e concatenar os resultados.",
+        "Review multi-pass: uma passada por arquivo com o mesmo prompt de análise local, seguida de uma passada de integração que recebe os achados e examina interações entre arquivos."
+      ],
+      "correta": 3,
+      "explicacao": "Em PR grande, uma só passada dilui a atenção. A passada por arquivo garante análise local consistente; a de integração cobre fluxo de dados e contratos entre módulos.",
+      "feedbacks": [
+        "Caber na janela não resolve a diluição de atenção; contexto maior ainda sofre com lost in the middle.",
+        "Instrução não muda a limitação estrutural de uma chamada única sobre um diff enorme.",
+        "Melhora a análise local, mas lotes arbitrários sem passada de integração continuam perdendo bugs entre arquivos.",
+        "Correta: ataca tanto a diluição de atenção quanto os bugs entre arquivos."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "A Orbital Logística implementou review multi-pass: cada arquivo do PR é analisado em uma chamada separada e, depois, roda a passada de integração.\n\nO que a passada de integração deve receber como entrada para ser eficaz?",
+      "opcoes": [
+        "Os achados estruturados das passadas por arquivo e as mudanças em interfaces e contratos entre módulos, com a instrução de focar em fluxo de dados e erros na fronteira.",
+        "O mesmo prompt das passadas por arquivo, aplicado agora a todos os arquivos juntos.",
+        "Apenas o diff completo do PR, sem os achados por arquivo, para que a análise não seja influenciada.",
+        "Somente a descrição do PR escrita pelo autor, que resume a intenção da mudança."
+      ],
+      "correta": 0,
+      "explicacao": "A passada de integração recebe os achados locais e se concentra no que só aparece entre arquivos: fluxo de dados, contratos e tratamento de erro nas fronteiras.",
+      "feedbacks": [
+        "Correta: dá à integração o material certo e um foco diferente das passadas locais.",
+        "Repetir a análise local em escala reproduz a falha de passada única; a integração precisa de outro prompt.",
+        "Volta ao problema original: uma chamada sobre o diff inteiro, sem foco, com atenção diluída.",
+        "A intenção do autor é útil como contexto, mas sozinha não permite achar bugs no código."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "A Orbital Logística está revendo seus usos do Claude no CI para reduzir custo. A Batch API custa 50% menos, mas processa em até 24 horas, sem SLA.\n\nQuais duas cargas de trabalho são boas candidatas a migrar para a Batch API? (Escolha DUAS.)",
+      "opcoes": [
+        "A auditoria noturna de segurança que analisa os 3.000 arquivos do monorepo e publica um relatório pela manhã.",
+        "O check obrigatório de review que bloqueia o merge até receber o resultado.",
+        "O agente que corrige testes quebrados lendo arquivos e rodando a suíte em várias rodadas.",
+        "A depuração interativa de um build quebrado, feita por um dev de plantão.",
+        "O relatório semanal de dívida técnica gerado a partir de todos os módulos."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Batch serve para trabalho em massa sem urgência (noturno, semanal). Não serve para passo bloqueante, interação em tempo real ou loop multi-turn de tools.",
+      "feedbacks": [
+        "Correta: trabalho noturno em massa tolera a janela do batch.",
+        "Pré-merge bloqueante não pode esperar até 24h sem SLA; precisa ser síncrono.",
+        "Um request de batch não suporta loop multi-turn de tools; esse agente precisa rodar de forma síncrona.",
+        "Depuração interativa exige resposta imediata.",
+        "Correta: relatório periódico sem urgência é o caso de uso típico."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "A auditoria noturna da Orbital Logística envia um batch com um request por arquivo. O script que processa os resultados associa cada resultado ao arquivo pela posição na lista enviada.\n\nO relatório da manhã começou a atribuir vulnerabilidades a arquivos errados. Qual é a correção?",
+      "opcoes": [
+        "Ordenar os resultados pela data de conclusão de cada request antes de casá-los com a lista de arquivos, reproduzindo a ordem original de envio.",
+        "Trocar o batch por chamadas síncronas sequenciais, que preservam a ordem.",
+        "Enviar um batch separado para cada arquivo, garantindo a correspondência um a um.",
+        "Dar a cada request um `custom_id` que identifica o arquivo (ex.: caminho ou hash dele) e casar os resultados por esse campo."
+      ],
+      "correta": 3,
+      "explicacao": "Resultados de batch podem chegar fora da ordem de envio. O casamento deve ser feito pelo `custom_id`.",
+      "feedbacks": [
+        "A ordem de conclusão também não tem relação com a ordem de envio; o problema continua.",
+        "Perde o desconto de 50% e a escala do batch para resolver um problema de correlação.",
+        "Funciona, mas cria milhares de batches para contornar algo que o `custom_id` resolve.",
+        "Correta: `custom_id` é o mecanismo previsto para casar requests e resultados."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "O batch noturno da Orbital Logística tem 3.000 requests. Pela manhã, 2.880 estão como `succeeded`, 90 como `errored` e 30 como `expired`.\n\nQual é a ação correta para completar a auditoria?",
+      "opcoes": [
+        "Migrar toda a auditoria para chamadas síncronas, já que o batch se mostrou pouco confiável.",
+        "Ignorar os 120 requests, já que 96% de cobertura é suficiente para um relatório noturno.",
+        "Reenviar o batch inteiro, para garantir que todos os resultados venham da mesma execução.",
+        "Reenviar num novo batch apenas os 120 requests que falharam ou expiraram, identificados pelos `custom_id`, depois de checar o motivo dos erros."
+      ],
+      "correta": 3,
+      "explicacao": "Reprocesse só os `custom_id` que falharam; reenviar tudo custa em dobro sem ganho. Verificar a causa dos erros evita repetir uma falha de validação.",
+      "feedbacks": [
+        "Reação desproporcional: falhas parciais são esperadas e tratadas por reenvio seletivo.",
+        "Silencia uma lacuna: arquivos não auditados viram falsa sensação de cobertura.",
+        "Paga de novo por 2.880 resultados que já estão prontos.",
+        "Correta: barato e completo, com diagnóstico antes do reenvio."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "A Orbital Logística tentou mover para o batch noturno uma análise em que, para cada arquivo, o Claude chama uma tool para ler os arquivos importados antes de concluir.\n\nOs resultados vêm com `tool_use` pendente e nenhuma conclusão. Como redesenhar essa carga para o batch?",
+      "opcoes": [
+        "Pré-coletar no código o conteúdo necessário (o arquivo e seus imports relevantes) e enviar tudo em cada request, para que a análise termine numa única resposta.",
+        "Forçar com `tool_choice` que o modelo nunca chame tools dentro do batch.",
+        "Consultar o status do batch com mais frequência para devolver os resultados de tool a tempo.",
+        "Configurar o batch para executar automaticamente as tools e continuar a conversa até `end_turn`."
+      ],
+      "correta": 0,
+      "explicacao": "Um request de batch não executa loop multi-turn de tools. Ou o contexto vai completo no request, ou a carga precisa rodar como agente síncrono.",
+      "feedbacks": [
+        "Correta: transforma a tarefa em single-turn, compatível com o batch.",
+        "Impedir a tool não resolve: o modelo continuaria sem os imports de que precisa para concluir.",
+        "Polling não permite injetar `tool_result` num request de batch já processado.",
+        "Não existe essa execução de loop de tools client-side dentro do batch."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Cada review da Orbital Logística envia ao Claude ~30 mil tokens de diretrizes de código e definições de tools, seguidos do diff. O system prompt começa com `Build #{BUILD_ID} - {timestamp}` e depois traz as diretrizes, com um breakpoint de `cache_control` no fim delas.\n\nO time esperava economizar com prompt caching, mas `usage.cache_read_input_tokens` é sempre zero. Qual é a causa e a correção?",
+      "opcoes": [
+        "O TTL padrão é curto demais; trocar para o cache de 1 hora resolve, já que os builds são espaçados.",
+        "As diretrizes são grandes demais para o cache; é preciso reduzi-las para abaixo do mínimo.",
+        "Um breakpoint só não basta para 30 mil tokens; é preciso usar os quatro breakpoints disponíveis.",
+        "O ID e o timestamp no início mudam o prefixo a cada execução; movê-los para depois do último breakpoint (ou para a mensagem do usuário), deixando o conteúdo estável primeiro."
+      ],
+      "correta": 3,
+      "explicacao": "O cache casa o prefixo exato (tools → system → messages). Qualquer byte variável antes do breakpoint invalida tudo. Conteúdo estável primeiro, volátil depois.",
+      "feedbacks": [
+        "Com o prefixo mudando a cada build, nenhum TTL ajuda: o cache nunca casa.",
+        "Inverte a regra: existe tamanho mínimo para cachear (abaixo dele não cacheia), não máximo nessa faixa.",
+        "Mais breakpoints não corrigem um prefixo que muda logo no início.",
+        "Correta: remove o invalidador silencioso do prefixo."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Depois de corrigir o system prompt, a Orbital Logística ainda vê `cache_read_input_tokens` oscilando entre zero e o esperado nos reviews do CI.\n\nQuais duas práticas do pipeline podem estar invalidando o cache em silêncio? (Escolha DUAS.)",
+      "opcoes": [
+        "O diff do PR é colocado na mensagem do usuário, depois do breakpoint de cache.",
+        "As diretrizes ficam num arquivo versionado e só mudam quando o time atualiza o padrão de código.",
+        "As definições de tools são montadas a partir de um dicionário sem ordem estável, e a ordem varia entre execuções.",
+        "O ID do repositório e o nome da branch são interpolados no system prompt antes das diretrizes.",
+        "O breakpoint de `cache_control` fica no fim do bloco de diretrizes, que é idêntico em todas as execuções."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Invalidadores silenciosos: ordem não determinística de tools/chaves, valores variáveis (IDs, branch, timestamp) no prefixo, tools que variam por request. Conteúdo volátil depois do breakpoint não atrapalha.",
+      "feedbacks": [
+        "É o certo: conteúdo volátil após o breakpoint não invalida o prefixo cacheado.",
+        "Mudança ocasional e intencional gera um novo cache; não explica a oscilação entre execuções.",
+        "Correta: tools fazem parte do prefixo; ordem diferente é prefixo diferente.",
+        "Correta: valores que variam entre execuções no início do system mudam o prefixo.",
+        "É o posicionamento recomendado: breakpoint no fim do conteúdo estável."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "O review automático da Orbital Logística classifica achados em quatro categorias: segurança, bugs, desempenho e estilo. A categoria estilo gera muitos falsos positivos.\n\nOs devs passaram a ignorar todos os comentários do bot, inclusive os de segurança, que costumam ser corretos. Qual é a melhor estratégia?",
+      "opcoes": [
+        "Adicionar um segundo modelo que revisa os achados do primeiro e descarta os que parecerem falsos positivos.",
+        "Desligar temporariamente a categoria estilo, reescrever seus critérios com o que conta, o que não conta e exemplos de fronteira, e religá-la depois de medir.",
+        "Acrescentar ao prompt \"seja conservador ao apontar problemas de estilo\".",
+        "Publicar só os achados em que o modelo declara confiança acima de 90%."
+      ],
+      "correta": 1,
+      "explicacao": "Uma categoria ruidosa corrói a confiança nas boas. Desligue-a, refine com critérios explícitos e exemplos de fronteira, e só então religue.",
+      "feedbacks": [
+        "Mais complexo que o necessário; a prova prefere critério explícito antes de um segundo modelo para checar o primeiro.",
+        "Correta: recupera a confiança imediatamente e corrige a causa com critério explícito.",
+        "Instrução vaga produz resultado inconsistente; \"conservador\" não define o que conta.",
+        "Confiança autodeclarada é mal calibrada; não é um filtro confiável."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "No review automático da Orbital Logística, problemas parecidos recebem severidades diferentes em PRs diferentes (o mesmo `catch` vazio vira \"baixa\" num PR e \"alta\" em outro).\n\nQual mudança no prompt tende a dar mais consistência?",
+      "opcoes": [
+        "Instruir \"use seu bom senso de engenheiro sênior para definir a severidade\".",
+        "Rodar o review três vezes e usar a severidade mais frequente.",
+        "Incluir 2 a 4 exemplos de casos de fronteira, cada um com o trecho, a severidade e o raciocínio.",
+        "Incluir 40 exemplos reais de achados anteriores com suas severidades, para cobrir o máximo de situações possível."
+      ],
+      "correta": 2,
+      "explicacao": "Few-shot com poucos exemplos variados, cada um com o raciocínio, ensina o critério de forma generalizável. Combine com critérios explícitos por severidade.",
+      "feedbacks": [
+        "\"Bom senso\" é o oposto de critério explícito; é a origem da inconsistência.",
+        "Votação reduz variância, mas não define o critério; triplica o custo sem corrigir a causa.",
+        "Correta: exemplos com raciocínio em casos ambíguos são o uso certo de few-shot.",
+        "Exemplos demais custam caro, favorecem decoreba e tendem a repetir os casos comuns em vez das fronteiras."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "A Orbital Logística quer que o review no CI siga exatamente as mesmas convenções que os devs usam localmente com o Claude Code (arquitetura, padrões de teste, tratamento de erros).\n\nQual é a forma mais simples e sustentável de garantir isso?",
+      "opcoes": [
+        "Manter as convenções no `CLAUDE.md` do projeto, versionado no repositório; o `claude -p` no checkout do CI carrega o mesmo arquivo que os devs.",
+        "Copiar as convenções para um `--append-system-prompt` no workflow do CI, garantindo que o review sempre as receba, e mantê-las sincronizadas com o CLAUDE.md.",
+        "Criar um `~/.claude/CLAUDE.md` na imagem do runner de CI com as convenções.",
+        "Colar as convenções no texto do prompt do job a cada execução."
+      ],
+      "correta": 0,
+      "explicacao": "CLI, IDE e CI usam o mesmo motor: o CLAUDE.md do projeto vale em todas as superfícies. Uma única fonte de verdade evita deriva.",
+      "feedbacks": [
+        "Correta: uma fonte só, versionada junto com o código.",
+        "Duplica a fonte de verdade; as duas cópias vão divergir. `--append-system-prompt` serve para instruções específicas do CI.",
+        "Fica fora do repositório e diverge do que os devs usam; é a configuração do usuário do runner, não a do time.",
+        "Mesma duplicação, agora no workflow; manutenção manual e propensa a deriva."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "No CI da Orbital Logística, o job de review precisa de instruções que só valem ali: \"não proponha correções, apenas aponte achados\" e \"ignore arquivos gerados em `/generated`\".\n\nComo acrescentar essas instruções sem perder o comportamento padrão do Claude Code e sem afetar os devs?",
+      "opcoes": [
+        "Criar um hook `SessionStart` que remove a pasta `/generated` antes de cada sessão.",
+        "Passar as instruções com `--append-system-prompt` na invocação do job.",
+        "Substituir o system prompt inteiro com `--system-prompt` contendo só essas duas regras.",
+        "Adicionar as regras ao `CLAUDE.md` do projeto, para que valham também no CI."
+      ],
+      "correta": 1,
+      "explicacao": "`--append-system-prompt` acrescenta instruções ao prompt padrão, sem substituí-lo. Regras só do CI ficam na invocação do CI.",
+      "feedbacks": [
+        "Apagar arquivos do checkout é efeito colateral desnecessário e não trata a regra de não propor correções.",
+        "Correta: acrescenta o necessário mantendo o comportamento padrão.",
+        "Substituir descarta as instruções padrão do Claude Code, o que muda o comportamento do agente de formas inesperadas.",
+        "Afetaria os devs localmente, que muitas vezes querem justamente que o Claude proponha correções."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "A Orbital Logística tem auto-merge para PRs de dependências. A política diz: nunca fazer merge se o review do Claude apontar achado de severidade crítica.\n\nHoje essa regra está só no prompt (\"se houver achado crítico, não aprove\"), e um PR com vulnerabilidade crítica foi mesclado. Como impor a regra?",
+      "opcoes": [
+        "Emitir JSON validado por schema com a severidade de cada achado e bloquear o merge numa etapa determinística do pipeline se houver achado crítico.",
+        "Reforçar o prompt com letras maiúsculas e repetir a regra no início e no fim.",
+        "Dar ao agente permissão para rodar `gh pr merge` e instruí-lo a só fazer o merge depois de conferir, achado por achado, que nenhum deles tem severidade crítica.",
+        "Bloquear o merge apenas quando o modelo declarar baixa confiança na própria análise."
+      ],
+      "correta": 0,
+      "explicacao": "Regra com consequência de segurança vai para código determinístico. O modelo produz dados estruturados; o pipeline decide.",
+      "feedbacks": [
+        "Correta: a decisão crítica sai do prompt e vai para uma checagem determinística.",
+        "Continua probabilístico; reforço de prompt reduz, mas não elimina a taxa de falha.",
+        "Coloca a decisão crítica nas mãos do modelo, que é exatamente o que falhou.",
+        "Confiança autodeclarada é mal calibrada e não tem relação com a presença de achados críticos."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D5",
+      "pergunta": "O review da Orbital Logística roda quatro subagents em paralelo (segurança, bugs, desempenho, testes) e um coordenador consolida. Num PR recente, o subagent de segurança estourou o timeout.\n\nO relatório publicado no PR disse \"Segurança: nenhum achado\". Como o sistema deveria ter se comportado?",
+      "opcoes": [
+        "O subagent tenta recuperar localmente (retry com backoff); persistindo a falha, devolve erro estruturado e o coordenador publica o relatório parcial marcando segurança como \"não analisado\" e o check como inconclusivo.",
+        "O coordenador deveria abortar o review inteiro e não publicar nada até que todos os subagents concluíssem.",
+        "O coordenador deveria omitir a seção de segurança do relatório, já que não há achados a mostrar.",
+        "O subagent deveria devolver lista vazia, mas o coordenador deveria reexecutar o review inteiro na próxima vez."
+      ],
+      "correta": 0,
+      "explicacao": "Falha ≠ vazio. Recupere transitórios localmente; o que não se resolve é propagado com contexto, e o resultado parcial segue com a lacuna explícita.",
+      "feedbacks": [
+        "Correta: recupera o que dá, propaga o que não dá e não esconde a lacuna.",
+        "Abortar tudo por uma etapa desperdiça os achados válidos dos outros três subagents.",
+        "Omitir esconde a lacuna; o leitor conclui que segurança foi revisada.",
+        "Lista vazia como sucesso é o anti-padrão de supressão silenciosa de erro."
+      ]
+    }
+  ]
+}

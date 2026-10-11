@@ -1,0 +1,261 @@
+{
+  "titulo": "Módulo 11 — Quiz: confiabilidade, proveniência, guardrails e evals",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "No meio do atendimento, o cliente escreve: 'quero falar com uma pessoa'. O problema dele é simples e o agente provavelmente resolveria em mais dois turnos. O que fazer?",
+      "opcoes": [
+        "Tentar resolver mais uma vez e só escalar se falhar",
+        "Perguntar se ele tem certeza, explicando que o agente pode resolver",
+        "Escalar de imediato, com handoff estruturado",
+        "Ignorar o pedido e seguir o fluxo, já que o caso é simples"
+      ],
+      "correta": 2,
+      "explicacao": "Pedido explícito de humano é gatilho de escalonamento imediato.",
+      "feedbacks": [
+        "Tentador pela eficiência, mas desrespeita o pedido explícito.",
+        "Insistir em reter o cliente contraria o gatilho de escalonamento.",
+        "Correto.",
+        "Ignorar o pedido é o pior caminho."
+      ]
+    },
+    {
+      "pergunta": "Um cliente furioso, em caixa alta, reclama de uma cobrança duplicada de 5 dólares, coberta pela política de estorno. O que o agente deve fazer?",
+      "opcoes": [
+        "Resolver o estorno; sentimento não é critério de escalonamento",
+        "Escalar, porque o cliente está irritado e um humano tem mais chance de reter o cliente",
+        "Escalar após três mensagens em caixa alta",
+        "Pedir ao cliente que se acalme antes de continuar"
+      ],
+      "correta": 0,
+      "explicacao": "Sentimento ≠ complexidade. Caso simples e coberto pela política: resolva.",
+      "feedbacks": [
+        "Correto.",
+        "Escalar por sentimento é anti-padrão: lota a fila humana com casos simples.",
+        "Continua sendo escalar por sentimento.",
+        "Não resolve o problema e piora a experiência."
+      ]
+    },
+    {
+      "pergunta": "Uma proposta sugere escalar sempre que o modelo responder que tem menos de 70% de confiança na própria resposta. Qual o problema?",
+      "opcoes": [
+        "O limiar deveria ser 90%, porque 70% deixa passar respostas erradas demais sem revisão",
+        "O modelo não consegue informar números",
+        "Nenhum; é a prática recomendada",
+        "Confiança autodeclarada é mal calibrada; não é sinal confiável para escalar"
+      ],
+      "correta": 3,
+      "explicacao": "Use gatilhos objetivos (pedido explícito, lacuna de política, sem progresso), não autoconfiança verbal.",
+      "feedbacks": [
+        "Mudar o limiar não conserta um sinal mal calibrado.",
+        "O modelo informa números; o problema é que eles não refletem a taxa de acerto.",
+        "É um dos anti-padrões clássicos.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "A busca de clientes por nome retorna três 'Ana Lima'. O que o agente deve fazer?",
+      "opcoes": [
+        "Escolher a cliente com pedido mais recente, que é estatisticamente a mais provável de estar em contato",
+        "Pedir um identificador adicional (número do pedido, e-mail) para desambiguar",
+        "Escalar para um humano",
+        "Escolher a primeira da lista"
+      ],
+      "correta": 1,
+      "explicacao": "Com múltiplos matches, peça identificador. Não chute.",
+      "feedbacks": [
+        "Heurística que ainda é chute; risco de agir sobre a cliente errada.",
+        "Correto.",
+        "Desambiguação é trivial para o agente; escalar é desnecessário.",
+        "Chute puro."
+      ]
+    },
+    {
+      "pergunta": "Ao escalar, o que o humano deve receber?",
+      "opcoes": [
+        "A transcrição completa da conversa, para que o humano tenha todo o contexto sem perda de detalhes",
+        "Um resumo estruturado: cliente, problema, ações, motivo, recomendação, valor",
+        "Apenas o ID do cliente",
+        "Uma mensagem em texto livre resumindo o tom da conversa"
+      ],
+      "correta": 1,
+      "explicacao": "O humano normalmente não lê o transcript; precisa de um resumo acionável e estruturado.",
+      "feedbacks": [
+        "Completo, mas não acionável; o humano não vai ler.",
+        "Correto.",
+        "Faltam problema, ações e motivo.",
+        "Texto livre sobre tom não ajuda a decidir."
+      ]
+    },
+    {
+      "pergunta": "A API de estoque deu timeout e a tool devolveu uma lista vazia de produtos. Qual o problema?",
+      "opcoes": [
+        "Nenhum: lista vazia é a resposta segura, porque evita que o agente invente produtos que não estão em estoque",
+        "O timeout deveria ser maior",
+        "A tool deveria lançar exceção sem detalhes",
+        "Supressão silenciosa: o agente concluirá 'sem estoque' sem a consulta ter rodado"
+      ],
+      "correta": 3,
+      "explicacao": "Vazio ≠ falha. Lista vazia = consultou e não achou. Timeout = não sabe. Isso precisa ser um erro estruturado.",
+      "feedbacks": [
+        "É exatamente o anti-padrão de supressão silenciosa.",
+        "Talvez ajude, mas não resolve a confusão entre vazio e falha.",
+        "Erro genérico sem contexto é outro anti-padrão.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Uma regra diz: 'só chamar process_refund depois de verificar a identidade do cliente'. Qual a forma mais confiável de garantir isso?",
+      "opcoes": [
+        "Um pré-requisito em código (ex.: hook PreToolUse que bloqueia a chamada sem verificação)",
+        "Escrever a regra em maiúsculas no system prompt",
+        "Adicionar três exemplos few-shot mostrando a verificação de identidade sempre antes do reembolso",
+        "Pedir ao modelo para confirmar que verificou antes de chamar"
+      ],
+      "correta": 0,
+      "explicacao": "Regra crítica (financeira/segurança) é imposta em código determinístico; prompt é best-effort.",
+      "feedbacks": [
+        "Correto.",
+        "Prompt é probabilístico, com taxa de falha não nula.",
+        "Ajuda o comportamento, mas não garante.",
+        "Autodeclaração não é verificação."
+      ]
+    },
+    {
+      "pergunta": "Num pipeline de pesquisa com 5 subagents, o subagent de dados financeiros falhou de forma definitiva. O que o coordenador deve fazer?",
+      "opcoes": [
+        "Abortar toda a pesquisa e reportar falha, para não entregar um relatório incompleto ao usuário final",
+        "Ignorar a falha e não mencionar dados financeiros",
+        "Seguir com os outros 4, anotar a lacuna e oferecer alternativas",
+        "Repetir a pesquisa inteira desde o início"
+      ],
+      "correta": 2,
+      "explicacao": "Não aborte o workflow por uma etapa: continue com o parcial, anote a lacuna, ofereça alternativa.",
+      "feedbacks": [
+        "Joga fora o trabalho bom dos outros subagents.",
+        "Esconder a lacuna é supressão silenciosa.",
+        "Correto.",
+        "Desperdício; e a falha definitiva provavelmente se repete."
+      ]
+    },
+    {
+      "pergunta": "Uma tool retorna: errorCategory 'business', 'conta congelada por ordem judicial', isRetryable false. O que o agente deve fazer?",
+      "opcoes": [
+        "Retentar com backoff exponencial, já que bloqueios desse tipo costumam ser temporários",
+        "Corrigir os parâmetros e tentar de novo",
+        "Devolver 'Operation failed' ao cliente",
+        "Não retentar; explicar a situação conforme a política e/ou escalar"
+      ],
+      "correta": 3,
+      "explicacao": "Erro de negócio não é retentável: explique a política ou escale.",
+      "feedbacks": [
+        "Retry é para transitórios.",
+        "Correção de entrada é para erro de validação.",
+        "Mensagem genérica esconde o diagnóstico.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Qual estratégia de amostragem para revisão humana é recomendada?",
+      "opcoes": [
+        "5% uniforme de tudo",
+        "Revisar apenas o que o modelo marcar como incerto, concentrando o esforço humano onde ele mesmo duvida",
+        "Estratificada por risco (mais revisão no alto valor, menos no baixo risco)",
+        "Revisar apenas quando o cliente reclamar"
+      ],
+      "correta": 2,
+      "explicacao": "Amostragem estratificada por risco concentra o olho humano onde o erro custa mais.",
+      "feedbacks": [
+        "Uniforme desperdiça revisão no baixo risco e subamostra o alto risco.",
+        "Sem calibração, a incerteza autodeclarada não é confiável.",
+        "Correto.",
+        "Reativo; erros silenciosos nunca são vistos."
+      ]
+    },
+    {
+      "pergunta": "Para que a confiança por campo de uma extração possa ser usada para rotear revisão, ela precisa ser:",
+      "opcoes": [
+        "Superior a 0,9 em todos os campos",
+        "Calibrada contra um conjunto rotulado (0,9 ≈ 90% de acerto)",
+        "Gerada por um segundo modelo, independente do que fez a extração, para evitar viés",
+        "Uma única nota para o documento inteiro"
+      ],
+      "correta": 1,
+      "explicacao": "Confiança só significa algo se calibrada contra dados rotulados; e deve ser por campo.",
+      "feedbacks": [
+        "Limiar alto sem calibração não significa nada.",
+        "Correto.",
+        "Outro modelo não calibra nada por si só.",
+        "Nota por documento esconde o campo problemático."
+      ]
+    },
+    {
+      "pergunta": "A extração tem 97% de acurácia geral. O que fazer antes de reduzir a revisão humana?",
+      "opcoes": [
+        "Quebrar a acurácia por tipo de documento e por campo",
+        "Nada; 97% é excelente",
+        "Aumentar o tamanho da amostra uniforme para ter mais confiança estatística no número",
+        "Trocar para um modelo maior"
+      ],
+      "correta": 0,
+      "explicacao": "Métrica agregada esconde falha por tipo (ex.: 45% em manuscritos).",
+      "feedbacks": [
+        "Correto.",
+        "É a armadilha clássica do agregado.",
+        "Mais amostra uniforme ainda mede o agregado.",
+        "Mudar o modelo sem medir por segmento é mexer sem diagnóstico."
+      ]
+    },
+    {
+      "pergunta": "Duas fontes do mesmo período informam valores diferentes para o mesmo indicador. O que a síntese deve fazer?",
+      "opcoes": [
+        "Registrar os dois valores com suas fontes e marcar como contestado",
+        "Usar a média dos dois",
+        "Usar a fonte publicada mais recentemente, que tende a refletir a metodologia mais atual",
+        "Omitir o indicador para evitar confusão"
+      ],
+      "correta": 0,
+      "explicacao": "Conflito é anotado com as fontes, nunca resolvido em silêncio nem por média.",
+      "feedbacks": [
+        "Correto.",
+        "Média inventa um número que nenhuma fonte disse.",
+        "Escolher em silêncio esconde a divergência.",
+        "Omitir também é esconder."
+      ]
+    },
+    {
+      "pergunta": "Um relatório cita 'desemprego de 8,1%' (dados de 2024) e outro '6,9%' (dados de 2026). Como tratar?",
+      "opcoes": [
+        "Marcar como conflito entre fontes e indicar ao leitor que os números não são confiáveis",
+        "Descartar o mais antigo sem menção",
+        "Apresentar ambos com as datas de referência: períodos diferentes, não contradição",
+        "Fazer a média"
+      ],
+      "correta": 2,
+      "explicacao": "Dados temporais: registre 'dados de'. Números de períodos diferentes não são contradição.",
+      "feedbacks": [
+        "Sem olhar as datas, cria um falso conflito.",
+        "Perde informação e a série temporal.",
+        "Correto.",
+        "Média de períodos diferentes não tem sentido."
+      ]
+    },
+    {
+      "pergunta": "O time quer melhorar o prompt de extração. Qual processo é o recomendado?",
+      "opcoes": [
+        "Testar manualmente 3 documentos e publicar se parecer melhor",
+        "Mudar prompt, exemplos e modelo de uma vez para ganhar tempo e medir o efeito combinado no final",
+        "Medir só a acurácia global antes e depois",
+        "Linha de base num conjunto rotulado, uma mudança por vez, comparação por segmento"
+      ],
+      "correta": 3,
+      "explicacao": "Mudanças guiadas por métrica: linha de base, uma mudança por vez, comparação por segmento, conjunto mantido como regressão.",
+      "feedbacks": [
+        "Amostra pequena e subjetiva; 'melhorou' vira opinião.",
+        "Impossível atribuir o efeito a cada mudança.",
+        "O global esconde regressões por segmento.",
+        "Correto."
+      ]
+    }
+  ]
+}

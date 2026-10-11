@@ -1,0 +1,352 @@
+{
+  "titulo": "Módulo 09 — Claude Code em CI/CD e refinamento iterativo (prova)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "A equipe de plataforma da Orbis adicionou ao pipeline um passo `claude \"revise as mudanças deste commit e liste problemas\"`. Desde então, o job fica \"em execução\" até atingir o timeout de 6 horas do runner, sem produzir saída. Qual a correção?",
+      "opcoes": [
+        "Adicionar `--max-turns 5` para o Claude terminar mais cedo",
+        "Adicionar `--output-format json` para o runner conseguir ler a saída",
+        "Aumentar o timeout do runner, porque o review de commits grandes é demorado",
+        "Rodar com `-p` (`--print`), o modo não interativo que executa, imprime e sai"
+      ],
+      "correta": 3,
+      "explicacao": "Sem `-p`, o Claude Code abre a sessão interativa e espera input indefinidamente. Em CI, `-p` é obrigatório.",
+      "feedbacks": [
+        "Limitar turnos não tira o processo do modo interativo; continuaria esperando input.",
+        "Formato de saída só importa depois que o modo não interativo está ativo.",
+        "Ataca o sintoma; o processo nunca termina porque espera um humano.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Na Orbis, o pipeline precisa bloquear o merge automaticamente quando o review do Claude encontrar problema de severidade alta. Hoje o script procura a palavra \"CRÍTICO\" no texto da resposta, e falha de vez em quando porque o Claude escreve \"grave\" ou \"severo\". Qual a melhor abordagem?",
+      "opcoes": [
+        "Instruir no prompt: \"use sempre a palavra CRÍTICO para problemas graves\"",
+        "Usar `--output-format json` com `--json-schema` definindo `severity` como enum e decidir o gate lendo `structured_output`",
+        "Ampliar a regex para incluir sinônimos como \"grave\", \"severo\" e \"sério\"",
+        "Pedir a um segundo `claude -p` que leia o texto e responda \"sim\" ou \"não\""
+      ],
+      "correta": 1,
+      "explicacao": "Máquina deve ler um contrato estruturado. O schema com enum de severidade torna o gate determinístico.",
+      "feedbacks": [
+        "Continua dependendo de texto livre; reduz a falha mas não a elimina.",
+        "Correto.",
+        "Corrida de sinônimos sem fim: parsing frágil de prosa.",
+        "Adiciona outra chamada probabilística e mais custo para resolver algo que a saída estruturada resolve direto."
+      ]
+    },
+    {
+      "pergunta": "O job de review da Orbis custa em média US$ 0,20, mas alguns runs em PRs grandes chegaram a 70 turnos e US$ 9. O time quer limitar o pior caso sem mudar o comportamento normal. O que fazer?",
+      "opcoes": [
+        "Definir `--max-turns` (e um teto de orçamento, se disponível) como backstop, além do `timeout` do job",
+        "Instruir no prompt: \"use no máximo 5 turnos\"",
+        "Trocar o review por um passo da Batch API, que é 50% mais barata",
+        "Remover o CLAUDE.md do repositório para o contexto ficar menor"
+      ],
+      "correta": 0,
+      "explicacao": "Teto de turnos/orçamento e timeout são backstops determinísticos para o pior caso; o fim normal continua sendo o Claude concluir.",
+      "feedbacks": [
+        "Correto.",
+        "Instrução é probabilística e o modelo não controla bem a contagem de turnos.",
+        "Review de PR é bloqueante; batch não tem SLA e pode levar até 24h.",
+        "Perde as convenções do time e não limita o pior caso; o certo é manter o CLAUDE.md enxuto."
+      ]
+    },
+    {
+      "pergunta": "O diretor financeiro da DataPonte pede para cortar custos do Claude. A proposta do time é mover para a Batch API a checagem obrigatória de segurança que hoje roda em cada PR e bloqueia o merge até passar. Como arquiteto, qual a sua posição?",
+      "opcoes": [
+        "Aprovar: a Batch API é 50% mais barata e o resultado é o mesmo",
+        "Aprovar, desde que o `custom_id` seja o número do PR",
+        "Rejeitar para o gate pré-merge, que precisa de resposta síncrona; buscar economia em outros pontos (ex.: tarefas noturnas em batch, `--max-turns`, prompts mais específicos)",
+        "Rejeitar, porque a Batch API não aceita prompts de segurança"
+      ],
+      "correta": 2,
+      "explicacao": "Batch tem janela de até 24h e não tem SLA: nunca em passo bloqueante. A economia vem de mover o que não é urgente para batch e de limitar o síncrono.",
+      "feedbacks": [
+        "Ignora a latência: PRs ficariam bloqueados por horas.",
+        "`custom_id` resolve correlação, não a falta de SLA.",
+        "Correto.",
+        "Premissa falsa: não há restrição de conteúdo; o problema é latência."
+      ]
+    },
+    {
+      "pergunta": "A DataPonte quer, toda noite, uma auditoria de dependências desatualizadas e segredos expostos em 140 repositórios, com relatório disponível pela manhã. Ninguém espera pelo resultado durante o dia. Qual a abordagem mais adequada em custo?",
+      "opcoes": [
+        "140 chamadas síncronas `claude -p` em paralelo às 2h",
+        "Enviar os 140 pedidos como um lote da Batch API, cada um com `custom_id` do repositório",
+        "Rodar a auditoria no review de cada PR",
+        "Uma única chamada com os 140 repositórios concatenados no prompt"
+      ],
+      "correta": 1,
+      "explicacao": "Volume, sem urgência, resultado para a manhã seguinte: caso típico de Batch (50% mais barato), correlacionado por `custom_id`.",
+      "feedbacks": [
+        "Funciona, mas paga o preço cheio por algo que não precisa de latência baixa.",
+        "Correto.",
+        "Mistura uma auditoria em massa com o gate do PR e deixa repositórios sem atividade sem auditoria.",
+        "Estoura contexto e dilui atenção; cada repositório deve ser um request."
+      ]
+    },
+    {
+      "pergunta": "No lote noturno da DataPonte, 134 dos 140 requests terminaram `succeeded` e 6 terminaram `errored`. O script atual reenvia o lote inteiro sempre que há qualquer falha. Qual o ajuste?",
+      "opcoes": [
+        "Manter o reenvio total para garantir consistência",
+        "Converter o lote inteiro para chamadas síncronas",
+        "Ignorar os 6, já que 96% de sucesso é aceitável",
+        "Reenviar apenas os requests com os `custom_id` que falharam"
+      ],
+      "correta": 3,
+      "explicacao": "Reprocesse só o que falhou, identificado pelo `custom_id`; reenviar tudo paga de novo pelo que já deu certo.",
+      "feedbacks": [
+        "Desperdício: paga de novo 134 resultados válidos.",
+        "Desnecessário: o problema são 6 requests, não o modo batch.",
+        "Suprimir falha em silêncio deixa 6 repositórios sem auditoria.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Quais afirmações sobre a Batch API são corretas e relevantes para desenhar o pipeline? (Escolha DUAS.)",
+      "opcoes": [
+        "Os resultados podem vir fora de ordem; cada um deve ser associado pelo `custom_id`",
+        "Tem SLA de conclusão em até 1 hora",
+        "Custa 50% a mais que o síncrono por causa da fila",
+        "Não suporta um loop multi-turn de tool use dentro de um único request",
+        "Retorna os resultados em streaming à medida que cada request termina dentro do mesmo request HTTP"
+      ],
+      "corretas": [0, 3],
+      "explicacao": "Batch: 50% mais barato, até 24h, sem SLA, fora de ordem (custom_id), cada request é uma chamada única (sem loop agêntico de tools).",
+      "feedbacks": [
+        "Correto.",
+        "Não há SLA; a janela é de até 24h.",
+        "É 50% mais barata, não mais cara.",
+        "Correto.",
+        "Você faz poll do status do lote e depois lê os resultados; não há streaming."
+      ]
+    },
+    {
+      "pergunta": "Na Synapse Labs, um workflow gera uma feature com `claude -p` e, no passo seguinte, roda `claude -p --resume $SESSION \"agora revise criticamente o código que você escreveu\"`. As métricas mostram que esse review quase nunca encontra problemas, mas o QA encontra vários. Qual a mudança mais eficaz?",
+      "opcoes": [
+        "Acrescentar \"seja implacável, assuma que há bugs\" ao prompt de review",
+        "Aumentar `--max-turns` do passo de review",
+        "Rodar o review numa sessão nova e independente, recebendo o diff e critérios explícitos",
+        "Rodar o mesmo review duas vezes na mesma sessão e unir os achados"
+      ],
+      "correta": 2,
+      "explicacao": "A sessão geradora carrega o raciocínio que levou às decisões e tende a confirmá-las. Review independente, sem o contexto de geração.",
+      "feedbacks": [
+        "Instrução não remove o viés do contexto de raciocínio.",
+        "Mais turnos na mesma sessão enviesada não resolvem.",
+        "Correto.",
+        "Repete o mesmo viés duas vezes."
+      ]
+    },
+    {
+      "pergunta": "Um PR de 52 arquivos na Synapse Labs altera o contrato de um evento de domínio e seus consumidores. O review automático atual (um prompt com o diff inteiro) traz comentários genéricos, aplica critérios diferentes entre arquivos e não detectou que um consumidor ainda espera o campo removido. Qual desenho resolve?",
+      "opcoes": [
+        "Multi-pass: um passo por arquivo com o mesmo critério e um passo separado de integração que recebe os achados e verifica contratos entre arquivos",
+        "Manter o prompt único e trocar para um modelo com janela maior",
+        "Dividir o diff em 4 blocos de 13 arquivos e revisar cada bloco sem passo de integração",
+        "Pedir ao autor do PR que o divida em PRs de no máximo 5 arquivos"
+      ],
+      "correta": 0,
+      "explicacao": "Por arquivo para profundidade e consistência; integração para bugs cross-file (contrato quebrado entre produtor e consumidor).",
+      "feedbacks": [
+        "Correto.",
+        "Janela maior não resolve diluição de atenção; o problema não é caber.",
+        "Melhora a profundidade, mas sem integração o bug entre produtor e consumidor continua invisível.",
+        "Transfere o problema ao humano e nem sempre é viável numa mudança de contrato."
+      ]
+    },
+    {
+      "pergunta": "O repositório da Synapse Labs recebe vários pushes seguidos no mesmo PR, e o workflow de review do Claude dispara um run a cada push; às vezes cinco runs ficam ativos ao mesmo tempo e um deles rodou por 2 horas. Quais ajustes no workflow do GitHub Actions resolvem? (Escolha DUAS.)",
+      "opcoes": [
+        "Trocar o gatilho para `schedule` diário",
+        "`concurrency` agrupando pelo número do PR, com `cancel-in-progress: true`",
+        "`timeout-minutes` no job",
+        "Remover o `actions/checkout` para o job ficar mais leve",
+        "Mover a chave de API para o CLAUDE.md para evitar leitura de secrets"
+      ],
+      "corretas": [1, 2],
+      "explicacao": "`concurrency` evita runs empilhados no mesmo PR; `timeout-minutes` limita o tempo de relógio do job.",
+      "feedbacks": [
+        "O review deixaria de acompanhar o PR; não é o que se quer.",
+        "Correto.",
+        "Correto.",
+        "Sem checkout o Claude não tem o código para revisar.",
+        "Grave falha de segurança: chave nunca vai em arquivo versionado."
+      ]
+    },
+    {
+      "pergunta": "A Synapse Labs usa `anthropics/claude-code-action@v1` em modo automação. O tech lead quer limitar a 10 turnos, restringir as tools a leitura e ao `gh pr comment`, e acrescentar a persona \"revisor sênior de C#\". Onde configurar?",
+      "opcoes": [
+        "No CLAUDE.md, numa seção \"Configuração do CI\"",
+        "No input `claude_args`: `--max-turns 10 --allowedTools \"Read,Grep,Glob,Bash(gh pr comment *)\" --append-system-prompt \"...\"`",
+        "Em variáveis de ambiente do job",
+        "No `trigger_phrase` da Action"
+      ],
+      "correta": 1,
+      "explicacao": "`claude_args` repassa flags da CLI para o Claude Code dentro da Action.",
+      "feedbacks": [
+        "CLAUDE.md é instrução para o modelo, não configuração de limites/permissões.",
+        "Correto.",
+        "Não é o mecanismo da Action para essas flags.",
+        "`trigger_phrase` só define a menção que dispara o modo interativo."
+      ]
+    },
+    {
+      "pergunta": "Revisando o workflow de um time, você encontra `anthropic_api_key: sk-ant-api03-...` escrito literalmente no YAML versionado. Qual a correção?",
+      "opcoes": [
+        "Mover a chave para o CLAUDE.md, que o Claude lê em todo run",
+        "Codificar a chave em base64 no YAML",
+        "Manter, desde que o repositório seja privado",
+        "Revogar a chave exposta, criar um secret do repositório e referenciá-lo: `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`"
+      ],
+      "correta": 3,
+      "explicacao": "Credencial nunca em arquivo versionado; usa-se secret do CI. A chave já exposta deve ser revogada.",
+      "feedbacks": [
+        "Continua versionada, e agora ainda entra no contexto do modelo.",
+        "Base64 não é criptografia; continua exposta.",
+        "Repositório privado não impede vazamento (forks, logs, acessos amplos).",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Para \"padronizar o review\", um dev passou `--system-prompt \"Você é um revisor. Liste problemas.\"` no job. Desde então o Claude no CI deixou de usar as tools de forma eficaz e de seguir comportamentos que antes seguia. Qual a correção?",
+      "opcoes": [
+        "Trocar para `--append-system-prompt`, que acrescenta ao system prompt padrão em vez de substituí-lo",
+        "Repetir as instruções do system prompt padrão dentro do CLAUDE.md",
+        "Aumentar `--max-turns`",
+        "Remover o `-p` para o Claude usar o comportamento interativo"
+      ],
+      "correta": 0,
+      "explicacao": "`--system-prompt` substitui todo o prompt padrão do Claude Code; para acrescentar persona/critério, use `--append-system-prompt`.",
+      "feedbacks": [
+        "Correto.",
+        "Tentativa de reconstruir o padrão à mão; frágil e desnecessário.",
+        "Não devolve as instruções perdidas.",
+        "Sem `-p` o job trava esperando input."
+      ]
+    },
+    {
+      "pergunta": "Um job de CI pede `claude -p \"rode os testes e corrija as falhas\"`. O log mostra que o Claude tentou rodar `dotnet test` e a ação foi negada por permissão; o job termina sem corrigir nada. Qual o ajuste mais adequado?",
+      "opcoes": [
+        "Rodar com `--permission-mode bypassPermissions`",
+        "Adicionar ao prompt \"você tem permissão para rodar testes\"",
+        "Pré-aprovar o necessário: `--allowedTools \"Read,Edit,Bash(dotnet test *)\"` (ou `permissions.allow` equivalente)",
+        "Remover o `-p` para alguém aprovar no terminal do runner"
+      ],
+      "correta": 2,
+      "explicacao": "Em `-p` ninguém responde ao prompt de permissão; o que não está pré-aprovado é negado. Pré-aprove o mínimo necessário.",
+      "feedbacks": [
+        "Libera tudo num runner: muito além do necessário.",
+        "Texto no prompt não concede permissão.",
+        "Correto: menor privilégio e determinístico.",
+        "Não há ninguém no runner; o job travaria."
+      ]
+    },
+    {
+      "pergunta": "A Ferrovia Digital usa GitLab e quer que o Claude Code revise merge requests e proponha correções. Qual configuração segue a integração documentada?",
+      "opcoes": [
+        "Instalar a `claude-code-action` do GitHub espelhando o repositório",
+        "Um job no `.gitlab-ci.yml` que instala o Claude Code e roda `claude -p \"...\"` com `--allowedTools`/`--permission-mode`, chave como variável mascarada e limite por `--max-turns` e `timeout` do job",
+        "Um webhook que abre uma sessão interativa do Claude Code num servidor dedicado",
+        "Rodar `claude` sem `-p` dentro de um container com TTY"
+      ],
+      "correta": 1,
+      "explicacao": "A integração GitLab CI/CD (beta, mantida pelo GitLab) é um job que roda `claude -p`; segredos em variável mascarada e limites de turno/tempo.",
+      "feedbacks": [
+        "A Action é do GitHub; espelhar o repositório só para isso é desnecessário.",
+        "Correto.",
+        "Sessão interativa não serve para automação sem humano.",
+        "Sem `-p` o processo espera input."
+      ]
+    },
+    {
+      "pergunta": "No job que gera o changelog a partir dos commits, o Claude produz um formato quase correto, mas às vezes inclui commits `chore:` e às vezes não, e varia o nível de detalhe. As instruções em prosa já explicam isso. Qual o ajuste mais eficaz?",
+      "opcoes": [
+        "Acrescentar ao prompt 2–3 pares concretos de commit → linha de changelog, incluindo um `chore:` que deve ser omitido",
+        "Acrescentar \"siga o formato com atenção\" em negrito",
+        "Rodar o job três vezes e escolher a saída mais comum",
+        "Trocar `--output-format text` por `stream-json`"
+      ],
+      "correta": 0,
+      "explicacao": "Exemplos concretos (com borda) comunicam formato e regras de exclusão melhor que prosa.",
+      "feedbacks": [
+        "Correto.",
+        "Ênfase não remove a ambiguidade.",
+        "Triplica custo sem atacar a causa.",
+        "Muda a forma de transmitir a saída, não o conteúdo."
+      ]
+    },
+    {
+      "pergunta": "A logística da Ferrovia Digital tem regras de frete com muitas exceções (região, peso, frete grátis acima de um valor, feriados). Nas últimas tentativas, cada mudança pedida ao Claude corrigia um caso e quebrava outro. Qual abordagem?",
+      "opcoes": [
+        "Pedir ao Claude que \"tenha cuidado para não quebrar casos antigos\"",
+        "Usar plan mode e confiar na revisão manual do diff",
+        "Pedir que o Claude implemente e depois escreva testes que passem com a implementação",
+        "TDD: escrever testes cobrindo as regras e exceções, confirmar que falham, pedir a implementação e iterar devolvendo as falhas, sem permitir alteração dos testes"
+      ],
+      "correta": 3,
+      "explicacao": "Testes como alvo verificável impedem regressões silenciosas; o Claude itera contra as falhas.",
+      "feedbacks": [
+        "Instrução vaga sem sinal objetivo.",
+        "Plan mode ajuda a desenhar, mas não dá verificação automática das exceções.",
+        "Testes escritos depois validam o que foi feito, não o que era esperado.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O PO da Ferrovia Digital escreveu: \"precisamos de reembolso parcial para passagens\". Não há regras de prazo, taxas ou meios de pagamento definidas, e o time nunca trabalhou com reembolso. Qual o melhor primeiro passo com o Claude Code?",
+      "opcoes": [
+        "Pedir a implementação direta com as regras \"mais comuns do mercado\"",
+        "Escrever testes com valores inventados para começar o TDD",
+        "Pedir que o Claude entreviste o time com perguntas de esclarecimento (prazos, taxas, meios de pagamento, casos de borda) antes de implementar",
+        "Usar `--max-turns 100` para o Claude explorar o problema à vontade"
+      ],
+      "correta": 2,
+      "explicacao": "Requisito vago em domínio desconhecido: a entrevista tira a ambiguidade antes de gastar uma rodada de implementação. Depois, os testes podem ser escritos com regras reais.",
+      "feedbacks": [
+        "O Claude preencheria lacunas com suposições, e o retrabalho virá depois.",
+        "TDD precisa de regras conhecidas; testes com valores inventados fixam suposições erradas.",
+        "Correto.",
+        "Mais turnos não substituem informação que só o negócio tem."
+      ]
+    },
+    {
+      "pergunta": "Um dev tem quatro itens para o Claude: (1) o cálculo de juros arredonda antes de aplicar a taxa, e (2) a taxa é aplicada sobre o valor já arredondado no extrato, ambos em `CalculadoraDeJuros` e com um afetando o outro; (3) um typo na tela de login; (4) um timeout no relatório de vendas. Quais afirmações descrevem a melhor forma de enviar? (Escolha DUAS.)",
+      "opcoes": [
+        "Enviar os quatro itens numa única mensagem para economizar turnos",
+        "Enviar cada item em uma sessão diferente, inclusive (1) e (2)",
+        "Enviar (1) e (2) juntos, na mesma mensagem, porque interagem",
+        "Enviar (3) e (4) juntos, porque são os mais simples",
+        "Tratar (3) e (4) em sequência, um por vez, como mudanças pequenas e revisáveis"
+      ],
+      "corretas": [2, 4],
+      "explicacao": "Relacionados → juntos (o Claude vê a interação). Independentes → em sequência (diffs pequenos e revisáveis).",
+      "feedbacks": [
+        "Mistura problemas independentes com acoplados: diff irrevisável e contaminação.",
+        "Separar (1) e (2) faz uma correção desfazer a outra.",
+        "Correto.",
+        "Simplicidade não é critério; eles não se relacionam.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O review automatizado com `--json-schema` sempre devolve JSON válido, mas em alguns runs aponta achados em arquivos que nem estão no diff do PR, e esses comentários são postados. O schema exige `file`, `line` e `severity`. Qual a melhor correção?",
+      "opcoes": [
+        "Validar em código, antes de postar, que cada `file`/`line` existe no diff; descartar ou reprocessar os achados inválidos",
+        "Tornar o schema mais rígido com `additionalProperties: false`",
+        "Trocar `--output-format json` por `stream-json`",
+        "Confiar no schema: se o JSON é válido, o achado é válido"
+      ],
+      "correta": 0,
+      "explicacao": "Conformidade com schema não é correção semântica. Valide no código o que importa (o arquivo citado existe no diff) antes de agir.",
+      "feedbacks": [
+        "Correto.",
+        "Restringe a forma, não o conteúdo; o campo `file` continuaria podendo citar arquivo inexistente.",
+        "Muda a forma de entrega, não a validade do achado.",
+        "É exatamente o erro: schema válido não garante dado correto."
+      ]
+    }
+  ]
+}

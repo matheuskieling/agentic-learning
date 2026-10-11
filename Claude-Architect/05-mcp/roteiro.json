@@ -1,0 +1,161 @@
+{
+  "modulo": "05",
+  "titulo": "MCP: arquitetura, transportes, escopos, .mcp.json, autenticação",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — MCP, a outra metade do D2",
+      "pontos": [
+        "Este módulo cobre o task statement 2.4 inteiro (D2, 18% junto com o Módulo 04)",
+        "MCP = padrão aberto para conectar modelos a dados e tools: escreve o server uma vez, qualquer host compatível usa",
+        "A prova cobra: como a arquitetura funciona, qual primitiva/transporte/escopo escolher e como configurar sem vazar segredo",
+        "Roteiro: arquitetura e JSON-RPC → primitivas → transportes → escopos → .mcp.json → autenticação → comandos e escala",
+        "Cenários onde mais cai: 4 (Dev Productivity), 1 (Support com tools MCP), 2 (Code Generation)",
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json; o server mínimo está em C# (só reconhecimento); JSON/shell ficam como são"
+      ],
+      "checkpoint": "Pergunte se o aluno já configurou algum servidor MCP no Claude Code e se está pronto para começar",
+      "ref": "05-mcp/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Arquitetura: host, client, server (1:1) e o ciclo JSON-RPC",
+      "pontos": [
+        "Host = app com o modelo (ex.: Claude Code); client = conector dentro do host; server = programa que expõe capacidades",
+        "Um client por server (1:1): 3 servers configurados = 3 clients",
+        "JSON-RPC 2.0: requests com id, responses, notificações sem id",
+        "Ciclo: initialize (negocia versão e capabilities) → notifications/initialized → tools/list → tools/call",
+        "Erro de execução de tool: isError: true no resultado (o modelo raciocina); erro de protocolo é erro JSON-RPC",
+        "No Claude Code a tool aparece como mcp__<server>__<tool> — é esse nome em permissões e hooks"
+      ],
+      "checkpoint": "Pergunte: qual a ordem do handshake MCP e o que é negociado no initialize?",
+      "ref": "05-mcp/teoria.md#1-arquitetura-host-client-server-11-e-json-rpc"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Primitivas: tools, resources, prompts × sampling, elicitation, roots",
+      "pontos": [
+        "Server: tools (ação; o modelo decide chamar), resources (conteúdo somente leitura por URI; catálogo navegável), prompts (templates; o usuário invoca)",
+        "No Claude Code: resource via @server:protocolo://caminho; prompt vira slash command /mcp__server__prompt",
+        "Client: sampling (server pede completion ao modelo do host), elicitation (server pede input ao usuário), roots (limites de URI/filesystem)",
+        "Resource vs tool: dado para ler/contextualizar (schema, docs, catálogo) → resource; ação ou consulta com efeito → tool",
+        "Catálogo como resource reduz chamadas exploratórias às cegas",
+        "Prova: cenário 4, 'dezenas de chamadas search_tables para descobrir o schema' → resources; pegadinha: jogar o schema todo no system prompt"
+      ],
+      "checkpoint": "Pergunte: o server precisa que o usuário confirme um valor no meio de uma operação. Qual primitiva? E se precisar resumir um texto com o modelo?",
+      "ref": "05-mcp/teoria.md#2-primitivas-tools-resources-prompts-server-e-sampling-elicitation-roots-client"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Transportes: stdio, Streamable HTTP, SSE legado",
+      "pontos": [
+        "stdio: processo local iniciado pelo host, implícito quando há command; stdout é o canal do JSON-RPC → logs vão para stderr",
+        "Streamable HTTP (type: http): o padrão remoto e o único remoto com OAuth",
+        "SSE (type: sse): legado/depreciado — prefira HTTP; [volátil] WebSocket",
+        "Pegadinha: entrada com url mas SEM type é lida como stdio e falha → sempre declare type: http no remoto",
+        "Prova: 'server remoto no .mcp.json com só url não conecta' → adicionar type http; pegadinha: trocar para SSE"
+      ],
+      "checkpoint": "Pergunte: por que um server stdio que faz Console.WriteLine de log quebra a conexão?",
+      "ref": "05-mcp/teoria.md#3-transportes-stdio-streamable-http-sse-legado"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Escopos: local, project, user, managed",
+      "pontos": [
+        "local (PADRÃO): só você, só este projeto, guardado em ~/.claude.json",
+        "project: todo o time, via git, no .mcp.json da raiz",
+        "user: você em todos os seus projetos, ~/.claude.json",
+        "managed: organização, empurrado pelo admin (lista permitida/negada)",
+        "Pegadinha: escopo local do MCP NÃO é .claude/settings.local.json",
+        "Precedência com nome repetido: local > project > user",
+        "Prova: 'dev novo clona o repo e não tem o server do time; todos usaram claude mcp add sem flag' → era local; use --scope project e commite"
+      ],
+      "checkpoint": "Pergunte: onde fica um server adicionado com 'claude mcp add' sem --scope, e o que fazer para o time inteiro receber?",
+      "ref": "05-mcp/teoria.md#4-escopos-de-instalação-local-project-user-managed"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "O .mcp.json: formato, ${VAR} e aprovação",
+      "pontos": [
+        "Raiz mcpServers; remoto: type/url/headers; stdio: command/args/env",
+        "Mostre o .mcp.json do teoria.md (github remoto com header, banco local via dotnet run)",
+        "Segredos via ${VAR} e ${VAR:-default}, expandidos do ambiente de cada dev; nunca token literal em arquivo versionado",
+        "Servers de projeto pedem aprovação na sessão interativa (proteção contra repo malicioso rodar processo arbitrário); settings para pré-aprovar existem [volátil: nomes]",
+        "Anti-padrões: commitar Bearer literal; pedir que cada dev edite o .mcp.json com seu token; desligar aprovação globalmente"
+      ],
+      "checkpoint": "Peça para o aluno escrever de cabeça a entrada de um server remoto HTTP com token vindo da variável JIRA_TOKEN",
+      "ref": "05-mcp/teoria.md#5-o-mcpjson-formato-segredos-e-aprovação"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Autenticação: OAuth via /mcp, headers, headersHelper",
+      "pontos": [
+        "OAuth 2.0 via /mcp: server remoto HTTP; dev autentica no navegador; Claude Code guarda e renova o token",
+        "Token estático em headers (com ${VAR}) para API key/PAT simples",
+        "headersHelper: comando que gera headers na hora — credencial de curta duração (SSO que expira em 1 h)",
+        "env para credencial de server stdio local",
+        "Prova: 'token de SSO expira a cada hora' → headersHelper; 'server remoto com OAuth' → /mcp"
+      ],
+      "checkpoint": "Pergunte: por que colar um token de curta duração em headers é má ideia e qual a alternativa?",
+      "ref": "05-mcp/teoria.md#6-autenticação-oauth-via-mcp-headers-headershelper"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "claude mcp add, tool search de MCP, limites de saída e um server em C#",
+      "pontos": [
+        "claude mcp add --transport http --scope project nome url; stdio: claude mcp add nome -- comando args (o -- separa as flags do claude das do server)",
+        "claude mcp list/get/remove/add-json; na sessão, /mcp mostra status e faz login",
+        "[volátil] Tool search de MCP ligado por padrão no Claude Code (ENABLE_TOOL_SEARCH)",
+        "[volátil] Saída MCP: aviso acima de ~10k tokens, trunca em ~25k (MAX_MCP_OUTPUT_TOKENS); correção de arquiteto: server devolve só campos relevantes/pagina",
+        "Mostre o server C# mínimo (ModelContextProtocol: AddMcpServer().WithStdioServerTransport().WithToolsFromAssembly(), [McpServerTool, Description])",
+        "O atributo Description vira a description da tool: as regras do Módulo 04 valem igual"
+      ],
+      "checkpoint": "Pergunte: por que 'claude mcp add meu-server npx -y pacote' sem o -- pode dar errado?",
+      "ref": "05-mcp/teoria.md#7-claude-mcp-add-e-comandos"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação — Módulo 05",
+      "pontos": [
+        "15 questões curtas sobre arquitetura, primitivas, transportes, escopos, .mcp.json, autenticação e comandos",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
+      ],
+      "checkpoint": "Pergunte se o aluno quer revisar algum tópico antes da prova do módulo",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-05/questions.json",
+      "ref": "05-mcp/teoria.md#cola-de-véspera"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do Módulo 05 — estilo cenário (70%)",
+      "pontos": [
+        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Escolha DUAS)",
+        "Aprovação: 70%. Abaixo disso, revise a tabela de decisão e refaça"
+      ],
+      "checkpoint": "Comente o resultado, destaque as pegadinhas que enganaram o aluno e registre com note",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-05/questions.json --id prova",
+      "ref": "05-mcp/teoria.md#tabela-de-decisão"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento — D2 completo; próximo: Módulo 06 (loop agêntico)",
+      "pontos": [
+        "Recapitule pela Cola de véspera: 1 client por server, JSON-RPC, primitivas, type http, escopos (local ≠ settings.local.json), ${VAR}, aprovação, /mcp e headersHelper",
+        "Com os Módulos 04 e 05 o D2 (18%) está coberto (tools nativas do Claude Code ficam no Módulo 08)",
+        "Próximo: Módulo 06 — o loop agêntico, enforcement com hooks e handoff humano (D1, o domínio mais pesado)",
+        "Para começar: python3 engine/aula.py start Claude-Architect/06-agentic-loop/roteiro.json"
+      ],
+      "checkpoint": "Pergunte se o aluno quer seguir direto para o Módulo 06 ou parar aqui (o progresso fica salvo)",
+      "ref": "05-mcp/teoria.md#cola-de-véspera"
+    }
+  ]
+}

@@ -1,0 +1,1191 @@
+{
+  "titulo": "Simulado 5 — CCAR-F (final · 60 questões · 120 min)",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Cenário: a Pixelforja Games, um estúdio de jogos com 40 desenvolvedores, mantém um monorepo com a engine em C++, as ferramentas de editor em C#, os scripts de gameplay em Lua e um backend de matchmaking em .NET. O time adotou o Claude Code para gerar e refatorar código em todos esses subsistemas. Restrições: cada subsistema tem convenções próprias, a pasta de assets binários nunca pode ser alterada pela IA, builds completos levam 40 minutos e o estúdio quer que a configuração do Claude Code seja versionada e compartilhada pelo time. Os testes automatizados ficam espalhados em pastas `Tests/` dentro de cada subsistema (engine, ferramentas, backend), e novas pastas `Tests/` surgem a cada trimestre. O time quer que as convenções de teste (nomenclatura, uso de fixtures, proibição de `Thread.Sleep`) sejam aplicadas sempre que o Claude mexer em testes, sem gastar contexto quando ele trabalha em outras partes do código. Qual é a MELHOR forma de configurar isso?",
+      "opcoes": [
+        "Criar um `CLAUDE.md` dentro de cada pasta `Tests/` existente com as convenções, já que CLAUDE.md de subdiretório carrega sob demanda.",
+        "Criar um arquivo em `.claude/rules/` com frontmatter `paths:` usando um glob como `**/Tests/**`, contendo as convenções de teste.",
+        "Adicionar uma seção \"Convenções de teste\" no `CLAUDE.md` da raiz do projeto, que é versionado e lido por todo o time.",
+        "Criar uma skill `convencoes-de-teste` com `description` dizendo para usá-la ao editar testes, deixando o auto-carregamento decidir."
+      ],
+      "correta": 1,
+      "explicacao": "Convenção que atravessa diretórios espalhados e que deve valer só quando aqueles arquivos são tocados é o caso de uso exato de `.claude/rules/` com `paths:` (glob). Cobre diretórios futuros, não duplica conteúdo e não ocupa contexto à toa.",
+      "feedbacks": [
+        "Tentadora porque CLAUDE.md de subdiretório realmente carrega sob demanda. Mas duplica o conteúdo em N pastas, gera divergência entre cópias e não cobre as pastas `Tests/` que surgirem no futuro.",
+        "Correta. Regra com `paths:` só carrega quando arquivos que batem no glob são tocados, cobre pastas `Tests/` futuras automaticamente e evita duplicação.",
+        "Funciona para aplicar as regras, mas carrega em toda sessão, inclusive quando o Claude trabalha em shaders ou Lua, desperdiçando contexto, o que o enunciado pediu para evitar.",
+        "Tentadora (skills carregam sob demanda), mas o carregamento de skill pela `description` é decisão do modelo, ou seja, probabilístico. Uma regra com `paths:` é acionada de forma determinística pelo caminho do arquivo."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pixelforja, o dev Caio quer que, só neste monorepo, o Claude use o caminho do sandbox de testes da máquina dele (`D:/sandbox-caio`) e responda de forma mais curta. Em outros projetos dele essas preferências não fazem sentido, e o resto do time não deve recebê-las. Onde ele deve colocar essas instruções?",
+      "opcoes": [
+        "Em `~/.claude/CLAUDE.md`, o arquivo de instruções pessoais do usuário, que não vai para o repositório.",
+        "No `CLAUDE.md` do projeto, numa seção \"Somente para o Caio\".",
+        "No `CLAUDE.md` do projeto, numa seção \"Somente para o Caio\", para que os outros devs a ignorem.",
+        "Em `CLAUDE.local.md` na raiz do projeto, que é pessoal e fica fora do controle de versão."
+      ],
+      "correta": 3,
+      "explicacao": "A hierarquia do CLAUDE.md tem um nível exato para \"pessoal + só este projeto\": `CLAUDE.local.md` (gitignored). `~/.claude/CLAUDE.md` é pessoal porém global, o CLAUDE.md do projeto é do time, e os arquivos de settings guardam configuração, não instruções.",
+      "feedbacks": [
+        "Tentadora por ser pessoal, mas vale para todos os projetos do Caio, e ele disse que essas preferências não fazem sentido fora deste monorepo.",
+        "Vai para o git e é lido por todo o time. Depende de o modelo obedecer a um \"somente para\" em texto, e polui o contexto de todos.",
+        "Pegadinha de nomes: o arquivo é pessoal e gitignored, mas guarda configuração (permissões, hooks, env), não instruções em linguagem natural para o modelo.",
+        "Correta. `CLAUDE.local.md` é o nível pessoal e específico de um projeto: não vai para o git e não vaza para os outros projetos do Caio."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Pixelforja precisa migrar a camada de binding Lua da engine de uma biblioteca para outra. A mudança toca cerca de 60 arquivos em C++ e Lua, e há pelo menos duas estratégias válidas (adaptador temporário ou migração direta). Qual é a PRIMEIRA coisa que o dev deve fazer no Claude Code?",
+      "opcoes": [
+        "Entrar em plan mode e aprovar um plano antes de qualquer edição.",
+        "Ligar `acceptEdits` e pedir a migração direta, confiando na suíte de testes para pegar regressões em cada subsistema.",
+        "Disparar um subagent por arquivo, em paralelo, para migrar os 60 arquivos ao mesmo tempo.",
+        "Escrever primeiro uma skill `/migrar-binding` com os passos da migração para o time reutilizar."
+      ],
+      "correta": 0,
+      "explicacao": "Plan mode existe para mudanças grandes, multiarquivo, com decisão arquitetural e mais de uma abordagem válida. A primeira coisa é explorar e planejar com aprovação; a execução (até em paralelo) vem depois.",
+      "feedbacks": [
+        "Correta. Mudança multiarquivo, com decisão arquitetural e várias abordagens válidas, é o caso clássico de plan mode: explorar e desenhar antes de editar.",
+        "Tentadora pela velocidade, mas pula a decisão entre as estratégias e transforma 60 arquivos em tentativa e erro com builds de 40 minutos. Testes não substituem a escolha de abordagem.",
+        "Paralelizar antes de existir um plano espalha decisões inconsistentes por 60 arquivos (cada subagent escolhe por si). Paralelismo pode vir depois, executando um plano aprovado.",
+        "Inverte a ordem: ainda não se sabe qual estratégia usar. Skill serve para um procedimento repetível já conhecido, não para uma migração única ainda indefinida."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Pixelforja tem a skill `/auditar-shaders`, que lê centenas de arquivos de shader e produz um relatório de 20 linhas. Depois de cada uso, a conversa principal fica entupida com o conteúdo dos shaders e o Claude passa a responder pior no resto da sessão. Qual é a correção MAIS SIMPLES que resolve?",
+      "opcoes": [
+        "Adicionar `disable-model-invocation: true` ao frontmatter da skill.",
+        "Criar um subagent customizado em `.claude/agents/` para a auditoria e reescrever a skill para delegar a ele.",
+        "Adicionar `context: fork` ao frontmatter, para a skill rodar num subagent isolado e devolver só o relatório.",
+        "Instruir o time a rodar `/compact` logo depois de cada uso da skill, para resumir o conteúdo dos shaders que ficou na conversa."
+      ],
+      "correta": 2,
+      "explicacao": "`context: fork` faz a skill rodar num subagent isolado, sem o histórico da conversa, e devolve só o resultado. É a forma mais simples de tirar trabalho ruidoso da conversa principal.",
+      "feedbacks": [
+        "Tentadora por mexer no frontmatter, mas só impede o auto-carregamento pelo modelo. Quando o dev chama `/auditar-shaders`, a leitura continua acontecendo na conversa principal.",
+        "Funcionaria, mas é mais trabalho que o necessário: a própria skill já pode rodar isolada com `context: fork`. A prova premia a correção mais simples que resolve.",
+        "Correta. Com `context: fork`, a leitura pesada acontece num contexto isolado e só o resultado volta para a conversa. É uma linha de frontmatter.",
+        "Remédio reativo e manual: o contexto já foi poluído, o resumo perde detalhes e depende de cada dev lembrar. Não ataca a causa (a leitura acontecer no contexto principal)."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pixelforja existem `.claude/commands/build.md` (antigo) e `.claude/skills/build/SKILL.md` (novo), ambos versionados. Um dev edita `commands/build.md` para mudar o alvo de build, mas `/build` continua se comportando do jeito antigo. Qual é a explicação mais provável?",
+      "opcoes": [
+        "Arquivos em `.claude/commands/` foram descontinuados e não são mais lidos pelo Claude Code.",
+        "Os comandos ficam em cache e só são relidos depois que o dev reinstala o Claude Code.",
+        "Os dois definem `/build`, e nesse conflito a skill tem precedência sobre o comando.",
+        "Um comando pessoal `~/.claude/commands/build.md` sempre sobrescreve os comandos de projeto."
+      ],
+      "correta": 2,
+      "explicacao": "`.claude/commands/x.md` e `.claude/skills/x/SKILL.md` criam o mesmo `/x`. Em conflito, a skill vence. É uma pegadinha comum depois da fusão de comandos em skills.",
+      "feedbacks": [
+        "Tentadora porque os comandos foram fundidos em skills, mas `.claude/commands/` continua funcionando. O problema aqui é o conflito de nome, não a descontinuação.",
+        "Explicação inventada para o sintoma. Mesmo recarregando, `/build` resolveria para a skill, que tem precedência.",
+        "Correta. Comandos foram fundidos em skills; com o mesmo nome, a skill vence. Edite o SKILL.md ou remova a duplicata.",
+        "Mistura a ordem de prioridade (pessoal acima de projeto) com o caso apresentado: nada indica um comando pessoal, e o conflito descrito está dentro do próprio projeto."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Pixelforja quer uma skill `/release-notes` que (1) só rode quando um dev a chamar explicitamente, nunca por iniciativa do Claude, e (2) tenha acesso apenas a leitura do git e escrita do arquivo de notas. Quais campos de frontmatter atendem a esses dois requisitos? (Escolha DUAS.)",
+      "opcoes": [
+        "`disable-model-invocation: true`",
+        "`user-invocable: false`",
+        "`context: fork`",
+        "`allowed-tools` listando só as tools necessárias (comandos de leitura do git e escrita do arquivo).",
+        "`when_to_use: \"use apenas quando o usuário pedir explicitamente\"`"
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Requisito de invocação é atendido por um campo determinístico (`disable-model-invocation`), não por texto de descrição. Requisito de acesso é atendido por `allowed-tools`. `user-invocable: false` é o inverso do pedido.",
+      "feedbacks": [
+        "Correta. Impede o modelo de carregar a skill por conta própria; ela continua disponível ao usuário via `/release-notes`.",
+        "Pegadinha: faz o contrário do pedido. Esconde a skill do usuário (sai do menu `/`) e deixa só o modelo invocá-la.",
+        "Útil para isolar contexto, mas não controla quem invoca a skill nem quais tools ela usa.",
+        "Correta. Restringe as tools que a skill pode usar enquanto está ativa, atendendo ao requisito (2).",
+        "Tentadora, mas é texto que orienta o auto-carregamento, ou seja, probabilístico. Para garantir que o modelo nunca invoque, use `disable-model-invocation`."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Parte do time da Pixelforja usa outro agente de código e mantém um `AGENTS.md` detalhado. O repositório também tem um `CLAUDE.md` com instruções específicas do Claude Code. Os devs percebem que o Claude não segue nada do que está no `AGENTS.md`. Qual é a correção MAIS SIMPLES sem perder nenhum dos dois conteúdos?",
+      "opcoes": [
+        "Adicionar `@AGENTS.md` no `CLAUDE.md`, importando o conteúdo compartilhado.",
+        "Apagar o `CLAUDE.md`, já que o Claude Code lê o `AGENTS.md` quando não há CLAUDE.md.",
+        "Copiar o conteúdo do `AGENTS.md` para dentro do `CLAUDE.md`.",
+        "Mover o conteúdo do `AGENTS.md` para um arquivo em `.claude/rules/` sem frontmatter."
+      ],
+      "correta": 0,
+      "explicacao": "Com CLAUDE.md e AGENTS.md presentes, o Claude Code usa o CLAUDE.md. Para compartilhar instruções entre agentes sem duplicação, importe com `@AGENTS.md`.",
+      "feedbacks": [
+        "Correta. Com os dois arquivos presentes, o CLAUDE.md vence e o AGENTS.md não é lido sozinho. O `@import` traz o conteúdo sem duplicar.",
+        "Faz o AGENTS.md ser lido, mas perde as instruções específicas do Claude Code, o que o enunciado proíbe.",
+        "Funciona hoje, mas cria duas cópias que vão divergir na próxima edição. O import resolve sem duplicação.",
+        "Carregaria no início da sessão, mas tira o conteúdo do arquivo que o outro agente lê, e quebra o fluxo da outra parte do time."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Na Pixelforja, o `CLAUDE.md` diz em maiúsculas: \"NUNCA altere arquivos em `Assets/Binary/` e NUNCA rode `git push --force`\". Mesmo assim, numa sessão longa o Claude rodou um `git push --force` numa branch compartilhada. O que o time deve fazer?",
+      "opcoes": [
+        "Reescrever a regra no CLAUDE.md com exemplos e repeti-la num arquivo de `.claude/rules/` sem frontmatter.",
+        "Configurar um hook `PostToolUse` que detecta o `push --force` ou a edição em `Assets/Binary/` e restaura o estado anterior automaticamente.",
+        "Obrigar todos a trabalhar sempre em plan mode, aprovando cada passo manualmente.",
+        "Um hook `PreToolUse` nas settings de projeto que bloqueia esses comandos e edições antes da execução (exit 2 / `deny`)."
+      ],
+      "correta": 3,
+      "explicacao": "Instrução em prompt tem taxa de falha não nula. Para ação destrutiva ou crítica, a garantia vem de um hook `PreToolUse` que bloqueia antes da execução. `PostToolUse` é tarde demais para ações irreversíveis.",
+      "feedbacks": [
+        "Reforça o prompt, mas continua probabilístico. Já houve uma falha, e para ação destrutiva \"menos provável\" não basta.",
+        "Tentadora por ser um hook, mas `PostToolUse` roda depois que a ação aconteceu. Um force push numa branch compartilhada pode já ter afetado outras pessoas.",
+        "Gera atrito enorme e depende de atenção humana a cada aprovação. Não é enforcement, é revisão manual.",
+        "Correta. Regra crítica vai em código determinístico. Um `PreToolUse` impede a ação antes de ela acontecer, independentemente do que o modelo decidir."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Um dev da Pixelforja passou a manhã numa sessão em que o Claude analisou a fundo o pipeline de renderização (os arquivos não mudaram desde então). Agora ele quer testar duas estratégias de refatoração diferentes a partir dessa mesma análise, sem que uma tentativa contamine a outra. O que ele deve fazer?",
+      "opcoes": [
+        "Rodar `--resume <id>` em dois terminais, um para cada estratégia.",
+        "Usar `--resume <id> --fork-session` para cada estratégia, gerando dois ramos da mesma base.",
+        "Abrir duas sessões novas, uma por estratégia, e colar em cada uma um resumo detalhado da análise feita de manhã.",
+        "Continuar na mesma sessão, testar a primeira estratégia, dar `/compact` e depois testar a segunda."
+      ],
+      "correta": 1,
+      "explicacao": "Resultados de tool ainda válidos → retome. Para explorar alternativas a partir de uma base comum sem contaminação → `--fork-session`, que gera um novo ID por ramo.",
+      "feedbacks": [
+        "Tentadora, mas os dois continuariam a mesma sessão. Sem `--fork-session`, as tentativas não ficam isoladas.",
+        "Correta. `--fork-session` cria um novo ID a partir do histórico comum. Cada ramo herda a análise ainda válida e não contamina o outro.",
+        "Funciona, mas joga fora uma análise que ainda vale (os arquivos não mudaram) e o resumo perde detalhes. Sessão nova com resumo é para quando o contexto ficou desatualizado.",
+        "As duas tentativas ficam no mesmo histórico, e o resumo da primeira contamina a segunda, que é o que o dev queria evitar."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Ontem, um dev da Pixelforja deixou uma sessão do Claude Code no meio do trabalho no backend de matchmaking. Durante a noite, um colega fez merge de uma refatoração que reescreveu 30 dos arquivos que o Claude tinha lido e analisado. Qual é a MELHOR forma de continuar?",
+      "opcoes": [
+        "Usar `--resume` e continuar normalmente, já que o Claude relê os arquivos quando precisa editá-los.",
+        "Usar `--resume <id> --fork-session` para não contaminar a sessão original.",
+        "Usar `--resume` e pedir para o Claude reler todos os 30 arquivos antes de continuar.",
+        "Começar uma sessão nova, passando um resumo estruturado das decisões e conclusões que continuam válidas."
+      ],
+      "correta": 3,
+      "explicacao": "`--resume` vale quando os resultados de tool ainda são válidos. Se muita coisa mudou, comece do zero com um resumo estruturado. (Com mudanças pequenas, dá para retomar e dizer explicitamente o que mudou.)",
+      "feedbacks": [
+        "O histórico continua cheio de leituras antigas dos 30 arquivos, e o modelo pode raciocinar sobre o código velho sem perceber.",
+        "`--fork-session` isola ramos, mas o fork herda as mesmas leituras desatualizadas. Não resolve o problema de contexto velho.",
+        "Atualiza o código, mas deixa no contexto as versões antigas e novas lado a lado, inflando a janela e abrindo espaço para confusão. Com tanta mudança, a sessão nova é mais limpa.",
+        "Correta. Com boa parte dos resultados de tool desatualizada, o histórico velho atrapalha mais do que ajuda. Uma sessão nova com resumo estruturado parte de uma base limpa."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "A Pixelforja usa o Claude para gerar funções Lua de comportamento de NPCs. O tech lead escreveu três parágrafos descrevendo o estilo desejado (nomes de estados, estrutura de transições, como logar), mas o código gerado continua interpretando a descrição de formas diferentes a cada vez. Qual mudança tende a dar o MAIOR ganho de consistência?",
+      "opcoes": [
+        "Expandir a descrição em prosa, detalhando cada convenção, os casos especiais e as exceções que o time já identificou.",
+        "Incluir 2–3 exemplos concretos de entrada (especificação do NPC) e saída (função Lua no estilo esperado).",
+        "Subir o `effort` para o máximo, para o modelo pensar mais em cada função.",
+        "Adicionar uma segunda chamada do Claude que revisa cada função e corrige o estilo."
+      ],
+      "correta": 1,
+      "explicacao": "Para formato e estilo, 2–3 exemplos concretos e variados de entrada e saída batem instrução em prosa. É a primeira técnica de refinamento iterativo antes de adicionar modelos extras.",
+      "feedbacks": [
+        "Mais prosa tende a gerar mais formas de interpretar. O problema é a ambiguidade da descrição, não a falta de texto.",
+        "Correta. Exemplos concretos de entrada e saída mostram o padrão sem ambiguidade e funcionam melhor que prosa para fixar formato e estilo.",
+        "Mais esforço não resolve uma especificação ambígua: o modelo pensa mais sobre uma descrição que continua permitindo várias leituras.",
+        "Adiciona custo e latência para corrigir um sintoma. O revisor teria o mesmo problema: a especificação de estilo continua ambígua."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "Na Pixelforja, o Claude revisa o código Lua gerado e marca problemas na categoria \"código pouco idiomático\". Essa categoria tem tantos falsos positivos que os devs passaram a ignorar também os alertas das categorias boas (vazamento de memória, acesso nil). O prompt diz apenas \"aponte código pouco idiomático, use seu bom senso\". Qual é a MELHOR sequência de ação?",
+      "opcoes": [
+        "Pedir ao modelo um score de confiança e mostrar só os achados com confiança acima de 0,8.",
+        "Trocar \"use seu bom senso\" por \"seja conservador e só aponte quando tiver certeza\".",
+        "Desligar a categoria ruidosa, reescrever o critério com o que conta, o que não conta e casos de fronteira, e religá-la após medir.",
+        "Manter a categoria e adicionar um segundo modelo que filtra os falsos positivos antes de os alertas chegarem aos devs, preservando a cobertura."
+      ],
+      "correta": 2,
+      "explicacao": "Critério vago (\"bom senso\", \"conservador\") gera inconsistência. Defina o que conta, o que não conta e exemplos de fronteira, e desligue a categoria ruidosa enquanto refina, para não contaminar a confiança nas outras.",
+      "feedbacks": [
+        "Confiança autodeclarada é mal calibrada. O problema é o critério vago, e um limiar sobre um número não calibrado só esconde o sintoma.",
+        "Troca uma instrução vaga por outra. \"Conservador\" continua sem dizer o que conta e o que não conta, então o resultado segue inconsistente.",
+        "Correta. A categoria ruidosa corrói a confiança nas boas. Primeiro se estanca o dano, depois se refina com critério explícito e só então se religa.",
+        "Mais complexo que o necessário e mantém o critério vago na origem. A correção mais simples é tornar o critério explícito."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D2",
+      "pergunta": "Na Pixelforja, o Claude tenta trocar `return null;` por `return Result.Empty;` em um único método de um arquivo C# gerado de 3.000 linhas, mas a tool `Edit` falha dizendo que o trecho não é único: a mesma linha aparece 14 vezes no arquivo. O que o Claude deve fazer?",
+      "opcoes": [
+        "Ampliar o `old_string` com linhas vizinhas daquele método até o trecho ficar único e repetir o `Edit`.",
+        "Repetir o `Edit` com `replace_all: true`.",
+        "Usar `Bash` com `sed` para fazer a substituição direto no arquivo, sem depender da unicidade do `Edit`.",
+        "Usar `Write` para regravar o arquivo inteiro já com a alteração, a partir do conteúdo que o Claude lembra do arquivo."
+      ],
+      "correta": 0,
+      "explicacao": "`Edit` falha com trecho não único. A correção é ampliar o trecho até ele ser único (ou ler o arquivo e reescrever com cuidado). `replace_all` e `sed` mudam ocorrências demais.",
+      "feedbacks": [
+        "Correta. `Edit` exige um trecho único. Ampliar o contexto identifica exatamente a ocorrência certa sem afetar as outras.",
+        "Tentadora porque faz o erro sumir, mas altera as 14 ocorrências, e só uma deveria mudar. Troca um erro visível por um bug silencioso.",
+        "Contorna a proteção de unicidade do `Edit`. Um `sed` sem endereço preciso também altera as 14 ocorrências ou exige uma regex frágil.",
+        "Num arquivo de 3.000 linhas, regravar de memória arrisca perder ou alterar trechos. Se for regravar, é preciso ler o arquivo inteiro antes; aqui ampliar o trecho é mais simples e seguro."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D5",
+      "pergunta": "Depois de três horas numa sessão da Pixelforja otimizando o sistema de ECS, o Claude passou a responder com \"padrões típicos de ECS\" em vez de citar as classes do projeto, e esqueceu decisões tomadas no início (ex.: não usar alocação no hot path). Qual é a MELHOR ação?",
+      "opcoes": [
+        "Registrar decisões e descobertas num arquivo de rascunho e rodar `/compact` proativo com resumo estruturado.",
+        "Trocar para um modelo com janela de 1M tokens, para que a sessão inteira caiba sem precisar compactar nada.",
+        "Repetir as decisões importantes no começo de cada nova mensagem, para que fiquem sempre recentes no contexto.",
+        "Rodar `/clear` e recomeçar sem nenhum contexto anterior."
+      ],
+      "correta": 0,
+      "explicacao": "Sinais de degradação (respostas genéricas, esquecer decisões) pedem estado persistido em arquivo de rascunho e `/compact` proativo com resumo estruturado, ou sessão nova a partir desse arquivo.",
+      "feedbacks": [
+        "Correta. Arquivo de rascunho sobrevive à compressão, e compactar proativamente com resumo estruturado ataca a degradação de contexto longo.",
+        "Janela maior não elimina o \"lost in the middle\", custa mais a cada turno e só adia o problema.",
+        "Ajuda pontualmente, mas é manual, propenso a esquecimento e infla cada turno. Não organiza o estado de forma persistente.",
+        "Limpa a degradação, mas joga fora todas as descobertas e decisões. Faltou persistir o estado antes de limpar."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D5",
+      "pergunta": "Num trabalho longo de otimização na Pixelforja, depois de um `/compact` o Claude perdeu números exatos que eram critério de aceite (orçamento de 16,6 ms por frame, 4 MB de alocação por cena) e os IDs dos tickets de bug relacionados. Quais medidas evitam que isso se repita? (Escolha DUAS.)",
+      "opcoes": [
+        "Pedir no chat: \"lembre-se sempre de 16,6 ms e 4 MB\".",
+        "Registrar esses valores e IDs num arquivo persistente (ex.: notas da tarefa referenciadas no CLAUDE.md).",
+        "Desativar a compactação automática e nunca compactar a sessão.",
+        "Aumentar o `max_tokens` das respostas para que o resumo gerado na compactação tenha espaço para mais detalhes numéricos.",
+        "Passar instruções ao `/compact` pedindo explicitamente para preservar os números de orçamento e os IDs de ticket."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Resumo perde valores exatos, IDs e números. Proteja-os fora do histórico (arquivo, CLAUDE.md, bloco de fatos) e, ao compactar, diga explicitamente o que preservar.",
+      "feedbacks": [
+        "A própria mensagem vai para o histórico e pode ser resumida na próxima compactação, exatamente o que aconteceu.",
+        "Correta. O que não pode se perder vai para arquivo/memória. Arquivos e o CLAUDE.md sobrevivem à compactação, o scrollback não.",
+        "Troca perda de detalhe por degradação de contexto longo e eventual estouro da janela. Não é solução.",
+        "`max_tokens` limita a saída de cada resposta, não decide o que sobrevive à compactação. Ataca o mecanismo errado.",
+        "Correta. `/compact` aceita instruções de foco, e pedir a preservação de valores exatos reduz a perda que o resumo costuma causar."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a Verdana Insights, uma consultoria de ESG, produz relatórios de due diligence sobre as alegações de sustentabilidade de empresas listadas. O sistema é multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, de análise de documentos (relatórios de sustentabilidade em PDF), de consulta a bases de emissões e de síntese. Restrições: toda afirmação do relatório precisa ser rastreável até a fonte (clientes auditam), relatórios saem em até 48h e o custo por relatório é monitorado. Para a pergunta \"avalie as práticas ESG da mineradora Rocha Alta\", o relatório final cobriu emissões e uso de água em detalhe, mas não disse nada sobre governança nem sobre impactos em comunidades. Os logs mostram que todos os subagents concluíram suas tarefas sem erro, e a síntese usou tudo o que recebeu. Qual é a causa raiz mais provável?",
+      "opcoes": [
+        "O subagent de busca na web tem descrições de tools ruins e por isso não encontrou fontes sobre governança e comunidades.",
+        "O subagent de síntese descartou as partes sociais e de governança por falta de espaço na janela de contexto.",
+        "Decomposição estreita demais pelo coordenador (só subtarefas ambientais), sem checagem explícita de cobertura.",
+        "Os subagents de análise rodaram em sequência, e o prazo acabou antes de chegar a governança."
+      ],
+      "correta": 2,
+      "explicacao": "Quando todos os subagents executam bem e ainda falta cobertura, o problema está na decomposição do coordenador. A correção é decompor de forma mais ampla e checar a cobertura explicitamente.",
+      "feedbacks": [
+        "Tentadora, mas os logs mostram que nenhum subagent recebeu tarefa sobre governança. Não dá para culpar a busca por algo que não foi pedido.",
+        "O enunciado diz que a síntese usou tudo o que recebeu. O conteúdo de S e G nunca chegou até ela.",
+        "Correta. Subagents bem-sucedidos e síntese completa apontam para a decomposição: as subtarefas de S e G nunca foram criadas.",
+        "Nada nos logs indica tempo esgotado: todos concluíram. Inventar uma causa operacional desvia da evidência."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "No sistema da Verdana, o coordenador dispara 4 subagents de busca independentes (um por fonte), mas o trace mostra que eles rodam um depois do outro, e a etapa leva quatro vezes mais do que deveria. Qual é a correção?",
+      "opcoes": [
+        "Aumentar o limite de subagents concorrentes nas configurações do runtime.",
+        "Emitir as 4 chamadas da tool `Agent` na mesma resposta do coordenador.",
+        "Mover as buscas para a Batch API, que processa as requisições em paralelo.",
+        "Juntar os 4 subagents num único subagent com todas as tools de busca."
+      ],
+      "correta": 1,
+      "explicacao": "Subagents em paralelo = vários `tool_use` de `Agent` na mesma resposta do coordenador. Turnos separados = execução sequencial.",
+      "feedbacks": [
+        "Tentadora, mas o gargalo não é o limite: o coordenador só pede um subagent por vez, então não há nada para rodar em paralelo.",
+        "Correta. Paralelismo de subagents vem de várias chamadas `Agent` na mesma resposta. Uma por turno é, por definição, sequencial.",
+        "Batch tem janela de até 24h, sem SLA, e não suporta loop multi-turn de tools. Piora a latência de um passo interativo.",
+        "Elimina o paralelismo em vez de habilitá-lo, e infla o número de tools de um agente só."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Na Verdana, o coordenador delega ao subagent de análise de documentos com o prompt \"analise o relatório conforme discutimos e diga se as metas são críveis\". O subagent devolve um texto genérico (\"a empresa parece ter metas ambiciosas\"). O contexto do coordenador já tem 120k tokens de resultados de outros subagents. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Trocar o subagent por um fork, que herda a conversa inteira do coordenador e assim entende o que foi \"discutido\" sem precisar repetir nada.",
+        "Dar ao subagent de análise acesso às tools de busca na web para ele descobrir sozinho o contexto.",
+        "Aumentar o `max_tokens` do subagent para ele produzir uma análise mais longa e detalhada.",
+        "Passar explicitamente no prompt a empresa, o documento, o período, as metas a verificar e os critérios, pedindo saída estruturada."
+      ],
+      "correta": 3,
+      "explicacao": "O contexto do subagent não herda o histórico do coordenador. \"Conforme discutimos\" falha. Para tarefa delimitada, passe tudo explicitamente. Fork é para quando a tarefa realmente precisa da conversa inteira.",
+      "feedbacks": [
+        "Tentadora, porque o fork resolve a falta de contexto. Mas leva 120k tokens de resultados de outros subagents, que não importam para esta análise e diluem a atenção. Para tarefa delimitada e bem especificável, subagent fresco com prompt explícito é melhor.",
+        "Faz o subagent adivinhar o que o coordenador já sabe, gastando chamadas e arriscando analisar a coisa errada.",
+        "Uma resposta mais longa sem contexto continua genérica. O problema é a entrada, não o tamanho da saída.",
+        "Correta. Subagent fresco tem contexto isolado: tudo o que ele precisa tem que ir explícito no prompt. Para uma tarefa delimitada, um prompt completo é o caminho."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Uma analista da Verdana passou duas horas no Claude Code construindo com o modelo um entendimento detalhado das restrições de um cliente (exclusões setoriais, metodologia preferida, ressalvas jurídicas). Agora ela quer uma exploração lateral (comparar três frameworks de reporte) que depende de todas essas nuances. Ela quer receber só a conclusão de volta na conversa principal, sem poluí-la, e com o menor custo possível. O que é mais adequado?",
+      "opcoes": [
+        "Criar um subagent fresco e escrever no prompt um resumo das restrições do cliente construídas na sessão.",
+        "Usar um fork, que herda a conversa, reaproveita o cache de prompt e devolve só o resultado.",
+        "Abrir outro terminal com `--resume <id> --fork-session` e fazer a comparação nesse ramo separado da sessão.",
+        "Fazer a comparação na própria conversa principal e rodar `/compact` no fim."
+      ],
+      "correta": 1,
+      "explicacao": "Fork herda a conversa toda e compartilha o cache: é o certo quando a subtarefa precisa do contexto acumulado. Subagent fresco é para tarefa delimitada e especificável no prompt. `--fork-session` cria um ramo de sessão separado, cujo resultado não volta sozinho.",
+      "feedbacks": [
+        "É a escolha certa para tarefa bem delimitada, mas aqui o valor está nas nuances que um resumo perde. Além disso, o subagent fresco tem cache separado, então custa mais.",
+        "Correta. A tarefa depende das nuances acumuladas, então herdar a conversa é o ponto. O fork compartilha o cache (mais barato) e só a conclusão volta.",
+        "Tentadora (também herda o histórico e não contamina), mas a conclusão fica em outra sessão e não volta para a conversa principal, como a analista queria.",
+        "Polui a conversa principal com o trabalho lateral, e o `/compact` resume, com perdas, também o que foi construído antes."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Para economizar latência na Verdana, um engenheiro propõe que o subagent de bases de emissões envie os números direto para o subagent de síntese, sem passar pelo coordenador. Qual é a MELHOR avaliação?",
+      "opcoes": [
+        "Manter tudo passando pelo coordenador, que trata erros, controla o que chega à síntese e redelega as lacunas encontradas.",
+        "Aceitar, desde que os dois subagents gravem num arquivo de memória compartilhado que o coordenador possa auditar depois.",
+        "Aceitar e criar um barramento de mensagens para que qualquer subagent possa falar com qualquer outro.",
+        "Fundir os subagents de emissões e de síntese num único agente, eliminando a passagem de dados."
+      ],
+      "correta": 0,
+      "explicacao": "Em hub-and-spoke, subagents não conversam diretamente. O coordenador roteia, agrega, trata erros e redelega. Comunicação direta é anti-padrão mesmo quando parece mais rápida.",
+      "feedbacks": [
+        "Correta. Hub-and-spoke: o coordenador roteia toda a comunicação, o que dá observabilidade, tratamento de erro consistente e controle de qualidade.",
+        "Tentadora (parece manter rastreabilidade), mas a auditoria só vem depois do fato: o coordenador perde a chance de tratar erros e lacunas antes da síntese.",
+        "Generaliza o anti-padrão: comunicação direta entre subagents, mais complexidade e nenhum ponto central de tratamento de erro.",
+        "Mistura responsabilidades e aumenta as tools desse agente, e o ganho de latência de uma passagem pelo coordenador raramente justifica isso."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "A Verdana tem dois fluxos: (1) o boletim mensal de emissões de 50 empresas, sempre com os mesmos passos (coletar → normalizar unidades → comparar com o mês anterior → formatar); e (2) a investigação de uma denúncia de greenwashing, em que o próximo passo depende do que for encontrado (um documento pode levar a uma subsidiária, que leva a um processo judicial...). Qual combinação de estratégias é a mais adequada?",
+      "opcoes": [
+        "Decomposição dinâmica para os dois, pela flexibilidade.",
+        "Prompt chaining para os dois, porque passos fixos são mais auditáveis.",
+        "Decomposição dinâmica para o boletim e prompt chaining para a investigação.",
+        "Prompt chaining no boletim e decomposição dinâmica na investigação."
+      ],
+      "correta": 3,
+      "explicacao": "Chaining = passos fixos e sequenciais conhecidos de antemão. Decomposição dinâmica = as subtarefas surgem das descobertas (investigação aberta).",
+      "feedbacks": [
+        "Flexibilidade num fluxo fixo só adiciona variabilidade e custo. O boletim fica menos previsível sem ganho nenhum.",
+        "Auditabilidade é desejável, mas na investigação os passos não são conhecidos de antemão. Uma cadeia fixa não consegue seguir as pistas.",
+        "Inverte as duas: põe adaptatividade onde os passos são fixos e rigidez onde eles surgem das descobertas.",
+        "Correta. Passos fixos e conhecidos de antemão pedem chaining. Investigação aberta, em que as subtarefas surgem das descobertas, pede decomposição dinâmica."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Na Verdana, o coordenador recebe a síntese de um relatório e nota que não há dados de emissões de 2022 nem fonte independente para a meta de net zero. Quais comportamentos do coordenador estão corretos? (Escolha DUAS.)",
+      "opcoes": [
+        "Rodar o pipeline inteiro de novo, com o dobro de subagents e fontes, para aumentar a chance de cobrir todas as lacunas de uma vez.",
+        "Pedir ao subagent de síntese que estime 2022 interpolando 2021 e 2023, marcando o valor como \"estimado\" no relatório.",
+        "Avaliar a síntese contra critérios explícitos de cobertura e listar as lacunas concretas.",
+        "Disparar uma segunda rodada direcionada só para as lacunas e ressintetizar.",
+        "Publicar o relatório como está, já que a síntese não reportou erro."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Refinamento iterativo: roda os subagents → avalia → identifica lacunas → segunda rodada direcionada → sintetiza. Nada de pipeline inteiro de novo nem de preencher lacuna com estimativa.",
+      "feedbacks": [
+        "Custo e tempo multiplicados para refazer o que já estava bom. Acione só os subagents que a lacuna precisa.",
+        "Tentadora (a lacuna fica \"preenchida\" e rotulada), mas fabrica um dado num relatório que o cliente audita. Lacuna sem fonte deve ser buscada ou declarada.",
+        "Correta. Refinamento iterativo começa por avaliar e identificar as lacunas de forma explícita.",
+        "Correta. A segunda rodada é direcionada: só os subagents que as lacunas exigem.",
+        "Ausência de erro não é cobertura completa. O coordenador existe justamente para detectar lacunas e redelegar."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Num relatório da Verdana sobre a empresa Litoral Têxtil, o texto final dizia \"nenhuma controvérsia ambiental encontrada\". Depois se descobriu que a tool de busca de notícias tinha dado timeout e devolvido `{\"results\": []}` como sucesso. Qual é a correção MAIS adequada na tool?",
+      "opcoes": [
+        "Fazer o coordenador repetir automaticamente, até três vezes, qualquer busca que volte vazia antes de aceitar o resultado como verdadeiro.",
+        "Adicionar ao prompt da síntese: \"se não houver resultados, escreva que não há dados disponíveis\".",
+        "Devolver erro estruturado no timeout (categoria transitória, retentável, consulta tentada), reservando o vazio para \"nada encontrado\".",
+        "Aumentar o timeout da tool de busca para 60 segundos."
+      ],
+      "correta": 2,
+      "explicacao": "Supressão silenciosa (erro virando lista vazia como sucesso) é anti-padrão. Erros devem ser estruturados e retentáveis quando transitórios. 200 com array vazio só quando a busca de fato rodou.",
+      "feedbacks": [
+        "Trata o sintoma no lugar errado: gasta chamadas repetindo buscas que legitimamente não acharam nada e ainda não distingue falha de resultado.",
+        "Melhora o texto, mas continua sem saber que a busca falhou. \"Sem dados\" e \"nada encontrado\" ainda se confundem.",
+        "Correta. Vazio é informação (\"nada encontrado\"); timeout é a busca que não rodou. A tool precisa distinguir os dois de forma estruturada.",
+        "Reduz a frequência, mas o próximo timeout continuará virando um \"nada encontrado\" silencioso. A supressão do erro permanece."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Na Verdana, o subagent de síntese recebeu as mesmas 16 tools do sistema (busca, fetch, consulta a bases, formatação de citações etc.). Com frequência ele dispara novas buscas no meio da síntese e às vezes usa a tool errada para formatar citações. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Reescrever as descrições das 16 tools para deixar claro quando cada uma deve ser usada e em que difere das parecidas.",
+        "Usar `tool_choice: none` durante toda a etapa de síntese, para impedir que ela dispare novas buscas no meio do texto.",
+        "Dar à síntese só as poucas tools do papel dela, deixando busca e consulta com os subagents especializados.",
+        "Ativar tool search com `defer_loading` nas 16 tools da síntese."
+      ],
+      "correta": 2,
+      "explicacao": "Tools demais e fora do papel degradam a seleção. Restrinja cada subagent às tools da função dele (4–5); melhorar descrições sozinho não basta.",
+      "feedbacks": [
+        "Ajuda, mas não basta: o problema é o agente ter tools que não condizem com o papel dele. Melhorar descrições sozinho não resolve tools demais.",
+        "Tentadora (ninguém busca se nenhuma tool pode ser chamada), mas também bloqueia as tools de que a síntese precisa, como a formatação de citações.",
+        "Correta. Com 4–5 tools por agente no momento da decisão, a seleção melhora. Se a síntese encontrar lacunas, ela as reporta ao coordenador em vez de buscar por conta própria.",
+        "Tool search serve para catálogos grandes. Aqui o problema é de papel, não de tamanho: deferidas ou não, a síntese continua com acesso a tools de busca."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Na Verdana, o subagent de bases de emissões recebe dois erros na mesma execução: `429 Too Many Requests` de uma base pública e `403 token expirado` da base paga. Qual tratamento está correto? (Escolha DUAS.)",
+      "opcoes": [
+        "Para o 429, o próprio subagent tenta de novo com backoff e só propaga ao coordenador se continuar falhando.",
+        "Para o 403, tentar de novo com backoff exponencial até 5 vezes antes de desistir, já que tokens podem ser renovados.",
+        "Para o 403, propagar ao coordenador um erro estruturado de permissão, não retentável, para escalonamento.",
+        "Propagar os dois erros imediatamente ao coordenador, sem tentar nada localmente.",
+        "Tratar os dois como \"sem dados\" e seguir com o relatório, para não atrasar a entrega."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "Transitório (429, timeout) → retry local com backoff. Permissão (403, token expirado) → não retentável, propague estruturado para escalonamento. Nunca silencie.",
+      "feedbacks": [
+        "Correta. Rate limit é transitório e retentável. A recuperação local evita incomodar o coordenador com o que se resolve sozinho.",
+        "Erro de permissão não é transitório: as 5 tentativas vão falhar igual, gastando tempo e possivelmente acionando bloqueios.",
+        "Correta. Token expirado é erro de permissão: repetir não adianta, então ele deve subir com contexto para alguém resolver.",
+        "Joga no coordenador um transitório que o subagent resolveria com backoff. A recuperação local é responsabilidade do subagent.",
+        "Supressão silenciosa: o relatório sairia dizendo que não há dados quando, na verdade, a consulta falhou."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Para a mesma métrica (emissões de escopo 1 de 2023 da Rocha Alta), o relatório de sustentabilidade da empresa diz 1,2 Mt CO2e e a base do regulador diz 1,5 Mt CO2e. Como a síntese da Verdana deve tratar isso?",
+      "opcoes": [
+        "Usar o valor do regulador, por ser a fonte oficial e independente, e citar só essa fonte no relatório.",
+        "Reportar a média das duas, 1,35 Mt CO2e, citando as duas fontes numa nota de rodapé.",
+        "Usar o valor publicado mais recentemente, assumindo que corrige o anterior.",
+        "Mostrar os dois valores com fonte e data, rotulando o dado como contestado."
+      ],
+      "correta": 3,
+      "explicacao": "Conflito entre fontes: anote os valores divergentes com as fontes e rotule como contestado. Não escolha um em silêncio nem tire média.",
+      "feedbacks": [
+        "Tentadora (a fonte oficial costuma ser mais confiável), mas descarta o conflito em silêncio. A divergência entre o que a empresa declara e o regulador é justamente o achado de due diligence.",
+        "Média cria um número que nenhuma fonte afirma. Citar as duas fontes não torna o valor rastreável.",
+        "Assume uma correção sem evidência. Data de publicação não resolve um conflito para o mesmo período.",
+        "Correta. Conflito entre fontes é anotado com os valores divergentes e as fontes, sem escolher um em silêncio. O cliente audita e precisa ver a divergência."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "A síntese da Verdana passou a acusar \"contradição\" entre um subagent que reportou 2,1 Mt de emissões e outro que reportou 1,8 Mt para a mesma empresa. Investigando, a equipe viu que eram números de 2021 e de 2023, mas os subagents devolvem só texto corrido (\"a empresa emite 2,1 Mt\"). Qual é a correção na origem?",
+      "opcoes": [
+        "Fazer os subagents devolverem achados estruturados com valor, período de referência, data de publicação e fonte.",
+        "Instruir a síntese a ignorar diferenças menores que 20% entre fontes, tratando-as como variação normal de metodologia.",
+        "Deduplicar os achados na síntese, mantendo sempre o mais recente.",
+        "Enviar toda \"contradição\" detectada para revisão humana antes da publicação."
+      ],
+      "correta": 0,
+      "explicacao": "Dados temporais precisam de \"dados de\", publicação e coleta. Números de períodos diferentes não são contradição. Passagem estruturada separa conteúdo de metadados para preservar a proveniência.",
+      "feedbacks": [
+        "Correta. Com o período explícito, a síntese vê que são anos diferentes (não é contradição), e a atribuição sobrevive até o relatório.",
+        "Esconde conflitos reais pequenos e não resolve a causa: a síntese continua sem saber de que período é cada número.",
+        "Joga fora a série histórica, que é informação útil, e continua sem metadados para distinguir conflito real de período diferente.",
+        "Revisão humana é cara e aqui trata um falso alarme criado pela falta de metadados. Corrija a origem primeiro."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "O coordenador da Verdana agrega as saídas de 12 subagents (cerca de 8k tokens cada, em texto corrido) antes da síntese. Os relatórios finais vêm omitindo achados que estavam nas saídas dos subagents do meio da lista. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Trocar para um modelo com janela de 1M tokens.",
+        "Subagents devolvem achados condensados e estruturados; a síntese recebe cabeçalhos por tema e os achados-chave no início.",
+        "Adicionar ao prompt da síntese: \"leia com atenção todas as seções, inclusive as do meio, antes de concluir\".",
+        "Rodar a síntese duas vezes, com as saídas dos subagents em ordem invertida, e mesclar os dois resultados num único relatório final."
+      ],
+      "correta": 1,
+      "explicacao": "Lost in the middle: corte o volume (só os campos relevantes), ponha os achados-chave no início e use cabeçalhos de seção. Janela maior não resolve.",
+      "feedbacks": [
+        "A entrada já cabe na janela. O problema é a atenção aos trechos do meio, que piora com mais volume, não melhora.",
+        "Correta. Isso ataca o \"lost in the middle\": menos volume, achados-chave no início e estrutura com cabeçalhos.",
+        "Instrução genérica não muda como a atenção se distribui num contexto longo e desorganizado.",
+        "Dobra o custo e cria um problema novo de mescla e conflito. Não ataca o volume nem a falta de estrutura."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "Na Verdana, a síntese rotula as afirmações com níveis de certeza, mas de forma inconsistente: uma afirmação sustentada só pelo próprio relatório da empresa às vezes sai como \"alta certeza\". O prompt diz \"classifique a certeza de cada afirmação conforme seu julgamento\". Qual é a MELHOR correção?",
+      "opcoes": [
+        "Pedir ao modelo um score numérico de 0 a 1 para cada afirmação e mapear faixas desse score para os rótulos.",
+        "Zerar a `temperature` para tornar a classificação determinística.",
+        "Adicionar um segundo modelo que reclassifica a certeza de cada afirmação antes de o relatório seguir para o cliente final.",
+        "Definir critérios explícitos por rótulo (ex.: consolidado = 2+ fontes independentes), com exemplos de fronteira."
+      ],
+      "correta": 3,
+      "explicacao": "Critérios explícitos (o que conta, o que não conta, exemplos de fronteira) batem \"use seu julgamento\" e scores autodeclarados. É a correção mais simples antes de adicionar modelos.",
+      "feedbacks": [
+        "Troca um julgamento vago por um número autodeclarado e mal calibrado. O critério continua indefinido.",
+        "Ser determinístico não é ser correto: o mesmo critério vago produziria o mesmo erro sempre. E em modelos novos `temperature` pode nem ser aceita.",
+        "Mais complexo e com o mesmo problema de raiz: ninguém definiu o que é cada nível. Critério explícito vem antes de \"um modelo checando outro\".",
+        "Correta. Trocar \"seu julgamento\" por critérios explícitos do que conta, do que não conta e dos casos de fronteira torna a rotulagem consistente."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "Os subagents da Verdana devolviam achados chamando a tool `reportar_achados` com `tool_choice: {\"type\":\"tool\",\"name\":\"reportar_achados\"}`. Ao migrar para um modelo mais novo, essas requisições passaram a retornar HTTP 400. O objetivo do forçamento era só garantir a saída no formato do schema. Quais alternativas resolvem? (Escolha DUAS.)",
+      "opcoes": [
+        "Trocar para `tool_choice: any`, que obriga o modelo a chamar alguma tool sem nomear qual, e manter só `reportar_achados` declarada.",
+        "Usar structured outputs (`output_config.format` com `json_schema`) para a resposta final do subagent.",
+        "Fazer prefill da resposta do assistant com `{` para forçar a saída em JSON.",
+        "Usar `tool_choice: auto`, com instrução explícita nomeando a tool `reportar_achados` e `strict: true` na definição dela.",
+        "Remover a tool e pedir no system prompt \"responda apenas em JSON válido\"."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Em modelos novos, `any` e `tool` forçado retornam 400 [volátil, cheque as capabilities do modelo]. Substitutos: structured outputs, ou `auto` + instrução nomeando a tool + `strict: true`. Prefill também retorna 400.",
+      "feedbacks": [
+        "Pegadinha: nos modelos novos, `any` também retorna 400, assim como o `tool` forçado.",
+        "Correta. Quando o forçamento existia só para obter JSON no formato do schema, structured outputs é o substituto direto em modelos novos.",
+        "Prefill do assistant também retorna 400 nos modelos novos. A recomendação é usar structured outputs.",
+        "Correta. É a alternativa indicada para modelos que recusam o forçamento: a instrução direciona a chamada e o `strict` garante a conformidade da entrada.",
+        "Volta ao texto livre: JSON malformado, campos faltando e tipos errados. Perde a garantia de schema que era o objetivo."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "Cenário: a Corrente Energia, uma distribuidora de energia elétrica, tem um time de plataforma que usa o Claude Code e um assistente interno (construído com o Agent SDK) para acelerar devs num sistema legado de faturamento com cerca de 2 milhões de linhas em C# e integrações. Servidores MCP dão acesso ao Jira, ao Grafana e a uma réplica somente leitura do banco de clientes. Restrições: dados pessoais de clientes (CPF, endereço) não podem aparecer em sessões, segredos não podem ir para o git, e o time quer reduzir o tempo de onboarding de devs novos. Um dev recém-chegado pergunta ao Claude Code \"como é calculada a tarifa com bandeira vermelha?\". O Claude começa a ler diretórios inteiros do módulo de faturamento, e o contexto enche antes de qualquer resposta. Qual estratégia de exploração o Claude deveria seguir?",
+      "opcoes": [
+        "Usar Glob para listar todos os arquivos `*.cs` do módulo de faturamento e lê-los em ordem alfabética.",
+        "Trocar para um modelo com janela de 1M tokens e carregar o módulo inteiro de uma vez.",
+        "Grep pelos pontos de entrada prováveis (ex.: \"CalcularTarifa\"), ler o que encontrar e seguir imports com novos Greps.",
+        "Pedir primeiro que o Claude gere um documento de arquitetura do sistema inteiro e só depois responder à pergunta do dev."
+      ],
+      "correta": 2,
+      "explicacao": "Exploração de codebase: grep pelos pontos de entrada → lê → segue imports com grep → lê. Ler tudo de antemão (ou carregar tudo numa janela gigante) é o anti-padrão.",
+      "feedbacks": [
+        "É uma versão organizada do anti-padrão de ler tudo de antemão. Glob acha arquivos por nome, não por conteúdo relevante.",
+        "Caro, sofre de \"lost in the middle\" e mesmo assim não cabe 2 milhões de linhas. Volume não substitui busca dirigida.",
+        "Correta. Grep → Read → seguir imports com Grep → Read: entendimento incremental gastando contexto só com o que importa.",
+        "Gasta horas e contexto num artefato amplo para responder a uma pergunta pontual. Inverte a ordem da exploração dirigida."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "Na Corrente Energia, dois servidores MCP expõem tools parecidas: `search_logs` (Grafana Loki, \"busca logs\") e `query_logs` (plataforma de auditoria, \"consulta logs\"). O Claude frequentemente procura trilha de auditoria de faturas no Loki e erros de aplicação na auditoria. Qual é a correção MAIS SIMPLES?",
+      "opcoes": [
+        "Criar um classificador que lê o pedido do dev e decide para qual servidor MCP encaminhar antes de o Claude escolher a tool.",
+        "Renomear e redescrever as tools para separar os propósitos, dizendo quando usar cada uma e em que diferem.",
+        "Desconectar o servidor de auditoria, deixando só o Loki, para eliminar de vez a ambiguidade entre as tools.",
+        "Instruir no CLAUDE.md: \"na dúvida, chame as duas tools e compare\"."
+      ],
+      "correta": 1,
+      "explicacao": "Tools sobrepostas com descrições quase iguais causam roteamento errado. Primeira correção: renomeie e descreva para separar os propósitos (ou funda as tools). Classificador vem depois, se ainda for preciso.",
+      "feedbacks": [
+        "Adiciona um componente para resolver o que uma descrição melhor resolve. A prova premia a correção mais simples.",
+        "Correta. A descrição é o critério de seleção. Separar propósitos, com \"quando usar\" e \"em que difere\", resolve o roteamento errado entre tools sobrepostas.",
+        "Acaba com a ambiguidade perdendo uma capacidade necessária: as trilhas de auditoria deixam de ser acessíveis.",
+        "Dobra as chamadas e o consumo de contexto, e ainda deixa o modelo decidir com descrições que não explicam a diferença."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "O time da Corrente Energia está organizando os escopos de instalação dos servidores MCP no Claude Code. Quais afirmações estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "O escopo local de MCP é gravado em `.claude/settings.local.json`, o arquivo pessoal e gitignored do projeto.",
+        "O escopo user grava os servidores num `.mcp.json` na home do usuário, valendo para todos os projetos.",
+        "Um servidor adicionado com escopo local fica registrado em `~/.claude.json`, vale só para este projeto e não é compartilhado com o time.",
+        "Um servidor declarado no `.mcp.json` do projeto pode sobrescrever a configuração de um servidor imposto pelo escopo managed.",
+        "Servidores declarados no `.mcp.json` do projeto pedem aprovação do usuário antes de serem usados numa sessão interativa."
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Escopos MCP: local (padrão, pessoal, este projeto, `~/.claude.json`) · project (`.mcp.json`, versionado, exige aprovação) · user (todos os seus projetos, `~/.claude.json`) · managed (organização).",
+      "feedbacks": [
+        "Pegadinha clássica: o nome \"local\" engana. O escopo local do MCP fica em `~/.claude.json`, não no `settings.local.json`.",
+        "O escopo user também fica em `~/.claude.json`. O `.mcp.json` é o arquivo do escopo project, na raiz do repositório.",
+        "Correta. O escopo local (o padrão) é pessoal e específico do projeto, e fica em `~/.claude.json`.",
+        "Managed é a configuração da organização, empurrada pelo admin. O projeto não sobrepõe o que a política gerenciada impõe.",
+        "Correta. Como chegam pelo git, os servidores de projeto exigem aprovação. É uma proteção contra servidores inseridos no repositório."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "O assistente interno da Corrente Energia (Agent SDK) foi conectado a 7 servidores MCP, somando cerca de 120 tools e 60k tokens de definições. O custo por requisição subiu e a escolha de tools piorou. A maioria das perguntas usa sempre as mesmas 4 tools. Qual é a MELHOR abordagem?",
+      "opcoes": [
+        "Ativar tool search, com `defer_loading` no catálogo, mantendo carregadas (não deferidas) as 3–5 tools mais usadas.",
+        "Marcar as 120 tools com `defer_loading`, para que nada ocupe contexto até ser necessário.",
+        "Encurtar as descrições das 120 tools para reduzir os tokens das definições.",
+        "Criar 7 subagents, um por servidor MCP, e um coordenador que decide para qual deles delegar cada pergunta."
+      ],
+      "correta": 0,
+      "explicacao": "Tool search (`defer_loading`) é indicado com 10+ tools, definições grandes ou vários servidores MCP. Mantenha as 3–5 mais frequentes não deferidas. Ele concilia catálogo grande com poucas tools visíveis na decisão.",
+      "feedbacks": [
+        "Correta. Catálogo grande e vários servidores MCP é o caso de uso de tool search: o modelo vê poucas tools na decisão, carrega o resto sob demanda e o cache de prompt é preservado.",
+        "Tentadora, mas pelo menos uma tool precisa ficar não deferida, e deferir as 4 mais usadas adiciona um passo de busca a quase toda pergunta.",
+        "Reduz o custo e piora ainda mais a seleção: a descrição é o critério de escolha da tool.",
+        "Pode fazer sentido em outros contextos, mas é uma reestruturação pesada para um problema que o tool search resolve diretamente, e divide por servidor, não por função."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "Na Corrente Energia, o `.mcp.json` versionado tem esta entrada para o Jira, e o servidor falha ao conectar para todo o time:\n`\"jira\": { \"url\": \"https://mcp.jira.corrente.example/mcp\", \"headers\": { \"Authorization\": \"Bearer ${JIRA_TOKEN}\" } }`\nTodos têm `JIRA_TOKEN` definido no ambiente. Qual é a PRIMEIRA correção a fazer?",
+      "opcoes": [
+        "Adicionar `\"type\": \"http\"` à entrada.",
+        "Trocar `${JIRA_TOKEN}` pelo valor literal do token, já que a expansão de variáveis não funciona em headers.",
+        "Adicionar `\"type\": \"sse\"`, que é o transporte para servidores remotos.",
+        "Mover a entrada para o escopo user com `claude mcp add` em cada máquina."
+      ],
+      "correta": 0,
+      "explicacao": "Pegadinha de `.mcp.json`: `url` sem `type` é lido como stdio. Declare `\"type\": \"http\"` (Streamable HTTP) para servidores remotos e mantenha os segredos via `${VAR}`.",
+      "feedbacks": [
+        "Correta. Entrada com `url` mas sem `type` é interpretada como stdio e falha. Servidor remoto precisa declarar o `type`.",
+        "A expansão de `${VAR}` funciona em `.mcp.json` e é justamente o jeito certo. Token literal num arquivo versionado vaza o segredo.",
+        "SSE é legado. Para servidor remoto atual, use Streamable HTTP (`\"http\"`), que é também o remoto com suporte a OAuth.",
+        "Não corrige o problema (o `type` continuaria faltando) e ainda desfaz o compartilhamento via git que o time quer."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "Um dev da Corrente Energia quer saber todos os lugares em que a feature flag `TARIFA_BRANCA_V2` é lida nas 2 milhões de linhas, para avaliar o impacto de removê-la. Um Grep rápido mostra mais de 400 ocorrências espalhadas. Ele quer continuar trabalhando na mesma sessão depois. O que é mais adequado?",
+      "opcoes": [
+        "Rodar o Grep na sessão principal e pedir para o Claude ler cada uma das 400 ocorrências.",
+        "Delegar a investigação a um subagent Explore, que faz as buscas e leituras no próprio contexto e devolve só um resumo do impacto.",
+        "Entrar em plan mode para que a investigação não altere arquivos.",
+        "Fazer a investigação na sessão principal e rodar `/compact` assim que terminar."
+      ],
+      "correta": 1,
+      "explicacao": "Trabalho delimitado e ruidoso (busca volumosa) → subagent (Explore) que devolve só a conclusão. É a mitigação clássica de contexto em codebase grande.",
+      "feedbacks": [
+        "Funciona, mas enche a conversa principal com centenas de trechos, degradando o resto da sessão.",
+        "Correta. Busca volumosa e ruidosa vai para um subagent. A conversa principal recebe só a conclusão e continua limpa.",
+        "Plan mode impede edições, mas a leitura continua acontecendo no contexto principal. O problema é contexto, não edição.",
+        "Remédio depois do dano: o resumo perde detalhes da própria análise e de tudo o que veio antes."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "A Corrente Energia quer um \"revisor de segurança\" reutilizável: o Claude deve poder delegar a ele quando houver mudanças sensíveis, ele só pode ler código (nada de editar ou rodar comandos), usa um modelo específico e a definição deve ser compartilhada com todo o time via git. Qual é a MELHOR forma?",
+      "opcoes": [
+        "Criar `~/.claude/agents/revisor-seguranca.md` com a mesma configuração.",
+        "Adicionar ao CLAUDE.md uma seção \"Ao revisar segurança, aja como revisor e não edite arquivos nem rode comandos\".",
+        "Criar `.claude/agents/revisor-seguranca.md` com `description`, `tools: Read, Grep, Glob` e `model`, versionado.",
+        "Criar uma skill `/revisao-seguranca` sem frontmatter de tools, descrevendo em detalhe o papel e o checklist do revisor."
+      ],
+      "correta": 2,
+      "explicacao": "Agente reutilizável, delegável, com tools restritas e modelo próprio = subagent customizado em `.claude/agents/` (projeto, versionado). `~/.claude/agents/` é pessoal.",
+      "feedbacks": [
+        "A configuração está certa, mas o local é pessoal: o subagent não chega ao time via git.",
+        "Não isola contexto, não restringe tools nem troca o modelo. \"Não edite\" em prompt é probabilístico.",
+        "Correta. Subagent customizado em `.claude/agents/` (projeto, versionado) atende a todos os requisitos: delegação por descrição, tools restritas, modelo próprio, contexto isolado.",
+        "Uma skill sem restrição de tools nem modelo próprio não garante que o revisor só leia. O requisito é um agente delegável com tools restritas, que é o papel de `.claude/agents/`."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "Na Corrente Energia, metade do time usa o Claude Code na extensão do VS Code, parte usa a do JetBrains e o resto usa o CLI. O tech lead pergunta como garantir que CLAUDE.md, skills, settings e servidores MCP do projeto valham para todos. Qual é a resposta correta?",
+      "opcoes": [
+        "Replicar a configuração nos arquivos de settings de cada IDE (`.vscode/settings.json` e `.idea/`).",
+        "Padronizar o time no CLI, porque as extensões de IDE não carregam skills nem servidores MCP de projeto.",
+        "Usar o CLAUDE.md para instruções e configurar skills e MCP separadamente em cada superfície, que mantém seu próprio registro.",
+        "Manter a configuração no repositório: todas as superfícies usam o mesmo motor e leem os mesmos arquivos."
+      ],
+      "correta": 3,
+      "explicacao": "Todas as superfícies do Claude Code usam o mesmo motor: CLAUDE.md, settings, skills e MCP do projeto valem em todas.",
+      "feedbacks": [
+        "Cria cópias que vão divergir. As extensões leem a mesma configuração do Claude Code que o CLI.",
+        "Premissa falsa: as extensões usam o mesmo motor e carregam skills e MCP normalmente.",
+        "Meia verdade que gera trabalho e divergência: skills e MCP também são configuração do projeto, comum a todas as superfícies.",
+        "Correta. CLI, extensões de IDE, desktop e web compartilham o mesmo motor, então a configuração do projeto vale igual em todas."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "Um dev da Corrente Energia reclama que precisa aprovar manualmente toda execução de `dotnet test` e `git status` no Claude Code, dezenas de vezes por dia. O time quer resolver isso para todos sem abrir mão dos pedidos de aprovação para comandos arriscados. Qual é a MELHOR configuração?",
+      "opcoes": [
+        "Rodar as sessões com `--permission-mode bypassPermissions`, já que o repositório é interno e versionado.",
+        "Regras de `allow` específicas para esses comandos no `.claude/settings.json` do projeto.",
+        "Usar o modo `acceptEdits`.",
+        "Criar um hook `PreToolUse` que devolve `allow` para qualquer chamada de Bash feita dentro do repositório."
+      ],
+      "correta": 1,
+      "explicacao": "Permissões granulares (`allow` para comandos específicos) nas settings de projeto resolvem o atrito sem abrir tudo. `bypassPermissions` e um hook que aprova tudo são amplos demais, e `acceptEdits` cobre só edições.",
+      "feedbacks": [
+        "Resolve o incômodo removendo todas as proteções, inclusive para comandos destrutivos. Não é para uso rotineiro.",
+        "Correta. Regras de permissão granulares liberam só o que é seguro e repetitivo, compartilhadas via settings de projeto. O resto continua pedindo aprovação.",
+        "Tentadora pelo nome, mas `acceptEdits` aprova edições de arquivo automaticamente, não comandos de Bash como `dotnet test`.",
+        "Libera todo o Bash, inclusive comandos arriscados, o que o time quer evitar."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "O time de plataforma da Corrente Energia está documentando, para o onboarding, como funciona a hierarquia de instruções do Claude Code. Quais afirmações estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Um `@import` dentro do CLAUDE.md resolve o caminho relativo ao arquivo que contém o import.",
+        "O `~/.claude/CLAUDE.md` do usuário tem precedência sobre as instruções de managed policy da organização.",
+        "Todos os CLAUDE.md de subdiretórios do repositório são carregados no início da sessão quando ela é aberta na raiz.",
+        "Um `CLAUDE.local.md` é versionado com o projeto, para que o time compartilhe as preferências pessoais de cada dev.",
+        "O `CLAUDE.md` de um subdiretório como `faturamento/` é carregado sob demanda, quando o Claude lê arquivos daquele diretório."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Hierarquia: managed policy → usuário → projeto → CLAUDE.local.md → subdiretório (sob demanda). `@import` é relativo ao arquivo que importa, e `CLAUDE.local.md` é pessoal e fica fora do git.",
+      "feedbacks": [
+        "Correta. Caminhos de `@import` são relativos ao arquivo que importa (`@~/` aponta para a home).",
+        "Inverte a hierarquia: a managed policy é o nível da organização e não é sobrescrita pelo usuário.",
+        "Só os arquivos da raiz e dos níveis acima carregam no início. Os de subdiretório entram sob demanda.",
+        "Pegadinha de nomes: o `CLAUDE.local.md` é pessoal e fica fora do git. Instruções do time vão no CLAUDE.md do projeto.",
+        "Correta. CLAUDE.md de subdiretório não carrega no início da sessão; ele entra quando arquivos daquela pasta são acessados."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "O servidor MCP da réplica do banco de clientes da Corrente Energia devolve linhas com CPF e endereço. O time precisa garantir que esses dados nunca entrem no contexto do Claude, mas os devs precisam das outras colunas para depurar faturas. Qual mecanismo é o mais adequado?",
+      "opcoes": [
+        "Um hook `PreToolUse` que bloqueia qualquer consulta à tabela de clientes feita pelo servidor MCP da réplica.",
+        "Uma regra no CLAUDE.md e no system prompt: \"nunca exiba CPF ou endereço de clientes nas respostas\".",
+        "Um hook `UserPromptSubmit` que remove CPFs digitados pelos devs nos prompts.",
+        "Hook `PostToolUse` nas tools desse servidor MCP que mascara CPF e endereço antes de o modelo ver o resultado."
+      ],
+      "correta": 3,
+      "explicacao": "`PostToolUse` normaliza, limpa e anota resultados de tool (ex.: mascarar PII) antes de o modelo raciocinar sobre eles. `PreToolUse` decide se a chamada acontece; prompt não garante nada.",
+      "feedbacks": [
+        "Determinístico, mas bloqueia demais: os devs perdem as colunas de que precisam. O problema está no resultado, não na chamada.",
+        "Probabilístico e tardio: o dado já entrou no contexto, e a regra só tenta impedir que ele seja repetido.",
+        "Ataca a entrada errada: o PII vem do resultado da tool, não do que o dev digita.",
+        "Correta. `PostToolUse` é o ponto para normalizar e limpar resultados de tool, como mascarar PII, de forma determinística e sem perder as colunas úteis."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "A segurança da Corrente Energia exige um hook que impeça qualquer sessão do Claude Code, de qualquer dev e em qualquer repositório da empresa, de ler arquivos `.env` e `*.pfx`. Nenhum dev pode desativá-lo. Onde esse hook deve ser configurado?",
+      "opcoes": [
+        "No `.claude/settings.json` de cada repositório da empresa.",
+        "No `~/.claude/settings.json` de cada máquina, instalado por um script de onboarding.",
+        "Nas managed settings (managed policy) distribuídas pela organização.",
+        "No frontmatter de uma skill de segurança que todo repositório deve incluir."
+      ],
+      "correta": 2,
+      "explicacao": "Hooks podem ficar em settings de usuário, de projeto, local ou managed policy. Regra organizacional que ninguém pode desativar → managed policy.",
+      "feedbacks": [
+        "É compartilhado via git, mas precisa ser replicado repositório por repositório, pode ser removido num commit e não cobre repositórios novos ou pessoais.",
+        "Vale para todos os projetos daquela máquina, mas o dev pode editar ou apagar o arquivo. Não atende a \"ninguém pode desativar\".",
+        "Correta. Managed policy é o nível da organização: vale para todos e não pode ser sobrescrita por settings de usuário ou de projeto.",
+        "Hooks de skill só valem enquanto a skill está ativa. Não é uma barreira permanente para todas as sessões."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "A Corrente Energia quer um bot de onboarding no Slack que responda perguntas sobre o código: ele precisa ler arquivos, rodar grep, delegar buscas a subagents e respeitar hooks de segurança. Por política, o código-fonte não pode sair da infraestrutura da empresa. Qual forma de construção é a mais adequada?",
+      "opcoes": [
+        "Claude Agent SDK, rodando na infraestrutura da empresa (traz tools de arquivo, subagents e hooks prontos).",
+        "Um loop agêntico manual sobre a Messages API, implementando do zero as tools de leitura, grep e subagents.",
+        "Tool Runner do SDK do cliente, registrando funções de leitura e grep.",
+        "Managed Agents, que já hospeda o loop agêntico e um sandbox de execução pronto para rodar as tools."
+      ],
+      "correta": 0,
+      "explicacao": "Do mais simples ao mais pronto: loop manual, Tool Runner, Managed Agents (hospedado), Agent SDK (harness do Claude Code como biblioteca, você hospeda). Escolha a mais simples que atende a todos os requisitos.",
+      "feedbacks": [
+        "Correta. O SDK traz pronto exatamente o que o bot precisa (tools nativas, subagents, hooks) e roda onde a empresa quiser hospedar.",
+        "Possível, mas reimplementa o que o Agent SDK já entrega. Não é a forma mais simples que atende.",
+        "Roda o loop para as suas tools, mas não traz subagents nem hooks prontos. Faltariam requisitos explícitos.",
+        "Tentadora por ser a opção mais pronta, mas o sandbox é hospedado fora da empresa, e a política proíbe o código de sair da infraestrutura."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "A tool `consultar_metricas` do servidor MCP do Grafana devolve, para cada série, um JSON com cerca de 40 campos de metadados e 2.000 pontos. Em poucas perguntas o contexto do assistente da Corrente Energia enche e aparecem avisos de saída grande de MCP. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Aumentar o limite de tokens de saída de MCP (`MAX_MCP_OUTPUT_TOKENS`) para não truncar os resultados.",
+        "Trocar o modelo do assistente por um com janela maior.",
+        "Fazer a tool devolver só os campos relevantes e dados agregados, com detalhe sob demanda.",
+        "Instruir o modelo, no system prompt, a ignorar os campos de metadados e olhar só os pontos da série."
+      ],
+      "correta": 2,
+      "explicacao": "Corte a saída das tools: devolva os campos relevantes, não os 40. Aumentar limites ou janelas só deixa mais ruído entrar.",
+      "feedbacks": [
+        "Tentadora porque some o aviso, mas deixa ainda mais tokens entrarem no contexto. Ataca o sintoma no sentido errado.",
+        "Adia o problema, encarece cada turno e piora o \"lost in the middle\" com milhares de pontos irrelevantes.",
+        "Correta. Cortar a saída das tools na origem (só o que importa para a decisão) é a correção direta para o consumo de contexto.",
+        "Os tokens já foram consumidos quando o modelo \"ignora\". Instrução não reduz o tamanho do resultado."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "O assistente da Corrente Energia (Agent SDK) roda tarefas longas de investigação de incidentes, com centenas de chamadas de tool. Os resultados antigos (logs e consultas já analisados) dominam o contexto, mas o raciocínio e as decisões da investigação precisam continuar intactos, sem paráfrase. Qual mecanismo server-side é o mais adequado?",
+      "opcoes": [
+        "Context editing, limpando resultados antigos de tool e mantendo o resto da conversa.",
+        "Compaction, resumindo todo o contexto anterior num bloco.",
+        "Memory tool, gravando os resultados de tool em arquivos persistentes fora da conversa.",
+        "Aumentar o `max_tokens` para dar ao modelo mais espaço de resposta a cada passo da investigação."
+      ],
+      "correta": 0,
+      "explicacao": "Context editing limpa resultados antigos de tool (bom para loops verbosos). Compaction resume tudo (bom quando a narrativa pode ser condensada). Memory tool persiste entre sessões.",
+      "feedbacks": [
+        "Correta. Context editing remove o que pesa (resultados velhos de tool) sem resumir a narrativa, que é o que precisa ficar intacto.",
+        "Tentadora (reduz contexto), mas resume também o raciocínio e as decisões, que o enunciado exige intactos. Compaction serve quando a narrativa pode ser condensada.",
+        "Memory tool serve para persistir achados entre sessões. Não tira do contexto os resultados que já estão lá.",
+        "`max_tokens` é o teto de saída, não libera espaço no contexto de entrada. Mecanismo errado."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Cenário: o Banco Atalaia, um banco de investimento, extrai dados de term sheets, prospectos e notas de negociação (inclusive PDFs escaneados com anotações manuscritas) para alimentar o sistema de risco em JSON. O volume é de cerca de 200 mil documentos por mês, a maior parte processada à noite. Restrições: todo valor extraído precisa corresponder ao documento-fonte, campos ausentes não podem ser inventados, a área de compliance audita amostras e o sistema de risco rejeita JSON fora do schema. Muitos term sheets não trazem data de vencimento (são perpétuos), mas o JSON extraído sempre vem com uma `data_vencimento` plausível e inventada. O schema define `data_vencimento` como string obrigatória. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Ativar `strict: true` para garantir que a saída siga o schema.",
+        "Tornar o campo nullable e devolver `null` quando a data não constar.",
+        "Adicionar um loop de retry que pede ao modelo para conferir a data contra o documento.",
+        "Adicionar exemplos few-shot de term sheets com a data de vencimento preenchida corretamente a partir do documento."
+      ],
+      "correta": 1,
+      "explicacao": "Para dados que podem faltar, use campo nullable no schema e instrua a devolver `null`. Campo obrigatório não nulo induz o modelo a inventar, e `strict` só garante o formato.",
+      "feedbacks": [
+        "Tentadora, mas piora: com o campo obrigatório e não nullable, `strict` garante que a data sempre venha, ou seja, que seja inventada. Conformidade com schema não é correção.",
+        "Correta. Campo obrigatório sem opção de nulo empurra o modelo a inventar. Campo nullable dá uma saída legítima para o dado ausente.",
+        "Retry não recupera informação que não está na fonte. Enquanto o schema exigir uma data, o modelo continua sem saída honesta.",
+        "Exemplos só com o campo preenchido reforçam o padrão de sempre preencher. Faltam exemplos do caso ausente e, antes disso, um schema que o permita."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O Banco Atalaia quer garantir que `taxa_cupom` fique entre 0 e 100 e que `isin` siga o padrão de 12 caracteres (2 letras + 9 alfanuméricos + 1 dígito). A equipe colocou `minimum`/`maximum` em `taxa_cupom` e um `pattern` simples em `isin` no schema cru usado com structured outputs, e a API passou a rejeitar o request com HTTP 400. Qual é a abordagem correta?",
+      "opcoes": [
+        "Trocar as restrições por `oneOf` com os formatos válidos de ISIN.",
+        "Desligar o strict, porque assim o modelo passa a respeitar `minimum`, `maximum` e `pattern`.",
+        "Descrever as regras só no `description` de cada propriedade, que o modelo lê ao gerar cada campo do JSON.",
+        "Manter o `pattern` do ISIN, tirar `minimum`/`maximum` do schema e validar a faixa em código, com erros específicos num retry."
+      ],
+      "correta": 3,
+      "explicacao": "O strict não suporta faixas numéricas (`minimum`/`maximum`), tamanho de string, restrições de array nem recursão: no schema cru, isso dá 400. `pattern` com regex simples é suportado. A faixa vai para o código, com retry informando o erro específico.",
+      "feedbacks": [
+        "`oneOf` não consta entre as construções documentadas como suportadas e não resolve a faixa de `taxa_cupom`, que é a causa do 400.",
+        "Ataca o sintoma: sem strict o 400 some, mas o schema vira orientação, a faixa continua sem garantia e perde-se a conformidade estrutural.",
+        "Descrição ajuda o modelo, mas é probabilística. Uma regra que o sistema de risco exige pede validação determinística em código.",
+        "Correta. O `pattern` simples do ISIN é suportado; faixas numéricas não. O que o schema não suporta é imposto em código."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "No Banco Atalaia, as notas de negociação extraídas passam no schema, mas em 2% delas o campo `valor_total` não bate com a soma de `itens[].valor`. Às vezes o documento traz mesmo um total divergente (erro da corretora), que compliance quer flagrar. Qual é o MELHOR desenho?",
+      "opcoes": [
+        "Fazer o modelo calcular `valor_total` como a soma dos itens, garantindo que os dois campos sempre batam no JSON.",
+        "Ativar `strict: true` na extração, para que a API rejeite qualquer JSON com totais inconsistentes.",
+        "Pedir no prompt para o modelo revisar a soma antes de responder.",
+        "Extrair o total declarado, calcular a soma dos itens em código e marcar a discrepância."
+      ],
+      "correta": 3,
+      "explicacao": "Schema válido ≠ dado correto. Extraia o valor declarado e calcule o valor esperado em código para detectar discrepâncias, distinguindo erro de extração de erro na fonte.",
+      "feedbacks": [
+        "Esconde exatamente o que compliance quer ver: um total errado no documento seria \"corrigido\" em silêncio.",
+        "Conformidade com schema não é correção semântica. O strict garante tipos e campos, não que uma soma esteja certa.",
+        "Probabilístico e mistura os dois casos: o modelo pode \"corrigir\" um total que estava errado no documento.",
+        "Correta. Extrair o valor declarado e o calculado separa erro do modelo de erro do documento. A validação semântica fica em código."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O Banco Atalaia implementou um loop de validação com retry para a extração. Quando a validação falha, o código reenvia o documento com a mensagem \"a extração anterior tinha erros, tente novamente\", e a taxa de sucesso no retry é baixa. Qual mudança tem o MAIOR impacto?",
+      "opcoes": [
+        "Aumentar o número máximo de tentativas de 2 para 6, dando mais chances para o modelo acertar a extração.",
+        "Incluir no retry os erros específicos (campo, valor lido, valor esperado), com limite de tentativas e falha explícita.",
+        "Subir o `effort` no retry, mantendo a mensagem genérica.",
+        "No retry, usar outro modelo, mais capaz, para refazer a extração do documento do zero com o mesmo prompt."
+      ],
+      "correta": 1,
+      "explicacao": "Loop de validação: extrai → valida → devolve os erros específicos → tenta de novo até um limite → então falha com erro. Mensagem genérica desperdiça o retry.",
+      "feedbacks": [
+        "Mais tentativas com a mesma mensagem vaga repetem o mesmo erro com custo maior.",
+        "Correta. O retry funciona quando o modelo sabe exatamente o que corrigir. Com limite e falha explícita, o loop não fica infinito nem silencioso.",
+        "Mais esforço sem saber o que está errado faz o modelo revisar tudo às cegas. A informação que falta é o erro concreto.",
+        "Recomeça do zero sem o diagnóstico já obtido. O segundo modelo pode errar em outro lugar, e nada garante convergência."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O código legado de extração do Banco Atalaia fazia prefill da resposta do assistant com `{` para forçar JSON. Ao migrar para um modelo mais novo, todas as requisições passaram a retornar HTTP 400. A extração não executa nenhuma ação, só precisa devolver o JSON. Qual é a correção recomendada?",
+      "opcoes": [
+        "Remover o prefill e usar structured outputs com o `json_schema` da extração.",
+        "Mover o `{` para o final do system prompt, com a instrução \"continue a partir daqui\".",
+        "Trocar o prefill por `tool_choice: any` com uma tool de extração.",
+        "Manter o prefill e configurar `stop_sequences: [\"}\"]` para cortar a resposta no fim do JSON."
+      ],
+      "correta": 0,
+      "explicacao": "Prefill do assistant retorna 400 nos modelos novos [volátil]. Ao migrar, teste a forma do request. Para JSON no formato do schema, use structured outputs.",
+      "feedbacks": [
+        "Correta. Prefill do assistant retorna 400 nos modelos novos. Para obter JSON garantido no schema, structured outputs é o caminho.",
+        "Contorno improvisado: não força nada e volta ao texto livre, sem garantia de schema.",
+        "Nos modelos novos, `any` também retorna 400. Troca um 400 por outro.",
+        "O 400 vem do prefill, não do fim da resposta. E cortar no primeiro `}` quebraria qualquer JSON com objetos aninhados."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O campo `tipo_instrumento` do Banco Atalaia é um enum `[\"CDB\", \"LCI\", \"debenture\", \"CRI\"]`. Com a chegada de COEs e notas estruturadas, esses documentos passaram a ser classificados à força como \"debenture\", e alguns documentos ilegíveis também recebem um tipo chutado. Qual é a MELHOR mudança no schema?",
+      "opcoes": [
+        "Expandir o enum com todos os ~80 tipos de instrumento que o mercado conhece.",
+        "Trocar o enum por string livre, deixando o modelo escrever o tipo.",
+        "Adicionar \"outro\" (+ campo de detalhe) e \"indeterminado\" ao enum.",
+        "Manter o enum e adicionar exemplos few-shot de COE classificados como \"debenture\"."
+      ],
+      "correta": 2,
+      "explicacao": "Padrões de schema: enum com \"other\" + campo de detalhe para casos não previstos, e uma opção do tipo \"unclear\" para não chutar.",
+      "feedbacks": [
+        "Enum gigante e sempre incompleto: o próximo produto novo cai no mesmo problema, e ilegíveis continuam sendo chutados.",
+        "Perde a padronização que o sistema de risco precisa (\"Debênture\", \"debenture\", \"DEB\"...).",
+        "Correta. \"outro\" + detalhe acomoda tipos novos sem perder informação, e \"indeterminado\" dá uma saída honesta quando o documento não permite decidir.",
+        "Ensina formalmente a classificação errada. Few-shot não substitui uma categoria que falta no schema."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O Banco Atalaia processa os documentos do dia num lote noturno pela Batch API. No lote de ontem, de 40.000 requisições, 3% terminaram como `errored` e 1% como `expired`. Qual é o próximo passo correto?",
+      "opcoes": [
+        "Reenviar num novo lote só os `custom_id` com `errored` ou `expired`, após investigar os `errored`.",
+        "Reenviar o lote inteiro de 40.000 requisições para garantir consistência.",
+        "Reprocessar os 4% pela API síncrona imediatamente, sem olhar a causa dos erros.",
+        "Associar os resultados aos documentos pela ordem do arquivo de entrada e reenviar a partir do primeiro que falhou."
+      ],
+      "correta": 0,
+      "explicacao": "Batch API: estados `succeeded`/`errored`/`canceled`/`expired`; resultados fora de ordem (case por `custom_id`); reenvie só os que falharam.",
+      "feedbacks": [
+        "Correta. Reenvie só o que falhou e case sempre por `custom_id`, porque os resultados não vêm em ordem.",
+        "Paga de novo 96% do trabalho que já deu certo e ainda arrisca novos `expired`.",
+        "Pode até ser aceitável pelo volume pequeno, mas pular a investigação dos `errored` repete as mesmas falhas a preço cheio.",
+        "Os resultados do batch vêm fora de ordem. Casar por posição associa resultados aos documentos errados."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O Banco Atalaia está decidindo quais cargas de extração devem ir para a Batch API. Quais são boas candidatas? (Escolha DUAS.)",
+      "opcoes": [
+        "Extrair os dados de um term sheet enquanto o trader aguarda na mesa para precificar a operação.",
+        "Reprocessar o acervo de 2 milhões de prospectos antigos depois de uma mudança no schema.",
+        "A extração noturna dos documentos recebidos durante o dia, consumida pelo sistema de risco na manhã seguinte.",
+        "Uma extração em que, para cada documento, o modelo chama a tool `consultar_isin` e decide os próximos passos pelo resultado.",
+        "A checagem de compliance que precisa aprovar a ordem antes de ela ser enviada à bolsa."
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "Batch: análise noturna, reprocessamento em massa, relatórios periódicos. Não: tempo real, passo bloqueante, loop multi-turn de tools dentro de um request.",
+      "feedbacks": [
+        "Tempo real: o batch não tem SLA e pode levar até 24h.",
+        "Correta. Processamento em massa, sem urgência, é o caso de uso clássico do batch (50% mais barato, janela de até 24h).",
+        "Correta. Prazo folgado e nada esperando em tempo real: cabe na janela do batch.",
+        "Tentadora pelo volume, mas um request do batch não suporta loop multi-turn de tools. Seria preciso redesenhar o fluxo.",
+        "Passo bloqueante: não pode ficar à mercê de uma janela de até 24h sem SLA."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "O Banco Atalaia usa a tool `registrar_extracao`, cujo `input_schema` é a própria estrutura da extração. Ao ativar `strict: true` na tool, a API passou a rejeitar a definição. O schema tem campos opcionais (como `data_vencimento`) fora de `required` e não declara `additionalProperties`. O que corrige?",
+      "opcoes": [
+        "Remover os enums do schema, porque o strict não suporta `enum`.",
+        "Configurar `tool_choice` forçando `registrar_extracao`, já que o strict só vale quando a tool é forçada.",
+        "Declarar `additionalProperties: false`; de preferência, levar os opcionais para `required` como nullable.",
+        "Encurtar a `description` da tool, porque descrições longas são rejeitadas no strict."
+      ],
+      "correta": 2,
+      "explicacao": "O `strict: true` exige `additionalProperties: false` em todo objeto; é o que falta. Opcionais são permitidas, mas contam para um limite por request [volátil]; a recomendação é `required` + nullable.",
+      "feedbacks": [
+        "`enum` (de valores simples) é suportado no strict. A causa é a falta de `additionalProperties: false`.",
+        "O strict não depende de forçar a tool. Além disso, em modelos novos forçar retorna 400.",
+        "Correta. Sem `additionalProperties: false` o strict rejeita o schema. Os opcionais em si são aceitos, mas `required` + nullable é a prática recomendada.",
+        "O tamanho da descrição não tem relação com a validação do strict. Descrições ricas são, aliás, recomendadas."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "Durante a extração do Banco Atalaia, o modelo chama a tool `consultar_isin` para validar o código encontrado. Quando o ISIN não existe no cadastro, a tool devolve `{\"error\": \"Operation failed\"}`, e o modelo repete a mesma chamada várias vezes até o limite de iterações. Qual é a MELHOR correção?",
+      "opcoes": [
+        "Baixar o limite de iterações do loop para 2, para o agente desistir mais rápido da validação.",
+        "Instruir no prompt: \"se `consultar_isin` falhar, não tente de novo; siga para o próximo campo\".",
+        "Fazer a tool devolver `{\"results\": []}` quando o ISIN não existir, em vez de uma mensagem de erro.",
+        "Devolver erro estruturado: categoria \"ISIN inexistente\", `isRetryable: false` e o ISIN consultado."
+      ],
+      "correta": 3,
+      "explicacao": "Erro genérico (\"Operation failed\") esconde o diagnóstico e induz retries inúteis. Erro estruturado com categoria e `isRetryable` permite a recuperação certa.",
+      "feedbacks": [
+        "Limite de iterações é backstop, não mecanismo principal. O modelo continua sem saber por que falhou.",
+        "Impede o retry também nas falhas transitórias, em que tentar de novo é o certo. O problema é o erro não dizer de que tipo é.",
+        "Melhor que \"Operation failed\", mas um vazio sem contexto pode ser confundido com falha de consulta. O erro estruturado com categoria é mais claro.",
+        "Correta. Com a categoria e a indicação de não retentável, o modelo entende que repetir não adianta e escolhe outro caminho."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "O agente de extração do Banco Atalaia encerra o loop quando a resposta contém o texto \"EXTRAÇÃO CONCLUÍDA\". Em alguns documentos, o modelo escreve essa frase e, na mesma resposta, emite um `tool_use` para `consultar_isin`. O loop termina, e o JSON sai sem a validação. Qual é a correção?",
+      "opcoes": [
+        "Instruir o modelo a só escrever \"EXTRAÇÃO CONCLUÍDA\" depois de terminar todas as chamadas de tool.",
+        "Decidir a continuação pelo `stop_reason`: se for `tool_use`, executar as tools e devolver os `tool_result`; encerrar só em `end_turn`.",
+        "Encerrar o loop quando a frase aparecer e não houver nenhum bloco `tool_use` na resposta.",
+        "Fixar o loop em 10 iterações e usar a última resposta como resultado."
+      ],
+      "correta": 1,
+      "explicacao": "Decida o loop pelo `stop_reason` (`tool_use` → executa e continua; `end_turn` → terminou). Ter texto não significa que terminou.",
+      "feedbacks": [
+        "Mantém o anti-padrão de decidir o loop lendo linguagem natural, só torcendo para o modelo obedecer.",
+        "Correta. `content` pode misturar texto e `tool_use`. O `stop_reason` é o sinal confiável do estado do loop.",
+        "Tentadora (corrige o caso relatado), mas continua dependendo de uma frase. Se o modelo terminar sem escrevê-la ou com outra redação, o loop não fecha. O `stop_reason` já dá essa informação.",
+        "Limite fixo como mecanismo principal de parada é anti-padrão. Corta extrações longas e desperdiça iterações nas curtas."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Algumas extrações do Banco Atalaia chegam com HTTP 200, mas o JSON vem incompleto ou vazio, e o código grava os campos ausentes como `null`, como se o documento não os tivesse. Que verificação está faltando?",
+      "opcoes": [
+        "Tratar como erro apenas as respostas com status HTTP diferente de 200.",
+        "Checar o `stop_reason` antes de usar o conteúdo, tratando truncamento e `refusal` como falha, não como extração.",
+        "Envolver o parse do JSON em try/catch e preencher com `null` os campos que faltarem, registrando um aviso no log.",
+        "Aumentar o timeout HTTP do cliente para que as respostas longas cheguem completas ao código de extração."
+      ],
+      "correta": 1,
+      "explicacao": "`refusal`, `max_tokens` e `model_context_window_exceeded` chegam com HTTP 200. Cheque o `stop_reason` antes de ler o `content`, ou truncamento vira \"sucesso\" com dados faltando.",
+      "feedbacks": [
+        "É exatamente o que já acontece: esses casos vêm com 200 e passam.",
+        "Correta. Truncamento e recusa chegam com HTTP 200. Sem checar o `stop_reason`, o código confunde \"cortado\" ou \"recusado\" com \"dado ausente\".",
+        "Formaliza a supressão silenciosa: transforma truncamento em \"campo ausente no documento\", o que viola a restrição de não inventar ausências.",
+        "O corte não é de rede, é de geração (limite de tokens ou recusa). Timeout maior não muda o `stop_reason`."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "O Banco Atalaia roda um agente que extrai cláusulas de prospectos de 300 páginas em vários passos. Para controlar custo, a equipe baixou o `max_tokens`, e agora várias execuções terminam com o JSON cortado no meio. A equipe quer que o modelo se organize para concluir dentro de um orçamento. Qual é a MELHOR abordagem?",
+      "opcoes": [
+        "Baixar ainda mais o `max_tokens` e emendar no código as partes cortadas, pedindo continuação a cada corte.",
+        "Adicionar ao prompt \"seja conciso, você tem pouco espaço para responder\" e manter o `max_tokens` baixo.",
+        "Usar um task budget (teto visível ao modelo), deixando o `max_tokens` só como teto de segurança.",
+        "Limitar o número de turnos do agente para controlar o custo total."
+      ],
+      "correta": 2,
+      "explicacao": "Task budget (visível, o modelo se organiza) vs. `max_tokens` (invisível, corta no meio). Para controlar custo sem truncar, use o orçamento visível e deixe o `max_tokens` como backstop [task budget: volátil, beta].",
+      "feedbacks": [
+        "Mais cortes e mais emendas frágeis. O modelo continua sem saber do limite.",
+        "Vago e probabilístico: \"pouco espaço\" não diz quanto, e o corte do `max_tokens` continua invisível para o modelo.",
+        "Correta. Task budget é visível: o modelo se organiza para caber. `max_tokens` é invisível e corta no meio, então serve como backstop, não como controle de custo.",
+        "Limitar turnos é backstop e corta o trabalho no meio do mesmo jeito. Não deixa o modelo planejar dentro de um orçamento."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "O Banco Atalaia mede 97% de acurácia agregada na extração e quer reduzir a revisão humana. Uma auditoria de compliance, porém, achou erros recorrentes em documentos com anotações manuscritas. Quais ações são as MAIS adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Manter amostragem uniforme de 5% de todos os documentos, por ser estatisticamente imparcial.",
+        "Mandar para revisão humana só os documentos em que o modelo declarar confiança abaixo de 0,7 em algum campo extraído.",
+        "Aumentar o número de retries do loop de validação para todos os documentos.",
+        "Quebrar a acurácia por tipo de documento e por campo, para achar segmentos com desempenho muito pior que a média.",
+        "Revisão humana com amostragem estratificada por risco (mais amostras onde o risco ou o erro é maior)."
+      ],
+      "corretas": [
+        3,
+        4
+      ],
+      "explicacao": "Métrica agregada mascara falhas por tipo de documento ou campo; quebre por segmento. Revisão humana: amostragem estratificada por risco, não uniforme nem por confiança autodeclarada.",
+      "feedbacks": [
+        "Tentadora pela \"imparcialidade\", mas gasta revisão em segmentos estáveis e subamostra os manuscritos, onde está o problema.",
+        "Confiança autodeclarada e não calibrada é um mau sinal de roteamento. O modelo pode errar com convicção justamente nos manuscritos.",
+        "Retry não recupera informação que o modelo leu errado num manuscrito ilegível, e encarece o volume inteiro.",
+        "Correta. A métrica agregada esconde falha por segmento: 97% no geral pode conviver com 45% em notas manuscritas.",
+        "Correta. A amostragem estratificada concentra a revisão onde o erro é mais provável ou mais caro."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "O Banco Atalaia quer aprovar automaticamente os campos extraídos com confiança alta e mandar o resto para revisão humana. O modelo já devolve um score de confiança por campo. Qual é a PRIMEIRA coisa a fazer antes de usar esse score como regra de roteamento?",
+      "opcoes": [
+        "Calibrar os scores contra um conjunto rotulado, por tipo de documento e campo, antes de definir limiares.",
+        "Escolher um limiar conservador, como 0,95, para compensar a falta de calibração e reduzir aprovações erradas.",
+        "Pedir ao modelo que justifique cada score por escrito, para tornar os números mais confiáveis e auditáveis.",
+        "Rodar a extração duas vezes e usar a média dos dois scores de cada campo."
+      ],
+      "correta": 0,
+      "explicacao": "Confiança por campo é útil para roteamento, mas só depois de calibrada contra um conjunto rotulado. Sem calibração, o score autodeclarado não significa nada.",
+      "feedbacks": [
+        "Correta. Confiança por campo só significa algo depois de calibrada contra dados rotulados. Sem isso, o limiar é arbitrário.",
+        "Um número mais alto sobre uma escala não calibrada continua arbitrário: pode aprovar erros confiantes e mandar acertos para revisão.",
+        "A justificativa não calibra o número. O modelo racionaliza o score que já deu.",
+        "Dobra o custo e mede consistência, não acerto. Dois scores mal calibrados continuam mal calibrados."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1191 @@
+{
+  "titulo": "Simulado 3 — CCAR-F (60 questões · 120 min)",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "CENÁRIO — A Pomar Pagamentos é uma fintech de Porto Alegre que processa pagamentos com cartão para pequenos varejistas. O backend é um monorepo .NET 8 (40 projetos, ~600 mil linhas) com um front Angular, mantido por 40 desenvolvedores em 6 squads. A empresa adotou o Claude Code para gerar e refatorar código. Restrições: o código de criptografia de cartão é escopo PCI-DSS e não pode ser alterado sem revisão do time de segurança; as convenções de arquitetura precisam valer igualmente para todos os devs; e o custo de contexto deve ser controlado, porque as sessões são longas.\n\nProblema: o tech lead escreveu a convenção \"na camada de domínio, retorne Result<T> em vez de lançar exceções\" no arquivo ~/.claude/CLAUDE.md da própria máquina. Nas sessões dele, o Claude segue a regra; nas dos outros 39 devs, não. Qual é a correção mais adequada?",
+      "opcoes": [
+        "Pedir que cada dev copie a convenção para o próprio ~/.claude/CLAUDE.md, com um checklist no onboarding.",
+        "Mover a convenção para um CLAUDE.local.md na raiz do repositório.",
+        "Mover a convenção para o CLAUDE.md do projeto (./CLAUDE.md ou ./.claude/CLAUDE.md) e versioná-lo no repositório.",
+        "Pedir ao time de plataforma que publique a convenção como managed policy (CLAUDE.md gerenciado pela organização)."
+      ],
+      "correta": 2,
+      "explicacao": "Hierarquia do CLAUDE.md: usuário (~/.claude/CLAUDE.md) é pessoal; projeto (./CLAUDE.md) é do time e versionado; CLAUDE.local.md é pessoal e gitignored; managed policy é da organização. Convenção de um repositório que vale para todos → CLAUDE.md de projeto.",
+      "feedbacks": [
+        "Tentadora porque reproduz o que já funciona para o tech lead. Mas o arquivo de usuário é pessoal e não versionado: as cópias divergem com o tempo e devs novos ficam sem a regra. Convenção do time pertence ao repositório.",
+        "Tentadora pelo nome de \"arquivo do projeto\". Mas o CLAUDE.local.md é pessoal e fica fora do git (gitignored): continua valendo só para quem o criou.",
+        "Correta. O CLAUDE.md de projeto é versionado e compartilhado: todo dev que clona o monorepo recebe a mesma instrução, e mudanças passam por revisão como qualquer código.",
+        "Tentadora porque garante alcance total. Mas é uma convenção de arquitetura de UM repositório; managed policy é para regras da organização inteira (compliance, segurança) e exige administração central. É mais pesado do que o necessário e aplicaria a regra até em repositórios onde ela não faz sentido."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pomar Pagamentos (monorepo .NET com 40 projetos), os testes xUnit ficam espalhados: em src/*/Tests/, em tests/Integration/ e em pastas criadas a cada novo serviço. O CLAUDE.md da raiz já tem 400 linhas, e metade delas são convenções de teste (nomenclatura Metodo_Cenario_Resultado, uso de FluentAssertions, builders em vez de construtores). Qual é a melhor forma de organizar essas convenções?",
+      "opcoes": [
+        "Criar .claude/rules/testes.md com paths: (ex.: \"**/*Tests.cs\", \"tests/**\") e tirar essas convenções do CLAUDE.md da raiz.",
+        "Criar um CLAUDE.md dentro de cada pasta de testes com as convenções.",
+        "Manter tudo no CLAUDE.md da raiz, mas mover as convenções de teste para o final do arquivo.",
+        "Transformar as convenções em uma skill \"convencoes-de-teste\" e confiar no auto-carregamento pela description."
+      ],
+      "correta": 0,
+      "explicacao": "Convenção transversal (atravessa diretórios) → um arquivo em .claude/rules/ com paths: glob. Carrega só quando relevante, cobre diretórios futuros e evita duplicação.",
+      "feedbacks": [
+        "Correta. Regra com paths: é carregada só quando arquivos que batem com o glob são tocados, cobre pastas de teste futuras automaticamente e tira peso do CLAUDE.md da raiz (menos contexto em toda sessão).",
+        "Tentadora porque CLAUDE.md de subdiretório também carrega sob demanda. Mas duplica o mesmo texto em dezenas de pastas, as cópias divergem, e cada serviço novo precisa lembrar de criar o seu.",
+        "Tentadora por ser a mudança mínima. Mas o arquivo continua carregando inteiro em toda sessão (inclusive quando ninguém mexe em teste) e a posição no arquivo não resolve o custo de contexto.",
+        "Tentadora porque skills também carregam sob demanda. Mas skill é para procedimentos/workflows; o carregamento depende de o modelo decidir invocá-la. Convenção que deve valer sempre que se toca um arquivo de teste é exatamente o caso de regra com paths:, que é determinística pelo glob."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pomar Pagamentos, o time quer uma skill /nova-migration que gera uma migration do EF Core, roda dotnet ef e atualiza o snapshot. Por ter efeitos colaterais no banco de desenvolvimento, ela deve rodar SOMENTE quando um dev a chamar explicitamente, e precisa estar disponível para todo o time. Quais duas decisões atendem a esses requisitos? (Escolha DUAS.)",
+      "opcoes": [
+        "Colocar a skill em .claude/skills/nova-migration/SKILL.md, versionada no repositório.",
+        "Colocar a skill em ~/.claude/skills/nova-migration/SKILL.md de cada dev.",
+        "Definir user-invocable: false no frontmatter.",
+        "Definir disable-model-invocation: true no frontmatter.",
+        "Definir context: fork no frontmatter, para que os efeitos colaterais fiquem isolados num subagent."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Compartilhar com o time → skill de projeto (.claude/skills/). Só invocação explícita → disable-model-invocation: true. user-invocable: false é o inverso; context: fork não controla quem invoca.",
+      "feedbacks": [
+        "Correta. .claude/skills/ do projeto é compartilhado via git: todos os devs recebem /nova-migration.",
+        "Tentadora porque skills pessoais têm prioridade sobre as de projeto. Mas ficam fora do repositório: cada dev precisaria instalar, e as versões divergem.",
+        "Pegadinha de nome: user-invocable: false faz o contrário do pedido. Esconde a skill do menu de / e deixa só o modelo invocá-la.",
+        "Correta. Impede que o Claude carregue a skill sozinho a partir da description; ela só roda quando o dev digita /nova-migration.",
+        "Tentadora porque \"isolar\" soa como segurança. Mas context: fork isola o CONTEXTO (histórico) num subagent; os comandos continuam rodando na mesma máquina e no mesmo banco, e a skill continua podendo ser auto-invocada."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pomar Pagamentos, um squad vai migrar a serialização de Newtonsoft.Json para System.Text.Json. A mudança atinge ~60 arquivos em 9 projetos, há conversores customizados e diferenças de comportamento conhecidas (case sensitivity, datas, campos ignorados), e existem duas estratégias possíveis (migração gradual com adaptador ou troca direta). Como o dev deve conduzir a tarefa no Claude Code?",
+      "opcoes": [
+        "Executar direto em modo acceptEdits, pedindo para o Claude migrar tudo de uma vez, rodar a suíte de testes no final e corrigir o que quebrar.",
+        "Usar plan mode: explorar os usos e conversores, propor a estratégia e os passos, aprovar o plano e só então executar.",
+        "Usar bypassPermissions para que a migração longa não seja interrompida por pedidos de permissão.",
+        "Abrir 60 prompts separados, um por arquivo, em execução direta, para manter cada mudança pequena."
+      ],
+      "correta": 1,
+      "explicacao": "Plan mode para mudança multi-arquivo, arquitetural, com várias abordagens válidas. Execução direta fica para correções de escopo óbvio.",
+      "feedbacks": [
+        "Tentadora pela velocidade. Mas com escopo grande e duas abordagens válidas, começar editando sem explorar e alinhar a estratégia gera retrabalho em dezenas de arquivos se a escolha estiver errada.",
+        "Correta. Mudança multi-arquivo, decisão arquitetural e mais de uma abordagem válida são exatamente os gatilhos de plan mode: explorar e desenhar antes de editar.",
+        "Tentadora porque a tarefa é longa. Mas bypassPermissions remove as salvaguardas e não é rotina para tarefa longa e não contida; além disso, não resolve a falta de planejamento.",
+        "Tentadora porque mudanças pequenas são revisáveis. Mas as mudanças são relacionadas (conversores e comportamento compartilhados): fatiar sem uma estratégia comum produz decisões inconsistentes entre arquivos."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pomar Pagamentos, depois de um incidente, um squad decidiu \"usar plan mode para toda e qualquer tarefa\". Hoje, um dev recebeu um NullReferenceException com stack trace apontando para a linha 87 de TarifaService.cs: falta checar se cliente.Plano é nulo antes de ler a taxa. Qual é a melhor conduta?",
+      "opcoes": [
+        "Manter plan mode, porque a regra do squad existe para evitar incidentes.",
+        "Acionar o subagent Plan para mapear todos os usos de cliente.Plano no monorepo antes de corrigir, para não deixar outros pontos sem tratamento.",
+        "Criar uma skill /fix-null com o passo a passo de correção de nulos para padronizar esse tipo de fix.",
+        "Executar direto: pedir o null check em TarifaService.cs, com o stack trace, e revisar o diff."
+      ],
+      "correta": 3,
+      "explicacao": "Execução direta para fix de um arquivo com escopo claro (null check, constante, bug com stack trace). Plan mode é ferramenta para incerteza e escopo grande, não ritual.",
+      "feedbacks": [
+        "Tentadora por seguir a regra. Mas plan mode em fix de uma linha com causa conhecida só adiciona uma rodada de exploração e aprovação sem reduzir risco nenhum.",
+        "Tentadora por parecer cuidadoso. Mas o bug tem stack trace e causa clara; mapear o repositório inteiro é exploração desproporcional ao problema.",
+        "Tentadora porque padroniza. Mas é uma correção pontual; criar artefato reutilizável para um fix de uma linha é complexidade sem retorno.",
+        "Correta. Escopo óbvio, um arquivo, causa explícita no stack trace: execução direta é a escolha certa. A revisão do diff já é o controle suficiente."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Na Pomar Pagamentos, o CLAUDE.md do projeto diz em destaque: \"NUNCA edite arquivos em src/Pomar.Cartoes/Criptografia/ (escopo PCI)\". Mesmo assim, numa auditoria, apareceram 2 sessões em ~80 nas quais o Claude editou esses arquivos durante refatorações amplas. Qual é a correção adequada?",
+      "opcoes": [
+        "Reescrever a instrução em maiúsculas, repeti-la no início e no fim do CLAUDE.md e adicionar exemplos de pedidos que devem ser recusados.",
+        "Mover a instrução para o CLAUDE.md de managed policy, que tem precedência sobre o do projeto.",
+        "Um hook PreToolUse (matcher Edit|Write) em .claude/settings.json que bloqueia, com exit 2, caminhos em src/Pomar.Cartoes/Criptografia/.",
+        "Exigir revisão humana obrigatória do time de segurança no PR sempre que algum arquivo dessa pasta aparecer no diff, bloqueando o merge até a aprovação."
+      ],
+      "correta": 2,
+      "explicacao": "Consequência de segurança/compliance → enforcement programático (hook PreToolUse ou regra de permissão deny). Instrução em CLAUDE.md, por mais enfática, é probabilística.",
+      "feedbacks": [
+        "Tentadora porque reforço de prompt às vezes reduz a falha. Mas prompt é probabilístico: a taxa de falha nunca vai a zero, e regra de compliance (PCI) exige garantia.",
+        "Tentadora porque managed policy soa \"oficial\". Mas continua sendo instrução em linguagem natural para o modelo: muda quem administra o texto, não o fato de ser best-effort.",
+        "Correta. Regra crítica de compliance vai para código determinístico: o hook roda antes da tool e bloqueia a edição em 100% dos casos, devolvendo o motivo ao Claude.",
+        "Tentadora porque é um controle real. Mas atua depois do fato (detecta, não previne) e depende de o revisor perceber; o requisito é que o Claude não edite esses arquivos."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Pomar Pagamentos, o time de segurança quer um \"revisor de segurança\" reutilizável: com prompt de sistema próprio focado em OWASP e PCI, acesso SOMENTE de leitura ao código, e disponível para todos os devs do monorepo, de modo que a revisão não polua a sessão principal. Qual configuração atende?",
+      "opcoes": [
+        "Um subagent customizado em .claude/agents/revisor-seguranca.md, versionado, com description e tools: Read, Grep, Glob.",
+        "Uma instrução no CLAUDE.md do projeto: \"quando pedirem revisão de segurança, aja como especialista OWASP e não edite arquivos\".",
+        "O mesmo subagent, mas em ~/.claude/agents/revisor-seguranca.md na máquina de cada dev.",
+        "Usar o subagent nativo general-purpose, passando o checklist OWASP no prompt de cada chamada."
+      ],
+      "correta": 0,
+      "explicacao": "Subagents customizados vivem em .claude/agents/ (projeto) com frontmatter (description, tools, model...). Restringir tools no frontmatter é o controle real de \"só leitura\".",
+      "feedbacks": [
+        "Correta. Subagent customizado em .claude/agents/ tem prompt próprio, lista de tools restrita (só leitura), contexto isolado da sessão principal e é compartilhado via git.",
+        "Tentadora por ser simples. Mas roda na sessão principal (polui o contexto e revisa com o viés de quem gerou), e \"não edite\" em prompt não restringe as tools de verdade.",
+        "Tentadora porque a definição é idêntica. Mas o escopo de usuário é pessoal: não chega aos 40 devs pelo repositório e as versões divergem.",
+        "Tentadora porque o general-purpose já existe. Mas ele tem acesso às tools de escrita, e o checklist precisaria ser repetido em cada chamada, sem padronização."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Na Pomar Pagamentos, depois de 40 minutos discutindo com o Claude a regra de \"limite de crédito pré-aprovado\" (classe LimiteCreditoPolicy, exceção para clientes do plano Ouro), o dev pede: \"use um subagent Explore para achar onde aquela regra que discutimos é validada\". O subagent volta com uma resposta genérica sobre \"validações típicas de limite\". Qual é a causa e a correção?",
+      "opcoes": [
+        "O Explore não tem acesso a Grep; a correção é usar o subagent general-purpose.",
+        "O subagent não herda o histórico; o prompt de delegação deve trazer a regra, a classe LimiteCreditoPolicy, a exceção do plano Ouro e o formato de retorno.",
+        "O subagent atingiu o limite de turnos antes de terminar a busca; a correção é aumentar o número máximo de turnos dele e pedir uma busca mais exaustiva no monorepo.",
+        "O contexto principal estava cheio; a correção é rodar /compact antes de delegar."
+      ],
+      "correta": 1,
+      "explicacao": "Contexto de subagent é isolado: ele não vê o histórico do pai. Delegue com prompt autocontido (o quê, onde, critérios, formato de retorno).",
+      "feedbacks": [
+        "Tentadora porque trocar de subagent parece resolver. Mas o Explore tem Grep, Glob e Read; trocar de tipo não muda o problema: o general-purpose também nasce sem o histórico.",
+        "Correta. Subagent fresco tem contexto isolado: \"aquela regra que discutimos\" não significa nada para ele. Tudo o que ele precisa vai explícito no prompt.",
+        "Tentadora porque resposta incompleta lembra corte por limite. Mas a resposta não foi cortada, foi genérica: falta informação, não tempo.",
+        "Tentadora porque a sessão era longa. Mas o /compact mexe no contexto da sessão principal, não no do subagent, que continua recebendo só o prompt de delegação."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Na Pomar Pagamentos, antes de trocar o enum de moedas por códigos ISO 4217, o dev pede ao Claude uma análise de impacto em três módulos independentes: Cobranca, Conciliacao e Relatorios. Hoje o Claude delega para um subagent, espera o resultado, delega o próximo, e o processo leva 25 minutos. Como reduzir o tempo sem perder qualidade?",
+      "opcoes": [
+        "Delegar os três módulos para um único subagent, que os analisa em sequência dentro do próprio contexto.",
+        "Deixar os três subagents trocarem achados diretamente entre si para evitar trabalho duplicado.",
+        "Abrir três terminais com sessões independentes do Claude Code, uma por módulo, e colar os três resultados manualmente na sessão principal para a consolidação.",
+        "Pedir que o Claude lance os três subagents na mesma resposta (várias chamadas Agent), com escopos definidos, e consolide."
+      ],
+      "correta": 3,
+      "explicacao": "Paralelismo de subagents = várias chamadas Agent na mesma resposta. Turnos separados = sequencial. Comunicação sempre via coordenador.",
+      "feedbacks": [
+        "Tentadora porque reduz o número de delegações. Mas continua sequencial, e concentra três análises ruidosas num só contexto, o que piora a qualidade do relatório.",
+        "Tentadora porque parece eficiente. Mas subagents não conversam entre si; a comunicação passa pelo coordenador (hub-and-spoke), que agrega e deduplica.",
+        "Tentadora porque paraleliza de fato. Mas é manual, perde a agregação feita pelo coordenador e não aproveita o recurso nativo do Claude Code para paralelismo.",
+        "Correta. Várias chamadas Agent numa mesma resposta rodam em paralelo; delegações em turnos separados são sequenciais. O coordenador consolida os três resultados."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Na Pomar Pagamentos, ontem um dev trabalhou na sessão nomeada \"refactor-tarifas\". Durante a noite, um colega fez merge de um PR que renomeou metade das classes que a sessão tinha lido e editado. Hoje o dev quer continuar o trabalho. Quais duas práticas são adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Começar uma sessão nova, entregando um resumo estruturado das decisões de ontem e do que falta fazer.",
+        "Retomar com claude --resume refactor-tarifas e seguir de onde parou, sem comentários adicionais.",
+        "Retomar com --fork-session, porque o fork cria uma sessão nova que recarrega automaticamente os arquivos alterados desde a sessão original.",
+        "Aumentar o limite de turnos da sessão retomada para que o Claude tenha tempo de redescobrir as mudanças.",
+        "Se for retomar, informar explicitamente o que mudou (PR mergeado, classes renomeadas) e pedir que releia os arquivos afetados."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "--resume é bom quando os resultados de tool ainda valem. Se o código mudou: sessão nova com resumo estruturado, ou retomar avisando explicitamente o que mudou. --fork-session não atualiza nada.",
+      "feedbacks": [
+        "Correta. Com arquivos alterados, os resultados de tool do histórico estão velhos; uma sessão nova com resumo estruturado parte do estado real do código.",
+        "Tentadora porque preserva todo o raciocínio. Mas o histórico contém leituras de arquivos que mudaram: o Claude vai agir com base em nomes e conteúdos que não existem mais.",
+        "Pegadinha: --fork-session só cria um novo ID de sessão a partir da mesma base, para que os ramos não se contaminem. O histórico copiado continua com os resultados velhos.",
+        "Tentadora porque mais turnos dão margem. Mas o problema não é falta de turnos, é informação velha no contexto que o Claude não sabe que está velha.",
+        "Correta. Ao retomar após mudanças, diga explicitamente o que mudou: assim o Claude sabe quais resultados do histórico não valem mais."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D2",
+      "pergunta": "Na Pomar Pagamentos, o Claude precisa encontrar todas as implementações da interface IFeeCalculator no monorepo (~2.000 arquivos .cs). Os nomes das classes não seguem padrão (ex.: TarifaPix, CalculoBoleto, FeeCartaoCredito). Qual é a abordagem mais eficiente com as tools nativas?",
+      "opcoes": [
+        "Grep pelo conteúdo (\": IFeeCalculator\", \", IFeeCalculator\") e Read só nos arquivos encontrados.",
+        "Usar Glob com o padrão \"**/*FeeCalculator*.cs\" e ler os arquivos retornados.",
+        "Ler com Read todos os arquivos da pasta Domain e dos projetos de pagamento, para garantir que nenhuma implementação escape.",
+        "Pedir ao Claude que liste as implementações com base no que ele \"sabe\" do projeto pelo CLAUDE.md."
+      ],
+      "correta": 0,
+      "explicacao": "Grep = conteúdo; Glob = nomes/caminhos de arquivo. Para achar quem implementa uma interface, busque pelo conteúdo e leia só os acertos.",
+      "feedbacks": [
+        "Correta. Grep busca dentro do conteúdo dos arquivos, então acha a declaração de implementação seja qual for o nome da classe; depois o Read fica restrito aos acertos.",
+        "Tentadora porque Glob é rápido. Mas Glob casa NOMES de arquivo; como as classes têm nomes variados, várias implementações ficariam de fora.",
+        "Tentadora pela completude. Mas ler tudo de antemão é o anti-padrão de exploração: consome contexto com centenas de arquivos irrelevantes.",
+        "Tentadora porque o CLAUDE.md descreve a arquitetura. Mas ele não é um índice de classes; a resposta seria um palpite em vez de uma busca no código."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D2",
+      "pergunta": "Na Pomar Pagamentos, o Claude tenta trocar um \"return null;\" por \"return Result.Falha(Erros.ClienteInexistente);\" em RepositorioClientes.cs, mas a tool Edit falha: o trecho old_string aparece 6 vezes no arquivo. Só uma das ocorrências deve mudar. Qual é a ação correta?",
+      "opcoes": [
+        "Repetir a Edit com replace_all: true para garantir que a substituição aconteça.",
+        "Ampliar o old_string com linhas vizinhas até o trecho ficar único e repetir a Edit.",
+        "Reescrever o arquivo inteiro com Write a partir do que o Claude lembra do conteúdo, sem relê-lo.",
+        "Usar Bash com sed para substituir a primeira ocorrência de \"return null;\"."
+      ],
+      "correta": 1,
+      "explicacao": "Edit falha quando o trecho não é único: amplie o trecho (ou leia o arquivo inteiro e reescreva). replace_all muda todas as ocorrências.",
+      "feedbacks": [
+        "Tentadora porque faz a Edit passar. Mas troca as 6 ocorrências, e só uma deveria mudar; o erro de unicidade estava protegendo justamente contra isso.",
+        "Correta. A Edit exige um trecho único; incluir contexto ao redor identifica a ocorrência certa sem mexer nas outras.",
+        "Tentadora porque contorna a Edit. Mas reescrever de memória arrisca apagar ou alterar código; se for reescrever, o arquivo precisa ser lido inteiro antes.",
+        "Tentadora porque sed é rápido. Mas \"a primeira ocorrência\" pode não ser a certa; é um chute posicional, sem a garantia de unicidade."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "Na Pomar Pagamentos, o Claude gera mappers de entidade para DTO, mas erra as convenções do time (sufixo Response em vez de Dto, datas como DateTimeOffset em UTC, valores monetários em centavos como long). Duas tentativas com instruções em prosa no prompt não resolveram. Quais duas ações tendem a ser as mais eficazes? (Escolha DUAS.)",
+      "opcoes": [
+        "Repetir as instruções em maiúsculas, com \"IMPORTANTE\" no começo e no fim do prompt, listando cada convenção numa linha separada.",
+        "Mostrar 2 ou 3 pares concretos já existentes no repositório (entidade → DTO correto), destacando o que cada um demonstra.",
+        "Aumentar o effort para max, para que o Claude raciocine mais sobre as convenções.",
+        "Escrever primeiro testes que falham descrevendo a saída esperada do mapper e pedir ao Claude que itere até passarem.",
+        "Pedir ao Claude que \"preste mais atenção às convenções do time\" e revise a própria saída antes de responder."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Refinamento iterativo: exemplos concretos (2–3 pares) e testes que falham batem instrução em prosa. Ênfase, effort e \"preste atenção\" não dão informação nova.",
+      "feedbacks": [
+        "Tentadora porque ênfase às vezes ajuda. Mas a prosa já falhou duas vezes; o problema é falta de concretude, não de volume.",
+        "Correta. Exemplos concretos de entrada/saída comunicam convenções de forma mais precisa que a prosa e ensinam o padrão para generalizar.",
+        "Tentadora porque mais raciocínio parece ajudar. Mas o Claude não está errando por pouco esforço: ele não tem uma referência concreta da convenção.",
+        "Correta. TDD transforma a convenção em critério verificável: o Claude recebe as falhas específicas e itera até cumprir.",
+        "Tentadora por ser simples. Mas é um critério vago, e a auto-revisão na mesma sessão herda o mesmo entendimento errado que produziu a saída."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "Na Pomar Pagamentos, a skill /revisar-pr instrui: \"aponte apenas os problemas importantes\". Os devs reclamam que a mesma mudança recebe 0 comentários num dia e 12 no outro, misturando falhas de segurança com preferências de estilo. Qual é a melhor melhoria?",
+      "opcoes": [
+        "Trocar para \"seja rigoroso e aponte todos os problemas\", deixando o dev filtrar.",
+        "Limitar a saída a no máximo 5 comentários por PR, ordenados pela importância percebida pelo modelo, para que o dev só leia o que mais importa e o volume fique estável.",
+        "Adicionar uma segunda chamada a um modelo para filtrar os comentários da primeira.",
+        "Critérios explícitos: o que conta (ex.: SQL concatenado, dinheiro em double), o que não conta (estilo dos analyzers) e exemplos de fronteira."
+      ],
+      "correta": 3,
+      "explicacao": "\"Use seu bom senso\"/\"só o importante\" geram inconsistência. Para cada julgamento: o que conta, o que não conta e exemplos de fronteira.",
+      "feedbacks": [
+        "Tentadora porque elimina o problema de achados perdidos. Mas troca um critério vago por outro (\"rigoroso\") e aumenta o ruído, o que corrói a confiança nos comentários.",
+        "Tentadora porque controla o volume. Mas um corte arbitrário não define o que é importante; continua inconsistente e pode cortar a falha de segurança.",
+        "Tentadora por soar robusta. Mas é mais complexa e herda o mesmo critério vago; a correção mais simples é definir o critério.",
+        "Correta. Critérios explícitos, com o que conta, o que não conta e exemplos de fronteira, tornam o julgamento reprodutível. É a correção mais simples que resolve."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D5",
+      "pergunta": "Na Pomar Pagamentos, depois de 4 horas numa mesma sessão de refatoração do módulo de Conciliação, o Claude começa a sugerir \"padrões típicos de conciliação\" em vez de citar as classes do projeto, e esquece decisões tomadas no início (ex.: o nome do novo agregado e a tolerância de 0,01 em arredondamento). Qual é a melhor conduta?",
+      "opcoes": [
+        "Salvar decisões e estado num arquivo de progresso, fazer /compact (ou sessão nova) a partir dele e delegar explorações a subagents.",
+        "Trocar para um modelo com janela de contexto maior para caber a sessão inteira.",
+        "Desativar a compactação automática para que nada do início da sessão seja perdido.",
+        "Repetir manualmente, em cada novo prompt, a lista de decisões tomadas até agora."
+      ],
+      "correta": 0,
+      "explicacao": "Contexto degradado em sessão longa: estado em arquivo (scratchpad), /compact proativo ou sessão nova com resumo, e subagents para exploração.",
+      "feedbacks": [
+        "Correta. Respostas genéricas e decisões esquecidas são sinais de degradação de contexto. Um arquivo de rascunho sobrevive à compressão, o /compact proativo limpa o ruído, e subagents mantêm a exploração fora do contexto principal.",
+        "Tentadora porque mais janela parece resolver. Mas janela grande custa caro (todo token a cada turno) e o \"lost in the middle\" piora; não ataca o ruído acumulado.",
+        "Tentadora porque a perda veio com o tempo. Mas a degradação vem do excesso de contexto, não só da compactação; desativá-la leva ao estouro da janela.",
+        "Tentadora porque funciona no curto prazo. Mas é frágil e manual, e acrescenta ainda mais texto a uma sessão já saturada. Um arquivo de estado faz o mesmo de forma persistente."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "CENÁRIO — O Tribunal de Contas do Estado de Serra Azul (órgão fictício) mantém o sistema que recebe e analisa as prestações de contas de 300 municípios: 1,8 milhão de linhas espalhadas entre um núcleo Java 8 legado (build com Ant), serviços C# novos e centenas de scripts SQL. A TI vai receber 12 analistas-desenvolvedores concursados e quer usar o Claude Code para acelerar o onboarding e a manutenção, com servidores MCP para o Redmine (chamados), uma réplica somente leitura do PostgreSQL e a wiki técnica. Restrições: dados pessoais de servidores públicos são sigilosos; credenciais nunca vão para o git; e boa parte do conhecimento do sistema não está documentada.\n\nProblema: um analista novo pergunta ao Claude: \"como funciona o cálculo da multa por atraso na entrega da prestação de contas?\". Qual estratégia de exploração o Claude deve seguir?",
+      "opcoes": [
+        "Ler de antemão todos os arquivos do módulo de fiscalização para ter o quadro completo antes de responder.",
+        "Gerar primeiro um índice de todas as classes e tabelas do repositório no CLAUDE.md e, depois, responder à pergunta a partir desse índice.",
+        "Grep pelos pontos de entrada (\"multa\", \"atraso\", o endpoint), ler esses arquivos e seguir com Grep as dependências relevantes.",
+        "Usar WebSearch para descobrir como tribunais de contas costumam calcular multas e explicar com base nisso."
+      ],
+      "correta": 2,
+      "explicacao": "Exploração incremental: grep pelos pontos de entrada → lê → segue imports com grep → lê. Ler tudo de antemão desperdiça contexto.",
+      "feedbacks": [
+        "Tentadora pela completude. Mas ler tudo de antemão é o anti-padrão de exploração: o módulo tem centenas de arquivos e o contexto se enche de código irrelevante.",
+        "Tentadora porque parece um investimento útil. Mas é desproporcional à pergunta, infla o CLAUDE.md que carrega em toda sessão e envelhece a cada commit.",
+        "Correta. Grep pelos pontos de entrada, leitura, e de novo Grep seguindo as dependências: o entendimento é construído aos poucos, com contexto só do que importa.",
+        "Tentadora porque o código não está documentado. Mas a pergunta é sobre ESTE sistema; a regra da web pode divergir do que está implementado."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "No TCE Serra Azul, um analista investiga quais rotinas gravam na tabela TB_PROCESSO. As buscas produzem milhares de linhas de saída de Grep (Java, C# e SQL), e depois de algumas rodadas o Claude da sessão principal começa a perder o fio da tarefa original. Qual é a melhor forma de conduzir essa investigação?",
+      "opcoes": [
+        "Aumentar MAX_MCP_OUTPUT_TOKENS para que nenhuma saída seja truncada.",
+        "Delegar a investigação a um subagent Explore com objetivo e formato de retorno definidos, recebendo só a conclusão.",
+        "Rodar /clear entre uma busca e outra para manter o contexto limpo, anotando à mão o que foi encontrado em cada rodada antes de limpar.",
+        "Trocar o Grep pelo Glob em todas as buscas, porque o Glob retorna menos linhas."
+      ],
+      "correta": 1,
+      "explicacao": "Exploração volumosa → subagent Explore que devolve só a conclusão. Mantém o contexto principal limpo.",
+      "feedbacks": [
+        "Tentadora porque fala de limite de saída. Mas essa variável trata da saída de tools MCP, e o problema aqui é o oposto: saída demais entrando no contexto principal.",
+        "Correta. Busca volumosa e ruidosa é trabalho para subagent: o ruído fica no contexto dele, e a sessão principal recebe só o resumo.",
+        "Tentadora porque limpa o contexto. Mas /clear apaga também o objetivo e as descobertas anteriores; a investigação recomeça do zero a cada rodada.",
+        "Tentadora porque reduz a saída. Mas Glob casa nomes de arquivo, não conteúdo: não encontra quem grava na tabela."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "No TCE Serra Azul, o servidor MCP do Redmine (remoto, HTTP) deve estar disponível para todos os analistas que clonarem o repositório do sistema, mas cada um autentica com o próprio token pessoal. Qual configuração é a correta?",
+      "opcoes": [
+        "Rodar claude mcp add com o escopo padrão em cada máquina, colando o token no comando.",
+        "Declarar o servidor em .claude/settings.local.json, já que cada analista tem o próprio token.",
+        "Declarar o servidor em .mcp.json na raiz com o token literal de uma conta de serviço, para ninguém precisar configurar nada.",
+        "Declarar em .mcp.json (escopo project) com type \"http\", url e header de autorização com ${REDMINE_TOKEN}."
+      ],
+      "correta": 3,
+      "explicacao": "Compartilhar com o time → .mcp.json (project). Segredos via ${VAR}, nunca literais. Escopo local de MCP ≠ settings.local.json.",
+      "feedbacks": [
+        "Tentadora porque é o caminho mais rápido. Mas o escopo padrão é local: vale só para aquele usuário naquele projeto, fica em ~/.claude.json e não é compartilhado pelo repositório.",
+        "Pegadinha de nome: o escopo \"local\" de MCP não é o settings.local.json. Esse arquivo é pessoal e gitignored, e não é onde se declaram servidores para o time.",
+        "Tentadora pela praticidade. Mas coloca um segredo literal em arquivo versionado e apaga a rastreabilidade por usuário.",
+        "Correta. Escopo project (.mcp.json) é compartilhado via git; a expansão ${VAR} mantém o segredo fora do arquivo, e cada analista usa a própria credencial."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "No TCE Serra Azul, um analista adicionou a wiki técnica ao .mcp.json assim: {\"mcpServers\": {\"wiki\": {\"url\": \"https://wiki.tce-sa.gov.br/mcp\"}}}. O servidor não sobe e o Claude não enxerga nenhuma tool da wiki. O endpoint funciona com Streamable HTTP. Qual é a correção?",
+      "opcoes": [
+        "Adicionar \"type\": \"http\" à entrada do servidor.",
+        "Trocar a url para o endpoint SSE da wiki, que é o transporte padrão para servidores remotos.",
+        "Envolver a URL num pequeno proxy local stdio declarado com command e args.",
+        "Adicionar headers com um token de autenticação, porque o servidor recusa conexões anônimas."
+      ],
+      "correta": 0,
+      "explicacao": "Pegadinha clássica: url sem type é lida como stdio e falha. Servidor remoto sempre declara type (\"http\" para Streamable HTTP).",
+      "feedbacks": [
+        "Correta. Sem type, a entrada é tratada como servidor stdio (local, por command) e falha; servidor remoto precisa declarar o transporte. Streamable HTTP é \"http\".",
+        "Tentadora porque SSE é remoto. Mas SSE é o transporte legado; e o problema não é o transporte escolhido, é a ausência de type.",
+        "Tentadora porque contorna a falha. Mas cria um componente extra para resolver o que uma propriedade resolve; complexidade desnecessária.",
+        "Tentadora porque falha de conexão lembra autenticação. Mas a entrada nem chega a ser tratada como remota; sem type, os headers não fazem diferença."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "No TCE Serra Azul, dois servidores MCP expõem tools de busca: a wiki tem search (\"busca coisas\") e o Redmine tem buscar (\"pesquisa no sistema\"). Quando o analista pergunta pelo chamado de um bug, o Claude muitas vezes consulta a wiki, e vice-versa. Quais duas ações atacam a causa? (Escolha DUAS.)",
+      "opcoes": [
+        "Reescrever as descrições: o que cada tool cobre, quando usar, exemplo de entrada e como difere da outra.",
+        "Colocar um classificador antes do Claude que decide, por palavras-chave, para qual servidor mandar a pergunta.",
+        "Renomear as tools para nomes que revelem o propósito, como wiki_buscar_paginas e redmine_buscar_chamados.",
+        "Acrescentar ao CLAUDE.md: \"para chamados use buscar; para documentação use search\".",
+        "Desativar o servidor da wiki até que o problema seja investigado."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "Tools sobrepostas com descrições vagas → roteamento errado. Corrija na fonte: nomes e descrições que dizem quando usar e como diferem. Classificador é complexidade prematura.",
+      "feedbacks": [
+        "Correta. A descrição é o critério de seleção da tool. Descrições vagas e sobrepostas causam o roteamento errado; diferenciá-las explicitamente ataca a causa.",
+        "Tentadora por ser determinística. Mas é mais complexa do que o necessário: a correção mais simples (descrições e nomes melhores) vem antes de um componente de roteamento.",
+        "Correta. O nome também orienta a seleção; nomes genéricos e parecidos (search/buscar) reforçam a confusão.",
+        "Tentadora porque é rápida. Mas remenda o sintoma fora da tool: a definição da tool continua ambígua para qualquer outro cliente ou contexto em que o CLAUDE.md não esteja.",
+        "Tentadora porque elimina o erro de roteamento. Mas também elimina a capacidade de consultar a documentação; troca um problema de seleção por perda de funcionalidade."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "No TCE Serra Azul, a TI quer que, para todos os analistas, o Claude Code possa rodar git log, git diff e git status sem pedir permissão, mas nunca execute git push nem rm -rf. A regra deve valer para todo o time e ser revisável. Onde e como configurar?",
+      "opcoes": [
+        "No CLAUDE.md do projeto: \"pode usar git log/diff/status livremente; nunca rode git push nem rm -rf\".",
+        "Em .claude/settings.json (versionado), com permissions.allow para git log/diff/status (ex.: Bash(git log *)) e permissions.deny para Bash(git push *) e Bash(rm -rf *).",
+        "Em .claude/settings.local.json de cada analista, com as mesmas regras allow/deny.",
+        "Iniciar todas as sessões com --dangerously-skip-permissions, para eliminar os pedidos de permissão, e confiar numa instrução do CLAUDE.md para evitar git push e rm -rf."
+      ],
+      "correta": 1,
+      "explicacao": "Permissões do time → .claude/settings.json (projeto, versionado) com allow/deny. Settings local é pessoal; CLAUDE.md não impõe nada.",
+      "feedbacks": [
+        "Tentadora porque é legível para todos. Mas instrução em CLAUDE.md é probabilística: não pré-aprova nada nem bloqueia de fato um comando.",
+        "Correta. Regras de permissão no settings de projeto são compartilhadas via git e aplicadas pelo harness, não pelo modelo: allow pré-aprova, deny bloqueia.",
+        "Tentadora porque as regras estão certas. Mas settings.local.json é pessoal e gitignored: não é compartilhado nem revisável pelo time.",
+        "Tentadora por eliminar pedidos de permissão. Mas remove todas as salvaguardas e deixa a proteção contra push e rm -rf só no prompt; é o oposto do pedido."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "No TCE Serra Azul, o núcleo Java fica em legado/ e tem convenções próprias (build com Ant, Java 8 sem lambdas por exigência do servidor de aplicação, encoding ISO-8859-1). Essas instruções só interessam quando alguém mexe nessa pasta; hoje estão no CLAUDE.md da raiz e ocupam contexto em toda sessão, inclusive nas de C#. Qual é a melhor organização?",
+      "opcoes": [
+        "Manter no CLAUDE.md da raiz, mas dentro de uma seção com o título \"Somente para legado/\".",
+        "Mover para docs/legado.md e importá-lo no CLAUDE.md da raiz com @docs/legado.md, deixando a raiz mais enxuta.",
+        "Mover para o CLAUDE.md pessoal de quem trabalha no legado.",
+        "Mover para legado/CLAUDE.md, carregado sob demanda quando arquivos de legado/ são lidos."
+      ],
+      "correta": 3,
+      "explicacao": "Instruções que valem para um diretório → CLAUDE.md desse subdiretório (carrega sob demanda). @import e seções na raiz carregam sempre.",
+      "feedbacks": [
+        "Tentadora por ser mínima. Mas um título não muda nada no carregamento: o texto continua entrando em toda sessão.",
+        "Tentadora porque organiza o arquivo. Mas @import é expandido quando o arquivo que importa carrega; como a raiz carrega sempre, o conteúdo também.",
+        "Tentadora porque só alguns devs mexem no legado. Mas é conhecimento do sistema, não preferência pessoal: qualquer analista que tocar a pasta precisa dele.",
+        "Correta. CLAUDE.md de subdiretório entra no contexto quando o Claude lê arquivos daquela pasta. É específico, versionado e não pesa nas sessões que não tocam o legado."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "No TCE Serra Azul, os analistas sêniores escreveram um procedimento de 9 passos para gerar o \"relatório de impacto de mudança\" exigido pelo comitê (levantar tabelas afetadas, consultar chamados relacionados no Redmine, montar a matriz de risco etc.). Ele é usado algumas vezes por mês. Onde esse procedimento deve ficar?",
+      "opcoes": [
+        "Numa skill de projeto (.claude/skills/relatorio-impacto/SKILL.md) com description dizendo quando usá-la.",
+        "No CLAUDE.md da raiz, para que o Claude sempre saiba como montar o relatório.",
+        "Num hook UserPromptSubmit que injeta o procedimento sempre que o prompt contém a palavra \"impacto\".",
+        "Num arquivo .claude/rules/impacto.md sem frontmatter."
+      ],
+      "correta": 0,
+      "explicacao": "Procedimento/workflow ocasional → skill (carrega sob demanda; /comando). CLAUDE.md e rules sem paths carregam sempre.",
+      "feedbacks": [
+        "Correta. Procedimento reutilizável e ocasional é o caso típico de skill: o corpo só entra no contexto quando é usado, e o time inteiro a recebe via git.",
+        "Tentadora porque garante disponibilidade. Mas os 9 passos ocupariam contexto em todas as sessões para algo usado poucas vezes por mês.",
+        "Tentadora porque é automática. Mas reinventa com código frágil (palavra-chave) o que a skill já faz, e dispara em prompts que só mencionam \"impacto\" de passagem.",
+        "Tentadora porque rules organizam instruções. Mas regra sem paths: carrega no início de toda sessão, com o mesmo custo de deixá-la no CLAUDE.md."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "No TCE Serra Azul, a réplica PostgreSQL é exposta por MCP (tool mcp__pg__query). Algumas tabelas trazem o CPF dos servidores, e a política de sigilo exige que CPFs nunca entrem no contexto do modelo nem nos transcripts. Consultas a essas tabelas, no entanto, são legítimas para depurar regras de cálculo. Qual controle atende?",
+      "opcoes": [
+        "Uma instrução no CLAUDE.md: \"nunca exiba CPFs nas respostas\".",
+        "Um hook PreToolUse que bloqueia qualquer consulta que mencione as tabelas com CPF, devolvendo ao Claude a orientação de consultar outra fonte.",
+        "Um hook PostToolUse (matcher mcp__pg__.*) que mascara os CPFs no resultado antes de ele chegar ao modelo.",
+        "Um hook Stop que examina a resposta final e apaga CPFs antes de exibi-la ao analista."
+      ],
+      "correta": 2,
+      "explicacao": "PostToolUse = normalizar/limpar/mascarar resultados (ex.: PII) antes de chegarem ao modelo. PreToolUse bloqueia a chamada; Stop atua só no fim.",
+      "feedbacks": [
+        "Tentadora por ser simples. Mas o CPF já teria entrado no contexto ao chegar no resultado da tool; o prompt só tenta não repeti-lo, e mesmo isso é probabilístico.",
+        "Tentadora porque é determinística. Mas bloqueia consultas legítimas de depuração; o requisito é esconder o CPF, não proibir as tabelas.",
+        "Correta. PostToolUse roda depois da tool e antes de o modelo ver o resultado: é o ponto para normalizar e mascarar PII de forma determinística, sem impedir a consulta.",
+        "Tentadora porque é um filtro em código. Mas atua tarde demais: o CPF já passou pelo contexto e pelo transcript."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "No TCE Serra Azul, um analista escreveu um hook PreToolUse (type command, matcher Bash) que detecta comandos psql contendo DELETE, UPDATE ou DROP e termina com exit 1 com uma mensagem no stderr. Nos testes, a mensagem aparece, mas os comandos continuam executando. Qual é a causa?",
+      "opcoes": [
+        "Hooks PreToolUse só interceptam tools MCP; para comandos Bash é preciso usar um hook PostToolUse, que vê o comando já montado.",
+        "Exit 1 é erro não bloqueante; para bloquear, o hook deve sair com exit 2 (ou devolver permissionDecision deny).",
+        "O matcher precisa ser \"Bash(psql*)\" para que o hook intercepte comandos psql.",
+        "Hooks de projeto não podem bloquear comandos; só hooks de managed policy têm esse poder."
+      ],
+      "correta": 1,
+      "explicacao": "Hook command: exit 0 = passa; exit 2 = bloqueia (stderr volta ao Claude); outros códigos = erro não bloqueante. Alternativa: JSON com permissionDecision deny.",
+      "feedbacks": [
+        "Tentadora porque há hooks diferentes por momento. Mas PreToolUse vale para qualquer tool, inclusive Bash; e PostToolUse rodaria depois do comando, tarde demais para bloquear.",
+        "Correta. Em hooks command, exit 0 passa e exit 2 bloqueia (o stderr vira feedback para o Claude). Outros códigos são erros não bloqueantes: a tool roda mesmo assim.",
+        "Tentadora porque lembra a sintaxe de regras de permissão. Mas o hook já está sendo disparado (a mensagem aparece); o problema é o código de saída.",
+        "Tentadora porque managed policy soa mais forte. Mas hooks de projeto bloqueiam normalmente; o local da configuração não muda a semântica do exit code."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "No TCE Serra Azul, a coordenação pede ao Claude: \"documente o módulo de licitações\", que ninguém da equipe atual conhece. Não se sabe quantos subsistemas existem, quais integrações há com outros módulos nem onde ficam as regras. Qual estratégia de decomposição é mais adequada?",
+      "opcoes": [
+        "Prompt chaining com passos fixos definidos de antemão: 1) listar classes, 2) listar tabelas, 3) listar endpoints, 4) consolidar e escrever o documento final do módulo.",
+        "Um único prompt pedindo o documento completo, para que o Claude tenha a visão integral.",
+        "Dividir de antemão por diretório, com um subagent por pasta, cada um documentando a sua.",
+        "Decomposição dinâmica: mapear estrutura e integrações primeiro, gerar as subtarefas a partir do que foi descoberto e fazer nova rodada para as lacunas."
+      ],
+      "correta": 3,
+      "explicacao": "Passos conhecidos de antemão → prompt chaining. Investigação aberta → decomposição dinâmica/adaptativa, com rodada extra para as lacunas.",
+      "feedbacks": [
+        "Tentadora porque é previsível. Mas prompt chaining serve quando os passos são conhecidos de antemão; aqui a estrutura do módulo é justamente o que se precisa descobrir.",
+        "Tentadora por ser simples. Mas uma investigação aberta e grande num passo só leva a cobertura rasa e a lacunas não detectadas.",
+        "Tentadora porque paraleliza. Mas a divisão por pasta é arbitrária: as regras e integrações cruzam diretórios, e a decomposição fixa ignora o que a exploração vai revelar.",
+        "Correta. Em investigação aberta, as subtarefas surgem das descobertas: mapeia, decompõe com base no mapa e faz uma rodada direcionada para o que ficou faltando."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "No TCE Serra Azul, o analista pede ao Claude que descubra quem lê e grava a tabela TB_PROCESSO em três bases independentes: o núcleo Java, os serviços C# e os scripts SQL agendados. O Claude vai usar subagents Explore. Quais duas práticas de orquestração são as mais adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Fazer os três subagents trocarem resultados diretamente entre si para eliminar duplicatas antes de responder.",
+        "Lançar os três subagents na mesma resposta do coordenador, para que rodem em paralelo.",
+        "Usar um único subagent para as três bases, para que ele tenha uma visão comum.",
+        "Colar no prompt de cada subagent a transcrição completa das 3 horas de sessão, já que subagents não herdam o histórico e precisam de todo o contexto.",
+        "Dar a cada subagent um prompt autocontido: tabela, base, o que conta como leitura/escrita e formato de retorno (arquivo, linha, operação)."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Subagents independentes em paralelo (mesma resposta) + prompt autocontido com escopo e formato. Comunicação pelo coordenador; nada de despejar o transcript.",
+      "feedbacks": [
+        "Tentadora porque deduplicar cedo parece eficiente. Mas subagents não se comunicam diretamente; o coordenador recebe os resultados e consolida (hub-and-spoke).",
+        "Correta. As três bases são independentes; várias chamadas Agent na mesma resposta rodam em paralelo.",
+        "Tentadora pela visão integrada. Mas serializa o trabalho e concentra três buscas ruidosas num só contexto; a integração é papel do coordenador.",
+        "Tentadora porque o subagent não herda o histórico. Mas despeja ruído; o certo é passar só o que a tarefa exige, de forma estruturada.",
+        "Correta. O contexto do subagent é isolado; um prompt autocontido, com escopo e formato de retorno, permite que o coordenador agregue os três resultados."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D4",
+      "pergunta": "No TCE Serra Azul, o Claude classifica trechos de código legado como \"risco alto\", \"médio\" ou \"baixo\" para priorizar a modernização. A regra escrita é clara para os extremos, mas os analistas discordam muito das classificações nos casos de fronteira (ex.: SQL dinâmico com parâmetros vindos só de enum interno). Qual é a melhor melhoria?",
+      "opcoes": [
+        "Incluir 3 ou 4 exemplos de casos de fronteira, cada um com o trecho, a classificação e o raciocínio.",
+        "Incluir 20 exemplos de casos óbvios de risco alto e baixo para reforçar a regra.",
+        "Pedir que o Claude atribua uma nota de confiança a cada classificação e mandar para revisão humana os casos abaixo de 0,7.",
+        "Acrescentar \"use seu bom senso nos casos ambíguos\"."
+      ],
+      "correta": 0,
+      "explicacao": "Casos ambíguos → 2–4 exemplos direcionados à fronteira, com entrada, saída e raciocínio. Bom senso e confiança autodeclarada não resolvem.",
+      "feedbacks": [
+        "Correta. Few-shot direcionado aos casos ambíguos, com o raciocínio explícito, ensina o critério de desempate. É o uso clássico de exemplos.",
+        "Tentadora porque mais exemplos parecem melhores. Mas os extremos já funcionam; exemplos óbvios não ensinam a fronteira, e o volume pode levar a decorar em vez de generalizar.",
+        "Tentadora porque usa revisão humana. Mas confiança autodeclarada é mal calibrada, e isso não melhora o critério; só transfere a dúvida.",
+        "Tentadora por soar flexível. Mas é exatamente o critério vago que gera inconsistência."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "No TCE Serra Azul, durante uma sessão longa de investigação, o Claude levantou números exatos: os chamados #48213 e #48977, a tabela TB_PROC_HIST_2019 e o limite de 180 dias da resolução. Depois de um /compact, ele passou a citar \"um chamado de 2019\" e \"cerca de seis meses\". Qual é a melhor prática para as próximas investigações?",
+      "opcoes": [
+        "Evitar o /compact e deixar a sessão crescer até o limite da janela.",
+        "Pedir ao Claude, após o /compact, que se lembre dos números exatos citados antes.",
+        "Manter um arquivo de notas com os fatos do caso (IDs, tabelas, prazos, valores exatos), atualizado à medida que surgem.",
+        "Usar um modelo com janela maior para que o /compact nunca seja necessário."
+      ],
+      "correta": 2,
+      "explicacao": "Resumo perde valores exatos, IDs e datas. Guarde \"case facts\" num arquivo/bloco persistente que nunca é resumido.",
+      "feedbacks": [
+        "Tentadora porque a perda veio do resumo. Mas a sessão degrada com o excesso de contexto e acaba estourando a janela; adiar a compressão não protege os dados.",
+        "Tentadora por ser rápida. Mas o detalhe já foi resumido e perdido; pedir que \"lembre\" convida a inventar valores plausíveis.",
+        "Correta. Resumos perdem valores exatos, IDs e datas. Um bloco persistente de fatos do caso, fora do histórico resumido, preserva o que não pode ser parafraseado.",
+        "Tentadora porque adia o problema. Mas janela maior custa caro e sofre de \"lost in the middle\"; o risco de perder fatos exatos continua."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "No TCE Serra Azul, numa segunda-feira, um analista perguntou: \"há chamados abertos sobre o cálculo de multa?\". O Claude respondeu \"não há chamados abertos sobre esse tema\". Depois se descobriu que a VPN estava fora e o servidor MCP do Redmine, ao falhar na conexão, devolvia uma lista vazia. Qual é a correção adequada?",
+      "opcoes": [
+        "Instruir o Claude, no CLAUDE.md, a desconfiar de listas vazias vindas do Redmine e sempre repetir a busca duas vezes antes de concluir que não há chamados.",
+        "Configurar o servidor para responder \"Operation failed\" quando a conexão cair.",
+        "Adicionar um hook Stop que bloqueia respostas contendo \"não há chamados\".",
+        "Na falha de conexão, o servidor devolve erro estruturado (isError, transitório, retentável); lista vazia só para consulta executada sem resultados."
+      ],
+      "correta": 3,
+      "explicacao": "Suprimir erro em silêncio (vazio como sucesso) é anti-padrão. Erro estruturado com categoria e retentabilidade; vazio só quando a consulta realmente rodou.",
+      "feedbacks": [
+        "Tentadora porque reduz o falso \"nada encontrado\". Mas não distingue as situações: se a busca falha duas vezes, a lista vazia continua parecendo sucesso.",
+        "Tentadora porque pelo menos sinaliza falha. Mas é o anti-padrão do erro genérico: não diz o que falhou, se é transitório nem o que fazer.",
+        "Tentadora por ser determinística. Mas bloquearia também as respostas corretas de \"nada encontrado\"; o defeito está na origem do sinal, não na frase.",
+        "Correta. Vazio não é falha: lista vazia com sucesso é informação; timeout ou queda de conexão significa que a busca não rodou. O erro estruturado permite ao Claude tentar de novo ou avisar o analista."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "CENÁRIO — A Rota Viva Logística opera roteirização de entregas de última milha em 40 cidades. Seu monorepo tem 22 microsserviços .NET, um app Angular para motoristas e cerca de 300 PRs por semana no GitHub Actions. A engenharia está colocando o Claude Code no pipeline para três usos: revisão automática de PRs (os comentários são publicados por um bot que faz parse de JSON), geração de testes para código sem cobertura e um relatório noturno de dívida técnica em 80 repositórios. Restrições: nenhum job pode travar o pipeline; o custo mensal tem teto; e os devs já ignoram ferramentas que geram falso positivo demais.\n\nProblema: o primeiro job de revisão foi escrito como claude \"revise o diff deste PR e aponte problemas\". Ele fica parado até estourar o timeout de 60 minutos do runner, sem produzir saída. Qual é a correção?",
+      "opcoes": [
+        "Adicionar --max-turns 5 para limitar a execução.",
+        "Rodar em modo não interativo com -p (--print).",
+        "Adicionar --output-format json para que a saída saia estruturada.",
+        "Adicionar --permission-mode bypassPermissions para que nenhum pedido de permissão bloqueie o job."
+      ],
+      "correta": 1,
+      "explicacao": "Em CI, -p/--print é obrigatório: execução não interativa que imprime e sai. As demais flags de CI (--output-format, --max-turns, --json-schema...) complementam o -p.",
+      "feedbacks": [
+        "Tentadora porque limita a duração. Mas sem -p o Claude Code abre uma sessão interativa e fica esperando input; o limite de turnos não muda o modo de execução.",
+        "Correta. -p roda o prompt, imprime o resultado e sai. Sem ele, o processo abre uma sessão interativa e espera input que nunca vai chegar no runner.",
+        "Tentadora porque o bot precisa de JSON. Mas --output-format vale para o modo print; sem -p a sessão continua interativa e travada.",
+        "Tentadora porque pedidos de permissão podem travar. Mas a causa é a sessão interativa; além disso, bypassPermissions remove salvaguardas sem necessidade."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Na Rota Viva, o job de revisão já roda com -p, mas o bot que publica os comentários quebra em ~5% das execuções: às vezes a resposta vem com texto antes do JSON, às vezes dentro de bloco markdown, às vezes sem o campo severidade. Qual é a correção mais robusta?",
+      "opcoes": [
+        "Adicionar --append-system-prompt \"responda APENAS com JSON válido, sem markdown\".",
+        "Pós-processar a saída com regex para extrair o primeiro bloco entre chaves.",
+        "Trocar para --output-format stream-json para que cada evento venha como JSON.",
+        "Usar --output-format json com --json-schema e fazer o bot ler o campo structured_output."
+      ],
+      "correta": 3,
+      "explicacao": "Saída consumida por máquina em CI → --output-format json + --json-schema (resultado em structured_output). Instrução em prompt e regex são frágeis.",
+      "feedbacks": [
+        "Tentadora porque é a instrução óbvia. Mas continua sendo prompt: reduz a falha, não a elimina, e não garante os campos obrigatórios.",
+        "Tentadora porque contorna o texto extra. Mas não resolve campo faltando nem tipo errado, e é frágil com JSON aninhado.",
+        "Tentadora pelo nome. Mas stream-json é o formato de transporte (eventos em linhas JSON); o conteúdo da resposta continua sendo texto livre, sem schema.",
+        "Correta. --json-schema faz o Claude Code devolver saída validada contra o schema, no campo structured_output do JSON. Isso ataca forma, campos e tipos de uma vez."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D3",
+      "pergunta": "Na Rota Viva, o job de geração de testes roda com -p e deve poder ler código, criar e editar arquivos de teste e rodar dotnet test sem ficar bloqueado por pedidos de permissão. Ele não deve ter acesso à web. Quais duas configurações atendem? (Escolha DUAS.)",
+      "opcoes": [
+        "--dangerously-skip-permissions, para que nenhum pedido de permissão bloqueie o job em nenhuma etapa.",
+        "Uma instrução no CLAUDE.md: \"neste job, não acesse a internet\".",
+        "--allowedTools \"Read,Edit,Write,Bash(dotnet test *)\", pré-aprovando essas tools.",
+        "--max-turns 1, para que o job não tenha turnos sobrando para acessar a web.",
+        "--disallowedTools \"WebFetch,WebSearch\", que remove essas tools do contexto do Claude."
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Em CI, defina o perímetro com flags: --allowedTools aprova o necessário (com escopo, como Bash(dotnet test *)), --disallowedTools remove o que não deve existir. Prompt não é controle de acesso.",
+      "feedbacks": [
+        "Tentadora porque elimina qualquer bloqueio. Mas libera tudo (inclusive comandos e rede que o job não deveria usar); é o oposto de restringir o escopo.",
+        "Tentadora por ser simples. Mas é probabilística; restrição de capacidade se faz removendo a tool, não pedindo ao modelo.",
+        "Correta. --allowedTools aprova as tools listadas; com a regra Bash(dotnet test *), só esse comando roda sem pedir permissão.",
+        "Tentadora porque limita a execução. Mas um turno não basta para ler, escrever testes e rodá-los; e não remove a capacidade de acessar a web.",
+        "Correta. Nome de tool sem escopo em --disallowedTools remove a tool por completo: o Claude nem a enxerga, então não pode usá-la."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Na Rota Viva, um job de \"autocorreção\" faz numa única invocação -p: corrige o teste que falhou e, em seguida, \"revisa criticamente a própria correção\". A revisão quase sempre aprova, e dois bugs introduzidos pela correção chegaram à produção. Qual mudança de arquitetura resolve melhor?",
+      "opcoes": [
+        "Revisar numa invocação separada (sessão nova), que recebe o diff e o objetivo, sem o raciocínio da geração.",
+        "Aumentar o effort da mesma invocação para que a auto-revisão seja mais cuidadosa.",
+        "Retomar a sessão da correção com --resume num segundo passo do pipeline e pedir a revisão ali, já com todo o contexto do que foi alterado.",
+        "Acrescentar ao prompt: \"seja extremamente crítico, assuma que há bugs\"."
+      ],
+      "correta": 0,
+      "explicacao": "Auto-revisão na mesma sessão é anti-padrão (viés do contexto). Review em sessão nova, sem o raciocínio da geração.",
+      "feedbacks": [
+        "Correta. Viés do contexto de raciocínio: quem gerou tende a confirmar as próprias decisões. Uma sessão independente revisa o diff sem herdar as justificativas.",
+        "Tentadora porque mais raciocínio parece mais rigor. Mas o problema não é esforço: é o mesmo contexto revisando as próprias decisões.",
+        "Tentadora porque separa em duas etapas. Mas --resume carrega todo o histórico da geração; o viés continua o mesmo.",
+        "Tentadora por inverter a postura. Mas é instrução em prompt contra um viés estrutural, e tende a gerar falsos positivos em vez de achar os bugs reais."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Na Rota Viva, um PR de refatoração toca 45 arquivos em 6 serviços. A revisão automática em um único passo deixou passar uma quebra de contrato (um DTO mudou de campo em um serviço e o consumidor em outro não foi ajustado) e aplicou critérios diferentes a arquivos parecidos. Qual abordagem de revisão é a mais adequada?",
+      "opcoes": [
+        "Usar um modelo com janela maior para que os 45 arquivos caibam folgadamente num único passo.",
+        "Dividir o PR em lotes de 10 arquivos e revisar cada lote isoladamente, com o mesmo prompt, publicando os achados de cada lote no PR à medida que saem.",
+        "Passo 1: revisar cada arquivo localmente com o mesmo prompt; passo 2: revisão de integração que recebe os achados e analisa contratos entre arquivos.",
+        "Rodar a mesma revisão de passo único três vezes e manter só os achados que aparecem em pelo menos duas."
+      ],
+      "correta": 2,
+      "explicacao": "PR grande → passo 1 por arquivo (consistência) + passo 2 de integração com os achados (cross-file).",
+      "feedbacks": [
+        "Tentadora porque o problema parece ser de espaço. Mas o problema é diluição de atenção; caber na janela não garante análise consistente nem integração entre arquivos.",
+        "Tentadora porque reduz a carga por chamada. Mas sem um passo de integração, a quebra de contrato entre serviços continua invisível, porque os dois lados caem em lotes diferentes.",
+        "Correta. Review multi-pass: o passo por arquivo dá consistência e foco; o passo de integração pega bugs entre arquivos (contratos, fluxo de dados, erros na fronteira).",
+        "Tentadora porque votação reduz ruído. Mas repete a mesma falha estrutural três vezes; o bug entre arquivos que um passo único não vê continua não visto."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Na Rota Viva, há dois fluxos candidatos a usar a Message Batches API (50% mais barata, resultados em até 24h): (1) a revisão de PR, que hoje é check obrigatório antes do merge; (2) o relatório noturno de dívida técnica dos 80 repositórios, consumido na reunião das 10h do dia seguinte. Qual é a decisão correta?",
+      "opcoes": [
+        "Mover os dois para batch e reduzir o custo pela metade.",
+        "Mover a revisão de PR para batch e fazer o check de merge consultar o status a cada minuto até o resultado sair.",
+        "Manter os dois síncronos, porque batch não suporta schemas de saída estruturada.",
+        "Mover apenas o relatório noturno para batch e manter a revisão de PR síncrona."
+      ],
+      "correta": 3,
+      "explicacao": "Batch: análise noturna, relatórios, processamento em massa. Nunca para checagem pré-merge, tempo real ou passo bloqueante de CI.",
+      "feedbacks": [
+        "Tentadora pela economia. Mas batch não tem SLA e pode levar até 24h: travaria o merge em um check bloqueante.",
+        "Tentadora porque o polling parece contornar a espera. Mas não há garantia de tempo; o PR poderia ficar bloqueado por horas.",
+        "Tentadora por parecer uma limitação técnica. Mas a restrição relevante do batch é a falta de SLA e de loop multi-turn de tools num request; não é motivo para abrir mão da economia no relatório.",
+        "Correta. Trabalho noturno, sem bloqueio e tolerante a latência, é o caso ideal de batch. Check pré-merge e qualquer passo bloqueante precisam de resposta síncrona."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Na Rota Viva, o relatório noturno envia um request por repositório num batch. O script associa os resultados aos repositórios pela posição (o 1º resultado ao 1º repositório enviado, e assim por diante). O relatório tem atribuído achados de um repositório a outro. Qual é a correção?",
+      "opcoes": [
+        "Ordenar os resultados pelo horário de conclusão antes de associá-los.",
+        "Usar um custom_id com o identificador do repositório e casar cada resultado por ele.",
+        "Enviar um batch por repositório, para que cada batch tenha um único resultado.",
+        "Pedir ao modelo que repita o nome do repositório na primeira linha da resposta e fazer parse dela."
+      ],
+      "correta": 1,
+      "explicacao": "Resultados do batch chegam fora de ordem → case sempre por custom_id.",
+      "feedbacks": [
+        "Tentadora porque tenta reconstruir a ordem. Mas o horário de conclusão não tem relação com a ordem de envio; a associação continuaria errada.",
+        "Correta. Os resultados de um batch podem vir fora de ordem; o custom_id é a chave de correlação entre request e resultado.",
+        "Tentadora porque elimina a ambiguidade. Mas cria 80 batches para gerenciar e fazer polling, quando um campo resolve o problema.",
+        "Tentadora porque funciona na maioria das vezes. Mas depende do modelo repetir o nome corretamente; a correlação deve vir do protocolo (custom_id), não do texto gerado."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Na Rota Viva, o batch noturno de 1.200 requests terminou com 1.158 succeeded, 37 errored e 5 expired. Quais duas práticas são corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Reenviar o batch inteiro com os 1.200 requests, para garantir que o relatório saia de uma única execução consistente e comparável com as noites anteriores.",
+        "Tratar os 5 expired como sucesso com resultado vazio, já que não houve erro explícito.",
+        "Reenviar num novo batch somente os custom_id com resultado errored ou expired (corrigindo antes a causa dos erros, se for de validação).",
+        "Aumentar o tempo de expiração do batch para 72h, para que nenhum request expire.",
+        "Ler os resultados só depois que processing_status chegar a \"ended\", e então tratar cada resultado conforme seu tipo (succeeded, errored, canceled, expired)."
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Batch: poll até processing_status = ended, depois trate cada resultado pelo tipo. Reenvie só os custom_id que falharam; nunca trate expired como sucesso vazio.",
+      "feedbacks": [
+        "Tentadora pela consistência. Mas paga de novo por 1.158 resultados válidos; reenvie só o que falhou.",
+        "Tentadora porque expired não é errored. Mas expired significa que o request não foi processado dentro da janela; tratar como vazio é suprimir falha em silêncio.",
+        "Correta. Reenvie apenas os custom_id que falharam; se o erro for do request (validação), corrija antes de reenviar.",
+        "Tentadora por atacar a causa dos expired. Mas a janela de processamento do batch é de até 24h; não há como estendê-la para 72h.",
+        "Correta. Faça polling até ended; depois, cada resultado individual informa o desfecho do seu request."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D4",
+      "pergunta": "Na Rota Viva, a revisão automática tem uma categoria \"possível referência nula\" que dispara em quase todo PR, e 80% desses achados são descartados. Os devs passaram a ignorar TODOS os comentários do bot, inclusive os de segurança, que costumam acertar. Qual é a melhor ação imediata?",
+      "opcoes": [
+        "Desligar a categoria ruidosa, reescrever o critério (o que conta, o que não conta, exemplos) e religá-la após medir a precisão.",
+        "Pedir ao Claude uma nota de confiança por achado e publicar só os acima de 0,8.",
+        "Acrescentar ao prompt: \"seja conservador ao apontar referências nulas\".",
+        "Adicionar um segundo modelo que filtra os comentários do primeiro antes da publicação, descartando os que ele julgar falsos positivos."
+      ],
+      "correta": 0,
+      "explicacao": "Categoria ruidosa contamina a confiança em todas: desligue, defina critérios explícitos, meça e religue. Confiança autodeclarada e \"seja conservador\" não resolvem.",
+      "feedbacks": [
+        "Correta. Uma categoria com muitos falsos positivos corrói a confiança nas categorias boas. Desligue, refine o critério explícito, meça e religue.",
+        "Tentadora porque filtra o ruído. Mas confiança autodeclarada é mal calibrada; o filtro seria arbitrário e poderia cortar achados de segurança.",
+        "Tentadora por ser mínima. Mas é um critério vago (\"conservador\"), o que produz resultados inconsistentes em vez de precisão.",
+        "Tentadora por parecer robusta. Mas é mais complexa, dobra o custo e não corrige o critério que gera o ruído."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Na Rota Viva, um script em C# usa a Messages API diretamente (loop manual) para gerar testes: ele chama o modelo, executa as tools pedidas e encerra o loop quando o texto da resposta contém \"concluído\". Em algumas execuções, o loop termina com uma chamada de tool ainda pendente; em outras, nunca termina. Qual é a correção?",
+      "opcoes": [
+        "Encerrar o loop após um número fixo de 10 iterações, que é suficiente na maioria dos casos.",
+        "Trocar a palavra-chave por um marcador mais raro, como \"<<FIM>>\", e instruir o modelo a usá-lo.",
+        "Decidir pelo stop_reason: tool_use → executar e devolver tool_result; end_turn → encerrar; tratar max_tokens e os demais.",
+        "Encerrar o loop sempre que a resposta contiver algum bloco de texto."
+      ],
+      "correta": 2,
+      "explicacao": "Loop agêntico se controla por stop_reason (tool_use → continua; end_turn → fim). Texto e limites fixos não são o mecanismo de parada.",
+      "feedbacks": [
+        "Tentadora porque garante término. Mas limite fixo como mecanismo principal corta execuções legítimas e não resolve o término prematuro; serve só como backstop.",
+        "Tentadora porque reduz falsos positivos de texto. Mas continua decidindo o loop por linguagem natural; a resposta pode trazer o marcador junto com tool_use.",
+        "Correta. O stop_reason é o sinal de controle do loop. Ter texto na resposta não significa que terminou: content pode misturar texto e tool_use.",
+        "Tentadora porque texto parece resposta final. Mas content pode misturar texto e tool_use; é exatamente o caso do término com tool pendente."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D1",
+      "pergunta": "Na Rota Viva, o job de geração de testes roda com -p --max-turns 3 e termina com erro de limite em 40% das execuções, sem os testes completos. Um colega propõe subir para --max-turns 50 e encerrar o assunto. Qual é a abordagem mais adequada?",
+      "opcoes": [
+        "Remover o limite de turnos por completo, já que o modelo sabe quando terminou.",
+        "Manter --max-turns 3 e aceitar os testes parciais, para preservar o custo.",
+        "Envolver o comando num laço de shell que reexecuta o job inteiro até o dotnet test passar, com --max-turns 3 em cada execução para manter cada rodada barata.",
+        "Usar --max-turns generoso só como backstop, com critério de pronto explícito no prompt (testes-alvo passando), estouro como falha visível e --max-budget-usd para o custo."
+      ],
+      "correta": 3,
+      "explicacao": "--max-turns é backstop; o término vem do modelo com critério de pronto explícito. Estouro do limite deve ser falha visível; custo se controla com teto de orçamento.",
+      "feedbacks": [
+        "Tentadora porque o modelo de fato decide quando parar. Mas sem nenhum backstop uma execução anômala pode rodar e gastar indefinidamente no CI.",
+        "Tentadora pelo teto de custo. Mas usa o limite como mecanismo principal de parada e entrega trabalho incompleto em 40% das execuções.",
+        "Tentadora porque persegue o resultado. Mas cada reexecução começa do zero, multiplica o custo e não tem critério de parada além do sucesso.",
+        "Correta. Limite de iterações é backstop, não mecanismo principal. O critério de conclusão explícito e um teto de custo (--max-budget-usd) protegem o pipeline sem cortar execuções legítimas."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D2",
+      "pergunta": "Na Rota Viva, o job de geração de testes usa uma tool MCP interna, cobertura_por_arquivo. Quando o relatório de cobertura ainda não foi gerado pelo passo anterior, a tool responde \"Operation failed\". Nesses casos, o Claude passou a inventar percentuais plausíveis e gerou testes para arquivos que já estavam cobertos. Qual é a melhor correção na tool?",
+      "opcoes": [
+        "Fazer a tool devolver 0% de cobertura quando o relatório não existir, para que o Claude siga gerando testes em vez de travar o job no meio do pipeline.",
+        "Devolver erro estruturado: isError, categoria (pré-requisito ausente), isRetryable false, ação tentada e orientação de gerar a cobertura antes.",
+        "Instruir no prompt: \"se a tool falhar, não invente valores\".",
+        "Repetir automaticamente a chamada 5 vezes com backoff exponencial antes de devolver o erro."
+      ],
+      "correta": 1,
+      "explicacao": "Erro genérico (\"Operation failed\") é anti-padrão. Erro estruturado: categoria, retentável ou não, ação tentada e orientação. Retry é só para transitórios.",
+      "feedbacks": [
+        "Tentadora porque mantém o fluxo andando. Mas transforma uma falha em dado falso: é supressão silenciosa do erro, e os arquivos já cobertos receberiam testes duplicados.",
+        "Correta. O erro estruturado diz o que falhou, se adianta tentar de novo e o que fazer. Assim o Claude consegue raciocinar sobre a recuperação em vez de improvisar.",
+        "Tentadora porque ataca a invenção. Mas não dá ao Claude a informação necessária para se recuperar, e continua probabilística; a causa é o erro genérico.",
+        "Tentadora porque retry é o padrão para falhas. Mas o relatório ausente não é falha transitória: repetir não cria o arquivo, só atrasa o mesmo erro."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D5",
+      "pergunta": "Na Rota Viva, a diretoria aprovou que PRs classificados como \"baixo risco\" (só documentação ou testes) sejam aprovados automaticamente pelo Claude. Os de \"médio\" e \"alto\" risco continuam com revisão humana. Auditoria interna quer um controle de qualidade contínuo sobre as decisões automáticas e as classificações. Qual desenho é o mais adequado?",
+      "opcoes": [
+        "Amostragem estratificada por risco: frações maiores nas faixas de maior risco e menor, mas nunca nula, entre os auto-aprovados.",
+        "Amostragem uniforme de 5% de todos os PRs, independentemente do risco.",
+        "Auditar só os PRs em que o Claude declarar confiança abaixo de 0,7 na própria classificação.",
+        "Dispensar auditoria dos auto-aprovados, já que só PRs de documentação e testes entram nessa faixa, e auditar 100% dos PRs de alto risco."
+      ],
+      "correta": 0,
+      "explicacao": "Revisão humana: amostragem estratificada por risco (inclusive na faixa automatizada), não uniforme nem guiada por confiança autodeclarada.",
+      "feedbacks": [
+        "Correta. Amostragem estratificada concentra o esforço humano onde o erro custa mais, sem deixar a faixa automatizada sem verificação.",
+        "Tentadora pela simplicidade estatística. Mas gasta revisão igual onde o risco é diferente, e pode amostrar pouquíssimos casos das faixas críticas.",
+        "Tentadora porque foca nos casos duvidosos. Mas confiança autodeclarada é mal calibrada: o erro confiante nunca seria auditado.",
+        "Tentadora porque a faixa parece inofensiva. Mas a classificação de risco também pode errar: um PR mal classificado entraria em produção sem nenhum olhar humano."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D5",
+      "pergunta": "Na Rota Viva, o painel mostra que a revisão automática tem 92% de precisão (achados aceitos pelos devs). Mesmo assim, o time de plataforma diz que os comentários nos arquivos Terraform de infra/ \"são quase todos errados\". Qual é o próximo passo correto?",
+      "opcoes": [
+        "Confiar no número agregado, já que 92% está acima da meta de 85%.",
+        "Excluir infra/ da revisão automática de forma permanente e manter os demais diretórios como estão, já que a média geral está boa.",
+        "Quebrar a precisão por diretório e categoria de achado, com um campo detected_pattern em cada achado.",
+        "Aumentar o effort da revisão para todos os arquivos."
+      ],
+      "correta": 2,
+      "explicacao": "Métrica agregada esconde falha por segmento. Quebre por tipo/diretório/categoria e use detected_pattern para medir quais padrões geram achados descartados.",
+      "feedbacks": [
+        "Tentadora porque a meta foi atingida. Mas métrica agregada pode mascarar falha concentrada num segmento; a queixa é específica e mensurável.",
+        "Tentadora porque elimina a queixa. Mas decide sem medir: pode descartar achados úteis, e não descobre qual padrão gera o erro.",
+        "Correta. Meça antes de mexer: a quebra por segmento revela se infra/ tem precisão baixa escondida pela média, e o detected_pattern aponta qual regra precisa de critério melhor.",
+        "Tentadora porque mais esforço parece mais qualidade. Mas age sem diagnóstico, encarece todos os PRs e talvez nem mexa na causa."
+      ]
+    },
+    {
+      "cenario": 5,
+      "dominio": "D5",
+      "pergunta": "Na Rota Viva, para diagnosticar testes de integração que falham, o job passa ao Claude o log completo da execução (cerca de 15 MB de saída de build, warnings e traces) seguido da pergunta. As análises vêm vagas, e às vezes ignoram a falha que aparece no meio do log. Qual é a melhor correção?",
+      "opcoes": [
+        "Usar um modelo com janela de contexto maior para que o log inteiro caiba sem cortes.",
+        "Pré-processar o log: extrair só os testes que falharam (mensagem, stack trace, linhas vizinhas) e pôr isso no início do prompt.",
+        "Repetir a pergunta no início e no fim do prompt, mantendo o log inteiro no meio.",
+        "Dividir o log em 30 partes e enviar cada uma em um request do Batch API."
+      ],
+      "correta": 1,
+      "explicacao": "Corte a saída das tools/logs para o relevante e ponha os achados-chave no começo; janela maior não resolve o \"lost in the middle\".",
+      "feedbacks": [
+        "Tentadora porque o log é grande. Mas caber não é o mesmo que ser usado: o \"lost in the middle\" continua, e o custo por execução sobe muito.",
+        "Correta. Corte a saída para o que é relevante e coloque o essencial no começo: menos ruído e nada crítico perdido no meio.",
+        "Tentadora porque ajuda a lembrar a tarefa. Mas o problema é a falha estar enterrada em 15 MB de ruído; repetir a pergunta não aproxima a evidência.",
+        "Tentadora pela economia do batch. Mas fragmenta o contexto (a falha pode depender de linhas em partes diferentes) e introduz até 24h de espera num diagnóstico de CI."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "CENÁRIO — A Lume Comex é um despachante aduaneiro digital de Santos que processa ~40 mil documentos por mês para importadores: faturas comerciais (commercial invoices), packing lists e conhecimentos de embarque (B/L), em PDF nativo ou digitalizado, em português, inglês e chinês. Um pipeline com Claude extrai os dados para um JSON que alimenta o ERP e o pré-preenchimento da declaração de importação. Restrições: os valores precisam fechar (itens × total, pesos entre documentos); a classificação fiscal (NCM) tem 8 dígitos; nenhum dado pode ser inventado; há pico no fim do mês; e os despachantes humanos revisam o que o sistema não consegue garantir.\n\nProblema: hoje o prompt termina com \"retorne a resposta em JSON\" e o código faz parse do texto. Em ~3% dos documentos o parse falha (vírgula sobrando, texto antes do JSON) ou faltam campos obrigatórios. Qual é a correção mais adequada?",
+      "opcoes": [
+        "Acrescentar ao prompt um exemplo completo do JSON esperado, com todos os campos, e a frase \"não escreva nada fora do JSON\".",
+        "Fazer prefill da resposta do assistant com \"{\" para forçar o início do JSON.",
+        "Usar structured outputs (output_config.format com json_schema) ou uma tool de extração com strict: true.",
+        "Criar uma rotina de reparo que corrige vírgulas e remove texto antes de \"{\" antes do parse."
+      ],
+      "correta": 2,
+      "explicacao": "Texto livre pode sair malformado ou incompleto. Para garantir forma: structured outputs (output_config.format) ou tool com input_schema + strict: true.",
+      "feedbacks": [
+        "Tentadora porque costuma reduzir a falha. Mas continua probabilístico: melhora a taxa, não garante sintaxe nem campos.",
+        "Tentadora porque era uma técnica conhecida. Mas não garante campos nem tipos, e nos modelos mais novos o prefill do assistant não é aceito.",
+        "Correta. Com structured outputs, ou com uma tool cujo input_schema é a saída desejada e strict: true, a resposta segue o schema: JSON válido, com os campos e tipos esperados.",
+        "Tentadora porque resolve parte dos casos. Mas ataca só a sintaxe; campos faltando ou com tipo errado continuam passando."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Lume Comex, o schema de extração da fatura comercial tem o campo incoterm como string obrigatória com enum [\"EXW\",\"FOB\",\"CFR\",\"CIF\",\"DAP\",\"DDP\"]. Muitas faturas não trazem o incoterm, e a auditoria descobriu que, nesses casos, o sistema registra \"FOB\" com frequência. Qual é a correção?",
+      "opcoes": [
+        "Tornar o campo anulável (string ou null) e instruir a retornar null quando o incoterm não estiver explícito.",
+        "Manter o campo obrigatório e acrescentar ao prompt \"não invente o incoterm\".",
+        "Fazer retry da extração até que o incoterm seja encontrado.",
+        "Definir FOB como valor padrão no código quando o campo vier vazio, já que é o incoterm mais comum na carteira de importadores da Lume."
+      ],
+      "correta": 0,
+      "explicacao": "Dado que pode faltar → campo anulável (null), não obrigatório nem com default inventado. Considere enum com \"other\"/\"unclear\" quando aplicável.",
+      "feedbacks": [
+        "Correta. Campo obrigatório e não anulável força o modelo a escolher algum valor quando o dado não existe. Com null permitido, a ausência fica registrada como ausência.",
+        "Tentadora porque ataca a invenção. Mas o schema continua exigindo um valor do enum; a instrução briga com a estrutura, e a estrutura vence.",
+        "Tentadora porque retry corrige erros. Mas retry não recupera informação que não está na fonte; o resultado seria outro chute.",
+        "Tentadora por refletir a estatística. Mas é o próprio sistema inventando o dado, com impacto fiscal (base de cálculo do imposto)."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Lume Comex, a extração já usa structured outputs com o schema completo, e 100% das respostas são JSON válido. Mesmo assim, em ~4% das faturas o valor_total extraído não bate com a soma de quantidade × preço_unitário dos itens, e em alguns casos a data de embarque é anterior à data de emissão da fatura. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Ativar strict: true também nas tools auxiliares, porque isso garante a correção dos valores.",
+        "Acrescentar ao prompt \"confira as somas antes de responder\" e confiar no resultado.",
+        "Descartar automaticamente as faturas com divergência entre itens e total ou com datas inconsistentes e pedir ao importador o reenvio do documento corrigido.",
+        "Validar em código as regras semânticas (soma dos itens, ordem das datas), extraindo total declarado e calculado, e reenviar os erros específicos."
+      ],
+      "correta": 3,
+      "explicacao": "Schema válido ≠ dados corretos. Validação semântica em código (somas, datas, contradições), com declarado vs. calculado e retry guiado pelos erros.",
+      "feedbacks": [
+        "Tentadora pela palavra \"strict\". Mas strict garante conformidade com o schema (campos e tipos), não coerência semântica entre valores.",
+        "Tentadora porque é barato. Mas é verificação probabilística, sem nenhuma checagem determinística do que sai.",
+        "Tentadora por ser conservadora. Mas boa parte das divergências é erro de extração recuperável; descartar gera retrabalho e atrasa o desembaraço.",
+        "Correta. Conformidade com schema não é correção semântica. Valide em código; extrair o declarado e o calculado mostra a discrepância, e os erros específicos alimentam o retry."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Lume Comex, a equipe vai implementar o loop de validação com retry da extração das faturas. Quais duas práticas são corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Na nova tentativa, devolver ao modelo os erros específicos (campo, regra violada, valor obtido e esperado).",
+        "Repetir a mesma chamada, sem mudanças no prompt, até a validação passar, já que a amostragem do modelo varia a cada execução.",
+        "Repetir até o peso bruto aparecer quando ele estiver ausente na fatura, porque o campo é obrigatório no ERP.",
+        "Definir um número máximo de tentativas e, ao esgotá-lo, encaminhar o documento à revisão humana com os erros remanescentes.",
+        "Aumentar o effort a cada tentativa, começando em low, para economizar nas que passam de primeira."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Loop: extrai → valida → devolve erros específicos → tenta de novo até um limite → falha com erro/revisão humana. Retry não cria dado ausente.",
+      "feedbacks": [
+        "Correta. O retry só melhora se o modelo souber exatamente o que corrigir; erros específicos guiam a correção.",
+        "Tentadora porque às vezes passa. Mas sem feedback é tentativa às cegas, custa caro e não tem critério de parada.",
+        "Tentadora porque o ERP exige o campo. Mas retry não recupera informação que não está na fonte; a resposta certa é null e encaminhamento, não insistência.",
+        "Correta. O loop precisa terminar: depois do limite, falhe de forma explícita e roteie para um humano com o diagnóstico.",
+        "Tentadora pela economia. Mas não substitui o feedback dos erros; sem saber o que corrigir, mais esforço não leva à resposta certa."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Lume Comex, packing lists de fornecedores chineses trazem colunas como \"数量 (件)\" e \"箱数\", e às vezes \"PCS/CTN\". O modelo confunde frequentemente quantidade por caixa com quantidade total de peças. A instrução em prosa já explica a diferença. Qual é a melhoria mais eficaz?",
+      "opcoes": [
+        "Traduzir automaticamente todos os documentos para português antes da extração.",
+        "Incluir 2 a 4 exemplos variados desses layouts (um com PCS/CTN), com trecho, extração correta e raciocínio.",
+        "Incluir 15 exemplos de packing lists simples em inglês, para dar mais base ao modelo.",
+        "Repetir a explicação em prosa em negrito e com \"ATENÇÃO\"."
+      ],
+      "correta": 1,
+      "explicacao": "Formatos ambíguos em extração → 2–4 exemplos variados que cobrem as bordas, com entrada, saída e raciocínio.",
+      "feedbacks": [
+        "Tentadora porque remove a barreira do idioma. Mas a confusão é de semântica de colunas (por caixa × total), não de idioma; a tradução pode até piorar a ambiguidade.",
+        "Correta. Few-shot direcionado aos formatos ambíguos, com raciocínio, ensina o padrão de interpretação e reduz erro em extração.",
+        "Tentadora porque mais exemplos parecem melhor. Mas exemplos que não cobrem o caso ambíguo não ensinam a distinção, e o volume aumenta custo e risco de imitação literal.",
+        "Tentadora porque a instrução existe e só \"não foi notada\". Mas a prosa já falhou; o modelo precisa de demonstração concreta, não de ênfase."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "Na Lume Comex, a equipe marcou com strict: true a tool registrar_fatura, cujo input_schema tem um objeto raiz e um array itens de objetos. O request é rejeitado com erro de validação do schema. A raiz declara additionalProperties: false, mas os objetos dentro de itens não declaram. Alguns campos (ex.: observacoes) não estão em required. Qual é a correção?",
+      "opcoes": [
+        "Remover strict: true, já que a extração funcionava sem ele.",
+        "Colocar todos os campos em required, inclusive observacoes, porque o modo strict não aceita propriedades opcionais.",
+        "Declarar additionalProperties: false também nos objetos de itens (e em qualquer outro objeto aninhado).",
+        "Trocar o array itens por uma string com os itens serializados em CSV."
+      ],
+      "correta": 2,
+      "explicacao": "strict/structured outputs: todo objeto precisa de additionalProperties: false (inclusive aninhados). Propriedades opcionais são aceitas, dentro de um limite.",
+      "feedbacks": [
+        "Tentadora por fazer o erro sumir. Mas abre mão da garantia de que as entradas da tool seguem o schema, que era o motivo de ativá-lo.",
+        "Tentadora porque é uma crença comum. Mas strict aceita propriedades opcionais (há limite de quantidade); o que ele exige é additionalProperties: false em cada objeto.",
+        "Correta. Em strict/structured outputs, todo objeto do schema, inclusive os aninhados, precisa declarar additionalProperties: false.",
+        "Tentadora porque elimina o objeto aninhado. Mas destrói a estrutura que se queria garantir e empurra o parse para uma string sem validação."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "Na Lume Comex, o schema strict da extração inclui \"quantidade\" com minimum: 1, \"descricao\" com maxLength: 120 e \"peso_liquido\" que nunca pode ser maior que \"peso_bruto\". A equipe espera que o strict garanta essas três regras. O que é correto afirmar?",
+      "opcoes": [
+        "Basta ativar strict: true; as três regras passam a ser garantidas pela geração restrita ao schema, sem necessidade de validação posterior.",
+        "Só a regra de peso precisa de código; minimum e maxLength são garantidos pelo strict.",
+        "Validar as três em código (alimentando o retry): strict garante estrutura e tipos, não faixas, tamanhos nem relações entre campos.",
+        "Trocar o schema para usar oneOf com as combinações válidas, que o strict consegue garantir."
+      ],
+      "correta": 2,
+      "explicacao": "strict não suporta faixas numéricas (minimum/maximum), tamanho de string (minLength/maxLength) nem recursão (oneOf nem consta como suportado), e regras entre campos não são expressáveis no schema. Imponha isso no código.",
+      "feedbacks": [
+        "Tentadora porque strict \"garante o schema\". Mas restrições numéricas e de tamanho de string não são suportadas no modo strict, e regra entre campos nem é expressável em JSON Schema simples.",
+        "Tentadora porque a regra entre campos é a mais claramente fora do schema. Mas minimum e maxLength também estão entre as restrições não suportadas no strict.",
+        "Correta. O strict cobre um subconjunto do JSON Schema: estrutura, tipos, required, enums. Faixas, tamanhos e regras entre campos ficam no seu código de validação.",
+        "Tentadora porque oneOf parece expressar regras. Mas não está entre as construções suportadas, e as combinações de valores numéricos não seriam enumeráveis assim."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "Na Lume Comex, o agente de extração recebeu 14 tools: OCR, detecção de idioma, consulta de NCM, conversão de moeda, consulta de cadastro do importador, três tools de gravação no ERP, envio de e-mail, abertura de chamado, entre outras. O agente passou a escolher tools erradas (ex.: grava no ERP antes de validar a NCM). As descrições já foram reescritas, com pouca melhora. Qual é a melhor mudança?",
+      "opcoes": [
+        "Reescrever as descrições mais uma vez, agora com exemplos de uso para cada tool.",
+        "Dividir em agentes especializados (extração, validação fiscal, integração) sob um coordenador, cada um com 4 ou 5 tools.",
+        "Juntar todas as tools em uma só, executar_acao, com um parâmetro tipo que escolhe a operação, reduzindo o catálogo a uma única entrada.",
+        "Instruir no system prompt a ordem exata em que as tools devem ser chamadas."
+      ],
+      "correta": 1,
+      "explicacao": "Diretriz: 4–5 tools por agente na decisão. Com catálogo grande, divida em agentes especializados (ou use tool search); descrição melhor sozinha não resolve.",
+      "feedbacks": [
+        "Tentadora porque descrição é o critério de seleção. Mas já foi feito com pouca melhora; com 14 tools, melhorar descrições sozinho não basta.",
+        "Correta. Com tools demais visíveis na decisão, a seleção degrada mesmo com boas descrições. Agentes especializados mantêm poucas tools por decisão.",
+        "Tentadora porque reduz o número de tools. Mas só esconde a escolha dentro de um parâmetro, com descrição ainda mais genérica; o problema de seleção continua, agora menos visível.",
+        "Tentadora porque a ordem é conhecida. Mas é prompt probabilístico para algo que deveria ser estrutural, e não reduz a sobrecarga de tools."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Na Lume Comex, o fluxo para cada documento é sempre o mesmo: classificar o tipo (fatura, packing list, B/L) → extrair os campos com o schema daquele tipo → validar → gravar no ERP. Os passos e sua ordem são conhecidos e não mudam de documento para documento. Qual arquitetura é a mais adequada?",
+      "opcoes": [
+        "Prompt chaining: uma etapa por passo, com o schema certo por tipo e validação em código entre as etapas.",
+        "Um agente autônomo com todas as tools, que decide a cada documento quais passos executar.",
+        "Um coordenador multiagente que cria dinamicamente subtarefas a partir do conteúdo de cada documento.",
+        "Um único prompt que classifica, extrai, valida e formata a gravação de uma vez, para reduzir latência e o número de chamadas por documento."
+      ],
+      "correta": 0,
+      "explicacao": "Passos fixos e conhecidos → prompt chaining com validação programática entre etapas. Decomposição dinâmica é para problemas abertos.",
+      "feedbacks": [
+        "Correta. Passos fixos e sequenciais, conhecidos de antemão, são o caso de prompt chaining: cada etapa tem um prompt focado, e o código controla as transições.",
+        "Tentadora pela flexibilidade. Mas o fluxo é fixo; dar ao modelo a decisão de quais passos seguir adiciona variabilidade e risco sem benefício.",
+        "Tentadora porque é sofisticada. Mas decomposição dinâmica é para investigação aberta; aqui é complexidade desnecessária.",
+        "Tentadora pela simplicidade. Mas mistura tarefas, impede o schema específico por tipo e esconde onde cada falha acontece."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Na Lume Comex, o system prompt do agente diz: \"só chame gravar_no_erp se o total reconciliar com os itens e todas as NCMs tiverem 8 dígitos válidos\". Uma auditoria encontrou 11 gravações em um mês que violavam a regra e geraram retificações fiscais. Qual é a correção adequada?",
+      "opcoes": [
+        "Reforçar o system prompt com exemplos de documentos que não devem ser gravados.",
+        "Pedir que o agente confirme as validações por escrito (\"total reconciliado: sim; NCMs válidas: sim\") antes de cada chamada de gravação no ERP.",
+        "Rodar uma auditoria semanal que detecta e estorna as gravações indevidas.",
+        "Um pré-requisito em código (hook PreToolUse ou checagem na tool) que valida total e NCMs e bloqueia gravar_no_erp se falharem."
+      ],
+      "correta": 3,
+      "explicacao": "Regra crítica (financeira/fiscal) → enforcement programático (hook/pré-requisito). Prompt é best-effort.",
+      "feedbacks": [
+        "Tentadora porque exemplos ajudam o modelo. Mas continua sendo prompt; com consequência fiscal, uma taxa de falha não nula é inaceitável.",
+        "Tentadora porque deixa o raciocínio explícito. Mas o modelo pode afirmar que validou sem ter validado; é autoavaliação, não garantia.",
+        "Tentadora porque é um controle. Mas age depois do dano (as retificações já aconteceram).",
+        "Correta. Regra com consequência financeira ou fiscal vai para código determinístico: a gravação simplesmente não acontece se as validações falham, e o agente recebe o motivo para se recuperar."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Na Lume Comex, quando um documento esgota as tentativas de extração, ele vai para a fila dos despachantes apenas com a mensagem \"falha na extração\". Os despachantes refazem tudo do zero, o que leva ~25 minutos por documento. Qual é a melhor melhoria no handoff?",
+      "opcoes": [
+        "Anexar à fila o transcript completo de todas as tentativas do modelo, para que o despachante tenha acesso a absolutamente tudo o que foi feito.",
+        "Enviar um resumo estruturado: documento, campos já validados, campos que falharam (regra e valor encontrado), tentativas e ação recomendada.",
+        "Enviar apenas a nota de confiança geral do modelo para o documento, para priorizar a fila.",
+        "Aumentar o número máximo de tentativas para reduzir a quantidade de documentos que chegam aos humanos."
+      ],
+      "correta": 1,
+      "explicacao": "Handoff para humano = resumo estruturado (o que foi feito, o que falhou e por quê, valores encontrados, ação recomendada), não um transcript nem uma mensagem genérica.",
+      "feedbacks": [
+        "Tentadora porque não esconde nada. Mas o despachante teria de ler longos transcripts para achar o que importa; o handoff precisa ser resumido e estruturado.",
+        "Correta. O humano normalmente não vê o transcript; o resumo estruturado permite continuar de onde o sistema parou, em vez de recomeçar.",
+        "Tentadora porque ajuda a ordenar a fila. Mas confiança autodeclarada é mal calibrada, e não diz ao despachante o que verificar.",
+        "Tentadora porque reduz o volume. Mas muitos casos são falta de informação na fonte (retry não cria dado), e o handoff ruim continua para os que sobrarem."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Na Lume Comex, o agente de validação fiscal pede, numa mesma resposta, três chamadas consultar_ncm (uma para cada item). O código executa as três, mas monta a próxima requisição com três mensagens user, cada uma com um tool_result, e a API rejeita a requisição. Uma das consultas falhou por timeout. Como o código deve devolver os resultados?",
+      "opcoes": [
+        "Devolver só o tool_result da primeira chamada e deixar o modelo pedir as outras de novo.",
+        "Omitir a consulta que falhou e devolver só as duas bem-sucedidas, para não confundir o modelo.",
+        "Devolver os três tool_result numa única mensagem user, cada um com seu tool_use_id; o do timeout com is_error: true.",
+        "Repetir a consulta que falhou até ela dar certo e só então devolver os três resultados."
+      ],
+      "correta": 2,
+      "explicacao": "Tool use paralelo: todos os tool_result numa única mensagem user, cada um com seu tool_use_id; falhas com is_error: true.",
+      "feedbacks": [
+        "Tentadora porque simplifica. Mas todo tool_use pendente precisa de um tool_result correspondente; deixar chamadas sem resposta quebra o protocolo.",
+        "Tentadora porque esconde o ruído. Mas é supressão silenciosa: o tool_use da falha fica sem resultado, e o modelo não sabe que precisa se recuperar.",
+        "Correta. Em tool use paralelo, todos os resultados vão numa única mensagem user, cada um referenciando o tool_use_id exato; a falha também recebe resultado, com is_error: true.",
+        "Tentadora porque entrega tudo completo. Mas sem limite pode travar o fluxo; um timeout persistente deve voltar como erro para o modelo decidir."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "Na Lume Comex, o painel mostra 97% de acurácia por campo. Ao revisar uma amostra, os despachantes notaram que, nos B/L digitalizados com anotações manuscritas, a acurácia de peso e número do contêiner fica em torno de 60%. A diretoria quer reduzir a revisão humana. Quais duas ações são as mais adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Manter a revisão por amostragem uniforme de 5% de todos os documentos, já que a média é alta.",
+        "Quebrar a acurácia por tipo de documento, origem (nativo ou digitalizado) e campo, para localizar onde a extração falha.",
+        "Dispensar a revisão humana dos campos em que o modelo declarar confiança acima de 0,9, concentrando os despachantes no restante.",
+        "Elevar o limite de aceitação de todos os documentos de 97% para 99%.",
+        "Amostragem estratificada por risco: revisar mais os B/L digitalizados e de alto valor, e menos os PDFs nativos estáveis."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Quebre métricas por tipo de documento e campo (o agregado mascara falhas) e use amostragem estratificada por risco, não uniforme nem guiada por confiança autodeclarada.",
+      "feedbacks": [
+        "Tentadora pela simplicidade. Mas a amostragem uniforme dilui a revisão dos B/L manuscritos, justamente onde a falha se concentra.",
+        "Correta. Uma acurácia agregada de 97% pode esconder 60% num segmento; a quebra por tipo e campo mostra onde concentrar o esforço.",
+        "Tentadora porque reduz revisão. Mas confiança autodeclarada sem calibração não significa nada; os erros confiantes passariam direto.",
+        "Tentadora por ser mais exigente. Mas mexe num número global sem atacar o segmento problemático, e a métrica agregada continua escondendo a falha.",
+        "Correta. A amostragem estratificada por risco concentra a revisão humana onde o erro é mais provável ou mais caro, liberando os segmentos estáveis."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "Na Lume Comex, para um mesmo embarque, a fatura comercial informa peso bruto de 1.250 kg e o packing list informa 1.310 kg. O pipeline precisa gerar o JSON consolidado para o pré-preenchimento da declaração. Como tratar a divergência?",
+      "opcoes": [
+        "Registrar os dois valores com a fonte de cada um (documento e página), marcar a divergência e encaminhar ao despachante.",
+        "Usar a média, 1.280 kg, por ser o valor mais provável.",
+        "Usar sempre o valor da fatura comercial, que é o documento de maior valor jurídico no despacho, e descartar o do packing list.",
+        "Usar o maior valor, por ser o mais conservador para fins de frete."
+      ],
+      "correta": 0,
+      "explicacao": "Proveniência: em conflito, anote os valores divergentes com suas fontes e sinalize. Nunca escolha em silêncio nem tire média.",
+      "feedbacks": [
+        "Correta. Em conflito entre fontes, preserve os valores divergentes com proveniência e sinalize; não escolha um em silêncio nem tire média.",
+        "Tentadora porque parece neutra. Mas a média é um número que nenhum documento afirma, com impacto em frete e tributos.",
+        "Tentadora porque há uma hierarquia aparente. Mas escolhe em silêncio e esconde a divergência, que pode indicar erro de embarque e precisa ser vista.",
+        "Tentadora por soar prudente. Mas continua escolhendo em silêncio, e o critério \"conservador\" pode estar errado para fins tributários."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "Na Lume Comex, para reduzir revisão, a equipe quer que o modelo devolva uma confiança por campo e aprovar automaticamente os campos com confiança ≥ 0,9. Antes de colocar isso em produção, o que é indispensável?",
+      "opcoes": [
+        "Pedir ao modelo, no prompt, que seja rigoroso ao atribuir as confianças.",
+        "Usar um segundo modelo para dar a confiança, em vez do próprio modelo extrator.",
+        "Aplicar o limiar de 0,9 de imediato e acompanhar as reclamações dos importadores.",
+        "Calibrar a confiança por campo contra um conjunto rotulado e definir os limiares por campo e tipo de documento a partir disso."
+      ],
+      "correta": 3,
+      "explicacao": "Confiança por campo só serve se calibrada contra um conjunto rotulado; sem isso, o limiar é arbitrário.",
+      "feedbacks": [
+        "Tentadora por ser simples. Mas \"seja rigoroso\" é um critério vago e não torna a confiança autodeclarada mais calibrada.",
+        "Tentadora porque separa os papéis. Mas a confiança do segundo modelo também precisa ser calibrada; trocar quem declara não resolve.",
+        "Tentadora pela agilidade. Mas usa clientes como detector de erro em dados fiscais; o dano acontece antes da medição.",
+        "Correta. Confiança só tem significado se for calibrada contra dados rotulados; os limiares devem vir da medição por campo e por segmento."
+      ]
+    }
+  ]
+}

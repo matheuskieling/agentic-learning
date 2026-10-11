@@ -1,0 +1,1191 @@
+{
+  "titulo": "Simulado 1 — CCAR-F (60 questões · 120 min)",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Cenário: a NovaLar, varejista online de móveis e eletrodomésticos, está construindo com o Claude Agent SDK um agente de resolução de atendimento. O agente acessa o backend por tools MCP próprias (get_customer, verify_identity, lookup_order, process_refund, escalate_to_human) e a meta é resolver cerca de 70% dos tickets sem humano. Restrições do negócio: nenhuma ação financeira antes de a identidade do cliente ser verificada, reembolsos acima de R$ 2.000 exigem aprovação humana e o tratamento de dados segue a LGPD.\n\nNa homologação, a auditoria encontrou 4 casos em 1.000 em que o agente chamou process_refund antes de verify_identity, embora o system prompt diga em maiúsculas \"SEMPRE verifique a identidade antes de qualquer reembolso\". Qual é a correção MAIS adequada?",
+      "opcoes": [
+        "Hook PreToolUse em process_refund que nega a chamada enquanto não houver verify_identity bem-sucedido na sessão.",
+        "Adicionar um segundo modelo que revisa cada resposta do agente e alerta a equipe quando detectar reembolso sem verificação prévia.",
+        "Reforçar o system prompt com a regra repetida no início e no fim, mais três exemplos few-shot do fluxo correto de verificação antes do reembolso.",
+        "Usar um hook PostToolUse em process_refund que estorna automaticamente o reembolso quando não encontra verificação de identidade anterior."
+      ],
+      "correta": 0,
+      "explicacao": "Regras críticas (financeiras, segurança, compliance) vão em código determinístico. O PreToolUse intercepta process_refund antes da execução e nega com motivo até a verificação existir.",
+      "feedbacks": [
+        "Correta. Regra com consequência financeira exige enforcement determinístico. O hook bloqueia a chamada antes de executar e devolve o motivo, para o modelo se corrigir (chamar verify_identity primeiro).",
+        "Solução mais complexa que o necessário e ainda probabilística; além disso, detecta depois, quando o reembolso pode já ter sido feito.",
+        "Tentadora porque costuma reduzir a taxa de erro, mas prompt é probabilístico: a falha cai, não zera. Anti-padrão: regra crítica imposta só por prompt.",
+        "Ataca o problema tarde demais: o dinheiro já saiu e o estorno pode falhar. O lugar de impedir uma ação é antes dela, no PreToolUse."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Na NovaLar, o loop do agente foi escrito à mão. Em alguns tickets o agente responde \"Vou consultar seu pedido agora\" e a conversa termina sem consulta nenhuma. O código encerra o loop quando o primeiro bloco de content é do tipo text. Qual é a correção?",
+      "opcoes": [
+        "Fixar o loop em no máximo 5 iterações e encerrar sempre na quinta, garantindo que todas as tools tenham chance de rodar.",
+        "Encerrar o loop apenas quando o texto contiver uma expressão de fechamento como \"Posso ajudar em algo mais?\", definida no system prompt.",
+        "Instruir o modelo, no system prompt, a nunca escrever texto antes de chamar uma tool, para que o primeiro bloco sempre indique a intenção real.",
+        "Decidir pelo stop_reason: tool_use continua o loop (executa e devolve tool_result); end_turn encerra."
+      ],
+      "correta": 3,
+      "explicacao": "O loop agêntico é dirigido por stop_reason: tool_use continua, end_turn termina. Ter bloco de texto não é sinal de fim.",
+      "feedbacks": [
+        "Limite de iterações serve como backstop de segurança, não como mecanismo principal de parada. Cortaria tickets longos e prolongaria os curtos.",
+        "Tentadora por parecer um contrato explícito, mas é o anti-padrão de decidir o fim lendo linguagem natural; o modelo pode variar a frase.",
+        "Trata o sintoma via prompt, sem garantia. O bug está no código que ignora stop_reason; texto antes de tool_use é comportamento legítimo.",
+        "Correta. content pode misturar texto e tool_use na mesma resposta; ter texto não significa que terminou. Quem sinaliza continuação ou fim é o stop_reason."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Na NovaLar, o modelo devolveu numa única resposta dois blocos tool_use: get_customer e lookup_order. O desenvolvedor executa as duas tools e envia duas mensagens user consecutivas, cada uma com um tool_result. O request seguinte passa a falhar. Como devolver os resultados corretamente?",
+      "opcoes": [
+        "Configurar disable_parallel_tool_use: true para que o modelo peça uma tool por vez e o envio em mensagens separadas funcione.",
+        "Uma única mensagem user com os dois tool_result, cada um com o tool_use_id correspondente.",
+        "Devolver apenas o resultado de get_customer e descartar lookup_order, porque o modelo pedirá o pedido de novo se precisar.",
+        "Enviar os dois resultados concatenados num único bloco de texto da mensagem user, já que o modelo sabe quais tools pediu."
+      ],
+      "correta": 1,
+      "explicacao": "Vários tool_use numa resposta: execute (em paralelo, se quiser) e devolva todos os tool_result numa única mensagem user, cada um com seu tool_use_id.",
+      "feedbacks": [
+        "Funciona, mas troca a correção por uma limitação: perde o paralelismo e deixa o atendimento mais lento sem necessidade.",
+        "Correta. Em tool use paralelo, todos os resultados voltam juntos numa única mensagem user, cada um amarrado ao seu tool_use_id.",
+        "Todo tool_use precisa de um tool_result; deixar um sem resposta quebra a conversa e força chamadas repetidas.",
+        "Perde o vínculo com os tool_use_id; o modelo e a API esperam blocos tool_result estruturados, não texto livre."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "A NovaLar exige aprovação humana para reembolsos acima de R$ 2.000. Hoje isso está só no system prompt e, nos testes, o agente às vezes processa R$ 2.350 direto. Qual implementação atende à regra?",
+      "opcoes": [
+        "Criar um hook PostToolUse que, após process_refund acima do limite, abre automaticamente um ticket de auditoria para um supervisor.",
+        "Mover a regra para o início do system prompt e acrescentar um exemplo few-shot de um reembolso de R$ 2.500 sendo escalado.",
+        "Treinar um classificador que analisa cada mensagem do cliente e, quando prevê reembolso alto, desliga a tool process_refund naquele turno.",
+        "Hook PreToolUse em process_refund: acima de R$ 2.000, nega a chamada com motivo que orienta usar escalate_to_human."
+      ],
+      "correta": 3,
+      "explicacao": "Limite financeiro = enforcement determinístico no PreToolUse, com motivo que direciona para o escalonamento.",
+      "feedbacks": [
+        "Registra o problema depois de o dinheiro sair. Auditoria é bom complemento, mas não impede a violação.",
+        "Melhora a aderência, mas continua probabilístico; com dinheiro envolvido, a taxa de falha precisa ser zero.",
+        "Complexo, caro e ainda probabilístico (pode errar a previsão). Além disso, mudar o array de tools entre turnos invalida o cache de prompt.",
+        "Correta. O limite é regra financeira: vai em código, antes da execução. O motivo devolvido ajuda o agente a seguir o caminho certo (escalar)."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D1",
+      "pergunta": "Os atendentes humanos da NovaLar reclamam que, a cada escalonamento, precisam reler a conversa inteira para entender o caso, e frequentemente pedem ao cliente dados que ele já informou. Como o handoff deve ser desenhado?",
+      "opcoes": [
+        "Pedir ao modelo, em texto livre, \"resuma a conversa para o atendente\" antes de chamar escalate_to_human.",
+        "Fazer escalate_to_human exigir um resumo estruturado (cliente, problema, ações tomadas, motivo, recomendação).",
+        "Dar aos atendentes acesso a um painel com os logs brutos de todas as chamadas de tool feitas pelo agente.",
+        "Anexar ao ticket o transcript completo da conversa e os resultados de todas as tools chamadas, para que nenhum detalhe se perca na passagem."
+      ],
+      "correta": 1,
+      "explicacao": "Handoff para humano exige resumo estruturado: identidade, problema, ações tomadas, motivo do bloqueio, ação recomendada.",
+      "feedbacks": [
+        "Melhora um pouco, mas sem campos definidos o resumo varia e omite justamente IDs, valores e ações já tomadas.",
+        "Correta. O humano normalmente não vê o transcript; um resumo com campos definidos (validados pelo schema da tool) leva o essencial sem releitura.",
+        "Mais dados brutos para garimpar; não resolve a necessidade de entender o caso rapidamente.",
+        "Tentadora pelo argumento da completude, mas é exatamente o que os atendentes já fazem hoje: reler tudo. Falta estrutura, não volume."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "O agente da NovaLar tem duas tools: lookup_order (\"Consulta pedidos\") e get_order_status (\"Obtém informações do pedido\"). Em 30% dos casos ele chama a errada e precisa de uma segunda chamada. Qual é a primeira correção a fazer?",
+      "opcoes": [
+        "Adicionar um classificador de intenção antes do agente que decide qual das duas tools liberar em cada turno.",
+        "Configurar tool_choice para forçar lookup_order em toda primeira chamada e deixar get_order_status para chamadas seguintes.",
+        "Incluir no system prompt cinco exemplos few-shot mostrando quando usar cada tool.",
+        "Reescrever as descrições com propósito, quando usar e como cada uma difere da outra (ou fundir as duas)."
+      ],
+      "correta": 3,
+      "explicacao": "Descrição de tool é critério de seleção: propósito, quando usar, entradas, saídas, bordas e diferença em relação a tools parecidas.",
+      "feedbacks": [
+        "Solução mais complexa que o necessário. A prova favorece consertar a descrição antes de criar componentes de roteamento.",
+        "Engessa o fluxo com uma árvore de decisão externa e erra sempre que o caso pedir a outra tool primeiro.",
+        "Pode ajudar, mas trata o sintoma; a fonte do problema (descrições vagas e sobrepostas) continua lá para qualquer caso não coberto.",
+        "Correta. A descrição é o critério de seleção da tool. Tools sobrepostas com descrições vagas causam roteamento errado; a correção mais simples é diferenciá-las (ou fundi-las)."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "Na NovaLar, lookup_order devolve {\"error\": \"Operation failed\"} tanto quando o banco de pedidos dá timeout quanto quando o número não existe. O agente tem dito a clientes que \"o pedido não existe\" durante instabilidades. Qual é o melhor redesenho?",
+      "opcoes": [
+        "Manter a mensagem genérica, mas instruir o agente a sempre tentar de novo três vezes antes de responder ao cliente.",
+        "Trocar a mensagem por \"Erro ao consultar pedido, contate o suporte técnico\" nos dois casos.",
+        "Separar os casos: \"não encontrado\" como sucesso vazio; timeout como erro estruturado (transitório, retentável, com a ação tentada).",
+        "Em caso de timeout, devolver uma lista vazia de pedidos, para não expor detalhes técnicos ao modelo."
+      ],
+      "correta": 2,
+      "explicacao": "Erros estruturados distinguem categorias e retentabilidade; resultado vazio legítimo não é erro.",
+      "feedbacks": [
+        "Retry cego para \"não encontrado\" desperdiça chamadas e não resolve: a mensagem genérica continua escondendo o diagnóstico.",
+        "Continua genérica: o modelo segue sem saber se deve tentar de novo, pedir outro número ou avisar instabilidade.",
+        "Correta. Vazio não é falha: \"não encontrado\" é informação. Timeout significa que a busca não rodou, e o erro estruturado permite retry ou uma resposta honesta ao cliente.",
+        "Anti-padrão de supressão silenciosa: transforma falha em \"nada encontrado\", exatamente o que causou o problema."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "A NovaLar está classificando as falhas de process_refund para o agente saber reagir. Quais DOIS pares falha → tratamento estão corretos? (Escolha DUAS.)",
+      "opcoes": [
+        "Timeout do gateway de pagamento → erro transitório, retentável: tentar de novo com backoff.",
+        "Conta do cliente congelada por suspeita de fraude → erro de negócio, não retentável: explicar a política ou escalar.",
+        "Conta congelada → erro transitório: aguardar alguns segundos e tentar de novo com backoff exponencial.",
+        "Valor do reembolso enviado como texto \"R$ 120,00\" em vez de número → escalar imediatamente para um humano.",
+        "Token de serviço expirado → erro transitório: repetir a chamada imediatamente até três vezes."
+      ],
+      "corretas": [
+        0,
+        1
+      ],
+      "explicacao": "Transitório → retry com backoff; validação → corrigir entrada; negócio → explicar/escalar; permissão → escalar.",
+      "feedbacks": [
+        "Correta. Timeout/indisponibilidade são transitórios; retry com backoff é a resposta adequada.",
+        "Correta. Limite de política não muda com nova tentativa; o agente deve explicar ou escalar.",
+        "Confunde negócio com transitório: retry não descongela a conta e atrasa a resposta ao cliente.",
+        "É erro de validação: o próprio agente corrige a entrada e tenta de novo; escalar seria desperdício.",
+        "Erro de permissão não é retentável: repetir com o mesmo token falha igual. O caminho é escalar/renovar credencial."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D2",
+      "pergunta": "A NovaLar adicionou ao .mcp.json do repositório o servidor MCP remoto do CRM: {\"crm\": {\"url\": \"https://mcp.novalar.com/crm\"}}. O servidor não conecta e o log indica tentativa de iniciar um processo local. Qual é a causa?",
+      "opcoes": [
+        "Falta \"type\": \"http\"; sem type, a entrada é tratada como stdio.",
+        "O transporte SSE é obrigatório para servidores remotos; basta trocar a URL para terminar em /sse.",
+        "O servidor remoto precisa estar no escopo user (~/.claude.json), porque .mcp.json só aceita servidores locais.",
+        "Falta o campo \"args\" com a URL, pois todo servidor MCP é iniciado como processo com argumentos."
+      ],
+      "correta": 0,
+      "explicacao": "No .mcp.json, servidor remoto exige type declarado (\"http\"); entrada com url e sem type é interpretada como stdio.",
+      "feedbacks": [
+        "Correta. Servidor remoto precisa de type explícito (Streamable HTTP, o transporte remoto com OAuth); sem ele, cai no stdio e falha.",
+        "SSE é legado. O transporte remoto recomendado (e o único remoto com OAuth) é Streamable HTTP.",
+        "Falso: .mcp.json (escopo project) aceita servidores remotos; o escopo não explica a tentativa de processo local.",
+        "Confunde os transportes: command/args é configuração de stdio; servidor remoto usa type/url/headers."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D4",
+      "pergunta": "O system prompt da NovaLar diz: \"Seja razoável ao aprovar reembolsos de itens danificados\". Dois tickets quase idênticos (sofá com rasgo de 5 cm, foto anexada) recebem decisões opostas. Qual ajuste resolve a inconsistência?",
+      "opcoes": [
+        "Pedir ao modelo que informe sua confiança (0 a 1) em cada decisão e reprocessar automaticamente as decisões com confiança abaixo de 0,8.",
+        "Rodar a decisão três vezes, em chamadas independentes, e adotar o voto da maioria como resultado final.",
+        "Trocar a instrução vaga por critérios explícitos: o que conta como dano, o que não conta e exemplos de fronteira.",
+        "Acrescentar \"seja consistente e justo\" ao system prompt."
+      ],
+      "correta": 2,
+      "explicacao": "Critérios explícitos (conta / não conta / exemplos de fronteira) batem instruções genéricas como \"seja razoável\".",
+      "feedbacks": [
+        "Confiança autodeclarada é mal calibrada e não define o que conta como dano; o critério continua vago.",
+        "Mascara a inconsistência com custo triplicado; o problema é a falta de critério, não a amostragem.",
+        "Correta. \"Seja razoável\" deixa o julgamento a cargo do modelo e gera inconsistência; critério explícito com casos de fronteira torna a decisão reproduzível.",
+        "Mais uma instrução vaga; não diz ao modelo o que conta e o que não conta."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D4",
+      "pergunta": "O agente da NovaLar confunde \"troca em garantia\" com \"devolução por arrependimento\" em tickets ambíguos (ex.: cliente com 40 dias de compra relatando defeito intermitente). Qual técnica é a mais indicada?",
+      "opcoes": [
+        "Incluir exemplos com apenas entrada e rótulo, sem explicação, para não induzir o modelo a copiar o raciocínio.",
+        "Incluir 30 exemplos de tickets fáceis e típicos de cada categoria, para cobrir o maior volume possível.",
+        "2 a 4 exemplos few-shot de casos ambíguos e variados, cada um com ticket, classificação e raciocínio.",
+        "Criar uma tool de classificação separada que o agente deve chamar antes de qualquer resposta."
+      ],
+      "correta": 2,
+      "explicacao": "Few-shot: 2–4 exemplos direcionados, variados, com entrada, saída e raciocínio, especialmente para casos ambíguos.",
+      "feedbacks": [
+        "Sem o raciocínio, o modelo tende a decorar casos em vez de aprender o critério que separa as categorias.",
+        "Muitos exemplos fáceis não ensinam a fronteira, que é onde está o erro; ainda incham o prompt.",
+        "Correta. Few-shot com raciocínio, focado em casos de borda variados, ensina o padrão de decisão e generaliza melhor do que prosa.",
+        "Desloca o problema para outro componente sem ensinar o critério; adiciona complexidade desnecessária."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "Um cliente da NovaLar escreve em caixa alta, com palavrões, revoltado com uma cobrança indevida de frete de R$ 15. A política permite estorno de frete cobrado por erro. O que o agente deve fazer?",
+      "opcoes": [
+        "Pedir ao cliente que se acalme antes de prosseguir com o atendimento.",
+        "Reconhecer a frustração, verificar a cobrança indevida e resolver o estorno dentro da política, sem escalar.",
+        "Escalar imediatamente para um humano, porque clientes muito irritados devem sempre falar com uma pessoa.",
+        "Avaliar a própria confiança na resolução e escalar se ela ficar abaixo de 70%."
+      ],
+      "correta": 1,
+      "explicacao": "Sentimento ≠ complexidade: cliente bravo com problema simples e coberto pela política → resolva.",
+      "feedbacks": [
+        "Atrasa a solução de um problema simples e tende a piorar a experiência.",
+        "Correta. Sentimento não é complexidade: o caso é simples e coberto pela política, então o agente resolve.",
+        "Anti-padrão de escalonar por sentimento. Escala-se por pedido explícito, lacuna de política ou falta de progresso.",
+        "Confiança autodeclarada é mal calibrada e não é critério de escalonamento."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "Na NovaLar, get_customer com o nome \"Maria Souza\" devolve três clientes diferentes. A cliente quer o status da entrega. Qual é o comportamento correto do agente?",
+      "opcoes": [
+        "Listar os três cadastros com endereços para a cliente indicar qual é o dela.",
+        "Pedir um identificador (e-mail, CPF ou nº do pedido) para desambiguar.",
+        "Escolher o cadastro com o pedido mais recente, por ser o mais provável.",
+        "Escalar para um humano, já que a busca não retornou um resultado único."
+      ],
+      "correta": 1,
+      "explicacao": "Vários resultados para o cliente → peça identificador para desambiguar; não chute nem escale.",
+      "feedbacks": [
+        "Vaza dados pessoais de terceiros. A desambiguação deve vir de um identificador que a cliente fornece.",
+        "Correta. Com vários candidatos, o agente pede um identificador em vez de chutar; agir sobre o cliente errado também viola a privacidade.",
+        "É chute. Se errar, expõe dados de outra pessoa (LGPD) e informa um status errado.",
+        "Ambiguidade de busca não é motivo de escalonamento; basta pedir um identificador."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "Em conversas longas da NovaLar, depois que o histórico é resumido para caber no contexto, o agente passou a errar o número do pedido e o valor combinado de reembolso informados no início. Qual mitigação é a mais adequada?",
+      "opcoes": [
+        "Quando houver dúvida, pedir novamente ao cliente o número do pedido e o valor.",
+        "Pedir no prompt de resumo que o modelo \"preserve detalhes importantes\".",
+        "Desativar o resumo e manter o histórico completo da conversa, migrando o agente para um modelo com janela de contexto maior.",
+        "Bloco persistente de \"case facts\" (IDs, valores, datas), reinjetado a cada turno e fora do resumo."
+      ],
+      "correta": 3,
+      "explicacao": "Bloco de case facts fora do resumo preserva valores exatos que a sumarização tende a perder.",
+      "feedbacks": [
+        "Transfere o problema para o cliente e degrada a experiência; não corrige a perda de informação.",
+        "Instrução vaga; o resumo continua sujeito a parafrasear ou omitir números exatos.",
+        "Janela maior custa mais a cada turno e piora o \"lost in the middle\"; não protege especificamente os fatos críticos.",
+        "Correta. Resumo perde valores exatos, IDs e datas; um bloco de fatos do caso preserva o que não pode ser parafraseado."
+      ]
+    },
+    {
+      "cenario": 1,
+      "dominio": "D5",
+      "pergunta": "A NovaLar está definindo quando o agente deve escalar para um humano imediatamente. Quais DOIS gatilhos estão corretos? (Escolha DUAS.)",
+      "opcoes": [
+        "A confiança autodeclarada do modelo na resposta fica abaixo de 60%.",
+        "O cliente pede explicitamente para falar com uma pessoa.",
+        "O cliente usa linguagem agressiva ou ameaça cancelar a conta.",
+        "O pedido exige uma exceção que a política não cobre (ex.: reembolso fora do prazo por motivo não previsto).",
+        "A conversa ultrapassa 20 turnos."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Escale por pedido explícito, lacuna/exceção de política ou falta de progresso; não por sentimento, confiança autodeclarada ou tamanho da conversa.",
+      "feedbacks": [
+        "Anti-padrão: confiança autodeclarada é mal calibrada; não serve de gatilho.",
+        "Correta. Pedido explícito de humano é gatilho de escalonamento imediato.",
+        "Anti-padrão de escalonar por sentimento; o agente pode resolver o problema de fundo.",
+        "Correta. Lacuna ou exceção de política está fora da autonomia do agente; escala-se.",
+        "Tamanho da conversa não é critério. O que conta é falta de progresso após tentativas razoáveis."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Cenário: a Vértice Software tem cerca de 40 desenvolvedores e um monorepo com uma API em C# (.NET) e um front-end Angular. A empresa está adotando o Claude Code para gerar e revisar código. Objetivos: que todos sigam as mesmas convenções (nomenclatura, xUnit nos testes, padrão de injeção de dependência) e acelerar entregas. Restrições: nenhum segredo pode ir para o repositório, migrations de banco só entram com revisão humana e a CI roda no GitHub Actions.\n\nCada desenvolvedor hoje cola as convenções do time no início de cada sessão, e o resultado varia. Onde essas convenções devem ficar?",
+      "opcoes": [
+        "No CLAUDE.local.md na raiz do repositório.",
+        "No ~/.claude/CLAUDE.md de cada desenvolvedor, distribuído por um script de onboarding.",
+        "No CLAUDE.md do projeto, versionado no repositório.",
+        "Numa skill /convencoes que cada desenvolvedor executa no início da sessão."
+      ],
+      "correta": 2,
+      "explicacao": "Convenções do time → CLAUDE.md de projeto, versionado e carregado automaticamente.",
+      "feedbacks": [
+        "CLAUDE.local.md é pessoal e gitignored; não chega aos outros desenvolvedores.",
+        "Escopo de usuário é pessoal: cada máquina pode divergir e mudanças não são versionadas com o código.",
+        "Correta. O CLAUDE.md de projeto é compartilhado via git e carregado automaticamente para todos que trabalham no repo.",
+        "Depende de alguém lembrar de rodar; convenções permanentes do time pertencem ao CLAUDE.md, que carrega sozinho."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Vértice, uma desenvolvedora quer que o Claude Code use a URL do banco de testes da máquina dela e responda de forma mais concisa, sem afetar os colegas nem versionar nada. Onde ela deve colocar essas instruções?",
+      "opcoes": [
+        "No CLAUDE.local.md do projeto.",
+        "No CLAUDE.md do projeto, numa seção \"Preferências pessoais\".",
+        "No .claude/settings.json do projeto.",
+        "Em .claude/rules/pessoal.md sem frontmatter."
+      ],
+      "correta": 0,
+      "explicacao": "Preferências pessoais de um projeto → CLAUDE.local.md (gitignored).",
+      "feedbacks": [
+        "Correta. CLAUDE.local.md serve para preferências pessoais específicas daquele projeto, sem afetar o time.",
+        "Afetaria todos e versionaria dados da máquina dela.",
+        "settings.json de projeto é compartilhado e serve para configuração (permissões, hooks), não para instruções em linguagem natural.",
+        "Regras em .claude/rules/ fazem parte do projeto versionado; carregariam para todos."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Vértice precisa migrar a serialização de Newtonsoft.Json para System.Text.Json. A mudança atinge cerca de 60 arquivos, há conversores customizados e duas abordagens possíveis para lidar com propriedades polimórficas. Como conduzir a tarefa no Claude Code?",
+      "opcoes": [
+        "Pedir a migração arquivo por arquivo em sessões separadas, sem plano global.",
+        "Rodar com bypassPermissions para que a migração não pare em nenhuma confirmação.",
+        "Usar plan mode: explorar, propor a abordagem e só editar após aprovação.",
+        "Executar direto em modo acceptEdits para ganhar velocidade, revisando o diff ao final."
+      ],
+      "correta": 2,
+      "explicacao": "Plan mode para mudança grande, multi-arquivo, com decisões de arquitetura ou várias abordagens válidas.",
+      "feedbacks": [
+        "Sem uma abordagem comum, o resultado tende a ficar inconsistente entre arquivos (cada sessão decide de um jeito).",
+        "bypassPermissions não é rotina e não resolve a necessidade de decidir a abordagem antes de editar.",
+        "Correta. Mudança multi-arquivo, com decisão arquitetural e mais de uma abordagem válida, é o caso típico de plan mode.",
+        "Pula a decisão sobre a abordagem; com 60 arquivos, corrigir uma escolha errada no fim sai caro."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Vértice, quais DUAS tarefas são adequadas para execução direta, sem plan mode? (Escolha DUAS.)",
+      "opcoes": [
+        "Adicionar um null check em PedidoService.Calcular, apontado por um stack trace de NullReferenceException.",
+        "Escolher entre três estratégias de cache para o catálogo de produtos e implementá-la.",
+        "Reorganizar o projeto em vertical slices.",
+        "Trocar o valor de uma constante de timeout num único arquivo de configuração.",
+        "Trocar a autenticação da API de cookies para JWT, ajustando API e front-end."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Execução direta para fixes pequenos, de escopo óbvio; plan mode para mudança multi-arquivo ou com decisão de arquitetura.",
+      "feedbacks": [
+        "Correta. Fix localizado, escopo óbvio e instrução clara: execução direta.",
+        "Há decisão de design entre alternativas; planejar e aprovar antes de editar.",
+        "Reestruturação ampla, com várias abordagens válidas: caso clássico de plan mode.",
+        "Correta. Mudança trivial e bem especificada.",
+        "Atravessa vários módulos e envolve decisões de arquitetura: pede plan mode."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Vértice quer um comando /nova-feature <nome> que gere o esqueleto de uma feature (controller, service, testes) seguindo o padrão do time, disponível a todos que clonarem o repo. Qual é a forma recomendada?",
+      "opcoes": [
+        "Criar ~/.claude/skills/nova-feature/SKILL.md na máquina de cada desenvolvedor.",
+        "Criar .claude/skills/nova-feature/SKILL.md no repo, recebendo o nome via $ARGUMENTS.",
+        "Empacotar o comando num plugin publicado num marketplace interno.",
+        "Descrever o passo a passo no CLAUDE.md e pedir que o desenvolvedor digite \"crie uma nova feature\"."
+      ],
+      "correta": 1,
+      "explicacao": "Comando reutilizável do time → skill de projeto em .claude/skills/<nome>/SKILL.md (comandos foram fundidos em skills).",
+      "feedbacks": [
+        "Escopo pessoal: não é compartilhado pelo repositório e cada cópia pode divergir.",
+        "Correta. Skill de projeto versionada fica disponível para o time como /nova-feature; $ARGUMENTS recebe o parâmetro.",
+        "Possível, mas mais complexo que o necessário para um único comando de um único repo.",
+        "Funciona mal como comando reutilizável: inflaria o CLAUDE.md, que carrega em toda sessão, com um procedimento sob demanda."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "A Vértice criou a skill gerar-migration, mas o Claude nunca a usa sozinho quando alguém pede \"crie a migration para a nova coluna\". O frontmatter tem description: \"Utilitário de banco\". Qual ajuste resolve?",
+      "opcoes": [
+        "Reescrever a description dizendo o que a skill faz e quando usá-la (ex.: criar ou alterar migrations do EF Core).",
+        "Adicionar context: fork ao frontmatter, para a skill rodar isolada e ser escolhida com mais facilidade.",
+        "Copiar o conteúdo da skill para o CLAUDE.md do projeto, para que esteja sempre no contexto quando alguém pedir migrations.",
+        "Adicionar disable-model-invocation: true ao frontmatter, para o modelo tratar a skill como comando explícito."
+      ],
+      "correta": 0,
+      "explicacao": "description/when_to_use determina quando a skill é carregada automaticamente.",
+      "feedbacks": [
+        "Correta. O auto-carregamento é dirigido pela description; uma descrição vaga não casa com o pedido do usuário.",
+        "Define onde a skill roda (subagent isolado), não quando ela é escolhida.",
+        "Carregaria o procedimento em toda sessão, mesmo quando irrelevante; o problema é só a descrição.",
+        "Faz o oposto: impede o modelo de invocar a skill sozinho."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Vértice, a skill /auditar-dependencias varre centenas de arquivos .csproj e package.json e despeja muita saída intermediária na conversa, poluindo o contexto da sessão principal. Qual configuração resolve sem mudar o que a skill faz?",
+      "opcoes": [
+        "Adicionar context: fork ao frontmatter da skill, para que ela rode isolada.",
+        "Rodar /compact logo depois de cada execução da skill.",
+        "Restringir allowed-tools da skill a Read e Grep.",
+        "Mover a skill para ~/.claude/skills/."
+      ],
+      "correta": 0,
+      "explicacao": "Trabalho ruidoso e delimitado → isolar em subagent (context: fork) e devolver só a conclusão.",
+      "feedbacks": [
+        "Correta. context: fork roda a skill em contexto separado (CLAUDE.md carrega, histórico não) e só o resultado volta.",
+        "Remedia depois, com perda de detalhes; o ruído já ocupou o contexto e o resumo pode descartar outras coisas úteis.",
+        "Limita ferramentas, mas a saída intermediária continua caindo na conversa principal.",
+        "Muda o escopo de disponibilidade, não o isolamento de contexto."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "O job do GitHub Actions da Vértice executa claude \"revise as mudanças deste PR\" e fica preso até estourar o tempo limite do runner. Qual é a causa mais provável?",
+      "opcoes": [
+        "Faltou -p (--print): sem ele, a sessão é interativa e espera input.",
+        "O runner precisa de --dangerously-skip-permissions para não parar em prompts de permissão.",
+        "Faltou --output-format json; com saída em texto, o runner não detecta o fim do processo.",
+        "Faltou --max-turns, então o Claude entrou num loop infinito de tools."
+      ],
+      "correta": 0,
+      "explicacao": "Claude Code em pipeline exige -p/--print; sem ele, o processo fica esperando input.",
+      "feedbacks": [
+        "Correta. Em CI, -p é obrigatório para execução não interativa.",
+        "Pular permissões não é a correção: sem -p o processo continua interativo. Em CI, controla-se acesso com --allowedTools/--permission-mode.",
+        "O formato de saída não impede o término; o problema é o modo interativo.",
+        "--max-turns é um bom backstop, mas não explica o travamento logo no início: o processo está esperando input."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D3",
+      "pergunta": "Na Vértice, o Claude escreveu um parser de datas para relatórios, mas ele falha em fusos e em datas como 29/02. Após duas rodadas de \"corrija os casos de borda\", os erros continuam aparecendo. Qual abordagem de refinamento é a mais eficaz?",
+      "opcoes": [
+        "Repetir o pedido com mais ênfase e detalhe: \"trate TODOS os casos de borda de datas, inclusive fusos e anos bissextos\".",
+        "Pedir que o Claude liste os casos de borda que considera importantes e confiar nessa lista.",
+        "Escrever testes que falham nos casos de borda, mostrar as falhas ao Claude e iterar até passarem.",
+        "Pedir ao Claude que reescreva o parser do zero numa nova sessão."
+      ],
+      "correta": 2,
+      "explicacao": "Refinamento iterativo: testes que falham + compartilhar as falhas + iterar até passar.",
+      "feedbacks": [
+        "Instrução vaga e sem critério verificável; é o que já falhou duas vezes.",
+        "Ajuda um pouco, mas sem testes executáveis não há verificação objetiva do resultado.",
+        "Correta. TDD dá um critério objetivo de pronto e mostra ao modelo exatamente onde está o erro.",
+        "Recomeça sem informação nova sobre os casos que falham; provavelmente repete os mesmos erros."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "Um desenvolvedor da Vértice retomou com --resume a sessão de ontem, mas durante a noite um colega fez merge de um refactor que renomeou pastas e serviços. O Claude continua citando caminhos que não existem mais. Qual é a melhor forma de prosseguir?",
+      "opcoes": [
+        "Rodar /compact na sessão retomada para limpar os detalhes antigos.",
+        "Usar --fork-session para criar um ramo da sessão antiga e continuar a partir dele, sem contaminar a original.",
+        "Começar uma sessão nova com um resumo estruturado das decisões e do estado da tarefa.",
+        "Continuar a sessão retomada e corrigir o Claude a cada caminho errado."
+      ],
+      "correta": 2,
+      "explicacao": "Resultados de tool obsoletos → sessão nova com resumo estruturado (ou, no mínimo, dizer explicitamente o que mudou).",
+      "feedbacks": [
+        "O resumo pode manter caminhos velhos como fatos; não substitui reler o código atual.",
+        "O fork herda o mesmo histórico desatualizado; ele serve para separar caminhos a partir de uma base comum, não para atualizar a base.",
+        "Correta. --resume é bom quando os resultados de tool ainda valem; se o código mudou bastante, comece do zero com um resumo do que importa.",
+        "O histórico segue cheio de leituras velhas; o modelo vai continuar tropeçando nelas."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D1",
+      "pergunta": "A Vértice exige que arquivos em src/Infra/Migrations/ só sejam alterados por humanos, depois de revisão. Mesmo com essa regra no CLAUDE.md, o Claude editou uma migration ao corrigir um bug. Como garantir a regra?",
+      "opcoes": [
+        "Configurar um hook PostToolUse que reverte com git checkout qualquer alteração em Migrations/.",
+        "Adicionar src/Infra/Migrations/ ao .gitignore e ao claudeMdExcludes, para tirar a pasta do alcance do Claude.",
+        "Hook PreToolUse (Edit/Write) no .claude/settings.json do projeto que bloqueia, com exit 2, caminhos em Migrations/.",
+        "Reescrever a regra no CLAUDE.md em destaque e repeti-la num .claude/rules/ com paths para Migrations/."
+      ],
+      "correta": 2,
+      "explicacao": "Restrição que não pode falhar → hook PreToolUse de projeto bloqueando a tool (exit 2 / deny).",
+      "feedbacks": [
+        "Age depois da edição e pode desfazer trabalho legítimo de outras etapas; o certo é impedir antes.",
+        "Não impede a edição: .gitignore só afeta o versionamento (e quebraria o das migrations), e claudeMdExcludes apenas evita carregar arquivos CLAUDE.md, não bloqueia tools.",
+        "Correta. Hook de projeto é determinístico, vale para todos e impede a edição antes que aconteça; o motivo orienta o Claude.",
+        "Continua sendo instrução ao modelo, probabilística; a regra é de compliance e precisa de bloqueio em código."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D2",
+      "pergunta": "Na Vértice, pedem ao Claude Code para descobrir onde IPagamentoGateway é implementada e como é registrada na injeção de dependência. Ele começa lendo os arquivos do projeto um a um, em ordem alfabética. Qual estratégia de exploração é a correta?",
+      "opcoes": [
+        "Grep pelo nome da interface, ler só os arquivos encontrados e seguir as referências com novos Grep.",
+        "Ler todos os arquivos .cs do projeto primeiro, para ter o contexto completo antes de responder.",
+        "Usar Glob com **/*.cs, ordenar por tamanho e ler os 50 maiores arquivos, onde a lógica de negócio costuma ficar.",
+        "Pedir ao desenvolvedor que informe os caminhos dos arquivos relevantes."
+      ],
+      "correta": 0,
+      "explicacao": "Grep (conteúdo) → Read → seguir referências; não ler o codebase inteiro de antemão.",
+      "feedbacks": [
+        "Correta. Exploração incremental: grep pelos pontos de entrada, lê, segue referências. Economiza contexto e chega direto ao ponto.",
+        "Anti-padrão de ler tudo de antemão: gasta contexto e degrada a qualidade da resposta.",
+        "Glob acha arquivos por nome/padrão, não por conteúdo; tamanho não indica onde a interface está.",
+        "As tools nativas resolvem isso sozinhas; pedir ao humano é desnecessário."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D2",
+      "pergunta": "A Vértice quer compartilhar com todo o time um servidor MCP remoto do Jira, mas cada desenvolvedor tem o próprio token. Quais DUAS práticas estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Declarar o servidor no .mcp.json da raiz do repo com \"type\": \"http\" e a url do servidor.",
+        "Colocar no .mcp.json o token de uma conta de serviço, já que o repositório é privado.",
+        "Referenciar o token no .mcp.json por variável de ambiente, por exemplo \"Authorization\": \"Bearer ${JIRA_TOKEN}\".",
+        "Instalar com o escopo local, que salva em .claude/settings.local.json e é compartilhado pelo git.",
+        "Omitir o campo type, porque a presença de url já indica que o servidor é HTTP."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "MCP compartilhado: .mcp.json (escopo project) com type explícito e segredos via ${VAR}.",
+      "feedbacks": [
+        "Correta. .mcp.json é o escopo project (compartilhado via git), e servidor remoto precisa de type declarado.",
+        "Segredo literal em arquivo versionado viola a restrição de segredos e expõe a credencial a todos com acesso ao repo.",
+        "Correta. Segredos entram por ${VAR}; cada desenvolvedor define o próprio valor e nada sensível vai para o git.",
+        "Pegadinha dupla: o escopo local do MCP fica em ~/.claude.json, não em settings.local.json, e não é compartilhado.",
+        "Pegadinha: entrada com url e sem type é lida como stdio e falha."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "Na Vértice, o mesmo desenvolvedor pede, na mesma sessão em que o Claude implementou uma feature, \"agora revise o código que você escreveu\". As revisões quase nunca encontram problemas, mas bugs aparecem depois em produção. O que explica e como corrigir?",
+      "opcoes": [
+        "Viés do contexto de raciocínio: revisar numa sessão independente, não na que gerou o código.",
+        "Falta de capacidade do modelo: trocar por um modelo maior apenas para a etapa de revisão.",
+        "Prompt de revisão curto demais: pedir \"seja extremamente crítico e encontre pelo menos 5 problemas\".",
+        "Temperatura alta na geração: reduzir a temperatura para gerar código mais conservador."
+      ],
+      "correta": 0,
+      "explicacao": "Revisão independente (sessão nova) evita o viés de quem gerou o conteúdo.",
+      "feedbacks": [
+        "Correta. Revisão na mesma sessão herda as premissas da geração; uma sessão nova avalia o código sem esse viés.",
+        "Não ataca a causa: o problema é revisar dentro do mesmo contexto que gerou o código.",
+        "Força achados artificiais (falso positivo) e mantém o viés do contexto.",
+        "Não explica a revisão fraca; além disso, em modelos novos alguns parâmetros de amostragem nem são aceitos."
+      ]
+    },
+    {
+      "cenario": 2,
+      "dominio": "D4",
+      "pergunta": "A Vértice automatizou o review de PRs com o prompt \"aponte os problemas importantes\". Os comentários são 70% sobre estilo (já coberto pelo linter), e os devs passaram a ignorar inclusive os alertas de segurança. Qual é a melhor correção?",
+      "opcoes": [
+        "Adicionar um segundo modelo que revisa e filtra os comentários do primeiro antes de publicá-los no PR, descartando os irrelevantes.",
+        "Pedir ao modelo uma nota de confiança para cada comentário e publicar apenas os comentários com nota acima de 0,9.",
+        "Critérios explícitos do que reportar e do que não reportar (estilo já coberto pelo linter), com exemplos de fronteira.",
+        "Acrescentar \"seja conservador e evite comentários irrelevantes\"."
+      ],
+      "correta": 2,
+      "explicacao": "Critérios explícitos (reportar / não reportar / fronteira) e desligar categorias ruidosas preservam a confiança no review.",
+      "feedbacks": [
+        "Mais complexo que o necessário; sem critério explícito, o segundo modelo herda a mesma ambiguidade.",
+        "Confiança autodeclarada é mal calibrada; não define o que é relevante.",
+        "Correta. Critérios explícitos reduzem o falso positivo; uma categoria ruidosa corrói a confiança nas boas, então desliga-se a ruidosa, refina-se e religa-se.",
+        "Instrução vaga; produz resultado inconsistente."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: o Instituto Áurea, consultoria de análise de mercado, está construindo com o Claude Agent SDK um sistema de pesquisa multiagente: um coordenador recebe a pergunta do cliente e delega a subagents de busca web, leitura de documentos (PDFs e relatórios setoriais), análise de dados e síntese. Os relatórios embasam decisões de investimento, então toda afirmação precisa de fonte rastreável. Restrições: entrega em poucas horas e custo de tokens controlado.\n\nPara ganhar tempo, um engenheiro propõe que o subagent de busca envie seus achados diretamente ao subagent de síntese, sem passar pelo coordenador. Qual é a melhor avaliação?",
+      "opcoes": [
+        "Rejeitar, porque o Agent SDK não permite que um subagent devolva dados a outro subagent.",
+        "Rejeitar: no hub-and-spoke, o coordenador roteia toda a comunicação, trata erros e detecta lacunas.",
+        "Aceitar, desde que o subagent de síntese tenha a tool Agent para pedir novas buscas ao subagent de busca quando precisar.",
+        "Aceitar: comunicação direta reduz latência e tokens, e o coordenador pode receber só o relatório final."
+      ],
+      "correta": 1,
+      "explicacao": "Hub-and-spoke: o coordenador decompõe, delega, roteia toda comunicação, agrega e trata erros.",
+      "feedbacks": [
+        "Justificativa errada: a recomendação é de arquitetura (observabilidade e controle), não uma limitação técnica.",
+        "Correta. Subagents conversando diretamente tiram do coordenador a visibilidade para agregar, tratar falhas e pedir uma segunda rodada.",
+        "Cria uma malha de subagents chamando subagents, mais difícil de observar e controlar do que o hub-and-spoke.",
+        "Tentadora pelo ganho de tempo, mas é anti-padrão: o coordenador perde o controle de erros e de cobertura."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "No Áurea, o coordenador dispara o subagent de análise com o prompt \"Analise as fontes encontradas e destaque os números relevantes\". O subagent devolve um texto genérico, sem citar fonte nenhuma. Qual é a causa mais provável?",
+      "opcoes": [
+        "O modelo do subagent é menor que o do coordenador; usar o mesmo modelo faria a análise citar as fontes.",
+        "O subagent tem contexto isolado: pergunta, fontes, critérios e formato precisam ir explícitos no prompt.",
+        "Falta um exemplo few-shot de análise com citações no system prompt do coordenador, que orienta os subagents.",
+        "O subagent tem tools demais e se perdeu na escolha entre buscar, ler e analisar, em vez de usar as fontes."
+      ],
+      "correta": 1,
+      "explicacao": "Contexto do subagent é isolado: tudo o que ele precisa vai explícito no prompt de delegação.",
+      "feedbacks": [
+        "Trocar o modelo não dá ao subagent acesso ao contexto que nunca lhe foi passado.",
+        "Correta. Subagent não herda a conversa do coordenador: \"as fontes encontradas\" não existe para ele.",
+        "O system prompt do coordenador não chega ao subagent; o problema é a passagem de contexto.",
+        "Não explica a ausência de referências; ele simplesmente não recebeu as fontes."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "No Áurea, o coordenador delega quatro buscas independentes (uma por região). Pelos logs, cada subagent só começa quando o anterior termina, e a etapa leva quatro vezes mais tempo do que deveria. Como paralelizar?",
+      "opcoes": [
+        "Dar ao subagent de busca as quatro regiões num único prompt, para que ele faça tudo de uma vez.",
+        "Fazer o coordenador emitir as quatro chamadas da tool Agent na mesma resposta.",
+        "Aumentar o max_tokens do coordenador para que ele planeje as quatro buscas com mais folga.",
+        "Criar quatro coordenadores, um por região, cada um com seu subagent de busca."
+      ],
+      "correta": 1,
+      "explicacao": "Paralelismo de subagents = várias chamadas Agent na mesma resposta do coordenador.",
+      "feedbacks": [
+        "Volta a ser um único fluxo sequencial e concentra contexto num só subagent.",
+        "Correta. Várias chamadas Agent num mesmo turno rodam em paralelo; turnos separados são sequenciais.",
+        "Não muda a execução sequencial; o que paraleliza é emitir as chamadas no mesmo turno.",
+        "Multiplica a orquestração e complica a agregação sem necessidade."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "O Áurea recebeu o pedido \"Impacto da IA generativa nas indústrias criativas\". O relatório final saiu bem fundamentado, mas cobre apenas artes visuais e ignora música, cinema, games e publicidade. Os subagents fizeram bem o que receberam. Onde está a falha e qual é a correção?",
+      "opcoes": [
+        "No subagent de síntese: instruí-lo a generalizar as conclusões de artes visuais para as demais áreas.",
+        "No subagent de busca: instruí-lo a fazer buscas mais amplas e retornar mais resultados.",
+        "Na decomposição do coordenador, estreita demais: ampliar e checar a cobertura das subáreas.",
+        "No modelo: trocar o coordenador por um modelo com janela de contexto maior."
+      ],
+      "correta": 2,
+      "explicacao": "Decomposição estreita demais → ampliar e checar cobertura explicitamente no coordenador.",
+      "feedbacks": [
+        "Generalizar sem evidência produz afirmação sem fonte, o que viola o requisito de rastreabilidade.",
+        "Ataca o sintoma no lugar errado: ele buscou exatamente o que lhe foi delegado.",
+        "Correta. Os subagents fizeram o que receberam; a lacuna nasceu na decomposição. A correção é ampliar e conferir a cobertura.",
+        "Janela não é o problema; a decomposição é que omitiu subáreas."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Um cliente pede ao Áurea: \"Por que nossa participação de mercado caiu 8 pontos no último ano?\". Não se sabe de antemão se a causa é preço, canal, concorrente ou regulação. Qual estratégia de decomposição é a mais adequada?",
+      "opcoes": [
+        "Prompt chaining com passos fixos: coletar dados de preço → canal → concorrência → regulação → síntese.",
+        "Um único prompt grande pedindo ao modelo que considere todas as causas possíveis de uma vez.",
+        "Disparar em paralelo um subagent para cada causa imaginável (20 subagents) e sintetizar tudo no final.",
+        "Decomposição dinâmica: as próximas subtarefas surgem do que for descoberto."
+      ],
+      "correta": 3,
+      "explicacao": "Prompt chaining para passos conhecidos; decomposição dinâmica para investigação aberta.",
+      "feedbacks": [
+        "Chaining serve quando os passos são conhecidos de antemão; aqui ele gasta esforço igual em hipóteses descartáveis e não aprofunda a que se confirmar.",
+        "Dilui a atenção e não permite aprofundar o que as primeiras descobertas indicarem.",
+        "Força bruta cara, sem refinamento iterativo nem foco.",
+        "Correta. Investigação aberta: as subtarefas emergem das descobertas."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "O Áurea está configurando o coordenador no Agent SDK para delegar a subagents. Quais DUAS configurações são necessárias ou recomendadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Dar a todos os subagents o conjunto completo de tools do sistema, para que nenhum fique travado.",
+        "Incluir a tool Agent no allowedTools do coordenador.",
+        "Dispensar o contexto no prompt de delegação, porque os subagents herdam automaticamente o histórico do coordenador.",
+        "Dar a tool Agent a todos os subagents, para que se chamem diretamente quando precisarem.",
+        "Definir cada subagent (por exemplo com AgentDefinition) com descrição, prompt e um conjunto restrito de tools."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Coordenador com Agent em allowedTools; subagents definidos com descrição, prompt e tools restritas.",
+      "feedbacks": [
+        "Tools demais degradam a seleção; o ideal é 4 a 5 por agente.",
+        "Correta. Subagents são criados pela tool Agent (antes chamada Task); sem ela no allowedTools o coordenador não delega.",
+        "Falso: o subagent fresco tem contexto isolado (quem herda a conversa é o fork, não o subagent comum).",
+        "Quebra o hub-and-spoke: comunicação entre subagents deve passar pelo coordenador.",
+        "Correta. Subagents especializados, com descrição clara e poucas tools, melhoram a delegação e a seleção de tools."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "No Áurea, até perguntas simples como \"Qual foi a receita líquida da empresa X em 2025?\" passam pelos cinco subagents (busca, documentos, dados, verificação, síntese) e custam tanto quanto um estudo completo. Qual ajuste é o mais adequado?",
+      "opcoes": [
+        "Fazer o coordenador acionar só os subagents de que cada consulta precisa.",
+        "Manter o pipeline completo para garantir qualidade uniforme, mas usar a Batch API para cortar o custo pela metade.",
+        "Reduzir o max_tokens de cada subagent para baratear perguntas simples.",
+        "Criar um sistema separado, só para perguntas simples, com outro coordenador."
+      ],
+      "correta": 0,
+      "explicacao": "O coordenador aciona só os subagents necessários para a consulta.",
+      "feedbacks": [
+        "Correta. Um bom coordenador escolhe os subagents necessários para cada pedido, em vez de sempre rodar o pipeline inteiro.",
+        "Batch não serve para resposta em horas com interatividade; e continua fazendo trabalho desnecessário.",
+        "Corta saída indiscriminadamente (inclusive em estudos complexos) e não evita as chamadas inúteis.",
+        "Duplica a arquitetura; o coordenador existente pode decidir o roteamento."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "O subagent de síntese do Áurea acumulou 18 tools (busca, leitura de PDF, planilhas, gráficos, CRM, e-mail...) e passou a escolher a tool errada com frequência. A equipe já melhorou as descrições, mas o problema continua. Qual é o próximo passo recomendado?",
+      "opcoes": [
+        "Adicionar um parágrafo no system prompt listando, para cada tool, quando usá-la.",
+        "Forçar a ordem de uso com tool_choice a cada turno, de acordo com uma árvore de decisão no código.",
+        "Trocar por um modelo maior, que lida melhor com muitas tools.",
+        "Dividir em subagents especializados, com 4 a 5 tools cada."
+      ],
+      "correta": 3,
+      "explicacao": "Tools demais num agente → dividir em subagents especializados (4–5 tools cada).",
+      "feedbacks": [
+        "É mais uma variação de \"melhorar descrição\", que já não bastou.",
+        "Codifica por fora uma árvore de decisão que deveria ser do modelo, e fica frágil.",
+        "Pode suavizar o sintoma, mas não resolve o excesso de opções no momento da decisão.",
+        "Correta. Com muitas tools a seleção degrada mesmo com boas descrições; a diretriz é poucas tools por agente."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "No Áurea, a tool buscar_artigos devolve [] quando a API de busca acadêmica dá timeout. O coordenador concluiu num relatório que \"não há literatura sobre o tema\". Como a tool deveria se comportar?",
+      "opcoes": [
+        "Erro estruturado no timeout (transitório, retentável); [] só quando a busca rodou e não achou nada.",
+        "Continuar devolvendo [], mas com uma nota no system prompt do coordenador dizendo que listas vazias podem significar erro.",
+        "Lançar uma exceção que aborta todo o pipeline de pesquisa.",
+        "Devolver {\"error\": \"Search failed\"}."
+      ],
+      "correta": 0,
+      "explicacao": "Vazio ≠ falha: erro estruturado no timeout; lista vazia só quando a busca rodou de fato.",
+      "feedbacks": [
+        "Correta. Vazio é informação (\"nada encontrado\"); timeout significa que a busca não rodou. Misturar os dois gera conclusões falsas.",
+        "Deixa o coordenador sem saber qual é o caso; o modelo vai chutar.",
+        "Abortar tudo por uma falha transitória é desproporcional; o certo é propagar o erro estruturado para retry ou alternativa.",
+        "Mensagem genérica: não diz se é retentável, o que foi tentado nem se há resultado parcial."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "O subagent de busca do Áurea usa as tools server-side de web search e web fetch da Anthropic. Quais DUAS afirmações sobre essas tools estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Web fetch funciona como crawler: a partir de um domínio, descobre e baixa as páginas relevantes.",
+        "Você recebe um bloco tool_use de web_search, executa a busca no seu servidor e devolve um tool_result.",
+        "Elas rodam na Anthropic e o resultado volta na mesma resposta; um erro da tool chega com HTTP 200, dentro do resultado.",
+        "pause_turn significa que a busca falhou e a tarefa deve ser abortada e reportada como erro.",
+        "Se a resposta vier com stop_reason pause_turn, deve-se reenviá-la para o modelo continuar o trabalho."
+      ],
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Server-side tools: executam na Anthropic, erro com HTTP 200 no resultado, pause_turn → reenviar; web fetch só busca URLs já presentes.",
+      "feedbacks": [
+        "Web fetch só busca URLs que já estão presentes na conversa; não é crawler.",
+        "Isso descreve tool client-side. As server-side são executadas pela Anthropic.",
+        "Correta. Tools server-side não exigem que você execute nada, e o erro vem dentro do resultado, não como falha HTTP.",
+        "pause_turn não é falha; é uma pausa para continuar.",
+        "Correta. pause_turn indica que o loop server-side atingiu o teto de iterações; basta reenviar para continuar."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "No Áurea, cada subagent devolve seus achados em prosa livre. Na síntese, citações aparecem associadas à fonte errada e datas se perdem. Qual mudança ataca melhor o problema?",
+      "opcoes": [
+        "Fazer o subagent de síntese pesquisar de novo a fonte de cada afirmação antes de incluí-la no relatório.",
+        "Pedir aos subagents que sempre citem as fontes entre parênteses, logo após cada afirmação, com URL completa.",
+        "Saída estruturada por JSON schema, separando a afirmação dos metadados (trecho, fonte, data de publicação) em campos próprios.",
+        "Aumentar o max_tokens dos subagents para que descrevam as fontes e as datas com mais detalhe no texto."
+      ],
+      "correta": 2,
+      "explicacao": "Passagem estruturada (conteúdo separado dos metadados) mantém a proveniência até a síntese.",
+      "feedbacks": [
+        "Duplica trabalho e custo; o problema é a passagem de informação, não a busca.",
+        "Melhora pouco: a fonte continua misturada à prosa e se perde ou se embaralha na síntese.",
+        "Correta. Separar a afirmação dos metadados preserva a atribuição até a síntese, sem depender de parsing de prosa.",
+        "Mais texto não resolve a falta de estrutura."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Duas fontes confiáveis consultadas pelo Áurea divergem sobre o tamanho do mercado de baterias de sódio no mesmo ano: US$ 4,2 bi (consultoria A) e US$ 5,1 bi (associação setorial B). Como o relatório deve tratar o conflito?",
+      "opcoes": [
+        "Usar a média dos dois (US$ 4,65 bi) como estimativa de consenso entre as fontes.",
+        "Usar o valor da fonte considerada mais autoritativa e omitir o outro.",
+        "Apresentar os dois valores com suas fontes e marcar o dado como contestado.",
+        "Omitir o dado do relatório por falta de consenso."
+      ],
+      "correta": 2,
+      "explicacao": "Fontes conflitantes: anote os valores divergentes com suas fontes; não escolha em silêncio nem tire média.",
+      "feedbacks": [
+        "Média inventa um número que nenhuma fonte afirmou e esconde a divergência.",
+        "Escolher em silêncio esconde a incerteza de quem vai decidir o investimento.",
+        "Correta. Conflito entre fontes deve ser explicitado com a atribuição de cada valor, sem escolher um em silêncio.",
+        "Perde informação relevante; o certo é apresentá-la com a ressalva."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "O verificador do Áurea sinalizou como \"contradição\" que uma fonte diz 12 mil empregos no setor e outra diz 15 mil. Revendo, a primeira usa dados de 2023 e a segunda, de 2025. Qual é a prática correta?",
+      "opcoes": [
+        "Manter só o número mais recente no relatório e descartar o de 2023, por estar desatualizado.",
+        "Marcar os dois valores como contestados e escalar a divergência para um analista humano decidir.",
+        "Tirar a média dos dois valores para representar o período analisado.",
+        "Registrar a data de referência dos dados (além de publicação e coleta) e tratá-los como série temporal, não contradição."
+      ],
+      "correta": 3,
+      "explicacao": "Dados temporais: registre a data de referência; valores de períodos diferentes não são contradição.",
+      "feedbacks": [
+        "Perde a série histórica, que pode ser relevante, e não ensina o verificador a considerar datas.",
+        "Trata como conflito algo que não é; gera trabalho humano desnecessário.",
+        "Inventa um número sem significado.",
+        "Correta. Números de períodos diferentes não se contradizem; a proveniência temporal evita alarmes falsos e permite mostrar a evolução."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "No Áurea, um dos seis subagents de leitura de documentos falhou porque um PDF estava corrompido, e o coordenador abortou o relatório inteiro. O cliente ficou sem nada. Qual comportamento é o recomendado?",
+      "opcoes": [
+        "Manter o abort, mas avisar o cliente com uma mensagem genérica de erro.",
+        "Repetir indefinidamente a leitura do PDF até funcionar.",
+        "Omitir o documento falho do relatório sem mencioná-lo, já que os outros cinco documentos bastam para a conclusão.",
+        "Seguir com os resultados parciais, registrar a lacuna e oferecer alternativas (ex.: outra versão do PDF)."
+      ],
+      "correta": 3,
+      "explicacao": "Propagação de erro: continue com resultado parcial, anote a lacuna e ofereça alternativa.",
+      "feedbacks": [
+        "Continua desperdiçando 5/6 do trabalho, e a mensagem genérica esconde o diagnóstico.",
+        "Arquivo corrompido não é falha transitória; retry não resolve.",
+        "Supressão silenciosa: o cliente não sabe que há uma lacuna e pode decidir com base incompleta.",
+        "Correta. Uma falha pontual não deve derrubar o workflow: continue com o parcial, anote a lacuna e ofereça alternativa."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Em pesquisas longas do Áurea, o coordenador começa a dar respostas vagas (\"as tendências típicas do setor\") e esquece achados de horas atrás. Quais DUAS mitigações são as mais adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Colocar os achados-chave no meio do prompt, entre as instruções e os documentos.",
+        "Delegar a exploração volumosa a subagents que devolvem só resumos com os achados e as fontes.",
+        "Persistir achados e estado num arquivo de rascunho ou manifesto que sobrevive à compressão e permite retomar após falhas.",
+        "Passar ao coordenador o texto integral de todos os documentos lidos, aproveitando a janela de 1M tokens.",
+        "Aumentar o max_tokens do coordenador."
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "Contexto degradado: subagents que resumem + estado em arquivo/manifesto; não inflar o contexto do coordenador.",
+      "feedbacks": [
+        "O meio é justamente a região do \"lost in the middle\"; achados-chave vão no começo.",
+        "Correta. O ruído fica no contexto do subagent; o coordenador recebe só o essencial.",
+        "Correta. Estado em arquivo de local conhecido não se perde em resumo nem em crash.",
+        "Janela grande não é de graça: aumenta o custo por turno e piora o \"lost in the middle\".",
+        "max_tokens limita a saída; não ajuda o modelo a lembrar o que entrou no contexto."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Cenário: a Fluxa Contábil processa cerca de 50 mil documentos por mês (notas fiscais, recibos, contratos) de pequenas empresas e extrai os campos para o ERP dos clientes. O pipeline, em C#, chama a Messages API. Requisitos: a saída precisa seguir um JSON schema, os totais precisam bater e há revisão humana por amostragem. Restrições: o backlog pode ser processado durante a noite, mas o upload feito pelo app precisa de resposta em segundos.\n\nHoje o prompt pede \"responda apenas com o JSON\" e cerca de 3% das respostas quebram o parser (vírgula sobrando, campo com nome diferente, texto antes do JSON). Qual é a correção mais robusta?",
+      "opcoes": [
+        "Structured outputs (output_config.format com json_schema) ou tool com input_schema e strict: true.",
+        "Pós-processar com regex para extrair o trecho entre a primeira { e a última } e corrigir vírgulas.",
+        "Reforçar o prompt com \"NUNCA escreva nada fora do JSON\" e um exemplo do formato esperado.",
+        "Fazer prefill da resposta do assistant com \"{\" para forçar o início do JSON."
+      ],
+      "correta": 0,
+      "explicacao": "Saída estruturada garantida: structured outputs (output_config.format) ou tool com input_schema + strict.",
+      "feedbacks": [
+        "Correta. Mecanismos de saída estruturada garantem a conformidade com o schema, coisa que instrução em texto não garante.",
+        "Remendo frágil: não corrige campos com nome ou tipo errado.",
+        "Reduz a taxa de erro, mas continua probabilístico.",
+        "Truque antigo: não garante o schema e, nos modelos novos, prefill retorna 400."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Muitas notas fiscais processadas pela Fluxa não trazem data de vencimento. O schema atual exige data_vencimento como string obrigatória, e o modelo tem inventado datas plausíveis (emissão + 30 dias). Qual ajuste é o correto?",
+      "opcoes": [
+        "Manter o campo obrigatório e acrescentar \"não invente datas\" ao prompt.",
+        "Tornar data_vencimento nullable e pedir null quando o campo não existir.",
+        "Remover data_vencimento do schema.",
+        "Calcular a data no código como emissão + 30 dias quando o modelo não encontrar o campo."
+      ],
+      "correta": 1,
+      "explicacao": "Dado que pode faltar → campo nullable, para o modelo não inventar valores.",
+      "feedbacks": [
+        "O schema continua exigindo uma data; instrução e schema ficam em conflito, e o modelo tende a preencher.",
+        "Correta. Campo nullable dá ao modelo uma saída legítima para dado ausente, em vez de pressioná-lo a inventar.",
+        "Perde o dado nos documentos que o trazem.",
+        "Fabrica um dado que o documento não contém, só que em código; o ERP recebe uma informação falsa."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "Na Fluxa, todas as respostas já passam na validação de schema, mas em 2% das notas o campo valor_total não bate com a soma dos itens. Qual é a melhor abordagem?",
+      "opcoes": [
+        "Reenviar o documento pedindo \"revise sua resposta com atenção\", sem detalhar o que está errado.",
+        "Ativar strict: true na tool de extração, o que garante que os valores extraídos sejam consistentes entre si.",
+        "Sobrescrever valor_total no código com a soma dos itens.",
+        "Validar a soma no código e, se falhar, reenviar os erros específicos ao modelo, até um limite de tentativas."
+      ],
+      "correta": 3,
+      "explicacao": "Validação semântica em código + retry com os erros específicos no prompt, até um limite.",
+      "feedbacks": [
+        "Retry sem os erros específicos desperdiça chamadas e tende a repetir o erro.",
+        "strict garante formato e tipos, não aritmética nem coerência entre campos.",
+        "Esconde a discrepância: o total declarado pode estar certo e um item ter sido mal extraído.",
+        "Correta. Conformidade com schema não garante correção semântica; o loop de validação com erros específicos é o padrão."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "No loop de validação da Fluxa, recibos sem CNPJ do emissor entram em retry até o limite de 5 tentativas, sempre falhando em \"cnpj_emissor obrigatório\". O CNPJ realmente não aparece nesses recibos. O que fazer?",
+      "opcoes": [
+        "Aceitar null quando o dado não está na fonte e encaminhar o documento para revisão humana.",
+        "Instruir o modelo a buscar o CNPJ pela razão social em sua memória de treinamento.",
+        "Aumentar o limite para 10 tentativas.",
+        "Preencher \"00.000.000/0000-00\" para passar na validação."
+      ],
+      "correta": 0,
+      "explicacao": "Retry não recupera o que não está na fonte: devolva null e trate o caso.",
+      "feedbacks": [
+        "Correta. Retry não recupera informação ausente da fonte; o certo é null e o tratamento adequado do caso.",
+        "Convida a alucinação de um dado fiscal.",
+        "Mais tentativas não fazem o CNPJ aparecer no documento.",
+        "Valor falso que passa no schema e polui o ERP; esconde a ausência real."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fluxa tem um backlog de 200 mil documentos antigos para processar e também o upload pelo app, que precisa de resposta em segundos. Quais DUAS decisões estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Passar o upload do app também pela Batch API, consultando o status a cada 10 segundos.",
+        "Casar os resultados do batch pela ordem de envio, já que a API preserva a ordem.",
+        "Implementar o loop de validação com retry dentro de um único request do batch, em vários turnos.",
+        "Processar o backlog pela Batch API, casando os resultados com os documentos pelo custom_id.",
+        "Atender o upload do app com chamadas síncronas à Messages API."
+      ],
+      "corretas": [
+        3,
+        4
+      ],
+      "explicacao": "Batch para volume sem urgência (custom_id); síncrono para tempo real.",
+      "feedbacks": [
+        "A Batch API não tem SLA (pode levar até 24h); polling rápido não muda isso.",
+        "Pegadinha: os resultados vêm fora de ordem; o vínculo é o custom_id.",
+        "A Batch API não suporta loop multi-turn dentro de um request; o retry vira um novo envio com os custom_id que falharam.",
+        "Correta. Volume sem urgência é o caso da Batch API (50% mais barata, até 24h); os resultados chegam fora de ordem, por isso o custom_id.",
+        "Correta. Requisito de tempo real exclui a Batch API, que não tem SLA."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "A Fluxa percebeu que o modelo confunde \"recibo simples\" com \"nota fiscal de serviço\" em documentos ambíguos e erra campos em recibos manuscritos. Qual técnica de prompt é a mais indicada?",
+      "opcoes": [
+        "Instruir: \"tenha muito cuidado com documentos ambíguos e manuscritos\".",
+        "2 a 4 exemplos few-shot variados (um ambíguo, um manuscrito), com extração esperada e raciocínio.",
+        "Adicionar 20 exemplos de notas fiscais digitadas, o tipo mais comum.",
+        "Pedir ao modelo uma pontuação de confiança por campo e descartar automaticamente as extrações de baixa confiança."
+      ],
+      "correta": 1,
+      "explicacao": "Few-shot: 2–4 exemplos variados com raciocínio, focados nos casos de borda.",
+      "feedbacks": [
+        "Instrução vaga, sem critério nem demonstração.",
+        "Correta. Few-shot direcionado, com raciocínio e cobrindo bordas, reduz erros de classificação e alucinação em extração.",
+        "Volume de casos fáceis não ensina a fronteira, que é onde está o erro.",
+        "Confiança autodeclarada é mal calibrada e não melhora a extração."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D4",
+      "pergunta": "O schema da Fluxa tem categoria_despesa como string livre, e o ERP recebe variações como \"Alimentação\", \"alimentacao\", \"Refeição\" e \"Restaurante\". Despesas fora das categorias previstas também aparecem. Qual design de schema é o mais adequado?",
+      "opcoes": [
+        "Manter string livre e instruir o modelo a \"usar sempre os nomes padronizados\".",
+        "Enum com as categorias do ERP mais \"outro\", acompanhado de um campo de detalhe para o caso não previsto.",
+        "Manter string livre e normalizar no código C# com um dicionário de sinônimos mantido pela equipe.",
+        "Usar um enum estrito apenas com as categorias atuais do ERP, sem nenhuma opção genérica."
+      ],
+      "correta": 1,
+      "explicacao": "Enum + \"outro\" com campo de detalhe padroniza sem forçar classificação errada.",
+      "feedbacks": [
+        "Sem enum, a conformidade fica só no prompt.",
+        "Correta. O enum padroniza os valores; \"outro\" + detalhe acomoda o imprevisto sem forçar uma categoria errada.",
+        "Trabalho infinito de manutenção; o schema pode resolver na origem.",
+        "Força o modelo a encaixar despesas imprevistas numa categoria errada."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "O pipeline da Fluxa tem passos fixos: classificar o tipo do documento, extrair com o schema específico do tipo e validar os totais. Os passos não mudam de documento para documento. Qual arquitetura é a mais adequada?",
+      "opcoes": [
+        "Um único prompt grande que classifica, extrai todos os schemas possíveis e valida, tudo de uma vez.",
+        "Um loop agêntico com todas as tools disponíveis, deixando o modelo decidir a ordem dos passos.",
+        "Prompt chaining: sequência fixa de chamadas focadas, com validação em código entre as etapas.",
+        "Um coordenador multiagente com decomposição dinâmica, que decide as etapas a cada documento."
+      ],
+      "correta": 2,
+      "explicacao": "Passos fixos e sequenciais → prompt chaining.",
+      "feedbacks": [
+        "Dilui a atenção e mistura responsabilidades; dificulta validar e reprocessar cada etapa.",
+        "Autonomia onde não há decisão a tomar; menos previsível e mais caro.",
+        "Correta. Passos conhecidos de antemão e sequenciais são o caso de prompt chaining, que é simples e previsível.",
+        "Complexidade desnecessária para um fluxo fixo; decomposição dinâmica é para investigação aberta."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D1",
+      "pergunta": "Em contratos longos, a extração da Fluxa às vezes volta com o JSON cortado no meio. O código C# lê o content, tenta desserializar, falha e registra \"modelo retornou JSON inválido\". O que o código deveria fazer primeiro?",
+      "opcoes": [
+        "Reenviar o mesmo request automaticamente até vir um JSON completo, com no máximo três tentativas.",
+        "Checar o stop_reason antes de ler o content: max_tokens indica saída truncada, não JSON inválido.",
+        "Ativar strict: true no schema, o que garante que o JSON devolvido esteja sempre completo.",
+        "Completar o JSON truncado no próprio código, fechando chaves e colchetes que ficaram abertos."
+      ],
+      "correta": 1,
+      "explicacao": "Sempre cheque stop_reason: max_tokens significa saída truncada.",
+      "feedbacks": [
+        "O mesmo limite corta de novo; gasta tokens sem resolver.",
+        "Correta. stop_reason diz por que a geração parou; max_tokens indica truncamento, não erro de formato.",
+        "strict não impede o corte por limite de tokens de saída.",
+        "Produz um JSON sintaticamente válido, mas com campos faltando silenciosamente."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "A Fluxa definiu a tool registrar_nota com strict: true, mas a API rejeita a definição. No input_schema, data_vencimento e observacoes não estão em required e não há additionalProperties. O que corrigir?",
+      "opcoes": [
+        "Declarar additionalProperties: false; os dois campos podem seguir opcionais, mas o recomendado é pô-los em required como nullable.",
+        "Adicionar oneOf com duas variações do schema, uma com vencimento e outra sem, para cobrir os dois casos.",
+        "Remover strict: true, já que o schema tem campos opcionais.",
+        "Adicionar additionalProperties: true para aceitar os campos opcionais."
+      ],
+      "correta": 0,
+      "explicacao": "strict exige additionalProperties: false em todo objeto; é isso que falta. Propriedades opcionais são permitidas (contam para um limite por request [volátil]), mas required + nullable deixa a ausência explícita.",
+      "feedbacks": [
+        "Correta. A causa da rejeição é a falta de additionalProperties: false. Opcionais são aceitas pelo strict, mas required + nullable é a prática recomendada.",
+        "oneOf não consta entre as construções documentadas como suportadas e não ataca a causa: falta additionalProperties: false.",
+        "Abre mão da garantia de schema por uma premissa falsa: strict aceita campos opcionais.",
+        "É o oposto do exigido pelo strict."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D2",
+      "pergunta": "A Fluxa usava tool_choice {\"type\": \"tool\", \"name\": \"registrar_nota\"} para garantir a extração. Ao migrar para um modelo mais novo, os requests passaram a retornar 400. O objetivo do forçar era só obter o JSON. Qual é a correção recomendada?",
+      "opcoes": [
+        "Voltar ao modelo anterior permanentemente.",
+        "Fazer prefill do assistant com o início de um bloco tool_use.",
+        "Trocar para tool_choice any, que é aceito em todos os modelos.",
+        "Migrar para structured outputs (output_config.format)."
+      ],
+      "correta": 3,
+      "explicacao": "Forçar tool só para obter JSON → structured outputs nos modelos novos (suporte é por modelo: confira as capabilities).",
+      "feedbacks": [
+        "Contorna sem resolver e trava a evolução do pipeline.",
+        "Prefill retorna 400 nos modelos novos.",
+        "any também é rejeitado nos modelos novos e, de todo modo, não garante qual tool seria chamada.",
+        "Correta. Nos modelos novos, tool_choice forçado (any/tool) retorna 400; structured outputs é a via direta para JSON no schema."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D3",
+      "pergunta": "A Fluxa quer um job no GitHub Actions que, a cada PR que altere schemas de extração, use o Claude Code para rodar a extração num conjunto de documentos de exemplo e bloqueie o merge se algo regredir. O resultado precisa ser lido por um script. Qual configuração é a mais adequada?",
+      "opcoes": [
+        "claude -p com --resume da sessão de ontem, reaproveitando o contexto dos documentos já analisados.",
+        "claude -p com --output-format text e um grep por \"APROVADO\" na saída.",
+        "Enviar os documentos pela Batch API e checar o resultado no dia seguinte.",
+        "claude -p com --output-format json, --json-schema, --max-turns e --allowedTools restritos."
+      ],
+      "correta": 3,
+      "explicacao": "CI: -p + --output-format json + --json-schema, com --max-turns e --allowedTools.",
+      "feedbacks": [
+        "Reaproveita resultados possivelmente desatualizados; cada execução de CI deve ser independente e reprodutível.",
+        "Parsing de texto livre é frágil; a CLI oferece saída JSON com schema.",
+        "Batch não serve para checagem pré-merge bloqueante: não tem SLA.",
+        "Correta. -p para não interativo, saída JSON validada por schema para o script, e limites de turnos e tools como backstop."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D3",
+      "pergunta": "Um desenvolvedor da Fluxa vai usar o Claude Code para implementar o suporte a um novo tipo de documento (conhecimento de transporte), mas os requisitos estão confusos: não se sabe quais campos o ERP precisa nem como tratar documentos com várias páginas. Qual abordagem é a mais adequada para começar?",
+      "opcoes": [
+        "Usar bypassPermissions para o Claude explorar e implementar tudo sem interrupções.",
+        "Pedir que o Claude escolha os campos mais comuns em documentos de transporte e siga com a implementação.",
+        "Pedir a implementação direta e ajustar depois, conforme os erros aparecerem.",
+        "Pedir ao Claude que o entreviste sobre campos, formatos e casos de borda antes de implementar."
+      ],
+      "correta": 3,
+      "explicacao": "Requisito confuso → entrevista (Claude pergunta antes de implementar), possivelmente seguida de plan mode.",
+      "feedbacks": [
+        "Não resolve a falta de requisitos e remove controles de segurança.",
+        "Decide por suposição algo que precisa vir do negócio (o que o ERP espera).",
+        "Gera retrabalho: decisões erradas sobre campos e paginação contaminam o código.",
+        "Correta. Com requisitos confusos, a técnica da entrevista traz à tona as decisões antes de qualquer código."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D3",
+      "pergunta": "Na Fluxa, os arquivos de schema ficam espalhados em src/*/Schemas/*.json, em vários projetos, e todos devem seguir a mesma convenção (snake_case, campos opcionais como nullable, descrição em toda propriedade). Como passar essa convenção ao Claude Code?",
+      "opcoes": [
+        "Colocar a convenção no CLAUDE.md da raiz.",
+        "Uma regra em .claude/rules/ com paths: \"src/**/Schemas/*.json\".",
+        "Criar um CLAUDE.md em cada pasta Schemas/ com a mesma convenção.",
+        "Criar uma skill /schema que o desenvolvedor chama ao editar schemas."
+      ],
+      "correta": 1,
+      "explicacao": "Convenção por tipo de arquivo espalhado → .claude/rules/ com paths (glob).",
+      "feedbacks": [
+        "Funciona, mas carrega em toda sessão mesmo quando ninguém mexe em schemas; regra por caminho é mais precisa.",
+        "Correta. Convenção que atravessa diretórios pede uma regra com glob de caminho: cobre pastas futuras e não duplica conteúdo.",
+        "Duplicação que diverge com o tempo e não cobre pastas novas automaticamente.",
+        "Depende de alguém lembrar de chamar; a regra por caminho carrega sozinha."
+      ]
+    },
+    {
+      "cenario": 6,
+      "dominio": "D5",
+      "pergunta": "A Fluxa reporta 97% de acurácia agregada e revisa uma amostra uniforme de 5% dos documentos. Mesmo assim, clientes reclamam de erros frequentes em recibos manuscritos. Quais DUAS ações são as mais adequadas? (Escolha DUAS.)",
+      "opcoes": [
+        "Quebrar a acurácia por tipo de documento e por campo, para encontrar onde a falha se concentra.",
+        "Processar cada recibo manuscrito três vezes e ficar com o resultado mais frequente.",
+        "Usar a confiança autodeclarada pelo modelo para decidir o que revisar, sem calibrá-la num conjunto rotulado.",
+        "Aumentar a amostra uniforme de 5% para 10%.",
+        "Trocar a amostragem uniforme por amostragem estratificada por risco, revisando proporcionalmente mais os tipos de alto risco."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Quebre a métrica por tipo e campo; revise com amostragem estratificada por risco.",
+      "feedbacks": [
+        "Correta. A métrica agregada esconde falhas por segmento: 97% no total pode conviver com um desempenho ruim em manuscritos.",
+        "Triplica o custo sem medir nem corrigir a causa.",
+        "Confiança sem calibração não significa nada.",
+        "Dobra o custo sem direcionar a revisão para onde estão os erros.",
+        "Correta. A revisão humana deve se concentrar onde o risco é maior."
+      ]
+    }
+  ]
+}

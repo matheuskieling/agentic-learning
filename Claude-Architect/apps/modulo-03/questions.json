@@ -1,0 +1,266 @@
+{
+  "titulo": "Módulo 03 — Quiz: saída estruturada, validação com retry e Batch API",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Qual parâmetro atual da Messages API faz a RESPOSTA seguir um JSON schema?",
+      "opcoes": [
+        "output_format no topo do request, ao lado de model",
+        "response_format",
+        "tool_choice: {type: json}",
+        "output_config.format com json_schema"
+      ],
+      "correta": 3,
+      "explicacao": "Structured outputs usa output_config.format; o output_format de topo está depreciado.",
+      "feedbacks": [
+        "Errado: depreciado.",
+        "Errado: não é o nome do parâmetro na Messages API.",
+        "Errado: não existe esse tipo de tool_choice.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Qual exigência o schema precisa cumprir para usar strict: true?",
+      "opcoes": [
+        "Ter pelo menos um campo do tipo string",
+        "additionalProperties: false em todo objeto",
+        "Usar só tipos numéricos",
+        "Declarar minimum e maximum em todos os campos numéricos do schema"
+      ],
+      "correta": 1,
+      "explicacao": "Strict exige objetos fechados (additionalProperties: false). Opcionais são permitidas, mas contam para um limite; a recomendação é required + nullable.",
+      "feedbacks": [
+        "Errado: não há exigência de tipo.",
+        "Correto.",
+        "Errado: qualquer tipo básico é suportado.",
+        "Errado: faixas numéricas nem são garantidas pelo strict."
+      ]
+    },
+    {
+      "pergunta": "Na extração via tool use, o que é o JSON extraído?",
+      "opcoes": [
+        "O input do bloco tool_use que o modelo gera",
+        "O conteúdo do tool_result que você devolve",
+        "O texto livre após o tool_use",
+        "O campo usage da resposta"
+      ],
+      "correta": 0,
+      "explicacao": "A tool existe só como schema: o input do tool_use é o dado estruturado.",
+      "feedbacks": [
+        "Correto.",
+        "Errado: tool_result é o que você devolveria após executar uma tool.",
+        "Errado: o texto livre não tem garantia de formato.",
+        "Errado: usage é contagem de tokens."
+      ]
+    },
+    {
+      "pergunta": "Num modelo novo, tool_choice: {type: tool, name: extrair} retorna 400. Qual alternativa é recomendada se a tool existia só para obter JSON?",
+      "opcoes": [
+        "tool_choice: {type: any}",
+        "Prefill do assistant com '{'",
+        "Structured outputs via output_config.format",
+        "Remover o schema e pedir JSON no texto"
+      ],
+      "correta": 2,
+      "explicacao": "Nos modelos novos, any/tool forçados dão 400; structured outputs é o substituto quando o objetivo era só JSON.",
+      "feedbacks": [
+        "Errado: any também é forçado e também dá 400.",
+        "Errado: prefill também dá 400 nos modelos novos.",
+        "Correto.",
+        "Errado: perde a garantia de formato."
+      ]
+    },
+    {
+      "pergunta": "O schema strict valida todas as saídas, mas a soma dos itens não bate com o total em 3% das faturas. O que isso mostra?",
+      "opcoes": [
+        "Que o strict está desligado",
+        "Que é preciso aumentar max_tokens",
+        "Schema ≠ semântica: valide a soma no código",
+        "Que o modelo precisa de temperatura menor para somar com precisão"
+      ],
+      "correta": 2,
+      "explicacao": "Schema garante tipo e formato; regras de negócio (somas, datas) são validadas no seu código.",
+      "feedbacks": [
+        "Errado: o formato está correto; o problema é semântico.",
+        "Errado: não há truncamento.",
+        "Correto.",
+        "Errado: temperatura não é o problema (e é rejeitada nos modelos novos)."
+      ]
+    },
+    {
+      "pergunta": "O documento às vezes não tem data de vencimento, e o modelo inventa uma. Qual ajuste de schema ajuda?",
+      "opcoes": [
+        "Tornar o campo vencimento nullable",
+        "Remover vencimento de required sem strict",
+        "Adicionar format: date",
+        "Adicionar um enum com datas possíveis"
+      ],
+      "correta": 0,
+      "explicacao": "Campo nullable dá ao modelo a saída honesta (null) em vez de forçá-lo a inventar.",
+      "feedbacks": [
+        "Correto.",
+        "Errado: sem strict perde-se a garantia de formato; e campo opcional não impede a invenção. Prefira required + nullable.",
+        "Errado: format garante o formato, não impede invenção.",
+        "Errado: não faz sentido para datas."
+      ]
+    },
+    {
+      "pergunta": "Uma classificação de despesas tem enum fechado [viagem, alimentação, software]. Despesas de locação estão sendo classificadas como 'software'. Qual padrão de schema resolve?",
+      "opcoes": [
+        "Tornar o campo categoria do tipo string livre",
+        "Adicionar 'unclear' ao enum",
+        "Remover o enum e usar few-shot",
+        "Adicionar 'other' ao enum mais um campo de detalhe"
+      ],
+      "correta": 3,
+      "explicacao": "Enum com 'other' + detalhe evita forçar uma categoria errada e preserva a informação.",
+      "feedbacks": [
+        "Errado: perde a padronização das categorias conhecidas.",
+        "Errado: 'unclear' é para fonte ambígua; aqui a categoria é clara, só não está na lista.",
+        "Errado: perde a garantia estrutural.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Quando usar o valor 'unclear' num enum?",
+      "opcoes": [
+        "Quando a categoria existe mas não está na lista",
+        "Quando a fonte é ambígua ou ilegível",
+        "Quando o campo é numérico",
+        "Sempre, como valor padrão"
+      ],
+      "correta": 1,
+      "explicacao": "'unclear' evita chute quando a fonte não permite decidir.",
+      "feedbacks": [
+        "Errado: esse caso é 'other' + detalhe.",
+        "Correto.",
+        "Errado: enum de categorias, não números.",
+        "Errado: virar padrão esconderia casos decidíveis."
+      ]
+    },
+    {
+      "pergunta": "Qual destas restrições o modo strict NÃO suporta, devendo ser validada no seu código?",
+      "opcoes": [
+        "minimum: 0 num campo numérico",
+        "enum de valores permitidos",
+        "additionalProperties: false",
+        "Tipo string vs. number"
+      ],
+      "correta": 0,
+      "explicacao": "Faixas numéricas (e tamanho de string, arrays além de minItems 0/1, recursão) não são suportadas: num schema cru dão 400; os helpers do SDK movem para a descrição e validam localmente.",
+      "feedbacks": [
+        "Correto.",
+        "Errado: enum é suportado.",
+        "Errado: é exigido e suportado.",
+        "Errado: tipos básicos são garantidos."
+      ]
+    },
+    {
+      "pergunta": "Qual mensagem de retry é a mais eficaz num loop de validação?",
+      "opcoes": [
+        "'O JSON está inválido. Tente novamente.'",
+        "'Revise sua resposta com mais cuidado e confira todos os campos antes de responder.'",
+        "'Erro 422.'",
+        "'total 1250.00 ≠ soma dos itens 1205.00 (item 3?)'"
+      ],
+      "correta": 3,
+      "explicacao": "Erros específicos (o quê e onde) dão ao modelo o que corrigir.",
+      "feedbacks": [
+        "Errado: genérico; tende a produzir a mesma resposta.",
+        "Errado: vago.",
+        "Errado: código sem contexto (anti-padrão de erro genérico).",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O campo CNPJ do tomador vem errado após 3 retries, e o documento não contém o CNPJ. O que fazer?",
+      "opcoes": [
+        "Aumentar o limite para 10 retries",
+        "Mudar o prompt para 'encontre o CNPJ a qualquer custo'",
+        "null no campo + revisão humana, se o negócio exigir",
+        "Preencher com o CNPJ do prestador"
+      ],
+      "correta": 2,
+      "explicacao": "Retry não recupera informação ausente da fonte; insistir só gera invenção.",
+      "feedbacks": [
+        "Errado: mais tentativas, mesma ausência de dado.",
+        "Errado: induz alucinação.",
+        "Correto.",
+        "Errado: dado inventado/errado."
+      ]
+    },
+    {
+      "pergunta": "Por que extrair tanto o total declarado quanto a soma calculada dos itens?",
+      "opcoes": [
+        "Para economizar tokens",
+        "Para detectar discrepâncias em vez de escondê-las",
+        "Porque o strict exige campos duplicados para validar números",
+        "Para o Batch API casar os resultados"
+      ],
+      "correta": 1,
+      "explicacao": "Declarado + calculado expõe inconsistência do documento ou da extração.",
+      "feedbacks": [
+        "Errado: custa um pouco mais, não menos.",
+        "Correto.",
+        "Errado: não há tal exigência.",
+        "Errado: o batch casa por custom_id."
+      ]
+    },
+    {
+      "pergunta": "Qual afirmação sobre a Batch API está correta?",
+      "opcoes": [
+        "Garante resposta em até 1 hora",
+        "Devolve os resultados na mesma ordem dos requests",
+        "Suporta loop multi-turn de tools dentro de um request",
+        "~50% mais barata, até 24h, sem SLA"
+      ],
+      "correta": 3,
+      "explicacao": "50% de desconto, até 24h, sem SLA; resultados fora de ordem; sem multi-turn de tools.",
+      "feedbacks": [
+        "Errado: não há SLA; pode levar até 24h.",
+        "Errado: fora de ordem → case por custom_id.",
+        "Errado: cada request é uma chamada única.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Qual uso da Batch API é ADEQUADO?",
+      "opcoes": [
+        "Análise noturna de 200 mil tickets do dia",
+        "Checagem obrigatória antes do merge de um PR",
+        "Resposta ao cliente no chat de suporte",
+        "Depuração interativa de um prompt"
+      ],
+      "correta": 0,
+      "explicacao": "Batch serve para volume sem ninguém esperando.",
+      "feedbacks": [
+        "Correto.",
+        "Errado: passo bloqueante; o PR pode esperar até 24h.",
+        "Errado: tempo real.",
+        "Errado: interativo exige resposta rápida."
+      ]
+    },
+    {
+      "pergunta": "Um batch de 10 mil requests terminou: 9.700 succeeded, 250 errored e 50 expired. Quais DUAS ações são corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Reenviar o lote inteiro para garantir consistência",
+        "Casar cada resultado ao documento de origem pelo custom_id",
+        "Reenviar apenas os custom_id com errored ou expired",
+        "Casar os resultados pela ordem das linhas do arquivo de entrada",
+        "Descartar os que falharam, já que 97% é uma boa taxa"
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "Resultados vêm fora de ordem (case por custom_id) e só os que falharam são reenviados.",
+      "feedbacks": [
+        "Errado: desperdiça custo reprocessando 9.700 sucessos.",
+        "Correto.",
+        "Correto.",
+        "Errado: resultados chegam fora de ordem.",
+        "Errado: descartar em silêncio é perder dado (supressão de erro)."
+      ]
+    }
+  ]
+}

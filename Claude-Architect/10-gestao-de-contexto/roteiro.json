@@ -1,0 +1,163 @@
+{
+  "modulo": "10",
+  "titulo": "Gestão de contexto: janela, caching, compaction, context editing, memória",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — contexto é recurso finito e caro",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# para a linguagem salva",
+        "Task statements cobertos: 5.1 (contexto da conversa), 5.4 (codebase grande), 5.7 (context editing, compaction, memória), 5.8 (task budget, recusa) e 4.8 (prompt caching)",
+        "Ideia central: cada token na janela é cobrado de novo a cada turno, compete por atenção e pode se perder num resumo",
+        "O arquiteto decide o que entra, o que sai, o que nunca pode ser parafraseado e o que é reaproveitado do cache",
+        "Tema transversal: aparece em todos os 6 cenários, especialmente Customer Support (1), Research (3), Developer Productivity (4) e CI (5)",
+        "Formato: 7 blocos de teoria, quiz de 15 e prova de 20 em estilo cenário"
+      ],
+      "checkpoint": "Pergunte se o aluno já viu um agente ou sessão longa 'ficar burra' com o tempo e confirme que está pronto para começar",
+      "ref": "10-gestao-de-contexto/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "A janela é finita e cada turno paga tudo de novo",
+      "pontos": [
+        "System, tools, mensagens e resultados de tool dividem a mesma janela; a API é stateless e o histórico é reenviado (e cobrado) a cada turno",
+        "Janela grande (1M, volátil) adia o problema mas não elimina: custa mais e piora o lost in the middle",
+        "Lost in the middle: achados-chave no começo (ou repetidos no fim), cabeçalhos de seção, nada crítico enterrado no meio",
+        "Corte a saída das tools: se o agente usa 5 de 40 campos, devolva 5 (na tool ou num PostToolUse hook)",
+        "Anti-padrão que aparece como alternativa: 'migre para um modelo com janela maior'",
+        "Prova: Cenário 1 (tool de pedido devolvendo JSON gigante) e Cenário 4 (sessão longa ficando vaga)"
+      ],
+      "checkpoint": "Pergunte por que 'usar um modelo com janela de 1M' não é a melhor correção para um agente que ignora uma regra posicionada no meio de um prompt longo",
+      "ref": "10-gestao-de-contexto/teoria.md#1-a-janela-é-finita-e-cada-turno-paga-tudo-de-novo"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Resumo perde números: o bloco de CASE FACTS e o que sobrevive ao /compact",
+      "pontos": [
+        "Resumo preserva narrativa e perde precisão: valores, datas, percentuais, IDs, números de pedido, mensagens de erro literais",
+        "Correção: bloco persistente de CASE FACTS, mantido pelo código fora do que é resumido e reinjetado a cada turno",
+        "Mostre o exemplo de <case_facts> com customer_id, order_id, valores e erro literal do gateway",
+        "/compact: sobrevivem CLAUDE.md, system, mensagens recentes e memória; podem se perder detalhes antigos, resultados de tool do início, números e citações exatas",
+        "O que não pode se perder vai para arquivo (CLAUDE.md, scratchpad, memória); /compact aceita instrução de foco; PreCompact permite salvar estado",
+        "Pegadinha: 'melhore o prompt de sumarização' continua probabilístico; a resposta é tirar os fatos do resumo"
+      ],
+      "checkpoint": "Peça ao aluno três tipos de informação que um resumo costuma perder e onde ele guardaria cada uma",
+      "ref": "10-gestao-de-contexto/teoria.md#2-resumo-perde-números-o-bloco-de-case-facts"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Contexto em codebase grande: sinais de degradação e mitigações",
+      "pontos": [
+        "Sinais: respostas vagas ('padrões típicos') em vez de código específico, inconsistência, esquecer descobertas e reler arquivos",
+        "Scratchpad: o agente grava descobertas num arquivo que sobrevive à compressão",
+        "Subagents (ex.: Explore) que exploram e devolvem só o resumo; o ruído fica no contexto deles, não no do coordenador",
+        "/compact proativo, com foco, antes de degradar (não depois)",
+        "Manifesto do coordenador + estado em local conhecido: após crash, a nova sessão lê o manifesto e retoma",
+        "Anti-padrões: ler o repo inteiro de antemão, coordenador explorando sozinho, recomeçar do zero sem estado"
+      ],
+      "checkpoint": "Descreva: 'após 2 horas, o Claude Code responde que o serviço segue padrões típicos de repository'. Pergunte qual é o sintoma e duas mitigações",
+      "ref": "10-gestao-de-contexto/teoria.md#3-contexto-em-codebase-grande"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Context editing vs. compaction vs. memory tool vs. case facts",
+      "pontos": [
+        "Context editing (clear_tool_uses / clear_thinking): limpa resultados antigos de tool e thinking; para loop agêntico verboso",
+        "Compaction: resume o contexto anterior num bloco; para trabalho longo que precisa da narrativa",
+        "Memory tool: arquivos persistentes fora da conversa, você implementa o storage; para achados entre sessões",
+        "Case facts: valores que nunca podem ser parafraseados",
+        "Regra 1: anexe o response.content inteiro (não só o texto), senão o bloco de compaction se perde em silêncio",
+        "Regra 2: histórico append-only; editar turnos antigos quebra thinking preservado (400) e o cache",
+        "Nomes de beta são voláteis; a prova cobra qual mecanismo para qual problema"
+      ],
+      "checkpoint": "Dê três situações (200 buscas já sintetizadas; pesquisa de 6 horas que precisa lembrar o que tentou; preferência do cliente para o próximo atendimento) e peça o mecanismo de cada uma",
+      "ref": "10-gestao-de-contexto/teoria.md#4-context-editing-vs-compaction-vs-memory-tool-vs-case-facts"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Execuções longas: task budget, max_tokens e recusa com HTTP 200",
+      "pontos": [
+        "Task budget (beta, volátil): teto visível; o modelo vê a contagem e se organiza para terminar de forma ordenada",
+        "max_tokens: teto invisível por resposta; corta no meio com stop_reason max_tokens",
+        "Recusa vem com HTTP 200 e stop_reason 'refusal'; código que só olha status HTTP trata como sucesso vazio",
+        "Cheque stop_reason antes de ler content; trate refusal, max_tokens e model_context_window_exceeded explicitamente (mostre o switch em C#)",
+        "Anti-padrões: max_tokens baixo para 'forçar concisão', try/catch como única detecção, limite de iterações como parada principal",
+        "Prova: Cenário 5 (review vazio marcado como verde) e Cenário 6 (extração truncada)"
+      ],
+      "checkpoint": "Pergunte por que 'adicionar retry em erros 5xx' não pega o caso do review vazio no CI",
+      "ref": "10-gestao-de-contexto/teoria.md#5-limitando-e-recuperando-execuções-longas-task-budget-max_tokens-recusa"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Prompt caching: a mecânica (prefixo exato, ordem, breakpoints)",
+      "pontos": [
+        "O cache casa prefixo exato na ordem tools → system → messages; um byte diferente invalida tudo depois dele",
+        "Estável primeiro, volátil depois: timestamp, IDs e a pergunta ficam após o último breakpoint",
+        "Até 4 breakpoints (cache_control ephemeral); TTL padrão 5 min renovado na leitura, opção de 1 h",
+        "Mínimo cacheável depende do modelo (volátil); abaixo dele não cacheia, em silêncio",
+        "Mostre o request bem montado (breakpoint no fim das tools e no fim do system estável)",
+        "Mostre o contra-exemplo com timestamp no system: todo request paga escrita e nunca lê"
+      ],
+      "checkpoint": "Mostre o contra-exemplo e peça ao aluno para apontar o problema e onde mover a data",
+      "ref": "10-gestao-de-contexto/teoria.md#6-prompt-caching-a-mecânica"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Prompt caching: custos, verificação e invalidadores silenciosos",
+      "pontos": [
+        "Escrita custa prêmio (~1,25× para 5 min; ~2× para 1 h); leitura custa uma fração pequena do input",
+        "Verifique em usage: cache_read_input_tokens (lido) e cache_creation_input_tokens (escrito)",
+        "Leitura zero em requests repetidos = invalidador; escrita também zero = prefixo abaixo do mínimo",
+        "Invalidadores: timestamp no system, chaves JSON fora de ordem, lista de tools variando, ID de sessão no prefixo, thinking/effort mudando, histórico editado",
+        "Anti-padrões que aparecem como alternativa: aumentar TTL, adicionar breakpoints, desligar o cache",
+        "Prova: qualquer cenário com 'custo alto' ou 'latência alta em system grande'"
+      ],
+      "checkpoint": "Pergunte o que o aluno conclui se cache_read_input_tokens é 0 e cache_creation_input_tokens é alto em todo request",
+      "ref": "10-gestao-de-contexto/teoria.md#7-prompt-caching-custos-verificação-e-invalidadores-silenciosos"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz do módulo",
+      "pontos": [
+        "15 questões curtas para fixar contexto, case facts, context editing/compaction/memória, task budget, recusa e caching",
+        "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-10/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e quais seções da teoria revisar",
+      "ref": "Claude-Architect/apps/modulo-10/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do módulo",
+      "pontos": [
+        "20 questões em estilo cenário do exame, feedback por alternativa, algumas de múltipla resposta (Escolha DUAS)",
+        "Aprovação 70%; abaixo disso, revise as seções correspondentes antes de seguir"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-10/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 11; se não, revise os pontos errados com a tabela de decisão",
+      "ref": "Claude-Architect/provas/modulo-10/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 10",
+      "pontos": [
+        "Recap: contexto finito e pago a cada turno; case facts para números; mecanismo certo para cada problema; stop_reason antes de content; cache com prefixo estável",
+        "Revise a 'Cola de véspera' da teoria antes dos simulados",
+        "Próximo: Módulo 11 — Confiabilidade: escalonamento, propagação de erro, revisão humana, proveniência e evals"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 11 ou parar por aqui",
+      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+    }
+  ]
+}

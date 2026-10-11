@@ -1,0 +1,263 @@
+{
+  "titulo": "Módulo 07 — Quiz: multiagente, decomposição, review multi-pass e sessões",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "No vocabulário do artigo \"Building Effective Agents\", qual a diferença entre um workflow e um agent?",
+      "opcoes": [
+        "Workflow usa tools; agent não usa tools",
+        "Workflow usa um único modelo; agent usa vários modelos",
+        "No workflow, LLMs e tools seguem caminhos de código predefinidos; no agent, o LLM dirige dinamicamente o próprio processo e o uso de tools",
+        "Workflow roda em lote; agent roda em tempo real"
+      ],
+      "correta": 2,
+      "explicacao": "A distinção é quem define o caminho: código predefinido (workflow) ou o próprio LLM, dinamicamente (agent).",
+      "feedbacks": [
+        "Ambos usam tools; o bloco base dos dois é o LLM aumentado (retrieval, tools, memória).",
+        "O número de modelos não define a categoria.",
+        "Correto.",
+        "Modo de execução não é o critério da distinção."
+      ]
+    },
+    {
+      "pergunta": "Uma tarefa sempre segue os mesmos passos: gerar um esboço, checar se ele atende a critérios fixos e então redigir o texto final. Qual padrão é o mais adequado?",
+      "opcoes": [
+        "Prompt chaining, com um gate programático entre os passos",
+        "Orchestrator-workers",
+        "Um agente autônomo com subagents",
+        "Parallelization por voting"
+      ],
+      "correta": 0,
+      "explicacao": "Passos fixos e conhecidos de antemão → prompt chaining; o gate checa o resultado intermediário antes de seguir.",
+      "feedbacks": [
+        "Correto.",
+        "Orchestrator-workers serve quando as subtarefas não são previsíveis; aqui são.",
+        "Complexidade sem ganho: os passos já são conhecidos.",
+        "Voting repete a mesma tarefa para obter consenso; aqui há passos diferentes em sequência."
+      ]
+    },
+    {
+      "pergunta": "Um sistema de suporte recebe dúvidas gerais, pedidos de reembolso e problemas técnicos, e cada categoria se resolve melhor com prompt e tools próprios. Qual padrão descreve isso?",
+      "opcoes": [
+        "Evaluator-optimizer",
+        "Prompt chaining",
+        "Orchestrator-workers",
+        "Routing"
+      ],
+      "correta": 3,
+      "explicacao": "Routing classifica a entrada e a encaminha para um fluxo especializado.",
+      "feedbacks": [
+        "Evaluator-optimizer é gerar ↔ avaliar em loop.",
+        "Chaining é uma sequência fixa de passos, não um desvio por categoria.",
+        "Orchestrator-workers decompõe uma tarefa em subtarefas; aqui é escolher um caminho.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Qual a diferença central entre parallelization e orchestrator-workers?",
+      "opcoes": [
+        "Parallelization usa um modelo maior",
+        "Em parallelization as subtarefas são definidas de antemão pelo programador; em orchestrator-workers um LLM as define dinamicamente a partir da entrada",
+        "Orchestrator-workers nunca roda em paralelo",
+        "Parallelization exige um avaliador ao final"
+      ],
+      "correta": 1,
+      "explicacao": "Quem define as subtarefas: o programador (parallelization) ou o LLM orquestrador (orchestrator-workers).",
+      "feedbacks": [
+        "Tamanho do modelo não diferencia os padrões.",
+        "Correto.",
+        "Workers podem rodar em paralelo; a diferença é a origem da decomposição.",
+        "Avaliador em loop é o evaluator-optimizer."
+      ]
+    },
+    {
+      "pergunta": "Segundo \"Building Effective Agents\", qual deve ser o ponto de partida ao construir uma aplicação com LLM?",
+      "opcoes": [
+        "Um sistema multiagente, que escala melhor no futuro",
+        "Um framework de agentes completo, para não reinventar nada",
+        "A solução mais simples possível, como uma chamada bem feita com retrieval e exemplos, adicionando complexidade só quando ela comprovadamente melhora o resultado",
+        "Um agente autônomo com o máximo de tools disponíveis"
+      ],
+      "correta": 2,
+      "explicacao": "Comece simples. Agentes trocam latência e custo por desempenho; só valem quando o ganho é medido.",
+      "feedbacks": [
+        "\"Mais agentes = melhor\" é a alternativa errada clássica.",
+        "Frameworks abstraem prompts e respostas e dificultam o debug; o artigo recomenda entender o que roda por baixo.",
+        "Correto.",
+        "Tools demais degradam a seleção, e autonomia não é o ponto de partida."
+      ]
+    },
+    {
+      "pergunta": "Num sistema hub-and-spoke, o subagent de busca precisa de um dado produzido pelo subagent de análise. Como isso deve acontecer?",
+      "opcoes": [
+        "O subagent de busca chama o de análise diretamente",
+        "Os dois compartilham uma conversa em comum",
+        "O subagent de análise grava o dado num arquivo que o de busca lê por conta própria",
+        "O coordenador recebe o resultado da análise e o repassa explicitamente na delegação ao subagent de busca"
+      ],
+      "correta": 3,
+      "explicacao": "No hub-and-spoke, o coordenador roteia toda a comunicação. Subagents não conversam diretamente.",
+      "feedbacks": [
+        "Comunicação direta é anti-padrão: perde observabilidade e controle de erro.",
+        "Subagents têm contexto isolado; não há conversa compartilhada.",
+        "É comunicação lateral disfarçada, fora do controle do coordenador.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Um coordenador de pesquisa passa toda consulta, inclusive \"qual a capital da Austrália?\", por cinco subagents (web, acadêmico, notícias, análise, revisão). Qual o problema?",
+      "opcoes": [
+        "O coordenador deveria acionar só os subagents que a consulta precisa",
+        "Faltam subagents para cobrir mais fontes",
+        "Os subagents deveriam rodar em sequência, não em paralelo",
+        "O problema é só o modelo: deveriam usar um modelo menor em todos"
+      ],
+      "correta": 0,
+      "explicacao": "Acionar só o necessário é responsabilidade do coordenador. Pipeline completo para tudo desperdiça custo e latência.",
+      "feedbacks": [
+        "Correto.",
+        "Mais subagents agravam o desperdício.",
+        "A ordem não é o problema; o problema é acionar quem não é necessário.",
+        "Trocar modelo reduz custo, mas mantém a arquitetura errada."
+      ]
+    },
+    {
+      "pergunta": "Pedido: \"impacto da IA nas indústrias criativas\". O relatório final fala só de artes visuais, e cada subagent executou bem a sua subtarefa. Onde está a falha?",
+      "opcoes": [
+        "No subagent de busca, que usou palavras-chave ruins",
+        "Na decomposição do coordenador, estreita demais; a correção é decompor mais amplo e checar a cobertura",
+        "No modelo de síntese, que descartou conteúdo",
+        "No limite de concorrência de subagents"
+      ],
+      "correta": 1,
+      "explicacao": "Os subagents fizeram o que receberam. A decomposição deixou de fora música, cinema, escrita etc.",
+      "feedbacks": [
+        "O subagent buscou exatamente o que lhe foi pedido (artes visuais).",
+        "Correto.",
+        "A síntese não tinha o que descartar: nada além de artes visuais foi pesquisado.",
+        "Concorrência afeta velocidade, não escopo."
+      ]
+    },
+    {
+      "pergunta": "Por que a delegação \"analise o problema do cliente\" tende a falhar quando enviada a um subagent?",
+      "opcoes": [
+        "Porque subagents não aceitam instruções em linguagem natural",
+        "Porque o prompt é curto demais para o modelo processar",
+        "Porque subagents só executam tools, sem raciocinar",
+        "Porque o subagent tem contexto isolado e não vê o histórico do coordenador; tudo precisa ir explícito no prompt"
+      ],
+      "correta": 3,
+      "explicacao": "O subagent não herda a conversa. Cliente, problema, dados e formato de saída precisam ser passados explicitamente.",
+      "feedbacks": [
+        "A delegação é justamente em linguagem natural.",
+        "O tamanho em si não é o problema; a falta de contexto é.",
+        "Subagents raciocinam; só não sabem o que ninguém lhes contou.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Um coordenador dispara quatro pesquisas independentes, mas elas rodam uma após a outra. Como fazê-las rodar em paralelo?",
+      "opcoes": [
+        "Aumentar o limite de concorrência de subagents nas configurações",
+        "Criar quatro sessões separadas do coordenador",
+        "Fazer o coordenador emitir as quatro chamadas `Agent` na mesma resposta",
+        "Usar `--fork-session` para cada pesquisa"
+      ],
+      "correta": 2,
+      "explicacao": "Paralelismo = vários `tool_use` de `Agent` numa única resposta. Um por turno é sequencial.",
+      "feedbacks": [
+        "O limite não é o gargalo: o coordenador está emitindo um por turno.",
+        "Sessões separadas perdem a coordenação e a agregação.",
+        "Correto.",
+        "`--fork-session` ramifica sessões da CLI; não é o mecanismo de paralelismo de subagents."
+      ]
+    },
+    {
+      "pergunta": "No Claude Agent SDK, como seu código identifica qual subagent produziu uma determinada mensagem?",
+      "opcoes": [
+        "Pelo campo `parent_tool_use_id`, que aponta para o `tool_use` do `Agent` que criou o subagent",
+        "Pelo `stop_reason` da mensagem",
+        "Pelo nome do modelo usado na mensagem",
+        "Pedindo a cada subagent que se identifique no texto"
+      ],
+      "correta": 0,
+      "explicacao": "Mensagens de dentro de um subagent trazem `parent_tool_use_id`, que serve para atribuição.",
+      "feedbacks": [
+        "Correto.",
+        "`stop_reason` diz por que a resposta parou, não quem a gerou.",
+        "Vários subagents podem usar o mesmo modelo.",
+        "Depender de texto é frágil; o SDK já fornece o vínculo estruturado."
+      ]
+    },
+    {
+      "pergunta": "Você quer uma revisão imparcial de um plano que foi construído ao longo de uma conversa longa. Qual opção é a mais adequada?",
+      "opcoes": [
+        "Um fork da conversa, porque já conhece todo o contexto",
+        "Um subagent fresco que recebe só o plano e os critérios de avaliação",
+        "Pedir na mesma sessão: \"agora critique o plano com rigor\"",
+        "Retomar a sessão com `--resume` e pedir a revisão"
+      ],
+      "correta": 1,
+      "explicacao": "Fork e mesma sessão herdam o viés do contexto de raciocínio. Um subagent fresco vê só o artefato.",
+      "feedbacks": [
+        "Tentadora pelo custo (cache), mas o fork herda exatamente o raciocínio que se quer questionar.",
+        "Correto.",
+        "Auto-revisão na mesma sessão é anti-padrão (viés do contexto de raciocínio).",
+        "Retomar é continuar na mesma conversa, com o mesmo viés."
+      ]
+    },
+    {
+      "pergunta": "Num review multi-pass de um PR grande, o que o passo 2 (integração) recebe e analisa?",
+      "opcoes": [
+        "O PR inteiro de novo, procurando tudo que o passo 1 deixou passar",
+        "Só os arquivos de teste",
+        "Os achados do passo 1 e o diff relevante, para analisar fluxo de dados, contratos entre módulos e erros na fronteira",
+        "Uma votação entre três revisores do passo 1"
+      ],
+      "correta": 2,
+      "explicacao": "Passo 1: local, por arquivo, mesmo prompt. Passo 2: prompt separado, recebe os achados do passo 1 e olha o que nenhum arquivo isolado mostra.",
+      "feedbacks": [
+        "Repetiria a revisão única com a mesma diluição de atenção.",
+        "O foco do passo 2 é a integração, não os testes.",
+        "Correto.",
+        "Votação não substitui a análise entre arquivos."
+      ]
+    },
+    {
+      "pergunta": "Quais situações indicam começar uma sessão nova com resumo estruturado em vez de usar `--resume`? (Escolha DUAS.)",
+      "opcoes": [
+        "Os arquivos que a sessão leu foram refatorados por outra pessoa desde então",
+        "A sessão de ontem foi interrompida por queda de energia e nada mudou no repositório",
+        "Você quer continuar exatamente de onde parou há 10 minutos",
+        "A sessão acumulou muita tentativa e erro e decisões revertidas (o contexto derivou)",
+        "Os resultados de tool no histórico continuam válidos"
+      ],
+      "corretas": [0, 3],
+      "explicacao": "`--resume` serve quando os resultados de tool ainda valem. Se arquivos mudaram ou o contexto derivou, comece do zero com um resumo (ou, ao retomar, diga explicitamente o que mudou).",
+      "feedbacks": [
+        "Correto: os resultados de leitura no histórico estão velhos.",
+        "Nada mudou: retomar é adequado.",
+        "Continuidade imediata é o caso típico de `--resume`.",
+        "Correto: o histórico confuso atrapalha mais do que ajuda.",
+        "Resultados válidos são justamente o critério para retomar."
+      ]
+    },
+    {
+      "pergunta": "Você quer comparar duas estratégias de migração a partir da mesma análise já feita numa sessão, sem que uma tentativa contamine a outra. O que usar?",
+      "opcoes": [
+        "Continuar na mesma sessão, testando uma estratégia depois da outra",
+        "Começar duas sessões do zero e refazer a análise em cada uma",
+        "Salvar a análise no scrollback e copiar manualmente",
+        "Retomar com `--resume` e `--fork-session`, criando ramos com IDs novos a partir da base comum"
+      ],
+      "correta": 3,
+      "explicacao": "`--fork-session` cria uma sessão nova a partir da base comum: os ramos não se contaminam e a análise não precisa ser refeita.",
+      "feedbacks": [
+        "A segunda tentativa herda as decisões e resultados da primeira.",
+        "Funciona, mas desperdiça a análise já feita.",
+        "Scrollback não é mecanismo de persistência nem de ramificação.",
+        "Correto."
+      ]
+    }
+  ]
+}

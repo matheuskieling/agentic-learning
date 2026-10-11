@@ -1,0 +1,154 @@
+{
+  "modulo": "01",
+  "titulo": "Fundamentos: o exame, a Messages API e a superfície de request",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — o curso, o formato e a linguagem dos exemplos",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json. Se NÃO existir, pergunte ao aluno em qual linguagem ele prefere ver os trechos de código (padrão sugerido: C#, a stack .NET do aluno) e grave {\"linguagem\": \"<nome>\"} nesse arquivo. Se existir, confirme a linguagem salva e pergunte se quer manter. Os arquivos usam C# como referência-base; JSON/YAML/shell ficam no formato real; traduza o código de aplicação ao vivo",
+        "Objetivo do curso: passar na CCAR-F (Claude Certified Architect – Foundations) com critério de arquiteto. Foco é PROVA: teoria enxuta + muitas questões + simulados, sem laboratório nem API key",
+        "Formato: aula ao vivo; eu explico um ponto por vez, você pergunta à vontade, e só avançamos quando você confirmar. O progresso fica salvo",
+        "Neste módulo: o exame (formato, cenários, domínios), o 'espírito' da prova e os 10 anti-padrões, a anatomia da Messages API, as 4 formas de construir, e o task statement 4.7 (thinking, effort, parâmetros rejeitados, migração)",
+        "Ao fim: quiz de fixação (15) e prova do módulo (20 questões em estilo cenário, 70%)"
+      ],
+      "checkpoint": "Confirme a linguagem dos exemplos (gravada em .sessions/preferencias.json) e se o aluno topa o formato",
+      "ref": "01-fundamentos-api/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "O exame: formato, os 6 cenários e os 5 domínios",
+      "pontos": [
+        "60 questões (múltipla escolha + múltipla resposta 'Escolha DUAS'), 120 min (~2 min/questão), corte 720/1000, sem penalidade por chute: nunca deixe em branco",
+        "4 cenários sorteados de um banco de 6; as questões se penduram no cenário. Liste os 6: Customer Support, Code Generation com Claude Code, Multi-Agent Research, Developer Productivity, Claude Code em CI, Structured Data Extraction",
+        "Pesos: D1 agêntica 27%, D2 tools/MCP 18%, D3 Claude Code 20%, D4 prompt/saída estruturada 20%, D5 contexto/confiabilidade 15%",
+        "Implicação de estudo: D1+D3+D4 = 67%; os módulos 06 e 07 (D1) são os mais densos",
+        "Estratégia: identifique o cenário antes de ler as alternativas; em 'Escolha DUAS', as duas precisam estar certas"
+      ],
+      "checkpoint": "Pergunte: qual domínio pesa mais, e por que chutar é sempre melhor que deixar em branco nesta prova?",
+      "ref": "01-fundamentos-api/teoria.md#1-o-exame"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "O 'espírito' da prova e os 10 anti-padrões clássicos",
+      "pontos": [
+        "A prova descreve um sintoma e pede a MELHOR decisão; raramente pergunta definição",
+        "Três desempates: (1) a correção mais simples que resolve vence; (2) regra crítica (financeira/segurança/compliance) vai em código determinístico, não em prompt; (3) meça antes de mexer",
+        "Os 10 anti-padrões (visão geral): parar o loop lendo texto; limite de iterações como parada principal; regra crítica só em prompt; escalonar por confiança autodeclarada; escalonar por sentimento; erro genérico; erro suprimido em silêncio; tools demais num agente; auto-revisão na mesma sessão; métrica agregada mascarando falha por tipo",
+        "Método de leitura: cenário → sintoma real → eliminar anti-padrões → ficar com a mais simples que ataca a causa",
+        "Sinais de alternativa errada: 'adicione um segundo modelo', 'aumente o limite', 'peça ao modelo para ter mais cuidado'"
+      ],
+      "checkpoint": "Dê um mini-cenário (reembolso acima do limite liberado só por instrução no prompt) e peça ao aluno qual anti-padrão é e qual a correção",
+      "ref": "01-fundamentos-api/teoria.md#2-o-espírito-da-prova-e-os-10-anti-padrões"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Anatomia do request da Messages API",
+      "pontos": [
+        "Um endpoint só: POST /v1/messages. Tools, saída estruturada e thinking são recursos dele, não APIs separadas",
+        "API stateless: você reenvia o histórico a cada chamada (e paga por ele a cada turno)",
+        "Campos: model; max_tokens (teto de SAÍDA, obrigatório, invisível ao modelo); system (papel/regras, fora de messages); messages alternando user/assistant; tools (name, description, input_schema)",
+        "Content blocks: text; tool_use (do modelo: id, name, input, na mensagem assistant); tool_result (seu: tool_use_id exato, content, is_error opcional, na mensagem user)",
+        "Erros clássicos que a prova mostra: tool_result sem o tool_use_id certo; resultados paralelos espalhados em várias mensagens (devem ir todos numa única user); tool que falhou sem resultado (use is_error: true)"
+      ],
+      "checkpoint": "Pergunte: o modelo pediu 3 tools na mesma resposta; como você devolve os resultados, e o que faz com a que falhou?",
+      "ref": "01-fundamentos-api/teoria.md#3-anatomia-do-request-da-messages-api"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "A resposta: content, stop_reason e usage",
+      "pontos": [
+        "stop_reason (visão geral; Módulo 06 aprofunda): end_turn, tool_use, max_tokens, stop_sequence, pause_turn, refusal",
+        "content pode misturar text + tool_use: ter texto NÃO significa que terminou; pode vir mais de um tool_use (paralelo)",
+        "refusal chega com HTTP 200: código que só olha status trata recusa como sucesso vazio",
+        "JSON cortado no fim = max_tokens (truncamento), não 'o modelo é ruim em JSON'",
+        "usage: input_tokens, output_tokens e campos de cache (cache_read_input_tokens, Módulo 10)"
+      ],
+      "checkpoint": "Pergunte: a resposta veio com texto 'Pronto, vou consultar' e stop_reason tool_use. O que o loop deve fazer?",
+      "ref": "01-fundamentos-api/teoria.md#4-a-resposta-content-stop_reason-e-usage"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "As quatro formas de construir",
+      "pontos": [
+        "Loop manual: você escreve o while stop_reason == tool_use; controle total",
+        "Tool Runner: helper do SDK da API que roda o loop para as SUAS tools; você hospeda",
+        "Managed Agents [beta]: a Anthropic roda o loop E hospeda um sandbox por sessão",
+        "Claude Agent SDK: o harness do Claude Code como biblioteca (tools nativas, hooks, subagents, permissões); você hospeda",
+        "Pegadinha: Tool Runner ≠ Agent SDK. E antes de tudo: extrair/classificar é UMA chamada, não um agente. Escolha a forma mais simples que atende"
+      ],
+      "checkpoint": "Pergunte: um time quer um agente que use Read/Edit/Bash e hooks rodando na própria infra. Qual forma? E se só tivessem 2 tools próprias e não quisessem escrever o loop?",
+      "ref": "01-fundamentos-api/teoria.md#5-as-quatro-formas-de-construir"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Thinking e effort (4.7)",
+      "pontos": [
+        "Adaptive thinking (thinking: {type: adaptive}): o modelo decide quando e quanto pensar; substitui budget_tokens",
+        "Nos modelos novos, budget_tokens retorna 400",
+        "effort fica em output_config (low/medium/high/xhigh/max): botão de profundidade × custo. low para tarefa simples/subagent; high+ para trabalho que exige inteligência",
+        "O default de effort pode mudar entre modelos: defina explicitamente e re-calibre ao migrar",
+        "Antes de trocar para um modelo mais barato, meça o mesmo modelo com effort menor. Detalhe de versão é [volátil]: o princípio é o que cai"
+      ],
+      "checkpoint": "Pergunte: onde fica o effort no request, e o que fazer quando um request com budget_tokens começa a dar 400?",
+      "ref": "01-fundamentos-api/teoria.md#6-thinking-e-effort-task-statement-47"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Prefill, sampling e migração de modelo (4.7)",
+      "pontos": [
+        "Prefill do assistant (começar a resposta com '{') retorna 400 nos modelos novos → structured outputs (output_config.format) ou instrução no system",
+        "temperature, top_p, top_k são rejeitados nos modelos mais novos; consistência vem de critérios explícitos, exemplos e schema, não de temperatura zero",
+        "Forçar tool via tool_choice any/tool também pode dar 400 em modelos novos (Módulo 04)",
+        "Ao migrar: teste a forma do request (parâmetros aceitos mudam por modelo), rode requests reais antes de virar a chave, re-calibre effort",
+        "Como cai: cenários 5 e 6 — 'após atualizar o modelo, o job começou a retornar 400' ou 'dev propõe prefill + temperatura zero para JSON consistente'"
+      ],
+      "checkpoint": "Pergunte: um pipeline de extração usa prefill '{' e temperature 0 e quebrou na migração. Qual a correção mais limpa?",
+      "ref": "01-fundamentos-api/teoria.md#7-prefill-sampling-e-migração-de-modelo-task-statement-47"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação do módulo",
+      "pontos": [
+        "15 questões curtas cobrindo exame, anti-padrões, Messages API, stop_reason, formas de construir e 4.7",
+        "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-01/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+      "ref": "Claude-Architect/apps/modulo-01/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do módulo",
+      "pontos": [
+        "20 questões em estilo de cenário do exame, com feedback por alternativa e algumas 'Escolha DUAS'",
+        "Aprovação 70%; só seguir para o Módulo 02 após passar"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-01/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 02; se não, revise os pontos errados na teoria",
+      "ref": "Claude-Architect/provas/modulo-01/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 01",
+      "pontos": [
+        "Recap: formato do exame e pesos; os 3 desempates e os 10 anti-padrões; request/resposta da Messages API; stop_reason decide; 4 formas de construir; adaptive thinking + effort; prefill/sampling rejeitados; testar a forma do request ao migrar",
+        "Revise a 'Cola de véspera' do teoria.md",
+        "Próximo: Módulo 02 — Prompt engineering: critérios explícitos, few-shot e refinamento iterativo"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 02 ou parar por aqui",
+      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+    }
+  ]
+}

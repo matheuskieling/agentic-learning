@@ -1,0 +1,401 @@
+{
+  "titulo": "Cenário 4 — Developer Productivity with Claude",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "A Lumen Pagamentos tem um monorepo .NET legado de ~2 milhões de linhas. Uma dev recém-chegada usa o Claude Code para entender o código.\n\nEla pede: \"Descubra onde e como um pedido de estorno é processado, do endpoint até o banco\". Qual estratégia de exploração o agente deve seguir?",
+      "opcoes": [
+        "Pedir à dev que cole no chat os arquivos que ela acha relevantes, já que o agente não conhece a estrutura do repositório.",
+        "Ler primeiro o diretório inteiro de `src/` em ordem alfabética e montar um índice mental, para só então procurar o fluxo de estorno.",
+        "Usar Glob para listar todos os arquivos `.cs` do domínio de Payments e ler cada um com Read antes de responder, garantindo que nenhum trecho do fluxo de estorno fique de fora da análise.",
+        "Usar Grep para achar os pontos de entrada (ex.: o controller/rota de estorno), ler esses arquivos com Read e seguir as dependências com novos Grep, lendo só o que o caminho exige."
+      ],
+      "correta": 3,
+      "explicacao": "O padrão de exploração incremental é: Grep pelos pontos de entrada → Read → seguir imports/chamadas com Grep → Read. Ele constrói entendimento sob demanda e preserva a janela de contexto.",
+      "feedbacks": [
+        "Tentadora por parecer segura, mas desperdiça as tools nativas: o agente consegue localizar o código sozinho com Grep/Glob, e a dev pode nem saber quais arquivos importam.",
+        "Mesma armadilha de carregar tudo antes: ordem alfabética não tem relação com o fluxo de estorno e consome contexto sem foco.",
+        "Tentadora porque parece \"completa\", mas é o anti-padrão de ler tudo de antemão: enche o contexto com arquivos irrelevantes e degrada a qualidade das respostas.",
+        "Correta: exploração incremental guiada por busca, lendo só o necessário para seguir o fluxo."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "No monorepo da Lumen Pagamentos, as migrações de banco ficam espalhadas em vários projetos, sempre em arquivos cujo nome termina em `_Migration.cs`.\n\nUm dev pede ao Claude Code para listar todos esses arquivos de migração. Qual tool nativa é a escolha certa para esse passo?",
+      "opcoes": [
+        "Read no diretório raiz, para que o agente veja a árvore de pastas e identifique os arquivos.",
+        "Agent com um subagent general-purpose, porque qualquer busca em repositório grande deve ser delegada.",
+        "Glob com um padrão como `**/*_Migration.cs`, porque a busca é por nome/caminho de arquivo.",
+        "Grep pelo termo `Migration`, porque ele varre o conteúdo de todos os arquivos do repositório."
+      ],
+      "correta": 2,
+      "explicacao": "Glob encontra arquivos por padrão de nome/caminho; Grep busca dentro do conteúdo. Quando o critério é o nome do arquivo, Glob é direto e barato.",
+      "feedbacks": [
+        "Read lê arquivos, não lista árvores recursivamente; não é a tool para descobrir arquivos por padrão.",
+        "Delegar a um subagent faz sentido para busca volumosa e ruidosa, mas aqui uma única chamada Glob resolve; delegar seria complexidade sem ganho.",
+        "Correta: o critério é o nome do arquivo, exatamente o que Glob resolve.",
+        "Tentadora porque Grep é a busca \"padrão\", mas ele busca conteúdo: traria toda classe, using e comentário que menciona Migration, não só os arquivos de migração."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "A Lumen Pagamentos usa o Claude Code para pequenas correções no serviço de conciliação, um arquivo C# de 1.800 linhas.\n\nO agente tenta trocar `return null;` por `return Result.Empty;` em um método específico, mas a tool Edit falha informando que o trecho não é único no arquivo. Qual é a próxima ação correta?",
+      "opcoes": [
+        "Ler o trecho em volta do método e repetir o Edit com um `old_string` ampliado (assinatura do método ou linhas vizinhas) que identifique uma única ocorrência.",
+        "Repetir o mesmo Edit algumas vezes, já que a falha pode ter sido transitória.",
+        "Usar Write para regravar o arquivo inteiro com a alteração aplicada, a partir do que o agente lembra do conteúdo, o que evita de vez o problema de unicidade do Edit.",
+        "Rodar `sed -i 's/return null;/return Result.Empty;/'` via Bash, que não exige unicidade e resolve em uma linha."
+      ],
+      "correta": 0,
+      "explicacao": "Edit substitui texto exato e exige que o trecho seja único. A correção é ampliar o trecho com contexto suficiente (ou ler o arquivo e reescrever de forma controlada).",
+      "feedbacks": [
+        "Correta: dar contexto suficiente ao `old_string` torna a edição única e precisa.",
+        "Não é erro transitório: é erro de validação da entrada. Repetir a mesma chamada falha do mesmo jeito; é preciso corrigir a entrada.",
+        "Regravar 1.800 linhas \"de memória\" sem ter lido o arquivo é receita para perder código; reescrever só é aceitável depois de ler o arquivo inteiro.",
+        "Tentadora pela praticidade, mas o sed troca TODAS as ocorrências do arquivo, alterando métodos que não deveriam mudar."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "Um dev da Lumen Pagamentos está há três horas numa sessão do Claude Code mapeando o módulo de antifraude, com dezenas de buscas e leituras de arquivos.\n\nAs respostas começaram a ficar vagas (\"aqui provavelmente se usa o padrão Repository típico\") e o agente esqueceu classes que ele mesmo havia encontrado. Quais duas medidas atacam a causa? (Escolha DUAS.)",
+      "opcoes": [
+        "Carregar de uma vez todos os arquivos do módulo de antifraude, para eliminar a necessidade de novas buscas.",
+        "Registrar as descobertas (classes, fluxos, decisões) num arquivo de notas no repositório e fazer o agente consultá-lo, para que sobrevivam à compactação.",
+        "Aumentar `max_tokens` da sessão para que as respostas voltem a ser detalhadas.",
+        "Delegar as buscas volumosas a um subagent Explore, que devolve só a conclusão em vez de despejar todo o resultado na conversa principal.",
+        "Acrescentar ao CLAUDE.md a instrução \"nunca esqueça o que já descobriu nesta sessão\"."
+      ],
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Respostas genéricas e esquecimento são sinais de degradação por contexto cheio. Mitigações: arquivos de rascunho que sobrevivem à compressão e subagents que exploram em contexto isolado e devolvem só o resumo.",
+      "feedbacks": [
+        "Agrava o problema: é o anti-padrão de ler tudo de antemão, que enche ainda mais o contexto.",
+        "Correta: estado persistido fora do scrollback não se perde no `/compact` nem na rolagem do contexto.",
+        "Tentadora, mas `max_tokens` limita o tamanho da saída; o problema é a janela de entrada saturada, não o tamanho da resposta.",
+        "Correta: o Explore roda em contexto próprio; a sessão principal recebe só o resumo e para de inflar.",
+        "Instrução em prompt não cria memória; o modelo não \"lembra\" mais por receber a ordem de lembrar."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "A Lumen Pagamentos criou um servidor MCP interno, `tickets`, que expõe o sistema de chamados da empresa. Todo dev que clona o monorepo deve tê-lo disponível no Claude Code.\n\nComo o time de plataforma deve configurar o servidor?",
+      "opcoes": [
+        "Com escopo project: entrada em `.mcp.json` na raiz do repositório, versionada no git, com a credencial referenciada por variável de ambiente.",
+        "Com escopo local (o padrão do `claude mcp add`), que grava a configuração para este projeto e já a disponibiliza para quem clonar o repositório.",
+        "No arquivo `.claude/settings.local.json`, que é o lugar das configurações de MCP específicas do projeto.",
+        "Com escopo user em cada máquina, para que o servidor apareça em todos os projetos de cada dev."
+      ],
+      "correta": 0,
+      "explicacao": "Escopo project (`.mcp.json` na raiz) é o compartilhado via git. Local é só seu, neste projeto (em `~/.claude.json`), e user vale para todos os seus projetos, mas também não é compartilhado.",
+      "feedbacks": [
+        "Correta: `.mcp.json` versionado é o mecanismo de compartilhar servidores com o time, com segredos fora do arquivo.",
+        "Pegadinha clássica: o escopo local é privado da sua máquina (fica em `~/.claude.json`); quem clona o repo não recebe nada.",
+        "Pegadinha de nome: o escopo \"local\" do MCP não é o `settings.local.json`, que é um arquivo pessoal e gitignored de settings.",
+        "Funciona para cada dev individualmente, mas exige configuração manual em cada máquina e não acompanha o repositório; não é compartilhamento de time."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "O `.mcp.json` versionado da Lumen Pagamentos configura o servidor remoto `catalogo-servicos`. Uma auditoria de segurança encontrou um token de API escrito literalmente no campo `headers`.\n\nQual é a correção adequada, mantendo o servidor compartilhado com o time?",
+      "opcoes": [
+        "Adicionar `.mcp.json` ao `.gitignore`, para que o arquivo com o token deixe de ser versionado.",
+        "Trocar o valor literal por `${CATALOGO_TOKEN}` no `headers`, deixando cada dev (e o CI) fornecer a variável de ambiente, e revogar o token exposto.",
+        "Codificar o token em Base64 no arquivo, para que ele não fique legível em revisões de código.",
+        "Manter o token, mas incluir no CLAUDE.md a instrução para o agente nunca exibir o conteúdo de `.mcp.json`."
+      ],
+      "correta": 1,
+      "explicacao": "O `.mcp.json` aceita expansão de variáveis (`${VAR}`, `${VAR:-default}`). Segredos ficam no ambiente, nunca literais no arquivo versionado; o token vazado deve ser revogado.",
+      "feedbacks": [
+        "Tentadora, mas quebra o compartilhamento: o servidor some para o time, e o token continua no histórico do git.",
+        "Correta: expansão de variável mantém o arquivo compartilhável e tira o segredo do git.",
+        "Base64 é codificação, não criptografia; qualquer um decodifica. Falsa sensação de segurança.",
+        "Controle por prompt não protege segredo: o token continua no repositório, visível a qualquer pessoa com acesso ao git."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "Um dev da Lumen Pagamentos adicionou ao `.mcp.json` o servidor remoto de documentação interna com a entrada `\"docs\": { \"url\": \"https://mcp.lumen.internal/docs\" }`.\n\nAo abrir o Claude Code, o servidor `docs` falha ao iniciar, embora a URL responda normalmente no navegador. Qual é a causa mais provável e a correção?",
+      "opcoes": [
+        "O transporte correto para servidores remotos é SSE; basta declarar `\"type\": \"sse\"`.",
+        "Servidores remotos só funcionam em escopo user; a entrada precisa sair do `.mcp.json`.",
+        "O timeout de inicialização padrão é curto demais para servidores remotos na rede corporativa; é preciso aumentá-lo por variável de ambiente antes de abrir o Claude Code.",
+        "Sem `type`, a entrada é interpretada como servidor stdio; é preciso declarar `\"type\": \"http\"` para o transporte Streamable HTTP."
+      ],
+      "correta": 3,
+      "explicacao": "Entrada sem `type` cai no padrão stdio e falha. Remotos devem declarar o tipo; Streamable HTTP (`http`) é o transporte remoto atual, e SSE é legado.",
+      "feedbacks": [
+        "Tentadora porque SSE também é remoto, mas é o transporte legado; o recomendado para servidor remoto novo é Streamable HTTP.",
+        "Não existe essa restrição: servidores remotos funcionam em qualquer escopo, inclusive project.",
+        "Ataca o sintoma errado: o processo nem tenta a conexão HTTP, porque a entrada foi lida como stdio.",
+        "Correta: declarar o `type` remoto resolve a pegadinha de configuração."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "O servidor MCP `deploy-status` da Lumen Pagamentos exige tokens emitidos pelo SSO corporativo, válidos por 30 minutos. Os devs obtêm um token novo rodando a CLI interna `lumen-auth token`.\n\nComo configurar a autenticação desse servidor no Claude Code sem forçar ninguém a editar arquivo de configuração a cada meia hora?",
+      "opcoes": [
+        "Colocar o token em `headers` como valor estático e criar um lembrete automático para que cada dev atualize o arquivo de configuração sempre que o token expirar.",
+        "Trocar o servidor para stdio, porque transportes locais não precisam de autenticação.",
+        "Pedir no CLAUDE.md que o agente rode `lumen-auth token` via Bash e cole o resultado nas chamadas da tool.",
+        "Usar `headersHelper` apontando para um comando que roda `lumen-auth token` e devolve os headers, gerando credencial fresca a cada conexão."
+      ],
+      "correta": 3,
+      "explicacao": "Credencial de curta duração em servidor MCP se resolve com `headersHelper`, um comando que gera os headers dinamicamente. Token estático só serve para credencial de longa duração.",
+      "feedbacks": [
+        "Token estático em `headers` é válido para credenciais longas; com validade de 30 minutos vira fonte constante de falha de autenticação.",
+        "Mudar o transporte não muda a exigência do backend: o serviço continua exigindo o token do SSO.",
+        "Põe credencial no contexto do modelo e depende de prompt para algo que deve ser mecânico; frágil e inseguro.",
+        "Correta: o helper busca credencial fresca sem expor segredo em arquivo nem depender do modelo."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "O agente interno da Lumen Pagamentos (Agent SDK) foi conectado a 12 servidores MCP internos, somando cerca de 180 tools. As definições ocupam mais de 40 mil tokens antes da primeira mensagem do usuário.\n\nOs devs notam que o agente escolhe tools erradas com frequência e que o custo por sessão subiu muito. Qual é a melhor mudança?",
+      "opcoes": [
+        "Colocar antes do agente um classificador leve que escolhe, a cada request, só as tools relevantes para a pergunta e envia ao modelo um array `tools` reduzido e diferente por mensagem.",
+        "Habilitar tool search com `defer_loading` no catálogo, mantendo 3–5 tools de uso frequente sempre carregadas, para o modelo descobrir as demais sob demanda.",
+        "Encurtar as descrições de todas as 180 tools para uma linha cada, reduzindo os tokens de definição.",
+        "Remover metade dos servidores MCP com base em quais foram configurados por último."
+      ],
+      "correta": 1,
+      "explicacao": "Com catálogo grande (muitas tools, definições acima de ~10k tokens, vários servidores), tool search carrega definições sob demanda: o modelo vê poucas tools na decisão, o contexto inicial cai e o cache de prompt é preservado.",
+      "feedbacks": [
+        "Mais complexo que o necessário e ainda trocaria o array `tools` a cada request, invalidando o cache de prompt.",
+        "Correta: é o caso de uso típico de tool search, com algumas tools frequentes não deferidas.",
+        "Tentadora por reduzir tokens, mas descrição curta piora a seleção: a descrição é o critério de escolha da tool.",
+        "Corte arbitrário: pode remover servidores essenciais e não ataca a causa (todas as definições carregadas de uma vez)."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "Um servidor MCP da Lumen Pagamentos expõe duas tools: `search_docs` (\"busca documentação\") e `search_knowledge` (\"busca conhecimento interno\"). A primeira consulta a wiki de engenharia; a segunda, os ADRs (registros de decisão de arquitetura).\n\nQuando um dev pergunta \"por que escolhemos Kafka em vez de RabbitMQ?\", o agente quase sempre consulta a wiki e não acha a resposta. Qual é a correção mais simples que resolve?",
+      "opcoes": [
+        "Incluir no system prompt 30 exemplos de perguntas mapeadas para a tool correta.",
+        "Ativar `disable_parallel_tool_use` para forçar o agente a escolher com mais cuidado uma tool por vez.",
+        "Adicionar um classificador de intenção antes do agente, que decide qual das duas tools deve ser chamada.",
+        "Reescrever nomes e descrições para separar os propósitos (ex.: `search_adrs` para \"decisões de arquitetura e seus motivos\"), dizendo quando usar cada uma e como diferem."
+      ],
+      "correta": 3,
+      "explicacao": "Tools sobrepostas com descrições vagas causam roteamento errado. A descrição é o critério de seleção; nomes e descrições que diferenciam o propósito resolvem com a menor mudança.",
+      "feedbacks": [
+        "Exemplos demais no prompt são caros e frágeis, e não corrigem a ambiguidade que está na definição das tools.",
+        "Não tem relação com o problema: limitar paralelismo não ajuda o modelo a distinguir duas tools com descrições quase iguais.",
+        "Funciona, mas é mais complexo que o necessário; a prova prefere melhorar a descrição antes de criar um classificador de roteamento.",
+        "Correta: corrige a causa (descrições ambíguas) com a mudança mais simples."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D2",
+      "pergunta": "A Lumen Pagamentos tem cerca de 400 microsserviços. O agente interno usa as tools MCP `list_services` e `get_service` para descobrir donos, dependências e runbooks de cada serviço.\n\nOs logs mostram que o agente faz dezenas de chamadas exploratórias \"às cegas\" a cada pergunta, só para descobrir o que existe no catálogo. Qual mudança no servidor MCP ataca melhor o problema?",
+      "opcoes": [
+        "Instruir no system prompt: \"faça no máximo três chamadas ao catálogo por pergunta\".",
+        "Expor o catálogo de serviços como resources MCP (conteúdo somente leitura e navegável).",
+        "Criar uma tool `get_all_services` que devolve os 400 serviços com todos os campos numa chamada só.",
+        "Aumentar o limite de turnos do agente para que ele tenha folga para completar a exploração."
+      ],
+      "correta": 1,
+      "explicacao": "Resources dão ao cliente um catálogo navegável de conteúdo somente leitura, o que reduz chamadas exploratórias às cegas. Tools ficam para operações e consultas pontuais.",
+      "feedbacks": [
+        "Limite por prompt é probabilístico e não dá ao agente outra forma de conhecer o catálogo; ele vai responder com menos informação.",
+        "Correta: resources são a primitiva certa para catálogo de leitura que o agente precisa conhecer.",
+        "Troca muitas chamadas por uma resposta gigante que inunda o contexto; o ideal é devolver só o relevante.",
+        "Ataca o sintoma: mais turnos só permitem mais exploração cega, com mais custo."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "A Lumen Pagamentos quer padronizar como o Claude Code trabalha no monorepo. Existem convenções que o time inteiro deve seguir (camadas, padrão de erros, nomes de testes) e preferências pessoais de alguns devs (idioma das explicações, nível de detalhe).\n\nQuais duas decisões de onde colocar essas instruções estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Convenções do time no `CLAUDE.md` do projeto (raiz do repo), versionado no git.",
+        "Convenções do time no `~/.claude/CLAUDE.md` de cada dev, copiadas manualmente por todos.",
+        "Convenções do time na auto memory (`MEMORY.md`), que o Claude Code carrega no início da sessão.",
+        "Preferências pessoais no `CLAUDE.md` do projeto, num bloco separado por dev.",
+        "Preferências pessoais de cada dev em `CLAUDE.local.md` (gitignored) ou no `~/.claude/CLAUDE.md` do usuário."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "CLAUDE.md do projeto é versionado e compartilhado pelo time. Preferência pessoal vai em `CLAUDE.local.md` (gitignored) ou no CLAUDE.md do usuário.",
+      "feedbacks": [
+        "Correta: o arquivo de projeto é o canal de convenções compartilhadas.",
+        "Tentadora porque funciona na máquina de cada um, mas não é versionado: deriva entre devs e não chega a quem entra no time.",
+        "Auto memory é local da máquina de cada dev, não é o mecanismo de convenção versionada do time.",
+        "Mistura escopo pessoal no arquivo compartilhado: todos passam a carregar preferências alheias.",
+        "Correta: escopo pessoal não deve poluir o arquivo do time."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "Os testes de integração da Lumen Pagamentos ficam espalhados em dezenas de pastas `IntegrationTests/` dentro de vários projetos, e novos projetos surgem todo mês. Eles seguem convenções próprias (fixtures, containers de teste, nomes de métodos).\n\nComo garantir que o Claude Code aplique essas convenções sempre que mexer em testes de integração, sem duplicar instruções?",
+      "opcoes": [
+        "Escrever as convenções no prompt de cada pedido envolvendo testes.",
+        "Criar um `CLAUDE.md` dentro de cada pasta `IntegrationTests/`, com o mesmo conteúdo.",
+        "Criar um arquivo em `.claude/rules/` com frontmatter `paths:` usando um glob como `**/IntegrationTests/**`, que carrega só quando arquivos que batem forem tocados.",
+        "Colocar as convenções numa skill `/testes-integracao` que o dev deve lembrar de invocar antes de pedir testes."
+      ],
+      "correta": 2,
+      "explicacao": "Convenção que atravessa diretórios vai num único arquivo em `.claude/rules/` com `paths:` glob: cobre pastas futuras e carrega só quando relevante.",
+      "feedbacks": [
+        "Repetitivo e sujeito a esquecimento; é exatamente o que a configuração persistente evita.",
+        "Duplica conteúdo em dezenas de arquivos que divergem com o tempo, e pastas novas nascem sem a regra.",
+        "Correta: regra por caminho, sem duplicação e válida para pastas que ainda vão existir.",
+        "Depende de o dev lembrar de invocar; convenção que deve valer sempre não pode ser opt-in manual."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "A Lumen Pagamentos decidiu trocar o log4net pelo Serilog. O log4net é usado em 63 projetos, com configurações e wrappers diferentes em cada um.\n\nUm dev vai conduzir a migração com o Claude Code. Como começar?",
+      "opcoes": [
+        "Em modo `acceptEdits`, pedindo que o agente migre projeto por projeto, aplicando as edições automaticamente e rodando os testes de cada projeto ao final, para ganhar velocidade.",
+        "Em plan mode: o agente explora os usos, propõe a abordagem (wrappers, configuração, ordem de migração) e só edita depois da aprovação do plano.",
+        "Com `bypassPermissions`, para que a migração longa rode sem interrupções enquanto o dev faz outra coisa.",
+        "Pedindo execução direta no primeiro projeto e replicando manualmente o mesmo diff nos outros 62."
+      ],
+      "correta": 1,
+      "explicacao": "Mudança multi-arquivo, com decisões de arquitetura e várias abordagens possíveis é o caso clássico de plan mode: explorar, planejar, aprovar e só então editar.",
+      "feedbacks": [
+        "Pula a etapa de entender a variedade de usos; edições automáticas em massa sem plano tendem a ser inconsistentes.",
+        "Correta: escopo grande e decisões de abordagem pedem plano aprovado antes das edições.",
+        "`bypassPermissions` não é rotina para tarefa longa e não contida; remove justamente os pontos de controle de uma mudança arriscada.",
+        "Os projetos têm configurações e wrappers diferentes; replicar um diff ignora essa variação."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D3",
+      "pergunta": "O time de plataforma da Lumen Pagamentos quer um \"arqueólogo de legado\": um subagent reutilizável que investiga código antigo e explica regras de negócio, sem nunca alterar arquivos.\n\nQual é a forma mais adequada de criar esse subagent?",
+      "opcoes": [
+        "Definir um subagent customizado em `.claude/agents/` (markdown com frontmatter) com `tools` restritas a Read, Grep e Glob e um prompt de sistema focado na investigação.",
+        "Criar uma skill com `disable-model-invocation: true` contendo as instruções de investigação.",
+        "Usar o subagent Plan nativo e pedir a cada vez que ele explique regras de negócio em vez de planejar.",
+        "Escrever no CLAUDE.md do projeto: \"quando investigar legado, nunca edite arquivos\", e usar o subagent general-purpose."
+      ],
+      "correta": 0,
+      "explicacao": "Subagents customizados ficam em `.claude/agents/` e a restrição de tools no frontmatter é determinística. Restringir por instrução em prompt é só best-effort.",
+      "feedbacks": [
+        "Correta: reutilizável, versionável e com restrição de tools aplicada pela configuração.",
+        "Skill com `disable-model-invocation` só impede o auto-carregamento; não cria um agente isolado com tools restritas.",
+        "O Plan é somente leitura, mas tem outro propósito; o time quer um agente reutilizável com prompt próprio, o que pede definição customizada.",
+        "Tentadora pela simplicidade, mas proibir edição por prompt é probabilístico; o general-purpose continua com tools de escrita."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "Ontem, uma dev da Lumen Pagamentos passou a tarde investigando um bug de arredondamento numa sessão do Claude Code. Durante a noite, outro time fez merge de um refactor que renomeou e moveu a maior parte dos arquivos investigados.\n\nHoje ela quer continuar a investigação. Qual é a melhor forma de retomar?",
+      "opcoes": [
+        "Abrir uma sessão nova com um resumo estruturado dos achados de ontem e deixar o agente reexplorar o código atual.",
+        "Usar `--resume` na sessão de ontem e continuar de onde parou, já que todo o raciocínio e as evidências estão no histórico.",
+        "Usar `--fork-session` a partir da sessão de ontem, porque o fork recarrega o estado atual dos arquivos.",
+        "Usar `--resume` e pedir que o agente confie nos resultados de tool anteriores para economizar contexto."
+      ],
+      "correta": 0,
+      "explicacao": "`--resume` é bom quando os resultados de tool continuam válidos. Se arquivos mudaram muito, o histórico fica cheio de leituras obsoletas; melhor começar do zero com um resumo estruturado.",
+      "feedbacks": [
+        "Correta: preserva o conhecimento útil sem arrastar leituras de arquivos que não existem mais.",
+        "Tentadora, mas o histórico tem caminhos e conteúdos obsoletos; o agente tende a raciocinar sobre código que mudou.",
+        "Fork cria um novo ID a partir do mesmo histórico; não atualiza nada. Os resultados velhos continuam lá.",
+        "Pior das opções: instrui o agente a usar justamente as leituras que ficaram obsoletas."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "Um dev da Lumen Pagamentos explorou o módulo de cobrança numa sessão do Claude Code e agora tem duas abordagens possíveis de refactor: extrair um serviço de domínio ou introduzir um pipeline de handlers.\n\nEle quer testar as duas abordagens a partir da mesma base de exploração, sem que uma contamine a outra. O que fazer?",
+      "opcoes": [
+        "Usar `/clear` e refazer toda a exploração antes de cada abordagem.",
+        "Seguir na mesma sessão, implementando a primeira abordagem e depois pedindo para \"esquecer\" e fazer a segunda.",
+        "Retomar a sessão com `--fork-session` para cada abordagem, criando dois ramos com IDs novos a partir do mesmo histórico.",
+        "Abrir dois terminais com `--resume` apontando para a mesma sessão e conduzir uma abordagem em cada um, aproveitando o mesmo histórico de exploração nos dois."
+      ],
+      "correta": 2,
+      "explicacao": "`--fork-session` cria um novo ID de sessão a partir de uma base comum: os ramos compartilham a exploração e não se contaminam.",
+      "feedbacks": [
+        "Funciona, mas desperdiça toda a exploração já feita; o fork reaproveita essa base.",
+        "Pedir para esquecer não remove o contexto: a primeira abordagem continua influenciando a segunda.",
+        "Correta: é exatamente o caso de uso do fork.",
+        "Retomar o mesmo ID em paralelo mistura as duas linhas na mesma sessão; é o que o fork evita."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D1",
+      "pergunta": "O agente interno da Lumen Pagamentos tem um coordenador que conversa com o dev e delega investigações a subagents de exploração.\n\nDepois de 20 minutos de conversa sobre um vazamento de conexões no serviço de boletos, o coordenador delega: \"Investigue o problema que discutimos e traga a causa\". O subagent volta com uma análise genérica sobre pools de conexão. Qual é a correção?",
+      "opcoes": [
+        "Fazer o coordenador incluir no prompt do subagent tudo o que ele precisa: serviço, sintoma, métricas observadas, arquivos já descartados e formato esperado da resposta.",
+        "Dar ao subagent acesso a todas as tools do coordenador, para que ele consiga descobrir o contexto sozinho.",
+        "Trocar o subagent por um modelo maior, que deduz melhor o que foi discutido.",
+        "Aumentar o número máximo de turnos do subagent, para que ele investigue com mais profundidade."
+      ],
+      "correta": 0,
+      "explicacao": "O subagent tem contexto isolado: não herda a conversa do coordenador. Tudo o que importa precisa ir explícito no prompt de delegação.",
+      "feedbacks": [
+        "Correta: a falha está na passagem de contexto, e a correção é explicitar o contexto.",
+        "Mais tools não dão acesso ao histórico da conversa; o subagent continua sem saber o que foi discutido.",
+        "Nenhum modelo deduz uma conversa que não recebeu; é problema de contexto, não de capacidade.",
+        "Mais turnos fazem o subagent investigar mais, mas sem saber o quê; ele continua no escuro."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "O servidor MCP `ci-logs` da Lumen Pagamentos tem a tool `get_build_logs`, que devolve o log bruto completo do build (frequentemente 30 a 40 mil tokens).\n\nDepois de duas ou três chamadas, a sessão de investigação fica lenta, cara e o Claude Code passa a emitir avisos de saída grande do MCP. Qual é a melhor correção?",
+      "opcoes": [
+        "Instruir o agente a ignorar as linhas irrelevantes do log ao ler o resultado.",
+        "Aumentar `MAX_MCP_OUTPUT_TOKENS` para que o log completo nunca seja truncado.",
+        "Mudar a tool para devolver só o relevante (etapa que falhou, linhas de erro e um trecho final), com parâmetros para paginar ou filtrar quando for preciso mais.",
+        "Rodar `/compact` depois de cada chamada a `get_build_logs`."
+      ],
+      "correta": 2,
+      "explicacao": "Saída de tool consome contexto. A correção é cortar na origem: devolver só os campos e trechos relevantes, com filtros e paginação para quando precisar de mais.",
+      "feedbacks": [
+        "O modelo só pode ignorar o que já entrou no contexto; os tokens já foram consumidos e pagos.",
+        "Tentadora porque elimina o aviso, mas deixa entrar ainda mais tokens; agrava a degradação.",
+        "Correta: reduz o custo de contexto na fonte, sem perder acesso ao detalhe sob demanda.",
+        "Remédio paliativo e caro: compacta repetidamente um problema que nasce no tamanho da saída da tool."
+      ]
+    },
+    {
+      "cenario": 4,
+      "dominio": "D5",
+      "pergunta": "A Lumen Pagamentos usa o agente interno para mapear dependências de todo o monorepo, uma tarefa de vários dias dividida entre um coordenador e subagents por área. Ontem o processo caiu no meio da execução.\n\nO time quer que uma falha assim não obrigue a recomeçar do zero. Quais duas práticas atendem esse objetivo? (Escolha DUAS.)",
+      "opcoes": [
+        "Reduzir a tarefa para caber numa única sessão curta, eliminando a necessidade de retomada.",
+        "Confiar no `--resume` da sessão do coordenador, cujo histórico completo contém todos os resultados.",
+        "O coordenador mantém um manifesto de progresso em local conhecido (áreas concluídas, pendentes, caminhos dos resultados), atualizado a cada etapa.",
+        "Cada subagent grava seus achados em arquivo no local combinado, e na retomada o coordenador lê esses arquivos em vez de reexecutar as áreas concluídas.",
+        "Usar um modelo com janela de contexto maior, para que o coordenador guarde todos os resultados em memória."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Para trabalho longo, o estado deve ficar em arquivos em local conhecido, com um manifesto do coordenador que permita retomar após um crash, sem depender do scrollback.",
+      "feedbacks": [
+        "Não atende o requisito: o mapeamento é intrinsecamente longo; encolher o escopo só esconde o problema.",
+        "Tentadora, mas o histórico pode estar incompleto no ponto da queda e fica inflado; o que não pode se perder vai para arquivo.",
+        "Correta: o manifesto diz exatamente onde retomar.",
+        "Correta: achados persistidos sobrevivem ao crash e evitam refazer trabalho.",
+        "Janela maior não sobrevive a um crash do processo, e contexto enorme degrada (lost in the middle)."
+      ]
+    }
+  ]
+}

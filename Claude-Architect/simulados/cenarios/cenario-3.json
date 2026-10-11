@@ -1,0 +1,401 @@
+{
+  "titulo": "Cenário 3 — Multi-Agent Research System",
+  "aprovacao": 72,
+  "questoes": [
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara a pergunta \"Qual o estado da transição energética no Brasil?\", o relatório final tratou quase só de energia solar. Os logs mostram que o coordenador criou três subtarefas: \"custo de painéis solares\", \"adoção de solar residencial\" e \"incentivos para solar\". Todos os subagents fizeram bem o seu trabalho. Onde está o problema e como corrigir?",
+      "opcoes": [
+        "Nos subagents de busca, que deveriam ter percebido que o tema era mais amplo e estendido por conta própria o escopo das subtarefas que receberam do coordenador.",
+        "Na decomposição: o coordenador deve decompor de forma mais ampla (eólica, biocombustíveis, rede...) e checar a cobertura.",
+        "No subagent de síntese, que deveria ter completado as lacunas com o próprio conhecimento.",
+        "Na quantidade de subagents: dobrar o número de buscas sobre os mesmos três temas aumentaria a cobertura."
+      ],
+      "correta": 1,
+      "explicacao": "Anti-padrão de decomposição estreita demais: subagents competentes cobrindo só parte do tema. Decomponha de forma mais ampla e cheque a cobertura explicitamente.",
+      "feedbacks": [
+        "Tentadora, mas os subagents fizeram exatamente o que foi pedido; esperar que extrapolem o escopo torna o sistema imprevisível.",
+        "Correta. Os subagents executaram bem tarefas mal escolhidas. A falha é de decomposição, e a correção é ampliar as subtarefas e verificar cobertura.",
+        "Preencher lacunas sem fontes compromete a proveniência; a síntese deveria, no máximo, sinalizar a lacuna.",
+        "Mais buscas sobre os mesmos temas estreitos só aprofundam o viés; o problema é o que foi decomposto, não quanto."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO coordenador delega ao subagent de análise com o prompt \"analise as fontes encontradas e destaque o que for relevante\". O resultado volta genérico e às vezes analisa documentos errados. Qual é a correção?",
+      "opcoes": [
+        "Fazer o subagent receber o histórico completo do coordenador antes de começar, para que ele tenha exatamente o mesmo contexto da conversa principal.",
+        "Trocar o subagent de análise por um modelo mais capaz.",
+        "Pedir que o subagent faça perguntas de esclarecimento ao usuário final sempre que estiver em dúvida.",
+        "Passar explicitamente no prompt a pergunta, os documentos, o critério de relevância e o formato de saída."
+      ],
+      "correta": 3,
+      "explicacao": "Contexto do subagent é isolado: pergunta, material, critérios e formato de saída vão explícitos no prompt de delegação.",
+      "feedbacks": [
+        "Despeja ruído e tokens no subagent e anula a vantagem do contexto isolado; o certo é passar só o necessário, de forma explícita.",
+        "Um modelo melhor continua sem saber quais fontes analisar e para qual pergunta. Ataca o sintoma errado.",
+        "Transfere ao usuário a falha de delegação do coordenador e quebra o fluxo automatizado.",
+        "Correta. O subagent tem contexto isolado e não herda o histórico do coordenador; tudo o que ele precisa deve ir explícito no prompt."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nUma pesquisa típica exige cinco buscas independentes. Os logs mostram o coordenador emitindo uma chamada Agent por turno, esperando o resultado antes da próxima; cada relatório leva 25 minutos. Como reduzir a latência sem perder qualidade?",
+      "opcoes": [
+        "Fazer o coordenador emitir as cinco chamadas Agent na mesma resposta, para que os subagents rodem em paralelo.",
+        "Juntar as cinco buscas num único subagent com um prompt grande.",
+        "Reduzir a pesquisa para duas buscas, as mais importantes.",
+        "Usar a Batch API para as buscas, que é mais barata."
+      ],
+      "correta": 0,
+      "explicacao": "Para paralelizar, o coordenador emite várias chamadas Agent na mesma resposta. Turnos separados = sequencial.",
+      "feedbacks": [
+        "Correta. Paralelismo acontece quando vários Agent saem na mesma resposta do coordenador; turnos separados são sequenciais.",
+        "Volta a ser sequencial dentro de um só contexto, que fica sobrecarregado; perde-se o isolamento e a especialização.",
+        "Corta latência sacrificando cobertura; o problema era a execução sequencial, não o número de buscas.",
+        "Batch tem janela de até 24h, sem SLA e não suporta o loop multi-turn de tools de cada subagent; aumentaria a latência."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara \"agilizar\", um engenheiro fez os subagents de busca enviarem resultados direto ao subagent de síntese e o de síntese pedir buscas extras direto aos de busca. Agora ninguém sabe dizer quais fontes entraram no relatório nem por que algumas buscas se repetem. Qual arquitetura corrige isso?",
+      "opcoes": [
+        "Um barramento de mensagens compartilhado em que todos os subagents publicam e leem resultados, com um log central para rastrear quem enviou o quê.",
+        "Manter a comunicação direta e adicionar logs mais detalhados em cada subagent.",
+        "Hub-and-spoke: toda comunicação passa pelo coordenador, que delega, agrega, trata erros e redelega.",
+        "Fundir busca e síntese num único agente com todas as tools."
+      ],
+      "correta": 2,
+      "explicacao": "Hub-and-spoke: o coordenador decompõe, delega, roteia toda comunicação, agrega e trata erros. Subagents conversando diretamente é anti-padrão.",
+      "feedbacks": [
+        "Formaliza a comunicação direta entre subagents; aumenta o acoplamento e continua sem um ponto que controle cobertura e erros.",
+        "Melhora a observação do caos, não o desenho; subagents conversando diretamente é o anti-padrão.",
+        "Correta. O coordenador roteia toda a comunicação, o que dá rastreabilidade, controle de lacunas e tratamento de erro centralizado.",
+        "Elimina a comunicação, mas também a especialização e o isolamento de contexto; o agente único fica sobrecarregado."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nClientes também fazem perguntas simples como \"qual foi a taxa Selic definida na última reunião do Copom?\". Hoje toda pergunta passa por busca, análise de documentos e síntese, levando minutos e custando caro. O que o coordenador deve fazer?",
+      "opcoes": [
+        "Manter o pipeline completo, porque a padronização garante a qualidade.",
+        "Criar um sistema separado, com um modelo menor e um classificador na entrada, dedicado só a perguntas factuais simples, mantendo o pipeline atual para o resto.",
+        "Responder perguntas simples só com o conhecimento do modelo, sem busca.",
+        "Acionar só os subagents que a consulta precisa (aqui, uma busca e uma resposta curta com fonte)."
+      ],
+      "correta": 3,
+      "explicacao": "Acione só os subagents que a consulta precisa; não passe tudo pelo pipeline inteiro.",
+      "feedbacks": [
+        "Padronização aqui é desperdício de tempo e dinheiro; não aumenta a qualidade de uma resposta factual simples.",
+        "Mais complexo do que o necessário; o coordenador já existe para decidir o que acionar.",
+        "Perde a atualidade e a citação de fonte; uma taxa recente exige busca.",
+        "Correta. O coordenador aciona apenas o que a consulta exige; nem toda pergunta precisa do pipeline inteiro."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nAo receber os resultados da primeira rodada, o coordenador nota que o rascunho de síntese sobre \"regulação de IA na América Latina\" não tem nada sobre Chile e Colômbia, que estavam no escopo pedido. Qual é a melhor próxima ação?",
+      "opcoes": [
+        "Disparar uma segunda rodada de busca direcionada a Chile e Colômbia e refazer a síntese.",
+        "Entregar o relatório como está, já que os países cobertos têm boa qualidade.",
+        "Refazer a pesquisa inteira do zero com mais subagents e uma decomposição revisada, garantindo que nenhum país do escopo fique de fora desta vez.",
+        "Pedir ao subagent de síntese que escreva sobre Chile e Colômbia com base no conhecimento geral do modelo."
+      ],
+      "correta": 0,
+      "explicacao": "O coordenador avalia a síntese, identifica lacunas e redelega uma segunda rodada direcionada antes de sintetizar.",
+      "feedbacks": [
+        "Correta. Refinamento iterativo: roda, avalia, identifica lacunas, faz rodada direcionada e sintetiza. Barato e focado.",
+        "Entrega incompleta sem nem sinalizar a lacuna; falha com o escopo do cliente.",
+        "Desperdiça o que já está bom; a lacuna é localizada e pede uma rodada direcionada.",
+        "Conteúdo sem fonte num sistema de pesquisa com citações; compromete a proveniência."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nHoje, quando a API de busca acadêmica dá timeout, o subagent de busca devolve \"nenhum estudo encontrado\", e o relatório afirma que \"não há pesquisas sobre o tema\". O que a resposta do subagent deveria fazer nesse caso? (Escolha DUAS.)",
+      "opcoes": [
+        "Devolver um erro estruturado indicando falha transitória, a consulta tentada e se é retentável, em vez de um resultado vazio.",
+        "Manter o resultado vazio, mas adicionar no relatório final uma nota genérica de que \"podem existir outros estudos\".",
+        "Devolver apenas a mensagem \"Search failed\".",
+        "Incluir os resultados parciais obtidos antes do timeout, marcados como incompletos.",
+        "Abortar toda a pesquisa e avisar o cliente de que o sistema está indisponível."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Vazio ≠ falha. Timeout gera erro estruturado (categoria, consulta tentada, retentável) e, quando houver, resultados parciais marcados; nunca lista vazia como sucesso.",
+      "feedbacks": [
+        "Correta. Timeout significa que a busca não rodou; o erro estruturado deixa o coordenador decidir entre tentar de novo, usar alternativa ou registrar a lacuna.",
+        "Continua tratando falha como 'nada encontrado' (supressão silenciosa) e esconde o diagnóstico.",
+        "Erro genérico: sem categoria, consulta tentada ou indicação de retry, o coordenador não sabe o que fazer.",
+        "Correta. Resultado parcial com indicação de incompletude permite continuar o trabalho sem fingir cobertura total.",
+        "Abortar o workflow por uma falha de uma fonte; o certo é seguir com o parcial e anotar a lacuna."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nDos quatro subagents de busca de uma pesquisa, três terminaram bem e um falhou com erro de permissão: a base de dados de patentes exige uma credencial que expirou. Qual é a melhor resposta do coordenador?",
+      "opcoes": [
+        "Repetir a busca de patentes com backoff exponencial até ela funcionar.",
+        "Sintetizar com os três resultados, registrar a lacuna (patentes, e por quê) e sinalizar a credencial expirada.",
+        "Abortar a pesquisa inteira, já que o relatório ficaria incompleto.",
+        "Seguir com os três resultados e omitir a base de patentes do relatório, já que o cliente não pediu patentes explicitamente e a lacuna poderia gerar dúvidas."
+      ],
+      "correta": 1,
+      "explicacao": "Não aborte o workflow por uma etapa: continue com o parcial, anote a lacuna e ofereça alternativa ou escale. Erro de permissão é não retentável.",
+      "feedbacks": [
+        "Retry só ajuda em erro transitório; credencial expirada não volta sozinha.",
+        "Correta. Erro de permissão não é retentável; continue com o parcial, anote a lacuna e escale o que exige ação humana.",
+        "Joga fora três resultados bons por causa de uma fonte; anti-padrão de abortar o workflow por uma falha.",
+        "Supressão silenciosa: o cliente acha que patentes foram consideradas."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca encontra rate limit (HTTP 429) na API de notícias algumas vezes por pesquisa. Hoje ele repassa cada 429 ao coordenador, que interrompe o planejamento para lidar com isso. Como dividir a responsabilidade?",
+      "opcoes": [
+        "O coordenador centraliza o tratamento de todos os erros, incluindo cada 429, para manter controle total e visão completa do estado do sistema.",
+        "O subagent ignora o 429 e devolve o que tiver, sem avisar.",
+        "O subagent faz retry com backoff (respeitando retry-after) e só propaga o que não resolveu, com contexto.",
+        "O subagent repete a chamada imediatamente, sem espera, até conseguir."
+      ],
+      "correta": 2,
+      "explicacao": "Subagent recupera transitório localmente (backoff) e propaga só o que não resolveu, com contexto do que foi tentado.",
+      "feedbacks": [
+        "Sobrecarrega o coordenador com detalhes operacionais que o subagent resolve sozinho, e polui o contexto dele.",
+        "Supressão silenciosa: a cobertura incompleta não aparece em lugar nenhum.",
+        "Correta. Recuperação local do transitório no subagent; o coordenador recebe só falhas persistentes, já com o que foi tentado.",
+        "Retry sem backoff agrava o rate limit e pode nunca convergir."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nDois relatórios de mercado, ambos de 2025, estimam o mercado brasileiro de fintechs em R$ 42 bilhões e R$ 51 bilhões, com metodologias diferentes. Como o subagent de síntese deve tratar isso no relatório?",
+      "opcoes": [
+        "Apresentar os dois valores, cada um com sua fonte, data e metodologia, marcando o dado como contestado.",
+        "Usar a média, R$ 46,5 bilhões, como estimativa de consenso.",
+        "Usar o valor da fonte mais conhecida e omitir o outro.",
+        "Omitir o tamanho do mercado do relatório, já que as fontes discordam."
+      ],
+      "correta": 0,
+      "explicacao": "Conflito entre fontes: anote os valores divergentes com suas fontes. Não escolha um em silêncio nem tire média.",
+      "feedbacks": [
+        "Correta. Conflito entre fontes é anotado com os valores divergentes e suas fontes; o leitor decide com a informação completa.",
+        "Tirar média cria um número que nenhuma fonte afirma e esconde a divergência.",
+        "Escolher um valor em silêncio elimina informação relevante e a incerteza real.",
+        "Joga fora informação útil; a divergência em si é um achado que deve ser apresentado."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO verificador de consistência sinalizou \"contradição\" porque uma fonte diz que 38% das PMEs usam nuvem e outra diz 61%. A primeira é uma pesquisa publicada em 2021 com dados de 2020; a segunda, de 2025 com dados de 2024. Qual desenho evita esse falso alarme?",
+      "opcoes": [
+        "Descartar automaticamente fontes com mais de três anos.",
+        "Manter apenas a fonte mais recente quando dois números divergirem, já que dados mais novos refletem melhor a situação atual do mercado.",
+        "Pedir ao verificador para \"usar o bom senso\" ao comparar números.",
+        "Registrar o período dos dados e a data de publicação, tratando períodos diferentes como série, não contradição."
+      ],
+      "correta": 3,
+      "explicacao": "Registre período dos dados, publicação e coleta. Números de períodos diferentes não são contradição.",
+      "feedbacks": [
+        "Perde o histórico útil (a evolução de 38% para 61% é um achado) e não resolve o problema de metadados.",
+        "Escolhe em silêncio; e, quando as fontes forem do mesmo período, apagaria um conflito real.",
+        "Critério vago; sem a data dos dados nos metadados, o verificador não tem como saber.",
+        "Correta. Dados temporais exigem registrar 'dados de', publicação e coleta; valores de períodos diferentes descrevem uma evolução."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nOs subagents de análise devolvem parágrafos de texto corrido. Na síntese final, várias afirmações perdem a fonte e o revisor não consegue rastrear de onde veio cada número. Qual mudança resolve na origem?",
+      "opcoes": [
+        "Pedir ao subagent de síntese para \"não perder as citações\".",
+        "Saída estruturada dos subagents separando conteúdo de metadados: afirmação, trecho, fonte/URL e data.",
+        "Colocar todas as URLs consultadas numa lista de referências no fim do relatório.",
+        "Fazer o subagent de síntese refazer as buscas para reencontrar as fontes de cada afirmação."
+      ],
+      "correta": 1,
+      "explicacao": "Passagem estruturada entre agentes: separe conteúdo de metadados (afirmação, evidência, fonte, data) para a atribuição sobreviver.",
+      "feedbacks": [
+        "Instrução vaga sobre um insumo que já chega sem estrutura; a fonte se perde antes da síntese.",
+        "Correta. Passagem estruturada com metadados faz a atribuição sobreviver às etapas seguintes do pipeline.",
+        "Lista solta não diz qual afirmação vem de qual fonte; o mapa afirmação → fonte continua faltando.",
+        "Caro e frágil; recupera depois o que bastava não perder."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nA InsightLab vai revisar as instruções do subagent de síntese para melhorar a confiabilidade dos relatórios. Quais DUAS práticas devem entrar? (Escolha DUAS.)",
+      "opcoes": [
+        "Remover ressalvas e limitações das fontes, para o texto ficar mais assertivo.",
+        "Rotular o grau de certeza de cada achado: consolidado (várias fontes), contestado ou fonte única.",
+        "Quando fontes divergirem, apresentar apenas o valor mais conservador.",
+        "Citar as fontes só numa bibliografia geral no final, sem ligar afirmações a fontes.",
+        "Escolher o formato conforme o conteúdo: tabela para dados financeiros comparáveis, cronologia para eventos."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Síntese confiável: rotule certeza (consolidado/contestado/fonte única), preserve ressalvas, ligue cada afirmação à fonte e escolha o formato pelo conteúdo.",
+      "feedbacks": [
+        "Perder ressalvas distorce a evidência; elas devem ser preservadas.",
+        "Correta. O rótulo de certeza mostra ao leitor quão sólido é cada achado.",
+        "Escolher um valor em silêncio, mesmo 'conservador', esconde o conflito.",
+        "Sem o mapa afirmação → fonte, a proveniência se perde.",
+        "Correta. Formato adequado ao conteúdo faz parte de uma boa síntese."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca tem duas tools: search (\"busca informações\") e find_documents (\"encontra documentos relevantes\"). A primeira consulta a web; a segunda, o acervo interno de relatórios licenciados. O subagent frequentemente busca na web o que existe no acervo. Qual é a correção mais simples e eficaz?",
+      "opcoes": [
+        "Adicionar um classificador antes do subagent, que analisa cada consulta e decide qual das duas tools deve ser usada antes de o modelo agir.",
+        "Remover a busca na web, deixando só o acervo interno.",
+        "Renomear e redescrever as tools (ex.: web_search e search_licensed_reports), dizendo quando usar cada uma.",
+        "Forçar o subagent a chamar sempre as duas tools em cada consulta."
+      ],
+      "correta": 2,
+      "explicacao": "Descrições vagas e sobrepostas causam roteamento errado: renomeie e descreva para separar os propósitos.",
+      "feedbacks": [
+        "Mais complexo do que o necessário; diferenciar as descrições vem antes.",
+        "Elimina capacidade necessária para temas fora do acervo.",
+        "Correta. Nome e descrição são o critério de seleção; tools com propósitos sobrepostos na descrição causam roteamento errado.",
+        "Dobra custo e latência e despeja resultados redundantes no contexto, em vez de corrigir a seleção."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de síntese recebe, num único prompt, os resultados brutos de 12 subagents (cerca de 150 mil tokens). Achados importantes que aparecem no meio desse material quase nunca chegam ao relatório. O que fazer?",
+      "opcoes": [
+        "Cada subagent devolve um resumo enxuto (achados-chave primeiro, com fonte), organizado por cabeçalhos de tema.",
+        "Usar um modelo com janela de 1M de tokens, para que os 150 mil tokens caibam com folga e o modelo tenha espaço para considerar todos os resultados.",
+        "Repetir os 150 mil tokens duas vezes no prompt para reforçar a atenção.",
+        "Embaralhar a ordem dos resultados a cada execução para que cada achado tenha chance de ficar no início."
+      ],
+      "correta": 0,
+      "explicacao": "Lost in the middle: achados-chave no começo, cabeçalhos de seção, nada crítico no meio; e corte o volume com saídas enxutas.",
+      "feedbacks": [
+        "Correta. Lost in the middle: coloque achados-chave no começo, use cabeçalhos e reduza o volume com saídas enxutas e estruturadas.",
+        "Caber não é o problema; janela maior custa mais e o efeito 'lost in the middle' continua ou piora.",
+        "Dobra custo e ruído sem resolver a organização do material.",
+        "Torna o resultado aleatório e não reprodutível; não corrige a causa."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D5",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPesquisas grandes rodam por horas. Quando o processo do coordenador cai na terceira hora, tudo recomeça do zero, inclusive as buscas que já tinham terminado. Qual desenho resolve?",
+      "opcoes": [
+        "Retomar o coordenador com --resume na mesma sessão, confiando no histórico da conversa para saber quais buscas já tinham terminado antes da queda.",
+        "Reduzir o escopo das pesquisas para que terminem antes de uma hora.",
+        "Adicionar um limite de tempo por pesquisa e marcar como falha as que passarem dele.",
+        "Manter um manifesto em local conhecido (subtarefas, status, caminhos dos resultados) e retomar a partir dele."
+      ],
+      "correta": 3,
+      "explicacao": "Estado salvo em local conhecido + manifesto do coordenador permite retomar após crash. O que não pode se perder vai para arquivo.",
+      "feedbacks": [
+        "Depende do scrollback, que pode ter sido compactado ou perdido; o que não pode se perder vai para arquivo.",
+        "Sacrifica o produto para contornar uma falha de engenharia.",
+        "Não recupera nada; só transforma crashes em falhas declaradas.",
+        "Correta. Estado salvo em arquivo + manifesto permite retomar após crash sem refazer o que já terminou."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D1",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO sistema é implementado com o Claude Agent SDK, e os subagents são declarados via AgentDefinition. Quais DUAS afirmações sobre essa implementação estão corretas? (Escolha DUAS.)",
+      "opcoes": [
+        "Cada subagent recebe automaticamente o histórico completo do coordenador.",
+        "Subagents podem chamar diretamente outros subagents irmãos para trocar resultados.",
+        "O coordenador precisa ter a tool Agent em allowedTools para conseguir criar subagents.",
+        "Mensagens produzidas dentro de um subagent trazem parent_tool_use_id, o que permite atribuí-las à chamada que o criou.",
+        "Para rodar em paralelo, cada subagent precisa ser iniciado num processo separado do SDK."
+      ],
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Agent SDK: a tool Agent precisa estar em allowedTools; mensagens de subagent trazem parent_tool_use_id. Contexto é isolado e a comunicação passa pelo coordenador.",
+      "feedbacks": [
+        "Falso: o contexto do subagent é isolado, e tudo o que ele precisa vai no prompt.",
+        "Contraria o hub-and-spoke: a comunicação passa pelo coordenador.",
+        "Correta. Subagents são criados pela tool Agent (antes chamada Task), que precisa estar liberada para o coordenador.",
+        "Correta. É assim que se rastreia qual subagent produziu o quê.",
+        "O paralelismo vem de várias chamadas Agent na mesma resposta do coordenador."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO prompt do subagent de análise diz \"descarte fontes pouco confiáveis\". Em execuções diferentes, o mesmo blog técnico é aceito numa e descartado noutra, e estudos de associações setoriais são tratados de forma inconsistente. Qual é a melhor correção?",
+      "opcoes": [
+        "Pedir ao subagent que atribua a cada fonte uma nota de confiabilidade de 0 a 10, justificando a nota, e descarte automaticamente as que ficarem abaixo de 7.",
+        "Adicionar \"seja rigoroso\" à instrução atual.",
+        "Definir critérios explícitos: tipos de fonte que contam, os que não contam e exemplos de fronteira com o motivo.",
+        "Colocar um segundo subagent que revisa cada decisão do primeiro com o mesmo prompt."
+      ],
+      "correta": 2,
+      "explicacao": "Critérios explícitos (o que conta, o que não conta, exemplos de fronteira) vencem instruções vagas como 'descarte fontes pouco confiáveis'.",
+      "feedbacks": [
+        "Desloca o julgamento vago para uma nota autodeclarada sem régua; continua inconsistente.",
+        "Mais uma instrução vaga; não define rigor.",
+        "Correta. Critério explícito, com o que conta, o que não conta e casos de fronteira, torna a decisão consistente.",
+        "Dobra o custo e replica o mesmo critério vago; não resolve a raiz."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D2",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca usa a tool server-side de web search. Em pesquisas extensas, às vezes a resposta volta com stop_reason \"pause_turn\", e o código atual trata isso como fim, entregando um resultado incompleto. Qual é o tratamento correto?",
+      "opcoes": [
+        "Tratar pause_turn como erro e repetir o request original do zero.",
+        "Reenviar a conversa incluindo a resposta recebida, para o modelo continuar o loop server-side de onde parou.",
+        "Aumentar max_tokens, pois pause_turn indica que a saída foi cortada.",
+        "Mudar para tool_choice none no próximo turno para forçar uma resposta final."
+      ],
+      "correta": 1,
+      "explicacao": "pause_turn = o loop de tool server-side atingiu o teto de iterações; reenvie a resposta para continuar.",
+      "feedbacks": [
+        "Descarta o trabalho já feito no turno e pode bater no mesmo teto de novo.",
+        "Correta. pause_turn indica que o loop server-side atingiu o teto de iterações; reenviar a resposta permite continuar.",
+        "Confunde pause_turn com max_tokens; são sinais diferentes.",
+        "Força uma resposta antes de a busca terminar; entrega exatamente o resultado incompleto que se quer evitar."
+      ]
+    },
+    {
+      "cenario": 3,
+      "dominio": "D4",
+      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara reduzir citações erradas, a equipe pediu que o subagent de síntese, ao terminar o relatório, \"revise suas próprias citações\". A taxa de citações que não sustentam a afirmação quase não mudou. Qual abordagem é melhor?",
+      "opcoes": [
+        "Um subagent verificador independente, com contexto novo, que checa se cada trecho citado sustenta a afirmação.",
+        "Pedir ao subagent de síntese para revisar as citações duas vezes.",
+        "Pedir ao subagent de síntese um score de confiança para cada citação, com justificativa, e remover do relatório as citações com score abaixo do limite.",
+        "Aumentar o effort do subagent de síntese."
+      ],
+      "correta": 0,
+      "explicacao": "Revisão deve ser feita por instância independente (sem o contexto de raciocínio do autor), com critério explícito.",
+      "feedbacks": [
+        "Correta. Auto-revisão no mesmo contexto sofre do viés do raciocínio que gerou o texto; um verificador independente, com critério explícito, pega o que o autor racionalizou.",
+        "Mesma sessão, mesmo viés; repetir não muda o ponto de vista.",
+        "Confiança autodeclarada é mal calibrada; as citações erradas costumam vir com alta confiança.",
+        "Mais raciocínio no mesmo contexto enviesado não resolve a auto-revisão."
+      ]
+    }
+  ]
+}

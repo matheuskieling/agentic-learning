@@ -1,0 +1,177 @@
+{
+  "modulo": "07",
+  "titulo": "Orquestração multiagente, decomposição, review multi-pass e sessões",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — um loop que chama outros loops",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e adapte ao vivo qualquer trecho de código para a linguagem salva",
+        "Fechamos o D1 (27%): 1.2 orquestração, 1.3 subagents e contexto, 1.6 decomposição, 1.7 sessões, mais 4.6 (review multi-pass, do D4)",
+        "Ponte com o Módulo 06: um subagent é chamado como uma tool (Agent); tudo o que vimos de tool_use paralelo vale aqui",
+        "Mapa: vocabulário do 'Building Effective Agents' → os 5 padrões → hub-and-spoke → spawn e contexto isolado → AgentDefinition, fork e passagem estruturada → chaining vs. dinâmica → review multi-pass → sessões",
+        "Onde cai: cenário 3 (pesquisa multiagente) acima de todos; também 5 (CI: review), 2 e 4 (subagents, --resume)"
+      ],
+      "checkpoint": "Pergunte se o aluno lembra o que acontece quando o modelo emite vários tool_use na mesma resposta (vai ser a base do paralelismo de subagents)",
+      "ref": "07-multiagente/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Workflows vs. agents e o 'comece simples'",
+      "pontos": [
+        "Artigo 'Building Effective Agents' da Anthropic: a prova pressupõe esse vocabulário",
+        "Workflow = LLM + tools em caminhos de código predefinidos (previsível); agent = o LLM dirige dinamicamente o próprio processo e as tools (aberto)",
+        "Bloco base: augmented LLM (retrieval + tools + memória)",
+        "Princípios: comece simples (uma chamada bem feita resolve muito), só adicione complexidade com ganho medido; transparência (mostrar o planejamento); cuidar da ACI (interface agente-tools)",
+        "Agentes trocam latência e custo por desempenho; frameworks abstraem demais e dificultam debug",
+        "Anti-padrão que vira alternativa errada: 'mais agentes = melhor'"
+      ],
+      "checkpoint": "Pergunte: qual a diferença entre um workflow e um agent, e qual a primeira coisa a tentar antes de construir qualquer um dos dois?",
+      "ref": "07-multiagente/teoria.md#1-o-vocabulário-base-building-effective-agents"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Os 5 padrões de workflow",
+      "pontos": [
+        "Prompt chaining: passos fixos em sequência, com gates programáticos entre eles",
+        "Routing: classifica a entrada e encaminha para fluxo especializado (inclusive modelo menor para o fácil)",
+        "Parallelization: sectioning (subtarefas independentes em paralelo) e voting (mesma tarefa várias vezes para consenso)",
+        "Orchestrator-workers: um LLM decompõe DINAMICAMENTE e delega; subtarefas dependem da entrada",
+        "Evaluator-optimizer: um gera, outro avalia e dá feedback, em loop; exige critério claro de qualidade",
+        "Diferença que mais cai: parallelization = subtarefas definidas pelo programador; orchestrator-workers = definidas pelo LLM"
+      ],
+      "checkpoint": "Mini-drill: dê 3 situações (classificar tickets em 4 filas; revisar código com 3 prompts e votar; mudança que toca um número imprevisível de arquivos) e peça o padrão de cada",
+      "ref": "07-multiagente/teoria.md#os-5-padrões-de-workflow"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Hub-and-spoke: o coordenador roteia tudo",
+      "pontos": [
+        "Coordenador: decompõe, delega, ROTEIA TODA a comunicação, agrega, trata erros dos subagents, avalia e redelega lacunas",
+        "Subagents não conversam entre si: centralizar dá observabilidade, controle de erro e consistência",
+        "Acione SÓ os subagents que a consulta precisa; pipeline fixo com todos para tudo é anti-padrão",
+        "Refinamento iterativo: roda → avalia → lacunas → 2ª rodada direcionada → sintetiza",
+        "Decomposição estreita demais: 'indústrias criativas' virou só 'artes visuais'; o defeito é do coordenador, não dos subagents",
+        "Correção: decompor mais amplo e checar cobertura explicitamente contra o escopo antes de sintetizar"
+      ],
+      "checkpoint": "Pergunte: o relatório cobriu só parte do tema e os subagents fizeram bem o que receberam — onde está o defeito e qual a correção?",
+      "ref": "07-multiagente/teoria.md#2-hub-and-spoke-o-coordenador-e-seus-subagents"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Spawn de subagents: a tool Agent, contexto isolado e paralelismo",
+      "pontos": [
+        "Subagents são criados pela tool Agent (antes chamada Task); ela precisa estar nas allowedTools do coordenador, que pode ser restrito a tipos específicos",
+        "Contexto ISOLADO: o subagent não herda o histórico; recebe o prompt de delegação e devolve só o resultado final",
+        "Logo, TUDO vai explícito: quem, o quê, dados já levantados, objetivo, escopo, formato de saída, critério de pronto",
+        "Ruim: 'analise o problema do cliente'; bom: cliente, pedido, valores, datas e o que devolver",
+        "Paralelismo: vários Agent na MESMA resposta do coordenador; um por turno = sequencial",
+        "[volátil] Claude Code tem limites de concorrência e profundidade; não é o ponto da prova"
+      ],
+      "checkpoint": "Peça ao aluno para reescrever a delegação 'pesquise o que discutimos sobre o concorrente' de forma que funcione num subagent isolado",
+      "ref": "07-multiagente/teoria.md#31-a-tool-agent-e-o-contexto-isolado"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "AgentDefinition, parent_tool_use_id, fork vs. fresco e passagem estruturada",
+      "pontos": [
+        "Agent SDK: AgentDefinition declara o subagent (description dirige a escolha, prompt, tools, model); no Claude Code o equivalente é .claude/agents/<nome>.md",
+        "Mensagens de dentro do subagent trazem parent_tool_use_id → atribuição em logs/UI",
+        "Fork: herda a conversa toda e compartilha o cache de prompt (mais barato); bom quando a subtarefa depende do que já se discutiu",
+        "Subagent fresco: tarefa delimitada e bem especificada, ou quando você quer visão IMPARCIAL",
+        "Pegadinha de nome: context: fork em skill roda num subagent isolado (sem histórico)",
+        "Passagem estruturada: conteúdo separado de metadados (afirmação, evidência, fonte, data) para a atribuição sobreviver à síntese"
+      ],
+      "checkpoint": "Pergunte: para uma revisão imparcial de um plano longo, fork ou subagent fresco? E para explorar uma variante que depende de tudo que já foi discutido?",
+      "ref": "07-multiagente/teoria.md#33-agent-sdk-agentdefinition-e-parent_tool_use_id"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Decomposição: prompt chaining vs. dinâmica",
+      "pontos": [
+        "Prompt chaining: passos fixos, sequenciais, conhecidos de antemão; previsível e testável",
+        "Decomposição dinâmica/adaptativa: subtarefas surgem das descobertas (investigação aberta, debug, pesquisa)",
+        "Erro 1: agente autônomo com vários subagents para um pipeline fixo (custo e imprevisibilidade sem ganho)",
+        "Erro 2: chaining rígido numa investigação aberta (o passo 3 ignora o que o passo 2 descobriu)",
+        "Como cai: pipeline de contratos sempre igual → chaining; 'por que a conversão caiu?' → dinâmica"
+      ],
+      "checkpoint": "Pergunte: extração de notas fiscais sempre em 4 etapas iguais, ou investigação de um incidente de produção — qual estratégia para cada?",
+      "ref": "07-multiagente/teoria.md#4-estratégias-de-decomposição-chaining-vs-dinâmica"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Review multi-pass e o viés do contexto de raciocínio",
+      "pontos": [
+        "Quem gerou carrega o raciocínio que levou às decisões e tende a não questioná-las: revise em SESSÃO INDEPENDENTE",
+        "Erradas típicas: 'revise o que você escreveu' na mesma sessão; fork da sessão geradora; 'seja mais crítico'",
+        "PR grande numa passada só: diluição de atenção, padrão inconsistente entre arquivos, bug entre arquivos perdido",
+        "Passo 1 por arquivo: bugs locais, estilo, tipos, segurança; MESMO prompt para todos; paralelizável",
+        "Passo 2 de integração: prompt separado, recebe os achados do passo 1; fluxo de dados, contratos, erro na fronteira",
+        "Pegadinha: 'modelo com janela maior para caber o PR inteiro' não resolve diluição de atenção"
+      ],
+      "checkpoint": "Pergunte: por que só o passo por arquivo não basta, e o que o passo de integração recebe como entrada?",
+      "ref": "07-multiagente/teoria.md#5-review-multi-pass-e-o-viés-do-contexto-de-raciocínio"
+    },
+    {
+      "id": "t8",
+      "fase": "teoria",
+      "titulo": "Sessões: --resume, --fork-session e recomeçar com resumo",
+      "pontos": [
+        "--resume <sessão> (ou --continue) continua com o histórico inteiro: bom quando os resultados de tool ainda valem",
+        "Arquivos/serviços mudaram ou o contexto derivou → sessão nova com resumo estruturado",
+        "Se retomar depois de mudanças, diga EXPLICITAMENTE o que mudou: os resultados velhos estão no histórico e o modelo confia neles",
+        "--fork-session: novo ID a partir de uma base comum; explorar alternativas sem contaminação (no Agent SDK há o equivalente nas opções de sessão)",
+        "O que não pode se perder vai para arquivo/memória, não scrollback",
+        "Como cai (cenários 2 e 4): 'o módulo foi refatorado desde ontem' → sessão nova + resumo; 'comparar duas estratégias a partir da mesma análise' → --fork-session"
+      ],
+      "checkpoint": "Pergunte: ontem o Claude mapeou o serviço de pagamentos; hoje outro dev mudou metade dele. O que fazer e por quê?",
+      "ref": "07-multiagente/teoria.md#6-gestão-de-sessão---resume---fork-session-e-recomeçar-com-resumo"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação — Módulo 07",
+      "pontos": [
+        "15 questões curtas: padrões do Building Effective Agents, hub-and-spoke, contexto isolado, paralelismo, fork, decomposição, review multi-pass, sessões",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-07/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e revise os tópicos errados antes da prova",
+      "ref": "Claude-Architect/apps/modulo-07/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do Módulo 07 (estilo cenário)",
+      "pontos": [
+        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Escolha DUAS)",
+        "Aprovação 70%; abaixo disso, revise a 'Cola de véspera' e os tópicos errados e refaça"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-07/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 08; se não, revise os pontos errados",
+      "ref": "Claude-Architect/provas/modulo-07/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 07 (e do D1)",
+      "pontos": [
+        "Recap: comece simples; 5 padrões; hub-and-spoke com coordenador roteando tudo e acionando só o necessário",
+        "Contexto isolado → delegação explícita; paralelo = vários Agent na mesma resposta; parent_tool_use_id; fork vs. fresco; conteúdo + metadados",
+        "Chaining para passos fixos, dinâmica para o aberto; review em sessão independente, por arquivo + integração",
+        "--resume se ainda vale; mudou → sessão nova com resumo ou diga o que mudou; --fork-session para ramos",
+        "D1 completo (27% da prova). Próximo: Módulo 08 — Configurando o Claude Code: CLAUDE.md, rules, skills, subagents, permissões e tools nativas"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 08 ou parar por aqui (sugira uma /revisar dos Módulos 06-07 antes, por ser o maior domínio)",
+      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+    }
+  ]
+}

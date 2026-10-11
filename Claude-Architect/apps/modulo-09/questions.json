@@ -1,0 +1,265 @@
+{
+  "titulo": "Módulo 09 — Claude Code em CI/CD e refinamento iterativo (quiz de fixação)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "O Claude gera notas de release num formato quase certo, mas que varia entre execuções. As instruções em prosa já foram reescritas duas vezes. Qual o próximo passo mais eficaz?",
+      "opcoes": [
+        "Reescrever a instrução em prosa com mais ênfase e palavras em MAIÚSCULAS",
+        "Incluir 2–3 exemplos concretos de entrada → saída, cobrindo um caso de borda",
+        "Trocar para um modelo maior",
+        "Pedir \"use seu bom senso para manter o formato consistente\""
+      ],
+      "correta": 1,
+      "explicacao": "Exemplos concretos comunicam formato e bordas melhor que prosa; o modelo imita o padrão.",
+      "feedbacks": [
+        "Mais ênfase na mesma prosa raramente resolve a variação.",
+        "Correto.",
+        "Solução mais cara que não ataca a causa (ambiguidade do formato).",
+        "Critério vago gera exatamente a inconsistência observada."
+      ]
+    },
+    {
+      "pergunta": "No fluxo de TDD com o Claude Code, qual regra preserva o valor dos testes como critério de pronto?",
+      "opcoes": [
+        "Escrever os testes depois da implementação, para refletirem o código final",
+        "Deixar o Claude ajustar os testes quando eles parecerem rígidos demais",
+        "Rodar os testes só no final, uma vez",
+        "Escrever os testes primeiro, devolver as falhas ao Claude e não permitir que ele altere os testes para passar"
+      ],
+      "correta": 3,
+      "explicacao": "O teste é o alvo verificável; se o Claude puder mudá-lo, o critério deixa de existir.",
+      "feedbacks": [
+        "Testes escritos depois tendem a validar o que foi feito, não o que era esperado.",
+        "Abre a porta para \"passar\" mudando o alvo.",
+        "Perde o ciclo de iteração com as falhas.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "O PO pediu \"um módulo de comissões para vendedores\" em duas linhas, num domínio que o time não conhece. Qual técnica usar antes de qualquer código?",
+      "opcoes": [
+        "Pedir que o Claude entreviste você com perguntas de esclarecimento antes de implementar",
+        "Pedir a implementação direta e corrigir na revisão",
+        "Usar `--max-turns 50` para o Claude ter espaço de explorar",
+        "Mandar o pedido via Batch API para economizar"
+      ],
+      "correta": 0,
+      "explicacao": "Requisito vago + domínio desconhecido → entrevista: o Claude levanta regras e bordas antes de gastar uma implementação.",
+      "feedbacks": [
+        "Correto.",
+        "Gera retrabalho na base do \"não era isso\".",
+        "Mais turnos não resolvem a ambiguidade do requisito.",
+        "Batch não tem relação com clareza de requisito."
+      ]
+    },
+    {
+      "pergunta": "Dois bugs na mesma `CalculadoraDePedido`: o arredondamento do total depende da ordem em que os descontos são aplicados, e essa ordem está errada. Como enviar ao Claude?",
+      "opcoes": [
+        "Em duas sessões separadas, uma por bug",
+        "Primeiro o arredondamento; o da ordem fica para outra semana",
+        "Numa mensagem só, porque os problemas interagem",
+        "Junto com todos os outros 10 bugs abertos do backlog"
+      ],
+      "correta": 2,
+      "explicacao": "Problemas relacionados vão juntos para o Claude ver o todo; independentes vão em sequência.",
+      "feedbacks": [
+        "Separar problemas acoplados faz uma correção desfazer a outra.",
+        "Corrigir um isoladamente pode ser invalidado pela correção do outro.",
+        "Correto.",
+        "Misturar com problemas independentes gera diff irrevisável."
+      ]
+    },
+    {
+      "pergunta": "Um job de CI executa `claude \"corrija os avisos de lint\"` e fica pendurado até o timeout. Qual a causa?",
+      "opcoes": [
+        "Faltou `--max-turns`",
+        "Faltou `-p`: sem ele o Claude Code abre a sessão interativa e espera input",
+        "O runner não tem acesso ao CLAUDE.md",
+        "Faltou `--output-format json`"
+      ],
+      "correta": 1,
+      "explicacao": "`-p` (ou `--print`) é o modo não interativo: executa, imprime e sai.",
+      "feedbacks": [
+        "Limita turnos, mas não tira o processo do modo interativo.",
+        "Correto.",
+        "Sem CLAUDE.md ele ainda rodaria; não explica o travamento.",
+        "Formato de saída não muda o modo interativo."
+      ]
+    },
+    {
+      "pergunta": "Usando `claude -p ... --output-format json --json-schema '<schema>'`, em qual campo do JSON de saída vem a resposta conforme ao schema?",
+      "opcoes": [
+        "`structured_output`",
+        "`result`",
+        "`content[0].text`",
+        "`session_id`"
+      ],
+      "correta": 0,
+      "explicacao": "Com `--json-schema`, a resposta validada vem em `structured_output`; `result` traz o texto.",
+      "feedbacks": [
+        "Correto.",
+        "`result` é o texto final; o objeto conforme ao schema fica em `structured_output`.",
+        "Esse é o formato da Messages API, não da saída do `claude -p`.",
+        "É o identificador da sessão."
+      ]
+    },
+    {
+      "pergunta": "Um painel interno quer mostrar, em tempo real, cada passo que o Claude dá durante um job de CI. Qual formato de saída usar?",
+      "opcoes": [
+        "`--output-format text`",
+        "`--output-format json`",
+        "`--json-schema` sem `--output-format`",
+        "`--output-format stream-json`"
+      ],
+      "correta": 3,
+      "explicacao": "`stream-json` emite um objeto JSON por linha conforme os eventos acontecem.",
+      "feedbacks": [
+        "Texto só no final, sem estrutura.",
+        "Um único objeto ao final da execução.",
+        "O schema define o formato da resposta final, não streaming.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Qual o papel correto de `--max-turns` num pipeline?",
+      "opcoes": [
+        "Definir quando a tarefa está pronta",
+        "Garantir que o Claude use exatamente N turnos",
+        "Ser um backstop que limita custo e tempo no pior caso",
+        "Substituir o `timeout` do job"
+      ],
+      "correta": 2,
+      "explicacao": "Limite de iterações é backstop; o fim normal é o Claude concluir. Use junto com timeout do job.",
+      "feedbacks": [
+        "Usar limite arbitrário como mecanismo principal de parada é anti-padrão.",
+        "É um teto, não uma meta.",
+        "Correto.",
+        "São complementares: um limita turnos, o outro tempo de relógio."
+      ]
+    },
+    {
+      "pergunta": "No CI, você quer acrescentar \"Você é um revisor sênior de C#\" mantendo todo o comportamento padrão do Claude Code. Qual flag?",
+      "opcoes": [
+        "`--system-prompt`",
+        "`--append-system-prompt`",
+        "`--json-schema`",
+        "`--permission-mode plan`"
+      ],
+      "correta": 1,
+      "explicacao": "`--append-system-prompt` acrescenta ao system prompt padrão; `--system-prompt` substitui tudo.",
+      "feedbacks": [
+        "Substitui o system prompt inteiro e perde o comportamento padrão.",
+        "Correto.",
+        "Define o formato da saída, não a persona.",
+        "Muda a postura de permissão, não as instruções."
+      ]
+    },
+    {
+      "pergunta": "Usando `anthropics/claude-code-action@v1`, como passar `--max-turns 8` e `--allowedTools` para o Claude?",
+      "opcoes": [
+        "Pelo input `claude_args`",
+        "Por variáveis de ambiente `MAX_TURNS` e `ALLOWED_TOOLS`",
+        "Escrevendo no CLAUDE.md do repositório",
+        "Não é possível; a Action usa valores fixos"
+      ],
+      "correta": 0,
+      "explicacao": "`claude_args` repassa qualquer flag da CLI para o Claude Code dentro da Action.",
+      "feedbacks": [
+        "Correto.",
+        "Não é assim que a Action recebe essas opções.",
+        "CLAUDE.md é instrução, não configuração de flags.",
+        "A Action aceita as flags via `claude_args`."
+      ]
+    },
+    {
+      "pergunta": "Para economizar, o time propõe rodar a checagem de segurança obrigatória de cada PR pela Batch API. Qual a avaliação?",
+      "opcoes": [
+        "Boa ideia: 50% de economia sem efeito colateral",
+        "Boa ideia, desde que o lote tenha mais de 100 PRs",
+        "Boa ideia se usar `custom_id` igual ao número do PR",
+        "Má ideia: Batch pode levar até 24h sem SLA, incompatível com um passo pré-merge bloqueante"
+      ],
+      "correta": 3,
+      "explicacao": "Batch nunca em passo bloqueante/pré-merge. Use síncrono no gate; Batch para análise noturna/semanal.",
+      "feedbacks": [
+        "Ignora a latência: o PR ficaria bloqueado por horas.",
+        "Volume não muda a ausência de SLA.",
+        "`custom_id` resolve correlação, não latência.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Os resultados de um lote da Batch API chegaram e o script atribui cada resultado ao documento pela posição na lista. Alguns relatórios ficaram trocados. Qual a correção?",
+      "opcoes": [
+        "Ordenar os resultados por data de criação",
+        "Enviar um documento por lote",
+        "Casar cada resultado pelo `custom_id` definido no envio",
+        "Usar `--output-format json`"
+      ],
+      "correta": 2,
+      "explicacao": "Resultados de batch podem vir fora de ordem; o `custom_id` é a chave de correlação.",
+      "feedbacks": [
+        "A ordem não é garantida por nenhum critério; não use posição nem data.",
+        "Joga fora a vantagem do batch.",
+        "Correto.",
+        "É flag do `claude -p`, não tem relação com a Batch API."
+      ]
+    },
+    {
+      "pergunta": "Um job gera código com `claude -p` e, no passo seguinte, usa `claude -p --continue \"agora revise o que você escreveu\"`. O review aprova quase tudo. O que mudar?",
+      "opcoes": [
+        "Fazer o review numa sessão nova e independente, com o diff e critérios explícitos",
+        "Aumentar `--max-turns` do passo de review",
+        "Pedir \"seja muito crítico\" no prompt de review",
+        "Trocar `--continue` por `--resume` com o mesmo ID"
+      ],
+      "correta": 0,
+      "explicacao": "A sessão que gerou o código tende a confirmar as próprias decisões (viés do contexto de raciocínio). Review em sessão nova.",
+      "feedbacks": [
+        "Correto.",
+        "Mais turnos na mesma sessão enviesada não removem o viés.",
+        "Instrução não remove o contexto de raciocínio que causa o viés.",
+        "`--resume` com o mesmo ID é a mesma sessão; mesmo problema."
+      ]
+    },
+    {
+      "pergunta": "Um PR com 45 arquivos recebe review superficial e bugs entre módulos passam. Quais elementos compõem a abordagem recomendada? (Escolha DUAS.)",
+      "opcoes": [
+        "Um único prompt com os 45 arquivos e a instrução \"seja minucioso\"",
+        "Passo 1: revisar cada arquivo isoladamente, com o mesmo critério",
+        "Revisar só os 10 arquivos maiores",
+        "Usar a Batch API para o review do PR",
+        "Passo 2: um prompt separado de integração que recebe os achados do passo 1 e procura problemas entre arquivos"
+      ],
+      "corretas": [1, 4],
+      "explicacao": "Multi-pass: análise local por arquivo + passo de integração entre arquivos, com prompt separado.",
+      "feedbacks": [
+        "É a causa do problema: atenção diluída e critério inconsistente.",
+        "Correto.",
+        "Deixa arquivos sem review e não pega bugs cross-file.",
+        "Review de PR é bloqueante: síncrono.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Um job de CI só analisa o código e publica um relatório; ele não deve alterar nada no runner. Quais configurações aplicam menor privilégio de forma determinística? (Escolha DUAS.)",
+      "opcoes": [
+        "`--permission-mode bypassPermissions` para evitar prompts",
+        "Instrução no prompt: \"não altere arquivos\"",
+        "`--allowedTools \"Read,Grep,Glob\"`",
+        "`--permission-mode dontAsk`, negando tudo que não foi pré-aprovado",
+        "`--allowedTools \"Bash\"` para o Claude rodar o que precisar"
+      ],
+      "corretas": [2, 3],
+      "explicacao": "Pré-aprovar só leitura e negar o resto (`dontAsk`) restringe o job de forma determinística.",
+      "feedbacks": [
+        "Libera tudo: o oposto de menor privilégio.",
+        "Prompt é probabilístico; não é controle.",
+        "Correto.",
+        "Correto.",
+        "Bash irrestrito permite alterar qualquer coisa no runner."
+      ]
+    }
+  ]
+}

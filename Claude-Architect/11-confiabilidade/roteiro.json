@@ -1,0 +1,157 @@
+{
+  "modulo": "11",
+  "titulo": "Confiabilidade: escalonamento, propagação de erro, revisão humana, proveniência, guardrails e evals",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — como o sistema se comporta quando erra ou não sabe",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# para a linguagem salva",
+        "Task statements: 5.2 (escalonamento), 5.3 (propagação de erro), 5.5 (revisão humana), 5.6 (proveniência), mais guardrails e evals em nível de arquitetura",
+        "Confiável não é 'nunca erra': é escalar na hora certa, não esconder falha, saber a fonte de cada afirmação, revisar onde está o risco e medir antes de mudar",
+        "Cai com força nos Cenários 1 (suporte), 3 (pesquisa multiagente) e 6 (extração)",
+        "Último módulo: depois dele vêm os simulados"
+      ],
+      "checkpoint": "Pergunte ao aluno qual ele acha que é o pior tipo de falha num agente: errar alto ou errar em silêncio. Confirme que está pronto",
+      "ref": "11-confiabilidade/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Escalonamento: quando escalar e quando NÃO",
+      "pontos": [
+        "Escale de imediato: pedido explícito de humano, lacuna ou exceção de política, ausência de progresso após tentativas razoáveis",
+        "Não escale por: sentimento, confiança autodeclarada (mal calibrada), tamanho da conversa",
+        "Sentimento ≠ complexidade: furioso com cobrança de 5 dólares → resolva; calmo pedindo exceção de política → escale",
+        "Gatilho crítico (ex.: limite de valor) em código: PreToolUse bloqueia process_refund e encaminha",
+        "Anti-padrões como alternativa: classificador de sentimento, 'escale se estiver pouco confiante', 'escale após 15 turnos'"
+      ],
+      "checkpoint": "Dê os dois clientes (furioso com frete de 12 BRL coberto; calmo pedindo reembolso fora da janela) e pergunte quem escala e por quê",
+      "ref": "11-confiabilidade/teoria.md#1-escalonamento-quando-escalar-e-quando-não"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Desambiguação de cliente e handoff estruturado",
+      "pontos": [
+        "Vários clientes compatíveis na busca → peça identificador adicional; nunca chute nem pegue o primeiro",
+        "Agir sobre o cliente errado é incidente de privacidade e financeiro",
+        "O humano normalmente não lê o transcript: handoff é resumo estruturado",
+        "Campos: cliente (verificado?), problema, pedido do cliente, ações tomadas, motivo do escalonamento, causa raiz provável, ação recomendada, valor",
+        "Anti-padrão: 'anexe a transcrição inteira para não perder nada'"
+      ],
+      "checkpoint": "Peça ao aluno os campos mínimos de um handoff para um caso de cobrança duplicada acima do limite",
+      "ref": "11-confiabilidade/teoria.md#2-desambiguação-e-handoff-estruturado"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Propagação de erro estruturada; vazio ≠ falha",
+      "pontos": [
+        "Erro com contexto: categoria, retentável, retry-after, serviço, ação tentada, resultado parcial, alternativas",
+        "Subagent recupera transitórios localmente (retry com backoff) e só propaga o que não resolveu",
+        "Não aborte o workflow: continue com o parcial, anote a lacuna, ofereça alternativa",
+        "Vazio ≠ falha: 200 com [] = nada encontrado; timeout/503 = não rodou. catch → [] é supressão silenciosa",
+        "Categorias: transitório → retry; validação → corrigir e tentar; negócio → explicar/escalar; permissão → escalar",
+        "Mostre o contraste em C#: catch que devolve lista vazia vs. SearchResult.Failure estruturado"
+      ],
+      "checkpoint": "Pergunte o que o coordenador conclui se o subagent de busca devolve lista vazia após um timeout, e como corrigir",
+      "ref": "11-confiabilidade/teoria.md#3-propagação-de-erro-estruturada"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Revisão humana: amostragem por risco, confiança calibrada, métrica por segmento",
+      "pontos": [
+        "Amostragem estratificada por risco (ex.: 20% alto, 10% médio, 5% baixo), não uniforme; irreversível pode exigir 100%",
+        "Confiança por campo, calibrada contra conjunto rotulado; sem calibração não significa nada",
+        "97% de acurácia agregada pode esconder 45% em notas manuscritas: quebre por tipo de documento e campo",
+        "Anti-padrões: amostra uniforme, confiança crua como gatilho, desligar revisão com base no agregado"
+      ],
+      "checkpoint": "Pergunte o que o aluno exigiria antes de aprovar 'desligar a revisão humana porque a acurácia é 97%'",
+      "ref": "11-confiabilidade/teoria.md#4-revisão-humana-onde-colocar-o-olho-humano"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Proveniência: afirmação → fonte, conflitos, datas e rótulos de certeza",
+      "pontos": [
+        "Cada afirmação carrega local da evidência, URL/documento, data de publicação, tipo de fonte; subagents separam conteúdo de metadados",
+        "Conflito: anote os valores com as fontes; não escolha um em silêncio nem tire média",
+        "Dados temporais: registre 'dados de', publicação e coleta; períodos diferentes não são contradição",
+        "Rótulos: consolidado / contestado / fonte única; preserve ressalvas",
+        "Formato conforme o conteúdo: tabela para financeiro, cronologia para eventos",
+        "Pegadinha do Cenário 3: 'use a fonte mais recente' ou 'faça a média'"
+      ],
+      "checkpoint": "Dê duas fontes com 24% e 38% e pergunte o que a síntese deve fazer (incluindo checar as datas)",
+      "ref": "11-confiabilidade/teoria.md#5-proveniência-da-informação"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Guardrails em nível de arquitetura",
+      "pontos": [
+        "Crítico em código determinístico; prompt é best-effort",
+        "Camadas: entrada (validação, PII, injection), ação (PreToolUse, least privilege), saída (schema + semântica), humano (aprovação do irreversível)",
+        "Conteúdo externo é dado, não instrução",
+        "Falhar fechado em ação crítica: se a verificação não roda, a ação não acontece",
+        "Anti-padrões: 'NUNCA' em maiúsculas no prompt como única proteção; segundo LLM onde uma regra de código resolve; todas as tools para todos os agentes"
+      ],
+      "checkpoint": "Pergunte onde o aluno colocaria a regra 'só reembolsar com identidade verificada' e por quê",
+      "ref": "11-confiabilidade/teoria.md#6-guardrails-em-nível-de-arquitetura"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Evals: conjunto rotulado, medir por segmento, mudanças guiadas por métrica",
+      "pontos": [
+        "Conjunto de teste rotulado, representativo do tráfego real e com casos de borda/adversariais",
+        "Medir por segmento (tipo de documento, intenção, campo); o agregado esconde regressões",
+        "Processo: linha de base → uma mudança por vez → comparar por segmento → manter como regressão (inclusive ao migrar de modelo)",
+        "Graders: determinístico quando der; LLM-as-judge com rubrica explícita calibrada contra humanos; avaliar comportamento do agente (tool certa, escalou quando devia e não escalou quando não devia)",
+        "Anti-padrões: testar 3 casos à mão; mudar várias coisas de uma vez; usar os exemplos few-shot como teste"
+      ],
+      "checkpoint": "Pergunte como o aluno provaria que um novo critério de escalonamento não piorou o agente",
+      "ref": "11-confiabilidade/teoria.md#7-avaliação-evals-medir-antes-de-mexer"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz do módulo",
+      "pontos": [
+        "15 questões curtas sobre escalonamento, erros, revisão humana, proveniência, guardrails e evals",
+        "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-11/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e quais seções da teoria revisar",
+      "ref": "Claude-Architect/apps/modulo-11/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do módulo",
+      "pontos": [
+        "20 questões em estilo cenário do exame, feedback por alternativa, algumas de múltipla resposta (Escolha DUAS)",
+        "Aprovação 70%; abaixo disso, revise as seções correspondentes antes dos simulados"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-11/questions.json --id prova",
+      "checkpoint": "Se passou, proponha começar os simulados; se não, revise os pontos errados com a tabela de decisão",
+      "ref": "Claude-Architect/provas/modulo-11/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 11 e do conteúdo teórico — rumo aos simulados",
+      "pontos": [
+        "Recap: escalar por critério objetivo (não sentimento/autoconfiança), handoff estruturado, erro estruturado e vazio ≠ falha, revisão estratificada e calibrada, proveniência com conflitos anotados, crítico em código, medir antes de mexer",
+        "Fim dos 11 módulos. Agora o foco é treinar no formato do exame (ver Claude-Architect/simulados/CLAUDE.md)",
+        "Passo 1: bancos por cenário, um de cada vez — python3 engine/session.py start Claude-Architect/simulados/cenarios/cenario-1.json --id cenario (depois cenario-2 ... cenario-6)",
+        "Passo 2: simulado completo — python3 engine/session.py start Claude-Architect/simulados/simulado-1.json --id simulado (60 questões, 120 min, corte 72%)",
+        "Antes de cada simulado, releia as 'Colas de véspera' dos módulos com pior desempenho"
+      ],
+      "checkpoint": "Pergunte se o aluno quer começar já pelo banco do Cenário 1 ou parar por aqui",
+      "ref": "Claude-Architect/simulados/CLAUDE.md"
+    }
+  ]
+}

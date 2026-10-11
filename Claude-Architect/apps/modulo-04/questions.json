@@ -1,0 +1,261 @@
+{
+  "titulo": "Módulo 04 — Quiz: Design de tools",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Para o modelo, qual é o papel principal do campo `description` de uma tool?",
+      "opcoes": [
+        "Documentação para os desenvolvedores que mantêm a tool; o modelo usa só o `name`",
+        "É o critério que o modelo usa para decidir se e quando chamar aquela tool",
+        "Serve apenas para validar os argumentos antes da execução",
+        "É opcional quando o `input_schema` já tem `properties` bem nomeadas"
+      ],
+      "correta": 1,
+      "explicacao": "A descrição é lida pelo modelo na hora de escolher a tool: propósito, quando usar, entrada, saída, bordas e diferença para as vizinhas.",
+      "feedbacks": [
+        "Tentador porque em código 'descrição' costuma ser comentário; mas o modelo lê a descrição para decidir.",
+        "Correto: descrição é o critério de seleção, não decoração.",
+        "Quem valida argumentos é o schema (e `strict`), não a descrição.",
+        "Nomes de propriedade ajudam, mas não dizem quando usar a tool nem como ela difere das outras."
+      ]
+    },
+    {
+      "pergunta": "Qual exigência o `strict: true` impõe ao `input_schema` de uma tool, e qual a recomendação para campos que podem faltar?",
+      "opcoes": [
+        "Todas as propriedades precisam ter `enum` com os valores possíveis listados",
+        "O schema precisa usar `oneOf` para cada tipo possível de cada propriedade",
+        "Apenas que o `name` siga snake_case",
+        "`additionalProperties: false` em todo objeto; opcionais são permitidas (contam para um limite), mas o recomendado é `required` + nullable"
+      ],
+      "correta": 3,
+      "explicacao": "Strict exige `additionalProperties: false` em todo objeto. Propriedades opcionais são permitidas, mas contam para um limite total por request [volátil]; na prática, prefira tudo em `required` com tipo nullable para o que pode faltar. E aceita só um subconjunto de JSON Schema.",
+      "feedbacks": [
+        "Enum é recomendável, mas não é exigência do strict.",
+        "`oneOf` não é uma exigência (e nem consta entre as construções documentadas como suportadas; `anyOf` tem limitações).",
+        "Convenção de nome não tem relação com strict.",
+        "Correto: objeto fechado é a exigência; `required` + nullable é a recomendação prática."
+      ]
+    },
+    {
+      "pergunta": "Um agente confunde `get_customer` e `lookup_client`, cujas descrições são quase idênticas. Qual a primeira correção recomendada?",
+      "opcoes": [
+        "Reescrever as descrições para separar os propósitos (ou fundir as duas tools)",
+        "Treinar um classificador que escolhe a tool antes de o modelo receber a pergunta",
+        "Trocar para um modelo maior",
+        "Forçar `tool_choice` para a tool mais usada"
+      ],
+      "correta": 0,
+      "explicacao": "Tools sobrepostas causam roteamento errado; a correção mais simples é separar propósitos na descrição/nome, ou fundir.",
+      "feedbacks": [
+        "Correto: atacar a ambiguidade na interface é a correção mais simples que resolve.",
+        "Mais complexo que o necessário; a ambiguidade continua na definição.",
+        "Um modelo maior continua lendo duas descrições iguais.",
+        "Forçar uma tool quebra os casos em que a outra é a certa."
+      ]
+    },
+    {
+      "pergunta": "A tool de busca de pedidos rodou normalmente e não encontrou nenhum pedido para o cliente. Como o resultado deve voltar?",
+      "opcoes": [
+        "`is_error: true` com categoria transitória",
+        "`is_error: true` com categoria de validação",
+        "Sucesso com resultado vazio (ex.: lista vazia ou `found=false`)",
+        "Não devolver `tool_result`, para o modelo perceber o vazio e tentar outra tool"
+      ],
+      "correta": 2,
+      "explicacao": "Vazio ≠ falha: a busca rodou, e 'nada encontrado' é informação válida.",
+      "feedbacks": [
+        "Transitório é quando a busca NÃO rodou (timeout, 503).",
+        "A entrada era válida; não há o que corrigir.",
+        "Correto: resultado vazio é sucesso.",
+        "Todo `tool_use` precisa de `tool_result` correspondente."
+      ]
+    },
+    {
+      "pergunta": "Um erro de 'acima do limite de reembolso permitido pela política' deve ser classificado como:",
+      "opcoes": [
+        "Transitório, retentável com backoff",
+        "Negócio, não retentável: explicar a política ou escalar",
+        "Validação: corrigir o formato do valor e tentar de novo",
+        "Permissão: renovar o token e tentar de novo"
+      ],
+      "correta": 1,
+      "explicacao": "Violação de política é erro de negócio: tentar de novo nunca vai passar.",
+      "feedbacks": [
+        "Esperar não muda a política; retry aqui é desperdício.",
+        "Correto.",
+        "O formato estava certo; o problema é a regra de negócio.",
+        "Não é falta de credencial; é limite da política."
+      ]
+    },
+    {
+      "pergunta": "O backend de busca caiu e a tool devolveu `[]` como se fosse sucesso. Qual anti-padrão é esse?",
+      "opcoes": [
+        "Supressão silenciosa de erro",
+        "Erro genérico",
+        "Tool sobreposta",
+        "Excesso de tools no mesmo agente, confundindo a seleção"
+      ],
+      "correta": 0,
+      "explicacao": "Devolver vazio quando a busca não rodou esconde a falha: o modelo conclui algo falso ('não existe').",
+      "feedbacks": [
+        "Correto.",
+        "Erro genérico é 'Operation failed'; aqui nem há erro sinalizado.",
+        "Não tem relação com duas tools parecidas.",
+        "Não tem relação com quantidade de tools."
+      ]
+    },
+    {
+      "pergunta": "Qual a diretriz de quantidade de tools visíveis por agente no momento da decisão?",
+      "opcoes": [
+        "Até 50, desde que as descrições sejam boas",
+        "Exatamente uma, para evitar ambiguidade",
+        "Quantas couberem na janela de contexto",
+        "Cerca de 4–5"
+      ],
+      "correta": 3,
+      "explicacao": "4–5 tools por agente; com muito mais que isso a seleção degrada e a correção é distribuir em subagents especializados (ou tool search).",
+      "feedbacks": [
+        "Boas descrições não compensam volume.",
+        "Uma tool por agente gera overhead de coordenação sem ganho.",
+        "Caber na janela não significa selecionar bem.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Quando o tool search com `defer_loading` é indicado?",
+      "opcoes": [
+        "Sempre que houver mais de uma tool declarada, para economizar tokens em qualquer request",
+        "Só quando o modelo não suporta `tool_choice`",
+        "Com catálogo grande: 10+ tools, >10k tokens de definições ou vários servers MCP",
+        "Quando se quer impedir o modelo de chamar tools sem removê-las do request"
+      ],
+      "correta": 2,
+      "explicacao": "Tool search carrega definições sob demanda quando o catálogo é grande; mantenha 3–5 tools frequentes não deferidas.",
+      "feedbacks": [
+        "Com poucas tools o overhead da busca não compensa.",
+        "Não tem relação com `tool_choice`.",
+        "Correto.",
+        "Para impedir chamadas usa-se `tool_choice: none`."
+      ]
+    },
+    {
+      "pergunta": "Qual `tool_choice` faz o modelo responder só em texto, mantendo as tools declaradas no request?",
+      "opcoes": [
+        "`{\"type\": \"none\"}`",
+        "`{\"type\": \"auto\"}`",
+        "`{\"type\": \"any\"}`",
+        "Remover o array `tools`"
+      ],
+      "correta": 0,
+      "explicacao": "`none` = só texto, tools continuam declaradas (e o prefixo de cache não muda).",
+      "feedbacks": [
+        "Correto.",
+        "`auto` deixa o modelo decidir, então ele pode chamar tools.",
+        "`any` obriga a chamar alguma tool.",
+        "Remover `tools` muda o prefixo e invalida o cache; não é o mesmo que `none`."
+      ]
+    },
+    {
+      "pergunta": "O que `disable_parallel_tool_use: true` faz?",
+      "opcoes": [
+        "Desliga o uso de tools no request",
+        "Limita a no máximo uma chamada de tool por resposta",
+        "Faz o client executar as tools em sequência, mas o modelo ainda emite várias",
+        "Obriga o modelo a chamar exatamente duas tools"
+      ],
+      "correta": 1,
+      "explicacao": "Limita o modelo a uma chamada por resposta (com `any`/`tool`, exatamente uma).",
+      "feedbacks": [
+        "Para desligar tools usa-se `none`.",
+        "Correto.",
+        "A restrição é no que o modelo emite, não em como o client executa.",
+        "Não existe esse comportamento."
+      ]
+    },
+    {
+      "pergunta": "[volátil] Em modelos mais novos, `tool_choice` `any` ou `tool` forçado retornam 400. Se o objetivo era só obter JSON no formato certo, qual a alternativa?",
+      "opcoes": [
+        "Usar prefill do assistant com `{`",
+        "Repetir o request até não dar 400",
+        "Structured outputs (`output_config.format` com `json_schema`)",
+        "Usar `tool_choice: none` e pedir no prompt que a resposta venha em JSON válido"
+      ],
+      "correta": 2,
+      "explicacao": "Structured outputs resolve 'sempre JSON no schema'; outra saída é `auto` + instrução nomeando a tool + `strict`.",
+      "feedbacks": [
+        "Prefill também retorna 400 nos modelos novos.",
+        "400 é erro de request inválido; repetir não adianta.",
+        "Correto.",
+        "Pedir JSON em prosa não garante formato."
+      ]
+    },
+    {
+      "pergunta": "Como são declaradas as tools definidas pela Anthropic (ex.: web search)?",
+      "opcoes": [
+        "Com `name`, `description` e `input_schema` completos",
+        "Apenas via servidor MCP",
+        "Com `strict: true` obrigatório",
+        "Por `type` + `name`, sem `input_schema`"
+      ],
+      "correta": 3,
+      "explicacao": "Tools Anthropic-defined usam `type` versionado + `name`; o schema já é conhecido pelo modelo.",
+      "feedbacks": [
+        "Isso é o formato de tool client-side customizada.",
+        "Não dependem de MCP.",
+        "Strict é para tools customizadas.",
+        "Correto."
+      ]
+    },
+    {
+      "pergunta": "Uma tool server-side de web search falhou. Como isso aparece para o seu código?",
+      "opcoes": [
+        "HTTP 200, com um objeto de erro dentro do bloco de resultado",
+        "HTTP 500 com a mensagem de erro da ferramenta no corpo da resposta",
+        "HTTP 429 sempre",
+        "A resposta vem vazia, sem `content`"
+      ],
+      "correta": 0,
+      "explicacao": "Erros de tool server-side vêm com HTTP 200 e erro dentro do resultado (ex.: `max_uses_exceeded`). Checar só o status HTTP não detecta.",
+      "feedbacks": [
+        "Correto.",
+        "Tentador porque é como APIs costumam falhar, mas não é o caso aqui.",
+        "Rate limit é outra coisa e não é o mecanismo de erro da tool.",
+        "A resposta vem normal, com o erro dentro do bloco."
+      ]
+    },
+    {
+      "pergunta": "O modelo emitiu três `tool_use` numa resposta e um deles falhou. Como devolver?",
+      "opcoes": [
+        "Três mensagens `user` separadas, uma por resultado, na ordem em que cada tool terminou",
+        "Uma mensagem `user` só com os dois que deram certo",
+        "Uma mensagem `user` com os três `tool_result`; o que falhou com `is_error: true`",
+        "Reenviar o request sem a tool que falhou, para o modelo não insistir nela"
+      ],
+      "correta": 2,
+      "explicacao": "Todos os `tool_result` numa única mensagem `user`, cada um com seu `tool_use_id`, inclusive o que falhou.",
+      "feedbacks": [
+        "Separar em várias mensagens quebra o padrão de devolução.",
+        "Todo `tool_use` precisa do seu `tool_result`.",
+        "Correto.",
+        "Mudar as tools invalida cache e esconde a falha do modelo."
+      ]
+    },
+    {
+      "pergunta": "A resposta veio com `stop_reason: \"pause_turn\"`. O que fazer?",
+      "opcoes": [
+        "Tratar como fim e mostrar o texto ao usuário",
+        "Reenviar a conversa com essa resposta do assistant para o modelo continuar",
+        "Aumentar `max_tokens` e repetir o request do zero, já que a resposta foi cortada",
+        "Escalar para um humano"
+      ],
+      "correta": 1,
+      "explicacao": "`pause_turn` = o loop server-side bateu no teto de iterações; a resposta é parcial e deve ser reenviada para continuar.",
+      "feedbacks": [
+        "A resposta é parcial; tratar como fim entrega resultado incompleto.",
+        "Correto.",
+        "Isso seria resposta para `max_tokens`, não para `pause_turn`.",
+        "Não há nada que exija humano; é continuação técnica."
+      ]
+    }
+  ]
+}
