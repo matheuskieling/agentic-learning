@@ -1,309 +1,308 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-01/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-02/questions.json",
   "bank": {
-    "titulo": "Módulo 01 — Quiz: o exame, a Messages API e a superfície de request",
+    "titulo": "Módulo 02 — Quiz: critérios explícitos, few-shot e refinamento iterativo",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Quantos cenários aparecem numa aplicação da prova CCAR-F?",
+        "pergunta": "Um prompt diz 'sinalize apenas problemas relevantes'. Qual o efeito esperado?",
         "opcoes": [
-          "Os 6 cenários do banco, sempre",
-          "4 cenários sorteados de um banco de 6",
-          "2 cenários fixos e 2 sorteados",
-          "Um cenário por domínio do exame, ou seja, 5 cenários no total"
-        ],
-        "correta": 1,
-        "explicacao": "A prova sorteia 4 dos 6 cenários do banco, e as questões se penduram neles.",
-        "feedbacks": [
-          "Errado: são 6 no banco, mas só 4 entram em cada aplicação.",
-          "Correto: 4 de 6, sorteados.",
-          "Errado: não há cenários fixos; todos vêm do sorteio.",
-          "Errado: cenários não correspondem 1:1 a domínios; um cenário mistura vários domínios."
-        ]
-      },
-      {
-        "pergunta": "Qual domínio tem o MAIOR peso na prova?",
-        "opcoes": [
-          "D4 — Prompt engineering & saída estruturada",
-          "D3 — Configuração & workflows do Claude Code",
-          "D2 — Design de tools & integração MCP",
-          "D1 — Arquitetura agêntica & orquestração"
-        ],
-        "correta": 3,
-        "explicacao": "D1 pesa 27%; D3 e D4 pesam 20% cada, D2 18% e D5 15%.",
-        "feedbacks": [
-          "Errado: D4 pesa 20%.",
-          "Errado: D3 pesa 20%.",
-          "Errado: D2 pesa 18%.",
-          "Correto: D1 = 27%, mais de um quarto da prova."
-        ]
-      },
-      {
-        "pergunta": "Você está com 3 minutos restantes e 4 questões sem resposta. Qual a melhor conduta?",
-        "opcoes": [
-          "Marcar uma alternativa em todas, já que não há penalidade por chute",
-          "Deixar em branco as que não sabe, para não perder pontos",
-          "Responder só as de resposta única e deixar as 'Escolha DUAS' em branco",
-          "Revisar as já respondidas em vez de responder as novas"
-        ],
-        "correta": 0,
-        "explicacao": "Sem penalidade por chute, resposta em branco é ponto perdido com certeza; chutar só pode ajudar.",
-        "feedbacks": [
-          "Correto: sem penalidade, sempre marque.",
-          "Errado: não há desconto por erro; branco vale zero de qualquer forma.",
-          "Errado: mesmo nas de múltipla resposta, chutar tem chance de acerto; branco não tem.",
-          "Errado: revisar não compensa deixar questões sem resposta."
-        ]
-      },
-      {
-        "pergunta": "Uma alternativa propõe impor o limite de reembolso de US$ 500 apenas com uma instrução enfática no system prompt. Que princípio da prova ela viola?",
-        "opcoes": [
-          "Medir antes de mexer",
-          "Usar few-shot para casos de borda",
-          "Regra crítica (financeira) vai em código determinístico, não em prompt",
-          "Preferir sempre o modelo mais capaz"
+          "Comportamento conservador e estável",
+          "Menos tokens de saída e mais precisão",
+          "Resultados inconsistentes entre execuções",
+          "O modelo pede esclarecimento antes de responder"
         ],
         "correta": 2,
-        "explicacao": "Prompt é probabilístico, com taxa de falha não nula. Limite financeiro exige enforcement determinístico (hook/validação).",
+        "explicacao": "Termos vagos são interpretados de forma diferente a cada chamada; o critério precisa ser explícito.",
         "feedbacks": [
-          "Errado: medir é importante, mas o problema aqui é onde a regra é imposta.",
-          "Errado: few-shot continua sendo prompt; não dá garantia.",
-          "Correto: consequência financeira → hook ou validação em código.",
-          "Errado: nenhum modelo transforma prompt em garantia."
+          "Errado: 'relevante' sem definição não produz estabilidade.",
+          "Errado: não há garantia de precisão sem critério.",
+          "Correto: vago → inconsistente.",
+          "Errado: o modelo normalmente interpreta por conta própria, sem perguntar."
         ]
       },
       {
-        "pergunta": "Qual destas é a forma CORRETA de o loop decidir se o agente terminou?",
+        "pergunta": "Quais são os três componentes de um critério explícito?",
         "opcoes": [
-          "Procurar a palavra 'FINAL' no texto da resposta",
-          "Checar o stop_reason da resposta",
-          "Parar quando a resposta não tiver nenhum bloco de texto",
-          "Parar após 10 iterações"
-        ],
-        "correta": 1,
-        "explicacao": "stop_reason é o sinal de controle do loop: tool_use continua, end_turn termina.",
-        "feedbacks": [
-          "Errado: anti-padrão #1, ler linguagem natural para decidir o fim.",
-          "Correto: stop_reason decide.",
-          "Errado: presença ou ausência de texto não indica fim; texto e tool_use podem coexistir.",
-          "Errado: anti-padrão #2, limite arbitrário como mecanismo principal (só serve de backstop)."
-        ]
-      },
-      {
-        "pergunta": "A resposta do modelo contém um bloco text ('Vou verificar o pedido') e um bloco tool_use. O que isso significa?",
-        "opcoes": [
-          "Ainda não terminou: execute a tool e devolva o resultado",
-          "O modelo terminou; o tool_use é só informativo",
-          "A resposta está malformada e deve ser descartada",
-          "Você deve escolher entre exibir o texto ou executar a tool"
+          "O que conta, o que não conta e exemplos de fronteira",
+          "Papel, tom e formato",
+          "Instrução, ênfase em maiúsculas e uma nota de confiança autodeclarada",
+          "Objetivo, prazo e responsável"
         ],
         "correta": 0,
-        "explicacao": "content pode misturar text e tool_use. Com stop_reason tool_use, execute a tool e continue o loop.",
+        "explicacao": "Definição positiva, exclusões e casos ambíguos tornam o julgamento reprodutível.",
         "feedbacks": [
-          "Correto: ter texto não significa que terminou.",
-          "Errado: tool_use é um pedido de execução, não um comentário.",
-          "Errado: misturar blocos é normal e válido.",
-          "Errado: não há escolha; o texto é preâmbulo e a tool precisa rodar."
+          "Correto.",
+          "Errado: são boas práticas de system prompt, não de critério de julgamento.",
+          "Errado: ênfase e confiança autodeclarada não definem critério.",
+          "Errado: isso é gestão de tarefa, não critério."
         ]
       },
       {
-        "pergunta": "O modelo pediu 3 tools na mesma resposta e uma delas falhou. Como devolver os resultados?",
+        "pergunta": "A categoria 'nomenclatura' de um bot de review tem 55% de falso positivo, e os devs passaram a ignorar também os alertas de segurança. Qual a correção?",
         "opcoes": [
-          "Três mensagens user separadas, uma por tool_result",
-          "Só os dois resultados de sucesso, omitindo o que falhou",
-          "Uma mensagem user com o primeiro resultado e reenviar o restante depois",
-          "Uma mensagem user com os três tool_result (falha com is_error: true)"
+          "Desligar o bot inteiro até resolver",
+          "Pedir no prompt para o bot errar menos em nomenclatura",
+          "Adicionar um segundo modelo para filtrar os comentários de todas as categorias",
+          "Desligar só a categoria nomenclatura, refinar e religar"
         ],
         "correta": 3,
-        "explicacao": "Todos os tool_result vão numa única mensagem user, cada um com seu tool_use_id; a falha recebe is_error: true para o modelo raciocinar sobre a recuperação.",
+        "explicacao": "Desliga, refina, religa: preserva as categorias boas e recupera a confiança.",
         "feedbacks": [
-          "Errado: espalhar resultados em várias mensagens quebra o protocolo e desestimula chamadas paralelas.",
-          "Errado: omitir a falha é suprimir erro (anti-padrão #7) e deixa um tool_use sem resultado.",
-          "Errado: todos os resultados pendentes devem ir juntos.",
-          "Correto: uma mensagem, três resultados, falha sinalizada."
+          "Errado: joga fora as categorias que funcionam.",
+          "Errado: instrução vaga não resolve critério vago.",
+          "Errado: mais complexo que o necessário; o problema é o critério.",
+          "Correto."
         ]
       },
       {
-        "pergunta": "O que liga um tool_result ao pedido de tool que o originou?",
+        "pergunta": "Por que uma categoria com muitos falsos positivos é perigosa mesmo que as outras categorias sejam boas?",
         "opcoes": [
-          "O nome da tool",
-          "A ordem dos blocos na mensagem",
-          "O tool_use_id igual ao id do bloco tool_use",
-          "O índice da mensagem no histórico"
+          "Porque aumenta o custo de tokens",
+          "Corrói a confiança no sistema inteiro: ignoram tudo",
+          "Porque o modelo aprende com os próprios erros entre chamadas e piora com o tempo",
+          "Porque invalida o prompt caching"
+        ],
+        "correta": 1,
+        "explicacao": "Confiança é do sistema: ruído numa categoria faz ignorar os acertos das outras.",
+        "feedbacks": [
+          "Errado: custo não é o problema central.",
+          "Correto.",
+          "Errado: o modelo não aprende entre chamadas.",
+          "Errado: nada a ver com caching."
+        ]
+      },
+      {
+        "pergunta": "Qual a quantidade e composição recomendadas de exemplos few-shot?",
+        "opcoes": [
+          "Um único exemplo do caso mais comum",
+          "Dezenas de exemplos para cobrir tudo",
+          "2–4 exemplos variados, cada um com entrada, saída e raciocínio",
+          "4 exemplos idênticos para reforçar o formato"
         ],
         "correta": 2,
-        "explicacao": "Cada tool_result referencia o id exato do tool_use correspondente em tool_use_id.",
+        "explicacao": "Poucos exemplos direcionados e variados, com raciocínio, ensinam o padrão.",
         "feedbacks": [
-          "Errado: a mesma tool pode ser chamada várias vezes; o nome não identifica a chamada.",
-          "Errado: a ligação é por id, não por posição.",
-          "Correto: tool_use_id exato.",
-          "Errado: índice de mensagem não é usado para isso."
+          "Errado: um exemplo do caso fácil não ensina a fronteira.",
+          "Errado: custo alto e risco de o modelo se prender à superfície.",
+          "Correto.",
+          "Errado: exemplos idênticos ensinam só o caso fácil."
         ]
       },
       {
-        "pergunta": "Uma extração passou a devolver JSON cortado no final em documentos longos. Qual stop_reason você espera ver?",
+        "pergunta": "Por que incluir o raciocínio em cada exemplo few-shot?",
         "opcoes": [
-          "max_tokens",
-          "stop_sequence",
-          "refusal",
-          "pause_turn"
+          "Para aumentar o número de tokens e melhorar o cache",
+          "Para o modelo generalizar o critério em vez de copiar só o formato",
+          "Porque a API exige um campo de raciocínio",
+          "Para substituir a instrução principal"
+        ],
+        "correta": 1,
+        "explicacao": "O raciocínio mostra POR QUE a saída é aquela; o modelo aprende a regra, não a superfície.",
+        "feedbacks": [
+          "Errado: não é sobre cache.",
+          "Correto.",
+          "Errado: não há tal exigência.",
+          "Errado: exemplos complementam a instrução, não a substituem."
+        ]
+      },
+      {
+        "pergunta": "Um extrator inventa a data de vencimento quando ela não aparece no documento. Qual técnica de prompt ajuda diretamente?",
+        "opcoes": [
+          "Few-shot mostrando um documento sem a data e a saída com o campo null",
+          "Pedir para o modelo ser mais honesto",
+          "Aumentar max_tokens",
+          "Remover o campo do schema"
         ],
         "correta": 0,
-        "explicacao": "Saída truncada no teto de saída gera stop_reason max_tokens; aumente o limite ou continue.",
+        "explicacao": "Few-shot reduz alucinação em extração mostrando o comportamento esperado para dado ausente (null).",
         "feedbacks": [
-          "Correto: bateu no teto de saída.",
-          "Errado: stop_sequence indica que o modelo bateu numa sequência de parada configurada, não truncamento.",
-          "Errado: refusal é recusa por segurança.",
-          "Errado: pause_turn é do loop de tools server-side."
+          "Correto (combinado a um campo nullable no schema, Módulo 03).",
+          "Errado: instrução vaga.",
+          "Errado: não tem relação com invenção de dado.",
+          "Errado: o campo é necessário quando existe."
         ]
       },
       {
-        "pergunta": "Por que uma recusa do modelo pode passar despercebida em código que só verifica o status HTTP?",
+        "pergunta": "Onde colocar o texto de um contrato enviado pelo usuário num prompt de análise?",
         "opcoes": [
-          "Porque a recusa vem com HTTP 500",
-          "Porque a recusa chega com HTTP 200 e stop_reason refusal",
-          "Porque a recusa só aparece nos logs do servidor",
-          "Porque a recusa vem como exceção de timeout"
-        ],
-        "correta": 1,
-        "explicacao": "Recusa é uma resposta bem-sucedida do ponto de vista HTTP; o sinal está em stop_reason: refusal.",
-        "feedbacks": [
-          "Errado: não é erro de servidor.",
-          "Correto: HTTP 200 + stop_reason refusal.",
-          "Errado: ela vem na própria resposta.",
-          "Errado: não é timeout."
-        ]
-      },
-      {
-        "pergunta": "Qual afirmação sobre o Tool Runner está correta?",
-        "opcoes": [
-          "É o mesmo produto que o Claude Agent SDK",
-          "Hospeda o loop e um sandbox por sessão na infraestrutura da Anthropic, com configs versionadas",
-          "Traz tools nativas como Read, Edit e Bash",
-          "Um helper do SDK da API que roda o loop das suas tools, na sua infra"
+          "Misturado às instruções, para dar contexto",
+          "No nome da tool",
+          "Depois da pergunta, no fim do prompt",
+          "Dentro de uma tag como <contrato>, separado das instruções"
         ],
         "correta": 3,
-        "explicacao": "O Tool Runner automatiza request → executar → repetir só para as suas tools. Tools nativas são do Agent SDK; hospedagem é do Managed Agents.",
+        "explicacao": "Tags XML separam dados de instruções e permitem referenciar o conteúdo. Documentos longos vão no início, pergunta no fim.",
         "feedbacks": [
-          "Errado: Tool Runner ≠ Agent SDK (pegadinha clássica).",
-          "Errado: isso descreve o Managed Agents.",
-          "Errado: tools nativas vêm com o Agent SDK.",
-          "Correto: só o loop, só as suas tools, na sua infra."
+          "Errado: misturar faz o modelo confundir conteúdo com ordem.",
+          "Errado: não faz sentido.",
+          "Errado: documentos longos vão antes da pergunta.",
+          "Correto."
         ]
       },
       {
-        "pergunta": "Em modelos recentes, como se pede ao modelo que decida sozinho quanto pensar?",
+        "pergunta": "Num julgamento complexo (aprovar ou não um sinistro), qual prática melhora a qualidade e a auditabilidade?",
         "opcoes": [
-          "thinking: {type: enabled, budget_tokens: 8000}",
-          "temperature: 0",
-          "thinking: {type: adaptive}",
-          "Um prefill do assistant começando com '<thinking>'"
+          "Pedir o veredito primeiro e a justificativa depois",
+          "Pedir só o veredito, para economizar tokens",
+          "Pedir a análise/evidências antes do veredito",
+          "Pedir uma nota de confiança de 0 a 100"
         ],
         "correta": 2,
-        "explicacao": "Adaptive thinking substitui budget_tokens; nos modelos novos budget_tokens retorna 400.",
+        "explicacao": "Raciocínio antes da resposta: as evidências fundamentam a decisão e ficam auditáveis.",
         "feedbacks": [
-          "Errado: budget_tokens é o formato antigo e retorna 400 nos modelos novos.",
-          "Errado: temperatura não controla raciocínio e é rejeitada nos modelos novos.",
-          "Correto: adaptive.",
-          "Errado: prefill retorna 400 nos modelos novos."
+          "Errado: justificativa depois tende a racionalizar uma decisão já tomada.",
+          "Errado: perde a auditabilidade.",
+          "Correto.",
+          "Errado: confiança autodeclarada é mal calibrada."
         ]
       },
       {
-        "pergunta": "Onde o parâmetro effort é colocado no request?",
+        "pergunta": "Após três tentativas de explicar em texto uma transformação de datas, o Claude Code continua errando casos de borda. Qual a próxima melhor ação?",
         "opcoes": [
-          "No topo do request, ao lado de model",
-          "Dentro de output_config",
-          "Dentro do bloco thinking",
-          "No system prompt, como texto"
+          "2–3 pares concretos de entrada → saída, incluindo as bordas",
+          "Explicar novamente com mais detalhes, em maiúsculas e com a especificação completa do formato",
+          "Trocar para um modelo maior",
+          "Pedir para o Claude 'pensar mais'"
         ],
-        "correta": 1,
-        "explicacao": "effort fica em output_config (low/medium/high/xhigh/max).",
+        "correta": 0,
+        "explicacao": "Exemplos concretos batem prosa quando a descrição não está funcionando.",
         "feedbacks": [
-          "Errado: não é parâmetro de topo.",
-          "Correto: output_config.effort.",
-          "Errado: thinking só define o modo (adaptive).",
-          "Errado: effort é parâmetro da API, não instrução textual."
+          "Correto.",
+          "Errado: mais prosa repete o que não funcionou.",
+          "Errado: pula a correção mais simples.",
+          "Errado: não dá o alvo concreto que falta."
         ]
       },
       {
-        "pergunta": "Um time vai migrar para um modelo mais novo. Qual é o passo que o exame espera?",
+        "pergunta": "No TDD com o Claude, qual é o fluxo?",
         "opcoes": [
-          "Trocar o model ID direto em produção e monitorar a taxa de erros 400 nas primeiras horas",
-          "Copiar os mesmos parâmetros, já que a API é a mesma",
-          "Aumentar max_tokens para compensar mudanças",
-          "Testar a forma do request no modelo novo e re-calibrar effort"
+          "Pedir a implementação primeiro e, depois, pedir testes que passem nela",
+          "Escrever a implementação e pedir ao Claude para revisar",
+          "Pedir ao Claude que descreva os testes que faria",
+          "Testes que falham → compartilhar as falhas → iterar até passarem"
         ],
         "correta": 3,
-        "explicacao": "Parâmetros aceitos mudam por modelo (budget_tokens, sampling, prefill, tool_choice forçado podem dar 400); teste e re-calibre antes.",
+        "explicacao": "Testes falhando definem o alvo verificável; o Claude itera até passarem.",
         "feedbacks": [
-          "Errado: descobrir 400 em produção é exatamente o que se quer evitar.",
-          "Errado: o endpoint é o mesmo, mas a superfície aceita muda por modelo.",
-          "Errado: não ataca o problema de parâmetros rejeitados.",
-          "Correto: teste a forma do request e re-calibre."
+          "Errado: testes escritos depois tendem a validar o que já existe, inclusive bugs.",
+          "Errado: isso é revisão, não TDD.",
+          "Errado: descrever não é executar.",
+          "Correto."
         ]
       },
       {
-        "pergunta": "Um dev quer garantir JSON consistente num modelo novo. Quais DUAS abordagens são válidas? (Escolha DUAS.)",
+        "pergunta": "A especificação de uma feature tem várias decisões de negócio em aberto. Qual técnica usar antes de implementar?",
         "opcoes": [
-          "Prefill do assistant começando com '{'",
-          "temperature: 0 e top_p: 0.1",
-          "Structured outputs via output_config.format com um JSON schema",
-          "Aumentar budget_tokens para o modelo pensar mais no formato",
-          "Instrução clara de formato no system prompt"
+          "Implementar direto e corrigir depois",
+          "Entrevista: o Claude pergunta antes de implementar",
+          "Dividir em 10 mensagens independentes",
+          "Usar few-shot com features parecidas de outro projeto da empresa"
+        ],
+        "correta": 1,
+        "explicacao": "A entrevista expõe premissas ocultas cedo, antes de o código seguir na direção errada.",
+        "feedbacks": [
+          "Errado: descobre as premissas erradas tarde demais.",
+          "Correto.",
+          "Errado: não resolve as decisões em aberto.",
+          "Errado: exemplos de outro contexto não respondem às decisões deste."
+        ]
+      },
+      {
+        "pergunta": "Você tem dois bugs na mesma função de cálculo de frete. Como pedir a correção ao Claude?",
+        "opcoes": [
+          "Os dois numa mesma mensagem, porque interagem",
+          "Um por vez, em sessões diferentes",
+          "Só o mais grave; o outro depois de uma semana",
+          "Junto com todos os outros bugs abertos do projeto"
+        ],
+        "correta": 0,
+        "explicacao": "Problemas relacionados vão juntos para o Claude ver a interação e não corrigir um quebrando o outro.",
+        "feedbacks": [
+          "Correto.",
+          "Errado: separar problemas que interagem causa correções que se atropelam.",
+          "Errado: não há motivo para adiar; eles se afetam.",
+          "Errado: misturar problemas independentes gera mudança gigante e difícil de revisar."
+        ]
+      },
+      {
+        "pergunta": "Qual instrução tende a funcionar melhor nos modelos recentes?",
+        "opcoes": [
+          "'É EXTREMAMENTE IMPORTANTE QUE VOCÊ NUNCA ESQUEÇA O CAMPO ID!!!'",
+          "'Faça o melhor possível.'",
+          "'Inclua sempre o campo id: ele concilia com o ERP.'",
+          "'Use seu bom senso sobre os campos.'"
+        ],
+        "correta": 2,
+        "explicacao": "Instrução direta e com o porquê funciona melhor que ênfase; modelos novos seguem instruções com precisão.",
+        "feedbacks": [
+          "Errado: ênfase exagerada pode gerar excesso de zelo e não acrescenta informação.",
+          "Errado: vago.",
+          "Correto: clara e com motivo.",
+          "Errado: vago, gera inconsistência."
+        ]
+      },
+      {
+        "pergunta": "Um classificador de tickets varia o rótulo para casos parecidos. Quais DUAS ações são o primeiro passo adequado? (Escolha DUAS.)",
+        "opcoes": [
+          "Adicionar um segundo modelo que vota contra o primeiro",
+          "Definir para cada categoria o que conta, o que não conta e casos de fronteira",
+          "Pedir ao modelo uma nota de confiança e descartar as baixas",
+          "Adicionar 2–4 exemplos variados com raciocínio cobrindo os casos ambíguos",
+          "Fixar temperature em 0"
         ],
         "corretas": [
-          2,
-          4
+          1,
+          3
         ],
-        "explicacao": "Prefill, sampling e budget_tokens são rejeitados nos modelos novos. Structured outputs dá garantia de schema; instrução no system é o substituto textual.",
+        "explicacao": "Critério explícito + few-shot são os degraus mais simples que atacam a causa (critério vago).",
         "feedbacks": [
-          "Errado: prefill retorna 400 nos modelos novos.",
-          "Errado: parâmetros de sampling são rejeitados nos modelos novos e não garantem formato.",
-          "Correto: garantia estrutural.",
-          "Errado: budget_tokens retorna 400 nos modelos novos e não garante formato.",
-          "Correto: substituto recomendado para prefill quando não se usa structured outputs."
+          "Errado: degrau 4, sem antes definir o critério.",
+          "Correto.",
+          "Errado: confiança autodeclarada é mal calibrada.",
+          "Correto.",
+          "Errado: sampling é rejeitado nos modelos novos e não define critério."
         ]
       }
     ]
   },
   "order": [
     6,
-    14,
-    13,
-    2,
-    9,
-    7,
+    0,
     8,
+    12,
+    4,
+    2,
     10,
     3,
-    5,
-    1,
-    4,
+    13,
     11,
-    0,
-    12
+    9,
+    1,
+    5,
+    14,
+    7
   ],
   "pos": 15,
   "answers": [
     {
       "pos": 0,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 1,
       "escolha": [
-        2,
-        4
+        2
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
@@ -317,28 +316,28 @@
     {
       "pos": 4,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 5,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 6,
       "escolha": [
-        0
+        3
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     },
@@ -352,42 +351,43 @@
     {
       "pos": 9,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 13,
       "escolha": [
-        1
+        1,
+        3
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     }
