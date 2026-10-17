@@ -6,7 +6,7 @@ alternativa** (`feedbacks`). Aprovação: **70%**.
 ```bash
 python3 engine/session.py start Claude-Architect/provas/modulo-NN/questions.json --id prova
 python3 engine/session.py answer C --id prova
-python3 engine/session.py answer A,D --id prova        # múltipla resposta ("Escolha DUAS")
+python3 engine/session.py answer A,D --id prova        # múltipla resposta ("Choose TWO")
 python3 Claude-Architect/provas/modulo-NN/prova.py     # modo solo
 ```
 

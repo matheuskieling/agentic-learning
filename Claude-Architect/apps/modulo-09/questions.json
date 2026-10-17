@@ -1,94 +1,94 @@
 {
-  "titulo": "Módulo 09 — Claude Code em CI/CD e refinamento iterativo (quiz de fixação)",
+  "titulo": "Module 09 — Claude Code in CI/CD and iterative refinement (review quiz)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "O Claude gera notas de release num formato quase certo, mas que varia entre execuções. As instruções em prosa já foram reescritas duas vezes. Qual o próximo passo mais eficaz?",
+      "pergunta": "Claude generates release notes in an almost-right format, but one that varies between runs. The prose instructions have already been rewritten twice. What is the most effective next step?",
       "opcoes": [
-        "Reescrever a instrução em prosa com mais ênfase e palavras em MAIÚSCULAS",
-        "Incluir 2–3 exemplos concretos de entrada → saída, cobrindo um caso de borda",
-        "Trocar para um modelo maior",
-        "Pedir \"use seu bom senso para manter o formato consistente\""
+        "Rewrite the prose instruction with more emphasis and words in CAPITAL LETTERS",
+        "Include 2–3 concrete input → output examples, covering an edge case",
+        "Switch to a larger model",
+        "Ask it to \"use your good judgment to keep the format consistent\""
       ],
       "correta": 1,
-      "explicacao": "Exemplos concretos comunicam formato e bordas melhor que prosa; o modelo imita o padrão.",
+      "explicacao": "Concrete examples convey format and edge cases better than prose; the model imitates the pattern.",
       "feedbacks": [
-        "Mais ênfase na mesma prosa raramente resolve a variação.",
-        "Correto.",
-        "Solução mais cara que não ataca a causa (ambiguidade do formato).",
-        "Critério vago gera exatamente a inconsistência observada."
+        "More emphasis on the same prose rarely fixes the variation.",
+        "Correct.",
+        "A more expensive solution that doesn't attack the cause (format ambiguity).",
+        "A vague criterion produces exactly the inconsistency observed."
       ]
     },
     {
-      "pergunta": "No fluxo de TDD com o Claude Code, qual regra preserva o valor dos testes como critério de pronto?",
+      "pergunta": "In the TDD workflow with Claude Code, which rule preserves the value of the tests as the definition of done?",
       "opcoes": [
-        "Escrever os testes depois da implementação, para refletirem o código final",
-        "Deixar o Claude ajustar os testes quando eles parecerem rígidos demais",
-        "Rodar os testes só no final, uma vez",
-        "Escrever os testes primeiro, devolver as falhas ao Claude e não permitir que ele altere os testes para passar"
+        "Write the tests after the implementation, so they reflect the final code",
+        "Let Claude adjust the tests when they seem too rigid",
+        "Run the tests only at the end, once",
+        "Write the tests first, feed the failures back to Claude, and don't allow it to change the tests to make them pass"
       ],
       "correta": 3,
-      "explicacao": "O teste é o alvo verificável; se o Claude puder mudá-lo, o critério deixa de existir.",
+      "explicacao": "The test is the verifiable target; if Claude can change it, the criterion ceases to exist.",
       "feedbacks": [
-        "Testes escritos depois tendem a validar o que foi feito, não o que era esperado.",
-        "Abre a porta para \"passar\" mudando o alvo.",
-        "Perde o ciclo de iteração com as falhas.",
-        "Correto."
+        "Tests written afterward tend to validate what was done, not what was expected.",
+        "It opens the door to \"passing\" by moving the target.",
+        "It loses the iteration cycle driven by the failures.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "O PO pediu \"um módulo de comissões para vendedores\" em duas linhas, num domínio que o time não conhece. Qual técnica usar antes de qualquer código?",
+      "pergunta": "The PO asked for \"a commissions module for salespeople\" in two lines, in a domain the team doesn't know. Which technique should you use before writing any code?",
       "opcoes": [
-        "Pedir que o Claude entreviste você com perguntas de esclarecimento antes de implementar",
-        "Pedir a implementação direta e corrigir na revisão",
-        "Usar `--max-turns 50` para o Claude ter espaço de explorar",
-        "Mandar o pedido via Batch API para economizar"
+        "Ask Claude to interview you with clarifying questions before implementing",
+        "Ask for the implementation directly and fix it in review",
+        "Use `--max-turns 50` so Claude has room to explore",
+        "Send the request via the Batch API to save money"
       ],
       "correta": 0,
-      "explicacao": "Requisito vago + domínio desconhecido → entrevista: o Claude levanta regras e bordas antes de gastar uma implementação.",
+      "explicacao": "Vague requirement + unfamiliar domain → interview: Claude surfaces rules and edge cases before spending effort on an implementation.",
       "feedbacks": [
-        "Correto.",
-        "Gera retrabalho na base do \"não era isso\".",
-        "Mais turnos não resolvem a ambiguidade do requisito.",
-        "Batch não tem relação com clareza de requisito."
+        "Correct.",
+        "It causes rework along the lines of \"that's not what I meant\".",
+        "More turns don't resolve the requirement's ambiguity.",
+        "Batch has nothing to do with requirement clarity."
       ]
     },
     {
-      "pergunta": "Dois bugs na mesma `CalculadoraDePedido`: o arredondamento do total depende da ordem em que os descontos são aplicados, e essa ordem está errada. Como enviar ao Claude?",
+      "pergunta": "Two bugs in the same `OrderCalculator`: the rounding of the total depends on the order in which discounts are applied, and that order is wrong. How should you send them to Claude?",
       "opcoes": [
-        "Em duas sessões separadas, uma por bug",
-        "Primeiro o arredondamento; o da ordem fica para outra semana",
-        "Numa mensagem só, porque os problemas interagem",
-        "Junto com todos os outros 10 bugs abertos do backlog"
+        "In two separate sessions, one per bug",
+        "The rounding one first; the ordering one can wait until another week",
+        "In a single message, because the problems interact",
+        "Together with all the other 10 open bugs in the backlog"
       ],
       "correta": 2,
-      "explicacao": "Problemas relacionados vão juntos para o Claude ver o todo; independentes vão em sequência.",
+      "explicacao": "Related problems go together so Claude sees the whole picture; independent ones go in sequence.",
       "feedbacks": [
-        "Separar problemas acoplados faz uma correção desfazer a outra.",
-        "Corrigir um isoladamente pode ser invalidado pela correção do outro.",
-        "Correto.",
-        "Misturar com problemas independentes gera diff irrevisável."
+        "Splitting coupled problems makes one fix undo the other.",
+        "Fixing one in isolation can be invalidated by the fix for the other.",
+        "Correct.",
+        "Mixing in independent problems produces an unreviewable diff."
       ]
     },
     {
-      "pergunta": "Um job de CI executa `claude \"corrija os avisos de lint\"` e fica pendurado até o timeout. Qual a causa?",
+      "pergunta": "A CI job runs `claude \"fix the lint warnings\"` and hangs until it times out. What is the cause?",
       "opcoes": [
-        "Faltou `--max-turns`",
-        "Faltou `-p`: sem ele o Claude Code abre a sessão interativa e espera input",
-        "O runner não tem acesso ao CLAUDE.md",
-        "Faltou `--output-format json`"
+        "`--max-turns` was missing",
+        "`-p` was missing: without it, Claude Code opens the interactive session and waits for input",
+        "The runner doesn't have access to CLAUDE.md",
+        "`--output-format json` was missing"
       ],
       "correta": 1,
-      "explicacao": "`-p` (ou `--print`) é o modo não interativo: executa, imprime e sai.",
+      "explicacao": "`-p` (or `--print`) is non-interactive mode: it executes, prints, and exits.",
       "feedbacks": [
-        "Limita turnos, mas não tira o processo do modo interativo.",
-        "Correto.",
-        "Sem CLAUDE.md ele ainda rodaria; não explica o travamento.",
-        "Formato de saída não muda o modo interativo."
+        "It limits turns, but doesn't take the process out of interactive mode.",
+        "Correct.",
+        "Without CLAUDE.md it would still run; that doesn't explain the hang.",
+        "The output format doesn't change interactive mode."
       ]
     },
     {
-      "pergunta": "Usando `claude -p ... --output-format json --json-schema '<schema>'`, em qual campo do JSON de saída vem a resposta conforme ao schema?",
+      "pergunta": "Using `claude -p ... --output-format json --json-schema '<schema>'`, in which field of the output JSON does the schema-conforming response appear?",
       "opcoes": [
         "`structured_output`",
         "`result`",
@@ -96,50 +96,50 @@
         "`session_id`"
       ],
       "correta": 0,
-      "explicacao": "Com `--json-schema`, a resposta validada vem em `structured_output`; `result` traz o texto.",
+      "explicacao": "With `--json-schema`, the validated response comes in `structured_output`; `result` contains the text.",
       "feedbacks": [
-        "Correto.",
-        "`result` é o texto final; o objeto conforme ao schema fica em `structured_output`.",
-        "Esse é o formato da Messages API, não da saída do `claude -p`.",
-        "É o identificador da sessão."
+        "Correct.",
+        "`result` is the final text; the schema-conforming object is in `structured_output`.",
+        "That's the Messages API format, not the output of `claude -p`.",
+        "It's the session identifier."
       ]
     },
     {
-      "pergunta": "Um painel interno quer mostrar, em tempo real, cada passo que o Claude dá durante um job de CI. Qual formato de saída usar?",
+      "pergunta": "An internal dashboard needs to show, in real time, each step Claude takes during a CI job. Which output format should you use?",
       "opcoes": [
         "`--output-format text`",
         "`--output-format json`",
-        "`--json-schema` sem `--output-format`",
+        "`--json-schema` without `--output-format`",
         "`--output-format stream-json`"
       ],
       "correta": 3,
-      "explicacao": "`stream-json` emite um objeto JSON por linha conforme os eventos acontecem.",
+      "explicacao": "`stream-json` emits one JSON object per line as events happen.",
       "feedbacks": [
-        "Texto só no final, sem estrutura.",
-        "Um único objeto ao final da execução.",
-        "O schema define o formato da resposta final, não streaming.",
-        "Correto."
+        "Text only at the end, with no structure.",
+        "A single object at the end of the run.",
+        "The schema defines the format of the final response, not streaming.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Qual o papel correto de `--max-turns` num pipeline?",
+      "pergunta": "What is the correct role of `--max-turns` in a pipeline?",
       "opcoes": [
-        "Definir quando a tarefa está pronta",
-        "Garantir que o Claude use exatamente N turnos",
-        "Ser um backstop que limita custo e tempo no pior caso",
-        "Substituir o `timeout` do job"
+        "Define when the task is done",
+        "Ensure Claude uses exactly N turns",
+        "Serve as a backstop that limits cost and time in the worst case",
+        "Replace the job's `timeout`"
       ],
       "correta": 2,
-      "explicacao": "Limite de iterações é backstop; o fim normal é o Claude concluir. Use junto com timeout do job.",
+      "explicacao": "An iteration limit is a backstop; the normal end is Claude finishing. Use it together with the job timeout.",
       "feedbacks": [
-        "Usar limite arbitrário como mecanismo principal de parada é anti-padrão.",
-        "É um teto, não uma meta.",
-        "Correto.",
-        "São complementares: um limita turnos, o outro tempo de relógio."
+        "Using an arbitrary limit as the primary stopping mechanism is an anti-pattern.",
+        "It's a ceiling, not a target.",
+        "Correct.",
+        "They're complementary: one limits turns, the other wall-clock time."
       ]
     },
     {
-      "pergunta": "No CI, você quer acrescentar \"Você é um revisor sênior de C#\" mantendo todo o comportamento padrão do Claude Code. Qual flag?",
+      "pergunta": "In CI, you want to add \"You are a senior C# reviewer\" while keeping all of Claude Code's default behavior. Which flag?",
       "opcoes": [
         "`--system-prompt`",
         "`--append-system-prompt`",
@@ -147,118 +147,124 @@
         "`--permission-mode plan`"
       ],
       "correta": 1,
-      "explicacao": "`--append-system-prompt` acrescenta ao system prompt padrão; `--system-prompt` substitui tudo.",
+      "explicacao": "`--append-system-prompt` appends to the default system prompt; `--system-prompt` replaces everything.",
       "feedbacks": [
-        "Substitui o system prompt inteiro e perde o comportamento padrão.",
-        "Correto.",
-        "Define o formato da saída, não a persona.",
-        "Muda a postura de permissão, não as instruções."
+        "It replaces the entire system prompt and loses the default behavior.",
+        "Correct.",
+        "It defines the output format, not the persona.",
+        "It changes the permission posture, not the instructions."
       ]
     },
     {
-      "pergunta": "Usando `anthropics/claude-code-action@v1`, como passar `--max-turns 8` e `--allowedTools` para o Claude?",
+      "pergunta": "Using `anthropics/claude-code-action@v1`, how do you pass `--max-turns 8` and `--allowedTools` to Claude?",
       "opcoes": [
-        "Pelo input `claude_args`",
-        "Por variáveis de ambiente `MAX_TURNS` e `ALLOWED_TOOLS`",
-        "Escrevendo no CLAUDE.md do repositório",
-        "Não é possível; a Action usa valores fixos"
+        "Through the `claude_args` input",
+        "Through the environment variables `MAX_TURNS` and `ALLOWED_TOOLS`",
+        "By writing them in the repository's CLAUDE.md",
+        "It's not possible; the Action uses fixed values"
       ],
       "correta": 0,
-      "explicacao": "`claude_args` repassa qualquer flag da CLI para o Claude Code dentro da Action.",
+      "explicacao": "`claude_args` passes any CLI flag through to Claude Code inside the Action.",
       "feedbacks": [
-        "Correto.",
-        "Não é assim que a Action recebe essas opções.",
-        "CLAUDE.md é instrução, não configuração de flags.",
-        "A Action aceita as flags via `claude_args`."
+        "Correct.",
+        "That's not how the Action receives these options.",
+        "CLAUDE.md is for instructions, not flag configuration.",
+        "The Action accepts the flags via `claude_args`."
       ]
     },
     {
-      "pergunta": "Para economizar, o time propõe rodar a checagem de segurança obrigatória de cada PR pela Batch API. Qual a avaliação?",
+      "pergunta": "To save money, the team proposes running each PR's mandatory security check through the Batch API. What is your assessment?",
       "opcoes": [
-        "Boa ideia: 50% de economia sem efeito colateral",
-        "Boa ideia, desde que o lote tenha mais de 100 PRs",
-        "Boa ideia se usar `custom_id` igual ao número do PR",
-        "Má ideia: Batch pode levar até 24h sem SLA, incompatível com um passo pré-merge bloqueante"
+        "Good idea: 50% savings with no side effects",
+        "Good idea, as long as the batch has more than 100 PRs",
+        "Good idea if it uses a `custom_id` equal to the PR number",
+        "Bad idea: Batch can take up to 24h with no SLA, incompatible with a blocking pre-merge step"
       ],
       "correta": 3,
-      "explicacao": "Batch nunca em passo bloqueante/pré-merge. Use síncrono no gate; Batch para análise noturna/semanal.",
+      "explicacao": "Never use Batch in a blocking/pre-merge step. Use synchronous calls at the gate; use Batch for nightly/weekly analysis.",
       "feedbacks": [
-        "Ignora a latência: o PR ficaria bloqueado por horas.",
-        "Volume não muda a ausência de SLA.",
-        "`custom_id` resolve correlação, não latência.",
-        "Correto."
+        "It ignores latency: the PR would be blocked for hours.",
+        "Volume doesn't change the lack of an SLA.",
+        "`custom_id` solves correlation, not latency.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Os resultados de um lote da Batch API chegaram e o script atribui cada resultado ao documento pela posição na lista. Alguns relatórios ficaram trocados. Qual a correção?",
+      "pergunta": "The results of a Batch API batch arrived, and the script assigns each result to a document by its position in the list. Some reports got swapped. What is the fix?",
       "opcoes": [
-        "Ordenar os resultados por data de criação",
-        "Enviar um documento por lote",
-        "Casar cada resultado pelo `custom_id` definido no envio",
-        "Usar `--output-format json`"
+        "Sort the results by creation date",
+        "Send one document per batch",
+        "Match each result by the `custom_id` defined at submission",
+        "Use `--output-format json`"
       ],
       "correta": 2,
-      "explicacao": "Resultados de batch podem vir fora de ordem; o `custom_id` é a chave de correlação.",
+      "explicacao": "Batch results can come back out of order; `custom_id` is the correlation key.",
       "feedbacks": [
-        "A ordem não é garantida por nenhum critério; não use posição nem data.",
-        "Joga fora a vantagem do batch.",
-        "Correto.",
-        "É flag do `claude -p`, não tem relação com a Batch API."
+        "Order isn't guaranteed by any criterion; don't use position or date.",
+        "It throws away the advantage of batching.",
+        "Correct.",
+        "It's a `claude -p` flag; it has nothing to do with the Batch API."
       ]
     },
     {
-      "pergunta": "Um job gera código com `claude -p` e, no passo seguinte, usa `claude -p --continue \"agora revise o que você escreveu\"`. O review aprova quase tudo. O que mudar?",
+      "pergunta": "A job generates code with `claude -p` and, in the next step, runs `claude -p --continue \"now review what you wrote\"`. The review approves almost everything. What should change?",
       "opcoes": [
-        "Fazer o review numa sessão nova e independente, com o diff e critérios explícitos",
-        "Aumentar `--max-turns` do passo de review",
-        "Pedir \"seja muito crítico\" no prompt de review",
-        "Trocar `--continue` por `--resume` com o mesmo ID"
+        "Do the review in a new, independent session, with the diff and explicit criteria",
+        "Increase `--max-turns` for the review step",
+        "Ask it to \"be very critical\" in the review prompt",
+        "Replace `--continue` with `--resume` using the same ID"
       ],
       "correta": 0,
-      "explicacao": "A sessão que gerou o código tende a confirmar as próprias decisões (viés do contexto de raciocínio). Review em sessão nova.",
+      "explicacao": "The session that generated the code tends to confirm its own decisions (reasoning-context bias). Review in a new session.",
       "feedbacks": [
-        "Correto.",
-        "Mais turnos na mesma sessão enviesada não removem o viés.",
-        "Instrução não remove o contexto de raciocínio que causa o viés.",
-        "`--resume` com o mesmo ID é a mesma sessão; mesmo problema."
+        "Correct.",
+        "More turns in the same biased session don't remove the bias.",
+        "An instruction doesn't remove the reasoning context that causes the bias.",
+        "`--resume` with the same ID is the same session; same problem."
       ]
     },
     {
-      "pergunta": "Um PR com 45 arquivos recebe review superficial e bugs entre módulos passam. Quais elementos compõem a abordagem recomendada? (Escolha DUAS.)",
+      "pergunta": "A PR with 45 files gets a superficial review, and cross-module bugs slip through. Which elements make up the recommended approach? (Choose TWO.)",
       "opcoes": [
-        "Um único prompt com os 45 arquivos e a instrução \"seja minucioso\"",
-        "Passo 1: revisar cada arquivo isoladamente, com o mesmo critério",
-        "Revisar só os 10 arquivos maiores",
-        "Usar a Batch API para o review do PR",
-        "Passo 2: um prompt separado de integração que recebe os achados do passo 1 e procura problemas entre arquivos"
+        "A single prompt with all 45 files and the instruction \"be thorough\"",
+        "Pass 1: review each file in isolation, with the same criteria",
+        "Review only the 10 largest files",
+        "Use the Batch API for the PR review",
+        "Pass 2: a separate integration prompt that receives the findings from pass 1 and looks for cross-file problems"
       ],
-      "corretas": [1, 4],
-      "explicacao": "Multi-pass: análise local por arquivo + passo de integração entre arquivos, com prompt separado.",
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Multi-pass: local per-file analysis + a cross-file integration pass, with a separate prompt.",
       "feedbacks": [
-        "É a causa do problema: atenção diluída e critério inconsistente.",
-        "Correto.",
-        "Deixa arquivos sem review e não pega bugs cross-file.",
-        "Review de PR é bloqueante: síncrono.",
-        "Correto."
+        "That's the cause of the problem: diluted attention and inconsistent criteria.",
+        "Correct.",
+        "It leaves files unreviewed and doesn't catch cross-file bugs.",
+        "PR review is blocking: synchronous.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Um job de CI só analisa o código e publica um relatório; ele não deve alterar nada no runner. Quais configurações aplicam menor privilégio de forma determinística? (Escolha DUAS.)",
+      "pergunta": "A CI job only analyzes the code and publishes a report; it must not change anything on the runner. Which settings apply least privilege deterministically? (Choose TWO.)",
       "opcoes": [
-        "`--permission-mode bypassPermissions` para evitar prompts",
-        "Instrução no prompt: \"não altere arquivos\"",
+        "`--permission-mode bypassPermissions` to avoid prompts",
+        "An instruction in the prompt: \"don't modify files\"",
         "`--allowedTools \"Read,Grep,Glob\"`",
-        "`--permission-mode dontAsk`, negando tudo que não foi pré-aprovado",
-        "`--allowedTools \"Bash\"` para o Claude rodar o que precisar"
+        "`--permission-mode dontAsk`, denying everything that hasn't been pre-approved",
+        "`--allowedTools \"Bash\"` so Claude can run whatever it needs"
       ],
-      "corretas": [2, 3],
-      "explicacao": "Pré-aprovar só leitura e negar o resto (`dontAsk`) restringe o job de forma determinística.",
+      "corretas": [
+        2,
+        3
+      ],
+      "explicacao": "Pre-approving only read tools and denying the rest (`dontAsk`) restricts the job deterministically.",
       "feedbacks": [
-        "Libera tudo: o oposto de menor privilégio.",
-        "Prompt é probabilístico; não é controle.",
-        "Correto.",
-        "Correto.",
-        "Bash irrestrito permite alterar qualquer coisa no runner."
+        "It unlocks everything: the opposite of least privilege.",
+        "A prompt is probabilistic; it's not a control.",
+        "Correct.",
+        "Correct.",
+        "Unrestricted Bash allows changing anything on the runner."
       ]
     }
   ]

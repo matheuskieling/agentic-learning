@@ -1,260 +1,260 @@
 {
-  "titulo": "Módulo 11 — Quiz: confiabilidade, proveniência, guardrails e evals",
+  "titulo": "Module 11 — Quiz: reliability, provenance, guardrails, and evals",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "No meio do atendimento, o cliente escreve: 'quero falar com uma pessoa'. O problema dele é simples e o agente provavelmente resolveria em mais dois turnos. O que fazer?",
+      "pergunta": "In the middle of a support interaction, the customer writes: 'I want to talk to a person'. Their problem is simple, and the agent would probably solve it in two more turns. What should the agent do?",
       "opcoes": [
-        "Tentar resolver mais uma vez e só escalar se falhar",
-        "Perguntar se ele tem certeza, explicando que o agente pode resolver",
-        "Escalar de imediato, com handoff estruturado",
-        "Ignorar o pedido e seguir o fluxo, já que o caso é simples"
+        "Try to resolve it one more time and escalate only if that fails",
+        "Ask whether they're sure, explaining that the agent can solve it",
+        "Escalate immediately, with a structured handoff",
+        "Ignore the request and continue the flow, since the case is simple"
       ],
       "correta": 2,
-      "explicacao": "Pedido explícito de humano é gatilho de escalonamento imediato.",
+      "explicacao": "An explicit request for a human is an immediate escalation trigger.",
       "feedbacks": [
-        "Tentador pela eficiência, mas desrespeita o pedido explícito.",
-        "Insistir em reter o cliente contraria o gatilho de escalonamento.",
-        "Correto.",
-        "Ignorar o pedido é o pior caminho."
+        "Tempting for efficiency's sake, but it disregards the explicit request.",
+        "Insisting on retaining the customer goes against the escalation trigger.",
+        "Correct.",
+        "Ignoring the request is the worst path."
       ]
     },
     {
-      "pergunta": "Um cliente furioso, em caixa alta, reclama de uma cobrança duplicada de 5 dólares, coberta pela política de estorno. O que o agente deve fazer?",
+      "pergunta": "A furious customer, writing in all caps, complains about a duplicate charge of 5 dollars that is covered by the refund policy. What should the agent do?",
       "opcoes": [
-        "Resolver o estorno; sentimento não é critério de escalonamento",
-        "Escalar, porque o cliente está irritado e um humano tem mais chance de reter o cliente",
-        "Escalar após três mensagens em caixa alta",
-        "Pedir ao cliente que se acalme antes de continuar"
+        "Process the refund; sentiment is not an escalation criterion",
+        "Escalate, because the customer is angry and a human has a better chance of retaining the customer",
+        "Escalate after three all-caps messages",
+        "Ask the customer to calm down before continuing"
       ],
       "correta": 0,
-      "explicacao": "Sentimento ≠ complexidade. Caso simples e coberto pela política: resolva.",
+      "explicacao": "Sentiment ≠ complexity. A simple case covered by the policy: resolve it.",
       "feedbacks": [
-        "Correto.",
-        "Escalar por sentimento é anti-padrão: lota a fila humana com casos simples.",
-        "Continua sendo escalar por sentimento.",
-        "Não resolve o problema e piora a experiência."
+        "Correct.",
+        "Escalating based on sentiment is an anti-pattern: it floods the human queue with simple cases.",
+        "It's still escalating based on sentiment.",
+        "It doesn't solve the problem and makes the experience worse."
       ]
     },
     {
-      "pergunta": "Uma proposta sugere escalar sempre que o modelo responder que tem menos de 70% de confiança na própria resposta. Qual o problema?",
+      "pergunta": "A proposal suggests escalating whenever the model responds that it is less than 70% confident in its own answer. What is the problem?",
       "opcoes": [
-        "O limiar deveria ser 90%, porque 70% deixa passar respostas erradas demais sem revisão",
-        "O modelo não consegue informar números",
-        "Nenhum; é a prática recomendada",
-        "Confiança autodeclarada é mal calibrada; não é sinal confiável para escalar"
+        "The threshold should be 90%, because 70% lets too many wrong answers through without review",
+        "The model can't report numbers",
+        "None; it's the recommended practice",
+        "Self-reported confidence is poorly calibrated; it's not a reliable signal for escalation"
       ],
       "correta": 3,
-      "explicacao": "Use gatilhos objetivos (pedido explícito, lacuna de política, sem progresso), não autoconfiança verbal.",
+      "explicacao": "Use objective triggers (explicit request, policy gap, lack of progress), not verbal self-confidence.",
       "feedbacks": [
-        "Mudar o limiar não conserta um sinal mal calibrado.",
-        "O modelo informa números; o problema é que eles não refletem a taxa de acerto.",
-        "É um dos anti-padrões clássicos.",
-        "Correto."
+        "Changing the threshold doesn't fix a poorly calibrated signal.",
+        "The model does report numbers; the problem is that they don't reflect its accuracy rate.",
+        "It's one of the classic anti-patterns.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "A busca de clientes por nome retorna três 'Ana Lima'. O que o agente deve fazer?",
+      "pergunta": "A customer search by name returns three 'Ana Lima' records. What should the agent do?",
       "opcoes": [
-        "Escolher a cliente com pedido mais recente, que é estatisticamente a mais provável de estar em contato",
-        "Pedir um identificador adicional (número do pedido, e-mail) para desambiguar",
-        "Escalar para um humano",
-        "Escolher a primeira da lista"
+        "Pick the customer with the most recent order, who is statistically the most likely to be getting in touch",
+        "Ask for an additional identifier (order number, email) to disambiguate",
+        "Escalate to a human",
+        "Pick the first one on the list"
       ],
       "correta": 1,
-      "explicacao": "Com múltiplos matches, peça identificador. Não chute.",
+      "explicacao": "With multiple matches, ask for an identifier. Don't guess.",
       "feedbacks": [
-        "Heurística que ainda é chute; risco de agir sobre a cliente errada.",
-        "Correto.",
-        "Desambiguação é trivial para o agente; escalar é desnecessário.",
-        "Chute puro."
+        "A heuristic that is still a guess; there's a risk of acting on the wrong customer.",
+        "Correct.",
+        "Disambiguation is trivial for the agent; escalating is unnecessary.",
+        "Pure guessing."
       ]
     },
     {
-      "pergunta": "Ao escalar, o que o humano deve receber?",
+      "pergunta": "When escalating, what should the human receive?",
       "opcoes": [
-        "A transcrição completa da conversa, para que o humano tenha todo o contexto sem perda de detalhes",
-        "Um resumo estruturado: cliente, problema, ações, motivo, recomendação, valor",
-        "Apenas o ID do cliente",
-        "Uma mensagem em texto livre resumindo o tom da conversa"
+        "The complete conversation transcript, so the human has all the context without losing any details",
+        "A structured summary: customer, problem, actions, reason, recommendation, amount",
+        "Only the customer ID",
+        "A free-text message summarizing the tone of the conversation"
       ],
       "correta": 1,
-      "explicacao": "O humano normalmente não lê o transcript; precisa de um resumo acionável e estruturado.",
+      "explicacao": "The human usually doesn't read the transcript; they need an actionable, structured summary.",
       "feedbacks": [
-        "Completo, mas não acionável; o humano não vai ler.",
-        "Correto.",
-        "Faltam problema, ações e motivo.",
-        "Texto livre sobre tom não ajuda a decidir."
+        "Complete, but not actionable; the human won't read it.",
+        "Correct.",
+        "It's missing the problem, the actions, and the reason.",
+        "Free text about tone doesn't help anyone decide."
       ]
     },
     {
-      "pergunta": "A API de estoque deu timeout e a tool devolveu uma lista vazia de produtos. Qual o problema?",
+      "pergunta": "The inventory API timed out and the tool returned an empty product list. What is the problem?",
       "opcoes": [
-        "Nenhum: lista vazia é a resposta segura, porque evita que o agente invente produtos que não estão em estoque",
-        "O timeout deveria ser maior",
-        "A tool deveria lançar exceção sem detalhes",
-        "Supressão silenciosa: o agente concluirá 'sem estoque' sem a consulta ter rodado"
+        "None: an empty list is the safe response, because it keeps the agent from making up products that aren't in stock",
+        "The timeout should be longer",
+        "The tool should throw an exception with no details",
+        "Silent suppression: the agent will conclude 'out of stock' without the query ever having run"
       ],
       "correta": 3,
-      "explicacao": "Vazio ≠ falha. Lista vazia = consultou e não achou. Timeout = não sabe. Isso precisa ser um erro estruturado.",
+      "explicacao": "Empty ≠ failure. Empty list = it queried and found nothing. Timeout = it doesn't know. That needs to be a structured error.",
       "feedbacks": [
-        "É exatamente o anti-padrão de supressão silenciosa.",
-        "Talvez ajude, mas não resolve a confusão entre vazio e falha.",
-        "Erro genérico sem contexto é outro anti-padrão.",
-        "Correto."
+        "That's exactly the silent-suppression anti-pattern.",
+        "It might help, but it doesn't resolve the confusion between empty and failure.",
+        "A generic error with no context is another anti-pattern.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Uma regra diz: 'só chamar process_refund depois de verificar a identidade do cliente'. Qual a forma mais confiável de garantir isso?",
+      "pergunta": "A rule says: 'only call process_refund after verifying the customer's identity'. What is the most reliable way to guarantee this?",
       "opcoes": [
-        "Um pré-requisito em código (ex.: hook PreToolUse que bloqueia a chamada sem verificação)",
-        "Escrever a regra em maiúsculas no system prompt",
-        "Adicionar três exemplos few-shot mostrando a verificação de identidade sempre antes do reembolso",
-        "Pedir ao modelo para confirmar que verificou antes de chamar"
+        "A prerequisite in code (e.g., a PreToolUse hook that blocks the call without verification)",
+        "Write the rule in capital letters in the system prompt",
+        "Add three few-shot examples that always show identity verification before the refund",
+        "Ask the model to confirm it has verified before calling"
       ],
       "correta": 0,
-      "explicacao": "Regra crítica (financeira/segurança) é imposta em código determinístico; prompt é best-effort.",
+      "explicacao": "A critical (financial/security) rule is enforced in deterministic code; a prompt is best-effort.",
       "feedbacks": [
-        "Correto.",
-        "Prompt é probabilístico, com taxa de falha não nula.",
-        "Ajuda o comportamento, mas não garante.",
-        "Autodeclaração não é verificação."
+        "Correct.",
+        "A prompt is probabilistic, with a nonzero failure rate.",
+        "It helps the behavior, but doesn't guarantee it.",
+        "Self-declaration isn't verification."
       ]
     },
     {
-      "pergunta": "Num pipeline de pesquisa com 5 subagents, o subagent de dados financeiros falhou de forma definitiva. O que o coordenador deve fazer?",
+      "pergunta": "In a research pipeline with 5 subagents, the financial-data subagent failed permanently. What should the coordinator do?",
       "opcoes": [
-        "Abortar toda a pesquisa e reportar falha, para não entregar um relatório incompleto ao usuário final",
-        "Ignorar a falha e não mencionar dados financeiros",
-        "Seguir com os outros 4, anotar a lacuna e oferecer alternativas",
-        "Repetir a pesquisa inteira desde o início"
+        "Abort the entire research task and report a failure, so as not to deliver an incomplete report to the end user",
+        "Ignore the failure and not mention financial data",
+        "Proceed with the other 4, note the gap, and offer alternatives",
+        "Repeat the entire research task from the beginning"
       ],
       "correta": 2,
-      "explicacao": "Não aborte o workflow por uma etapa: continue com o parcial, anote a lacuna, ofereça alternativa.",
+      "explicacao": "Don't abort the workflow over one step: continue with the partial result, note the gap, and offer an alternative.",
       "feedbacks": [
-        "Joga fora o trabalho bom dos outros subagents.",
-        "Esconder a lacuna é supressão silenciosa.",
-        "Correto.",
-        "Desperdício; e a falha definitiva provavelmente se repete."
+        "It throws away the good work of the other subagents.",
+        "Hiding the gap is silent suppression.",
+        "Correct.",
+        "Wasteful; and the permanent failure will probably recur."
       ]
     },
     {
-      "pergunta": "Uma tool retorna: errorCategory 'business', 'conta congelada por ordem judicial', isRetryable false. O que o agente deve fazer?",
+      "pergunta": "A tool returns: errorCategory 'business', 'account frozen by court order', isRetryable false. What should the agent do?",
       "opcoes": [
-        "Retentar com backoff exponencial, já que bloqueios desse tipo costumam ser temporários",
-        "Corrigir os parâmetros e tentar de novo",
-        "Devolver 'Operation failed' ao cliente",
-        "Não retentar; explicar a situação conforme a política e/ou escalar"
+        "Retry with exponential backoff, since blocks of this kind are usually temporary",
+        "Fix the parameters and try again",
+        "Return 'Operation failed' to the customer",
+        "Don't retry; explain the situation according to the policy and/or escalate"
       ],
       "correta": 3,
-      "explicacao": "Erro de negócio não é retentável: explique a política ou escale.",
+      "explicacao": "A business error isn't retryable: explain the policy or escalate.",
       "feedbacks": [
-        "Retry é para transitórios.",
-        "Correção de entrada é para erro de validação.",
-        "Mensagem genérica esconde o diagnóstico.",
-        "Correto."
+        "Retry is for transient errors.",
+        "Fixing the input is for validation errors.",
+        "A generic message hides the diagnosis.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Qual estratégia de amostragem para revisão humana é recomendada?",
+      "pergunta": "Which sampling strategy for human review is recommended?",
       "opcoes": [
-        "5% uniforme de tudo",
-        "Revisar apenas o que o modelo marcar como incerto, concentrando o esforço humano onde ele mesmo duvida",
-        "Estratificada por risco (mais revisão no alto valor, menos no baixo risco)",
-        "Revisar apenas quando o cliente reclamar"
+        "A uniform 5% of everything",
+        "Review only what the model flags as uncertain, concentrating human effort where the model itself has doubts",
+        "Stratified by risk (more review on high-value items, less on low-risk ones)",
+        "Review only when the customer complains"
       ],
       "correta": 2,
-      "explicacao": "Amostragem estratificada por risco concentra o olho humano onde o erro custa mais.",
+      "explicacao": "Risk-stratified sampling concentrates human attention where errors cost the most.",
       "feedbacks": [
-        "Uniforme desperdiça revisão no baixo risco e subamostra o alto risco.",
-        "Sem calibração, a incerteza autodeclarada não é confiável.",
-        "Correto.",
-        "Reativo; erros silenciosos nunca são vistos."
+        "Uniform sampling wastes review on low-risk items and undersamples high-risk ones.",
+        "Without calibration, self-reported uncertainty isn't reliable.",
+        "Correct.",
+        "Reactive; silent errors are never seen."
       ]
     },
     {
-      "pergunta": "Para que a confiança por campo de uma extração possa ser usada para rotear revisão, ela precisa ser:",
+      "pergunta": "For an extraction's per-field confidence to be usable for routing review, it must be:",
       "opcoes": [
-        "Superior a 0,9 em todos os campos",
-        "Calibrada contra um conjunto rotulado (0,9 ≈ 90% de acerto)",
-        "Gerada por um segundo modelo, independente do que fez a extração, para evitar viés",
-        "Uma única nota para o documento inteiro"
+        "Above 0.9 on every field",
+        "Calibrated against a labeled set (0.9 ≈ 90% accuracy)",
+        "Generated by a second model, independent of the one that did the extraction, to avoid bias",
+        "A single score for the entire document"
       ],
       "correta": 1,
-      "explicacao": "Confiança só significa algo se calibrada contra dados rotulados; e deve ser por campo.",
+      "explicacao": "Confidence only means something if it's calibrated against labeled data; and it should be per field.",
       "feedbacks": [
-        "Limiar alto sem calibração não significa nada.",
-        "Correto.",
-        "Outro modelo não calibra nada por si só.",
-        "Nota por documento esconde o campo problemático."
+        "A high threshold without calibration means nothing.",
+        "Correct.",
+        "Another model doesn't calibrate anything by itself.",
+        "A per-document score hides the problematic field."
       ]
     },
     {
-      "pergunta": "A extração tem 97% de acurácia geral. O que fazer antes de reduzir a revisão humana?",
+      "pergunta": "The extraction has 97% overall accuracy. What should you do before reducing human review?",
       "opcoes": [
-        "Quebrar a acurácia por tipo de documento e por campo",
-        "Nada; 97% é excelente",
-        "Aumentar o tamanho da amostra uniforme para ter mais confiança estatística no número",
-        "Trocar para um modelo maior"
+        "Break down accuracy by document type and by field",
+        "Nothing; 97% is excellent",
+        "Increase the size of the uniform sample to have more statistical confidence in the number",
+        "Switch to a larger model"
       ],
       "correta": 0,
-      "explicacao": "Métrica agregada esconde falha por tipo (ex.: 45% em manuscritos).",
+      "explicacao": "An aggregate metric hides failures by type (e.g., 45% on handwritten documents).",
       "feedbacks": [
-        "Correto.",
-        "É a armadilha clássica do agregado.",
-        "Mais amostra uniforme ainda mede o agregado.",
-        "Mudar o modelo sem medir por segmento é mexer sem diagnóstico."
+        "Correct.",
+        "That's the classic aggregate trap.",
+        "A larger uniform sample still measures the aggregate.",
+        "Changing the model without measuring by segment is tinkering without a diagnosis."
       ]
     },
     {
-      "pergunta": "Duas fontes do mesmo período informam valores diferentes para o mesmo indicador. O que a síntese deve fazer?",
+      "pergunta": "Two sources from the same period report different values for the same indicator. What should the synthesis do?",
       "opcoes": [
-        "Registrar os dois valores com suas fontes e marcar como contestado",
-        "Usar a média dos dois",
-        "Usar a fonte publicada mais recentemente, que tende a refletir a metodologia mais atual",
-        "Omitir o indicador para evitar confusão"
+        "Record both values with their sources and mark the indicator as contested",
+        "Use the average of the two",
+        "Use the most recently published source, which tends to reflect the most current methodology",
+        "Omit the indicator to avoid confusion"
       ],
       "correta": 0,
-      "explicacao": "Conflito é anotado com as fontes, nunca resolvido em silêncio nem por média.",
+      "explicacao": "A conflict is annotated with its sources, never resolved silently or by averaging.",
       "feedbacks": [
-        "Correto.",
-        "Média inventa um número que nenhuma fonte disse.",
-        "Escolher em silêncio esconde a divergência.",
-        "Omitir também é esconder."
+        "Correct.",
+        "An average invents a number that no source stated.",
+        "Choosing silently hides the divergence.",
+        "Omitting is also hiding."
       ]
     },
     {
-      "pergunta": "Um relatório cita 'desemprego de 8,1%' (dados de 2024) e outro '6,9%' (dados de 2026). Como tratar?",
+      "pergunta": "One report cites '8.1% unemployment' (2024 data) and another '6.9%' (2026 data). How should this be handled?",
       "opcoes": [
-        "Marcar como conflito entre fontes e indicar ao leitor que os números não são confiáveis",
-        "Descartar o mais antigo sem menção",
-        "Apresentar ambos com as datas de referência: períodos diferentes, não contradição",
-        "Fazer a média"
+        "Mark it as a conflict between sources and tell the reader the numbers aren't reliable",
+        "Discard the older one without mentioning it",
+        "Present both with their reference dates: different periods, not a contradiction",
+        "Take the average"
       ],
       "correta": 2,
-      "explicacao": "Dados temporais: registre 'dados de'. Números de períodos diferentes não são contradição.",
+      "explicacao": "Time-based data: record the 'data as of' date. Numbers from different periods aren't a contradiction.",
       "feedbacks": [
-        "Sem olhar as datas, cria um falso conflito.",
-        "Perde informação e a série temporal.",
-        "Correto.",
-        "Média de períodos diferentes não tem sentido."
+        "Without looking at the dates, it creates a false conflict.",
+        "It loses information and the time series.",
+        "Correct.",
+        "Averaging different periods makes no sense."
       ]
     },
     {
-      "pergunta": "O time quer melhorar o prompt de extração. Qual processo é o recomendado?",
+      "pergunta": "The team wants to improve the extraction prompt. Which process is recommended?",
       "opcoes": [
-        "Testar manualmente 3 documentos e publicar se parecer melhor",
-        "Mudar prompt, exemplos e modelo de uma vez para ganhar tempo e medir o efeito combinado no final",
-        "Medir só a acurácia global antes e depois",
-        "Linha de base num conjunto rotulado, uma mudança por vez, comparação por segmento"
+        "Manually test 3 documents and ship it if it looks better",
+        "Change the prompt, examples, and model all at once to save time, and measure the combined effect at the end",
+        "Measure only overall accuracy before and after",
+        "A baseline on a labeled set, one change at a time, comparison by segment"
       ],
       "correta": 3,
-      "explicacao": "Mudanças guiadas por métrica: linha de base, uma mudança por vez, comparação por segmento, conjunto mantido como regressão.",
+      "explicacao": "Metric-driven changes: baseline, one change at a time, comparison by segment, with the set kept as a regression suite.",
       "feedbacks": [
-        "Amostra pequena e subjetiva; 'melhorou' vira opinião.",
-        "Impossível atribuir o efeito a cada mudança.",
-        "O global esconde regressões por segmento.",
-        "Correto."
+        "A small, subjective sample; 'it improved' becomes a matter of opinion.",
+        "It's impossible to attribute the effect to each change.",
+        "The overall number hides per-segment regressions.",
+        "Correct."
       ]
     }
   ]

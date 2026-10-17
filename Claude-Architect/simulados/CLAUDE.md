@@ -32,7 +32,7 @@ simulados/
 | 5 | 2, 3, 4, 6 | "prova final": o mais difícil, alternativas todas plausíveis |
 
 Cada simulado segue a distribuição do blueprint: **D1 16 · D2 11 · D3 12 · D4 12 · D5 9** (= 60),
-em blocos de 15 questões por cenário. Cerca de 15% são de **múltipla resposta** ("Escolha DUAS",
+em blocos de 15 questões por cenário. Cerca de 15% são de **múltipla resposta** ("Choose TWO.",
 responda `answer A,C`).
 
 ## Como conduzir (Claude)
@@ -45,10 +45,13 @@ python3 engine/session.py answer A,D --id simulado     # múltipla resposta
 python3 engine/session.py status --id simulado
 ```
 
+**Idioma:** questões, alternativas e feedbacks em **inglês**, apresentados sem tradução; seus comentários
+de instrutor em PT-BR (ver "Idioma" em `../CLAUDE.md`).
+
 **Banco por cenário:** modo treino. Depois de cada resposta, explique por que cada alternativa errada
 é tentadora e qual anti-padrão ela representa.
 
-**Simulado completo:** modo prova. Sempre com **`--no-shuffle`**: as questões vêm em blocos de 15 por cenário, como no exame (a 1ª de cada bloco apresenta o cenário). Os bancos por cenário podem ser embaralhados. Anote o horário de início e cobre os 120 min. **Não dê dicas**
+**Simulado completo:** modo prova. Sempre com **`--no-shuffle`**: as questões vêm em blocos de 15 por cenário, como no exame (a 1ª de cada bloco apresenta o cenário). Os bancos por cenário podem ser embaralhados. Anote o horário de início e cobre os 120 min. **Não dê dicas nem traduza**
 durante a prova (o feedback do driver depois de cada resposta basta; aprofunde só no fim). Ao final:
 1. Dê a nota e a nota **por domínio** (cada questão tem `"dominio"`).
 2. Liste os anti-padrões em que o aluno caiu.
@@ -70,5 +73,5 @@ correspondentes antes do próximo simulado.
 - Formato do `engine/CLAUDE.md`, mais os campos `"cenario"` (1..6) e `"dominio"` ("D1".."D5") por
   questão (o motor ignora campos extras).
 - Sempre `feedbacks` em **todas** as alternativas, dizendo por que é tentadora e por que está errada.
-- Questões **originais**, em PT-BR, coerentes com `../blueprint.md`. Distribua a posição da correta e
+- Questões **originais**, em **inglês** (idioma da prova), coerentes com `../blueprint.md`. Distribua a posição da correta e
   evite que a alternativa mais longa seja sempre a certa.

@@ -12,7 +12,7 @@
 
 | Item | Valor |
 |------|-------|
-| Questões | **60**, múltipla escolha (1 correta) e múltipla resposta ("Escolha DUAS") |
+| Questões | **60**, múltipla escolha (1 correta) e múltipla resposta ("Choose TWO") |
 | Tempo | **120 min** (≈ 2 min por questão), supervisionado, sem consulta |
 | Aprovação | **720/1000** (escala), **sem penalidade por chute**: nunca deixe em branco |
 | Cenários | **4 sorteados de um banco de 6**; as questões se penduram no cenário |
@@ -34,7 +34,7 @@ Continuous Integration · (6) Structured Data Extraction.
 **Por que importa:** D1 sozinho é mais de 1/4 da prova; D1+D3+D4 somam 67%. Estude na proporção.
 
 **Pegadinha de formato:** "sem penalidade por chute" significa que a estratégia certa é **marcar
-tudo**. Nas questões "Escolha DUAS", ambas precisam estar certas.
+tudo**. Nas questões "Choose TWO", ambas precisam estar certas.
 
 **Como cai na prova:** não cai como pergunta; muda sua estratégia (ritmo de 2 min, não deixar em
 branco, identificar o cenário antes de ler as alternativas).

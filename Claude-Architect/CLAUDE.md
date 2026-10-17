@@ -54,6 +54,25 @@ em **teoria enxuta voltada à prova + muitas questões + muitos simulados**.
   `Claude-Architect/.sessions/preferencias.json`; se não existir, pergunta e grava
   `{ "linguagem": "<nome>" }`; nas retomadas, traduz ao vivo os trechos de código para ela.
 
+## Idioma: aula em PT-BR, avaliação em INGLÊS
+
+A prova real é **inteiramente em inglês**, então o curso treina a leitura em inglês desde já (pedido
+do aluno):
+
+- **Em PT-BR:** a aula. Teoria (`teoria.md`, `blueprint.md`), narração dos beats, explicações,
+  dúvidas e os comentários do instrutor depois de cada questão.
+- **Em inglês:** tudo que é avaliação. Quizzes, provas de módulo, bancos por cenário, simulados e a
+  revisão `/revisar` (que sorteia desses mesmos bancos). Os arquivos de questões já estão em inglês.
+- **Ao conduzir questões:** apresente enunciado e alternativas **em inglês, como o driver mostra,
+  sem traduzir**, e repasse o feedback do banco também em inglês. Os rótulos do `engine/` (`Questão`,
+  `Resultado`...) são do motor compartilhado e ficam em PT; não precisa repeti-los ao aluno. Depois do
+  feedback, a sua análise ("por que cada errada é tentadora") é em PT-BR.
+- **Mini-perguntas de checagem** (o `checkpoint` dos beats de teoria): formule a pergunta em inglês,
+  no estilo do exame, traduzindo o texto do roteiro ao vivo. O aluno responde no idioma que quiser e a
+  discussão segue em PT-BR.
+- **Vocabulário:** em quiz/prova/banco por cenário, se o aluno travar numa palavra, explique o termo
+  (sem traduzir a questão inteira). Em **simulado completo**, nada de tradução: é condição de prova.
+
 ## O formato do curso: aula ao vivo (one-on-one)
 
 Idêntico ao padrão da plataforma (ver `../CLAUDE.md` e `../engine/CLAUDE.md`). O Claude **conduz**:
@@ -126,8 +145,11 @@ Claude-Architect/
   cobra) e trate o detalhe volátil como "confira na doc atual". Questões de prova evitam depender de
   detalhe volátil, salvo quando ele é o próprio ponto (ex.: "`any` forçado retorna 400 em modelos
   novos → use structured outputs").
-- **Questões são originais**, escritas em PT-BR, no estilo cenário do exame. Termos técnicos ficam em
-  inglês quando é assim que aparecem na prova (`stop_reason`, `tool_choice`, plan mode, hooks...).
+- **Questões são originais**, escritas em **inglês** (o idioma da prova), no estilo cenário do exame,
+  com múltipla resposta como "Choose TWO.". As **chaves** do JSON (`pergunta`, `opcoes`, `correta`,
+  `feedbacks`...) continuam em português porque são o contrato do `engine/`; só os valores são em inglês.
+- **Não reordene questões dentro de um banco:** a revisão (`revisar.py`) identifica cada questão pelo
+  índice (`m04-quiz#7`). Questão nova vai no fim do banco.
 - **Progresso** em `Claude-Architect/.sessions/`: versionado no fork/branch do aluno; `main` zerada.
 
 ## Estado atual

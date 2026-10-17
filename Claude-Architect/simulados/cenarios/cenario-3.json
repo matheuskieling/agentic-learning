@@ -1,400 +1,400 @@
 {
-  "titulo": "Cenário 3 — Multi-Agent Research System",
+  "titulo": "Scenario 3 — Multi-Agent Research System",
   "aprovacao": 72,
   "questoes": [
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara a pergunta \"Qual o estado da transição energética no Brasil?\", o relatório final tratou quase só de energia solar. Os logs mostram que o coordenador criou três subtarefas: \"custo de painéis solares\", \"adoção de solar residencial\" e \"incentivos para solar\". Todos os subagents fizeram bem o seu trabalho. Onde está o problema e como corrigir?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nFor the question \"What is the state of the energy transition in Brazil?\", the final report covered almost nothing but solar energy. The logs show that the coordinator created three subtasks: \"cost of solar panels\", \"residential solar adoption\", and \"solar incentives\". All the subagents did their jobs well. Where is the problem, and how should it be fixed?",
       "opcoes": [
-        "Nos subagents de busca, que deveriam ter percebido que o tema era mais amplo e estendido por conta própria o escopo das subtarefas que receberam do coordenador.",
-        "Na decomposição: o coordenador deve decompor de forma mais ampla (eólica, biocombustíveis, rede...) e checar a cobertura.",
-        "No subagent de síntese, que deveria ter completado as lacunas com o próprio conhecimento.",
-        "Na quantidade de subagents: dobrar o número de buscas sobre os mesmos três temas aumentaria a cobertura."
+        "In the search subagents, which should have realized that the topic was broader and extended, on their own, the scope of the subtasks they received from the coordinator.",
+        "In the decomposition: the coordinator should decompose more broadly (wind, biofuels, grid...) and check coverage.",
+        "In the synthesis subagent, which should have filled in the gaps with its own knowledge.",
+        "In the number of subagents: doubling the number of searches on the same three topics would increase coverage."
       ],
       "correta": 1,
-      "explicacao": "Anti-padrão de decomposição estreita demais: subagents competentes cobrindo só parte do tema. Decomponha de forma mais ampla e cheque a cobertura explicitamente.",
+      "explicacao": "Overly narrow decomposition anti-pattern: competent subagents covering only part of the topic. Decompose more broadly and check coverage explicitly.",
       "feedbacks": [
-        "Tentadora, mas os subagents fizeram exatamente o que foi pedido; esperar que extrapolem o escopo torna o sistema imprevisível.",
-        "Correta. Os subagents executaram bem tarefas mal escolhidas. A falha é de decomposição, e a correção é ampliar as subtarefas e verificar cobertura.",
-        "Preencher lacunas sem fontes compromete a proveniência; a síntese deveria, no máximo, sinalizar a lacuna.",
-        "Mais buscas sobre os mesmos temas estreitos só aprofundam o viés; o problema é o que foi decomposto, não quanto."
+        "Tempting, but the subagents did exactly what was asked; expecting them to go beyond their scope makes the system unpredictable.",
+        "Correct. The subagents performed poorly chosen tasks well. The failure is in the decomposition, and the fix is to broaden the subtasks and verify coverage.",
+        "Filling gaps without sources compromises provenance; at most, the synthesis should flag the gap.",
+        "More searches on the same narrow topics only deepen the bias; the problem is what was decomposed, not how much."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO coordenador delega ao subagent de análise com o prompt \"analise as fontes encontradas e destaque o que for relevante\". O resultado volta genérico e às vezes analisa documentos errados. Qual é a correção?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe coordinator delegates to the analysis subagent with the prompt \"analyze the sources found and highlight what is relevant\". The result comes back generic and sometimes analyzes the wrong documents. What is the fix?",
       "opcoes": [
-        "Fazer o subagent receber o histórico completo do coordenador antes de começar, para que ele tenha exatamente o mesmo contexto da conversa principal.",
-        "Trocar o subagent de análise por um modelo mais capaz.",
-        "Pedir que o subagent faça perguntas de esclarecimento ao usuário final sempre que estiver em dúvida.",
-        "Passar explicitamente no prompt a pergunta, os documentos, o critério de relevância e o formato de saída."
+        "Have the subagent receive the coordinator's full history before starting, so it has exactly the same context as the main conversation.",
+        "Replace the analysis subagent with a more capable model.",
+        "Have the subagent ask the end user clarifying questions whenever it is in doubt.",
+        "Explicitly pass the question, the documents, the relevance criterion, and the output format in the prompt."
       ],
       "correta": 3,
-      "explicacao": "Contexto do subagent é isolado: pergunta, material, critérios e formato de saída vão explícitos no prompt de delegação.",
+      "explicacao": "The subagent's context is isolated: the question, the material, the criteria, and the output format go explicitly in the delegation prompt.",
       "feedbacks": [
-        "Despeja ruído e tokens no subagent e anula a vantagem do contexto isolado; o certo é passar só o necessário, de forma explícita.",
-        "Um modelo melhor continua sem saber quais fontes analisar e para qual pergunta. Ataca o sintoma errado.",
-        "Transfere ao usuário a falha de delegação do coordenador e quebra o fluxo automatizado.",
-        "Correta. O subagent tem contexto isolado e não herda o histórico do coordenador; tudo o que ele precisa deve ir explícito no prompt."
+        "It dumps noise and tokens onto the subagent and cancels out the advantage of the isolated context; the right approach is to pass only what is needed, explicitly.",
+        "A better model still doesn't know which sources to analyze or for which question. It targets the wrong symptom.",
+        "It shifts the coordinator's delegation failure onto the user and breaks the automated flow.",
+        "Correct. The subagent has an isolated context and doesn't inherit the coordinator's history; everything it needs must go explicitly in the prompt."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nUma pesquisa típica exige cinco buscas independentes. Os logs mostram o coordenador emitindo uma chamada Agent por turno, esperando o resultado antes da próxima; cada relatório leva 25 minutos. Como reduzir a latência sem perder qualidade?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nA typical research job requires five independent searches. The logs show the coordinator emitting one Agent call per turn, waiting for the result before the next one; each report takes 25 minutes. How can latency be reduced without losing quality?",
       "opcoes": [
-        "Fazer o coordenador emitir as cinco chamadas Agent na mesma resposta, para que os subagents rodem em paralelo.",
-        "Juntar as cinco buscas num único subagent com um prompt grande.",
-        "Reduzir a pesquisa para duas buscas, as mais importantes.",
-        "Usar a Batch API para as buscas, que é mais barata."
+        "Have the coordinator emit the five Agent calls in the same response, so the subagents run in parallel.",
+        "Combine the five searches into a single subagent with a large prompt.",
+        "Reduce the research to two searches, the most important ones.",
+        "Use the Batch API for the searches, since it is cheaper."
       ],
       "correta": 0,
-      "explicacao": "Para paralelizar, o coordenador emite várias chamadas Agent na mesma resposta. Turnos separados = sequencial.",
+      "explicacao": "To parallelize, the coordinator emits multiple Agent calls in the same response. Separate turns = sequential.",
       "feedbacks": [
-        "Correta. Paralelismo acontece quando vários Agent saem na mesma resposta do coordenador; turnos separados são sequenciais.",
-        "Volta a ser sequencial dentro de um só contexto, que fica sobrecarregado; perde-se o isolamento e a especialização.",
-        "Corta latência sacrificando cobertura; o problema era a execução sequencial, não o número de buscas.",
-        "Batch tem janela de até 24h, sem SLA e não suporta o loop multi-turn de tools de cada subagent; aumentaria a latência."
+        "Correct. Parallelism happens when multiple Agent calls go out in the same coordinator response; separate turns are sequential.",
+        "It goes back to being sequential within a single context, which becomes overloaded; isolation and specialization are lost.",
+        "It cuts latency by sacrificing coverage; the problem was the sequential execution, not the number of searches.",
+        "Batch has a processing window of up to 24h, with no SLA, and doesn't support each subagent's multi-turn tool loop; it would increase latency."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara \"agilizar\", um engenheiro fez os subagents de busca enviarem resultados direto ao subagent de síntese e o de síntese pedir buscas extras direto aos de busca. Agora ninguém sabe dizer quais fontes entraram no relatório nem por que algumas buscas se repetem. Qual arquitetura corrige isso?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTo \"speed things up\", an engineer made the search subagents send results directly to the synthesis subagent, and the synthesis subagent request extra searches directly from the search subagents. Now nobody can say which sources went into the report or why some searches are repeated. Which architecture fixes this?",
       "opcoes": [
-        "Um barramento de mensagens compartilhado em que todos os subagents publicam e leem resultados, com um log central para rastrear quem enviou o quê.",
-        "Manter a comunicação direta e adicionar logs mais detalhados em cada subagent.",
-        "Hub-and-spoke: toda comunicação passa pelo coordenador, que delega, agrega, trata erros e redelega.",
-        "Fundir busca e síntese num único agente com todas as tools."
+        "A shared message bus on which all of the subagents publish and read results, with a central log to keep track of who sent what.",
+        "Keep the direct communication and add more detailed logs in each subagent.",
+        "Hub-and-spoke: all traffic goes through the coordinator, which delegates, aggregates, handles errors, and re-delegates.",
+        "Merge search and synthesis into a single agent with all the tools."
       ],
       "correta": 2,
-      "explicacao": "Hub-and-spoke: o coordenador decompõe, delega, roteia toda comunicação, agrega e trata erros. Subagents conversando diretamente é anti-padrão.",
+      "explicacao": "Hub-and-spoke: the coordinator decomposes, delegates, routes all communication, aggregates, and handles errors. Subagents talking to each other directly is an anti-pattern.",
       "feedbacks": [
-        "Formaliza a comunicação direta entre subagents; aumenta o acoplamento e continua sem um ponto que controle cobertura e erros.",
-        "Melhora a observação do caos, não o desenho; subagents conversando diretamente é o anti-padrão.",
-        "Correta. O coordenador roteia toda a comunicação, o que dá rastreabilidade, controle de lacunas e tratamento de erro centralizado.",
-        "Elimina a comunicação, mas também a especialização e o isolamento de contexto; o agente único fica sobrecarregado."
+        "It formalizes direct communication between subagents; it increases coupling and still lacks a single point that controls coverage and errors.",
+        "It improves observation of the chaos, not the design; subagents talking to each other directly is the anti-pattern.",
+        "Correct. The coordinator routes all communication, which provides traceability, gap control, and centralized error handling.",
+        "It eliminates the communication, but also the specialization and context isolation; the single agent becomes overloaded."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nClientes também fazem perguntas simples como \"qual foi a taxa Selic definida na última reunião do Copom?\". Hoje toda pergunta passa por busca, análise de documentos e síntese, levando minutos e custando caro. O que o coordenador deve fazer?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nClients also ask simple questions such as \"what Selic rate was set at the last Copom meeting?\". Today, every question goes through search, document analysis, and synthesis, taking minutes and costing a lot. What should the coordinator do?",
       "opcoes": [
-        "Manter o pipeline completo, porque a padronização garante a qualidade.",
-        "Criar um sistema separado, com um modelo menor e um classificador na entrada, dedicado só a perguntas factuais simples, mantendo o pipeline atual para o resto.",
-        "Responder perguntas simples só com o conhecimento do modelo, sem busca.",
-        "Acionar só os subagents que a consulta precisa (aqui, uma busca e uma resposta curta com fonte)."
+        "Keep the full pipeline, because standardization guarantees quality.",
+        "Create a separate system, with a smaller model and a classifier at the entry point, dedicated only to simple factual questions, keeping the current pipeline for everything else.",
+        "Answer simple questions using only the model's knowledge, without searching.",
+        "Invoke only the subagents the query needs (here, one search and a short answer with a source)."
       ],
       "correta": 3,
-      "explicacao": "Acione só os subagents que a consulta precisa; não passe tudo pelo pipeline inteiro.",
+      "explicacao": "Invoke only the subagents the query needs; don't push everything through the entire pipeline.",
       "feedbacks": [
-        "Padronização aqui é desperdício de tempo e dinheiro; não aumenta a qualidade de uma resposta factual simples.",
-        "Mais complexo do que o necessário; o coordenador já existe para decidir o que acionar.",
-        "Perde a atualidade e a citação de fonte; uma taxa recente exige busca.",
-        "Correta. O coordenador aciona apenas o que a consulta exige; nem toda pergunta precisa do pipeline inteiro."
+        "Standardization here is a waste of time and money; it doesn't increase the quality of a simple factual answer.",
+        "More complex than necessary; the coordinator already exists to decide what to invoke.",
+        "It loses timeliness and source citation; a recent rate requires a search.",
+        "Correct. The coordinator invokes only what the query requires; not every question needs the entire pipeline."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nAo receber os resultados da primeira rodada, o coordenador nota que o rascunho de síntese sobre \"regulação de IA na América Latina\" não tem nada sobre Chile e Colômbia, que estavam no escopo pedido. Qual é a melhor próxima ação?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nWhen it receives the results of the first round, the coordinator notices that the synthesis draft on \"AI regulation in Latin America\" has nothing on Chile and Colombia, which were in the requested scope. What is the best next action?",
       "opcoes": [
-        "Disparar uma segunda rodada de busca direcionada a Chile e Colômbia e refazer a síntese.",
-        "Entregar o relatório como está, já que os países cobertos têm boa qualidade.",
-        "Refazer a pesquisa inteira do zero com mais subagents e uma decomposição revisada, garantindo que nenhum país do escopo fique de fora desta vez.",
-        "Pedir ao subagent de síntese que escreva sobre Chile e Colômbia com base no conhecimento geral do modelo."
+        "Launch a second round of searches targeted at Chile and Colombia and redo the synthesis.",
+        "Deliver the report as is, since the countries covered are of good quality.",
+        "Redo the entire research from scratch with more subagents and a revised decomposition, ensuring that no country in scope is left out this time.",
+        "Ask the synthesis subagent to write about Chile and Colombia based on the model's general knowledge."
       ],
       "correta": 0,
-      "explicacao": "O coordenador avalia a síntese, identifica lacunas e redelega uma segunda rodada direcionada antes de sintetizar.",
+      "explicacao": "The coordinator evaluates the synthesis, identifies gaps, and re-delegates a targeted second round before synthesizing.",
       "feedbacks": [
-        "Correta. Refinamento iterativo: roda, avalia, identifica lacunas, faz rodada direcionada e sintetiza. Barato e focado.",
-        "Entrega incompleta sem nem sinalizar a lacuna; falha com o escopo do cliente.",
-        "Desperdiça o que já está bom; a lacuna é localizada e pede uma rodada direcionada.",
-        "Conteúdo sem fonte num sistema de pesquisa com citações; compromete a proveniência."
+        "Correct. Iterative refinement: run, evaluate, identify gaps, do a targeted round, and synthesize. Cheap and focused.",
+        "An incomplete delivery without even flagging the gap; it fails to meet the client's scope.",
+        "It wastes what is already good; the gap is localized and calls for a targeted round.",
+        "Unsourced content in a research system with citations; it compromises provenance."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nHoje, quando a API de busca acadêmica dá timeout, o subagent de busca devolve \"nenhum estudo encontrado\", e o relatório afirma que \"não há pesquisas sobre o tema\". O que a resposta do subagent deveria fazer nesse caso? (Escolha DUAS.)",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nToday, when the academic search API times out, the search subagent returns \"no studies found\", and the report states that \"there is no research on the topic\". What should the subagent's response do in this case? (Choose TWO.)",
       "opcoes": [
-        "Devolver um erro estruturado indicando falha transitória, a consulta tentada e se é retentável, em vez de um resultado vazio.",
-        "Manter o resultado vazio, mas adicionar no relatório final uma nota genérica de que \"podem existir outros estudos\".",
-        "Devolver apenas a mensagem \"Search failed\".",
-        "Incluir os resultados parciais obtidos antes do timeout, marcados como incompletos.",
-        "Abortar toda a pesquisa e avisar o cliente de que o sistema está indisponível."
+        "Return a structured error indicating a transient failure, the query attempted, and whether it is retryable, instead of an empty result.",
+        "Keep the empty result, but add a generic note to the final report that \"other studies may exist\".",
+        "Return only the message \"Search failed\".",
+        "Include the partial results obtained before the timeout, marked as incomplete.",
+        "Abort the entire research and notify the client that the system is unavailable."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Vazio ≠ falha. Timeout gera erro estruturado (categoria, consulta tentada, retentável) e, quando houver, resultados parciais marcados; nunca lista vazia como sucesso.",
+      "explicacao": "Empty ≠ failure. A timeout produces a structured error (category, query attempted, retryable) and, when available, partial results marked as such; never an empty list as success.",
       "feedbacks": [
-        "Correta. Timeout significa que a busca não rodou; o erro estruturado deixa o coordenador decidir entre tentar de novo, usar alternativa ou registrar a lacuna.",
-        "Continua tratando falha como 'nada encontrado' (supressão silenciosa) e esconde o diagnóstico.",
-        "Erro genérico: sem categoria, consulta tentada ou indicação de retry, o coordenador não sabe o que fazer.",
-        "Correta. Resultado parcial com indicação de incompletude permite continuar o trabalho sem fingir cobertura total.",
-        "Abortar o workflow por uma falha de uma fonte; o certo é seguir com o parcial e anotar a lacuna."
+        "Correct. A timeout means the search didn't run; the structured error lets the coordinator decide between retrying, using an alternative, or recording the gap.",
+        "It still treats a failure as 'nothing found' (silent suppression) and hides the diagnosis.",
+        "Generic error: without a category, the query attempted, or an indication of retry, the coordinator doesn't know what to do.",
+        "Correct. A partial result with an indication that it is incomplete allows the work to continue without pretending to have full coverage.",
+        "Aborting the workflow because of a failure in one source; the right move is to proceed with the partial results and note the gap."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nDos quatro subagents de busca de uma pesquisa, três terminaram bem e um falhou com erro de permissão: a base de dados de patentes exige uma credencial que expirou. Qual é a melhor resposta do coordenador?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nOf the four search subagents in a research job, three finished successfully and one failed with a permission error: the patent database requires a credential that has expired. What is the coordinator's best response?",
       "opcoes": [
-        "Repetir a busca de patentes com backoff exponencial até ela funcionar.",
-        "Sintetizar com os três resultados, registrar a lacuna (patentes, e por quê) e sinalizar a credencial expirada.",
-        "Abortar a pesquisa inteira, já que o relatório ficaria incompleto.",
-        "Seguir com os três resultados e omitir a base de patentes do relatório, já que o cliente não pediu patentes explicitamente e a lacuna poderia gerar dúvidas."
+        "Retry the patent search with exponential backoff until it works.",
+        "Synthesize with the three results, record the gap (patents, and why), and flag the expired credential.",
+        "Abort the entire research job, since the report would be incomplete.",
+        "Proceed with the three results and omit the patent database from the report, since the client didn't explicitly ask for patents and the gap could raise questions."
       ],
       "correta": 1,
-      "explicacao": "Não aborte o workflow por uma etapa: continue com o parcial, anote a lacuna e ofereça alternativa ou escale. Erro de permissão é não retentável.",
+      "explicacao": "Don't abort the workflow because of one step: continue with the partial results, note the gap, and offer an alternative or escalate. A permission error is non-retryable.",
       "feedbacks": [
-        "Retry só ajuda em erro transitório; credencial expirada não volta sozinha.",
-        "Correta. Erro de permissão não é retentável; continue com o parcial, anote a lacuna e escale o que exige ação humana.",
-        "Joga fora três resultados bons por causa de uma fonte; anti-padrão de abortar o workflow por uma falha.",
-        "Supressão silenciosa: o cliente acha que patentes foram consideradas."
+        "Retrying only helps with transient errors; an expired credential won't come back on its own.",
+        "Correct. A permission error is not retryable; continue with the partial results, note the gap, and escalate what requires human action.",
+        "It throws away three good results because of one source; the anti-pattern of aborting the workflow over one failure.",
+        "Silent suppression: the client thinks patents were considered."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca encontra rate limit (HTTP 429) na API de notícias algumas vezes por pesquisa. Hoje ele repassa cada 429 ao coordenador, que interrompe o planejamento para lidar com isso. Como dividir a responsabilidade?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent hits rate limits (HTTP 429) on the news API a few times per research job. Today it passes each 429 on to the coordinator, which interrupts its planning to deal with it. How should responsibility be divided?",
       "opcoes": [
-        "O coordenador centraliza o tratamento de todos os erros, incluindo cada 429, para manter controle total e visão completa do estado do sistema.",
-        "O subagent ignora o 429 e devolve o que tiver, sem avisar.",
-        "O subagent faz retry com backoff (respeitando retry-after) e só propaga o que não resolveu, com contexto.",
-        "O subagent repete a chamada imediatamente, sem espera, até conseguir."
+        "The coordinator centralizes the handling of all errors, including each 429, to maintain full control and a complete view of the system's state.",
+        "The subagent ignores the 429 and returns whatever it has, without notice.",
+        "The subagent retries with backoff (respecting retry-after) and only propagates what it couldn't resolve, with context.",
+        "The subagent repeats the call immediately, without waiting, until it succeeds."
       ],
       "correta": 2,
-      "explicacao": "Subagent recupera transitório localmente (backoff) e propaga só o que não resolveu, com contexto do que foi tentado.",
+      "explicacao": "The subagent recovers from transient errors locally (backoff) and propagates only what it couldn't resolve, with context on what was attempted.",
       "feedbacks": [
-        "Sobrecarrega o coordenador com detalhes operacionais que o subagent resolve sozinho, e polui o contexto dele.",
-        "Supressão silenciosa: a cobertura incompleta não aparece em lugar nenhum.",
-        "Correta. Recuperação local do transitório no subagent; o coordenador recebe só falhas persistentes, já com o que foi tentado.",
-        "Retry sem backoff agrava o rate limit e pode nunca convergir."
+        "It overloads the coordinator with operational details that the subagent can resolve on its own, and it pollutes the coordinator's context.",
+        "Silent suppression: the incomplete coverage doesn't show up anywhere.",
+        "Correct. Local recovery from transient errors in the subagent; the coordinator receives only persistent failures, together with what was attempted.",
+        "Retrying without backoff aggravates the rate limit and may never converge."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nDois relatórios de mercado, ambos de 2025, estimam o mercado brasileiro de fintechs em R$ 42 bilhões e R$ 51 bilhões, com metodologias diferentes. Como o subagent de síntese deve tratar isso no relatório?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTwo market reports, both from 2025, estimate the Brazilian fintech market at R$ 42 billion and R$ 51 billion, using different methodologies. How should the synthesis subagent handle this in the report?",
       "opcoes": [
-        "Apresentar os dois valores, cada um com sua fonte, data e metodologia, marcando o dado como contestado.",
-        "Usar a média, R$ 46,5 bilhões, como estimativa de consenso.",
-        "Usar o valor da fonte mais conhecida e omitir o outro.",
-        "Omitir o tamanho do mercado do relatório, já que as fontes discordam."
+        "Present both values, each with its source, date, and methodology, marking the data point as contested.",
+        "Use the average, R$ 46.5 billion, as a consensus estimate.",
+        "Use the value from the better-known source and omit the other.",
+        "Omit the market size from the report, since the sources disagree."
       ],
       "correta": 0,
-      "explicacao": "Conflito entre fontes: anote os valores divergentes com suas fontes. Não escolha um em silêncio nem tire média.",
+      "explicacao": "Conflict between sources: annotate the divergent values with their sources. Don't silently pick one or take an average.",
       "feedbacks": [
-        "Correta. Conflito entre fontes é anotado com os valores divergentes e suas fontes; o leitor decide com a informação completa.",
-        "Tirar média cria um número que nenhuma fonte afirma e esconde a divergência.",
-        "Escolher um valor em silêncio elimina informação relevante e a incerteza real.",
-        "Joga fora informação útil; a divergência em si é um achado que deve ser apresentado."
+        "Correct. A conflict between sources is annotated with the divergent values and their sources; the reader decides with complete information.",
+        "Averaging creates a number that no source states and hides the divergence.",
+        "Silently picking one value eliminates relevant information and the real uncertainty.",
+        "It throws away useful information; the divergence itself is a finding that should be presented."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO verificador de consistência sinalizou \"contradição\" porque uma fonte diz que 38% das PMEs usam nuvem e outra diz 61%. A primeira é uma pesquisa publicada em 2021 com dados de 2020; a segunda, de 2025 com dados de 2024. Qual desenho evita esse falso alarme?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe consistency checker flagged a \"contradiction\" because one source says 38% of SMEs use the cloud and another says 61%. The first is a survey published in 2021 with 2020 data; the second, from 2025 with 2024 data. Which design avoids this false alarm?",
       "opcoes": [
-        "Descartar automaticamente fontes com mais de três anos.",
-        "Manter apenas a fonte mais recente quando dois números divergirem, já que dados mais novos refletem melhor a situação atual do mercado.",
-        "Pedir ao verificador para \"usar o bom senso\" ao comparar números.",
-        "Registrar o período dos dados e a data de publicação, tratando períodos diferentes como série, não contradição."
+        "Automatically discard sources more than three years old.",
+        "Keep only the most recent source when two numbers diverge, since newer data better reflects the current state of the market.",
+        "Ask the checker to \"use good judgment\" when comparing numbers.",
+        "Record the data period and the publication date, treating different periods as a series, not a contradiction."
       ],
       "correta": 3,
-      "explicacao": "Registre período dos dados, publicação e coleta. Números de períodos diferentes não são contradição.",
+      "explicacao": "Record the data period, the publication date, and the collection date. Numbers from different periods are not a contradiction.",
       "feedbacks": [
-        "Perde o histórico útil (a evolução de 38% para 61% é um achado) e não resolve o problema de metadados.",
-        "Escolhe em silêncio; e, quando as fontes forem do mesmo período, apagaria um conflito real.",
-        "Critério vago; sem a data dos dados nos metadados, o verificador não tem como saber.",
-        "Correta. Dados temporais exigem registrar 'dados de', publicação e coleta; valores de períodos diferentes descrevem uma evolução."
+        "It loses useful history (the evolution from 38% to 61% is a finding) and doesn't solve the metadata problem.",
+        "It picks silently; and, when the sources are from the same period, it would erase a real conflict.",
+        "A vague criterion; without the data date in the metadata, the checker has no way of knowing.",
+        "Correct. Temporal data requires recording 'data as of', publication, and collection; values from different periods describe an evolution."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nOs subagents de análise devolvem parágrafos de texto corrido. Na síntese final, várias afirmações perdem a fonte e o revisor não consegue rastrear de onde veio cada número. Qual mudança resolve na origem?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe analysis subagents return paragraphs of running text. In the final synthesis, several claims lose their source, and the reviewer cannot trace where each number came from. Which change solves this at the source?",
       "opcoes": [
-        "Pedir ao subagent de síntese para \"não perder as citações\".",
-        "Saída estruturada dos subagents separando conteúdo de metadados: afirmação, trecho, fonte/URL e data.",
-        "Colocar todas as URLs consultadas numa lista de referências no fim do relatório.",
-        "Fazer o subagent de síntese refazer as buscas para reencontrar as fontes de cada afirmação."
+        "Ask the synthesis subagent to \"not lose the citations\".",
+        "Structured output from the subagents separating content from metadata: claim, excerpt, source/URL, and date.",
+        "Put all the URLs consulted in a reference list at the end of the report.",
+        "Have the synthesis subagent redo the searches to find the sources of each claim again."
       ],
       "correta": 1,
-      "explicacao": "Passagem estruturada entre agentes: separe conteúdo de metadados (afirmação, evidência, fonte, data) para a atribuição sobreviver.",
+      "explicacao": "Structured handoff between agents: separate content from metadata (claim, evidence, source, date) so that attribution survives.",
       "feedbacks": [
-        "Instrução vaga sobre um insumo que já chega sem estrutura; a fonte se perde antes da síntese.",
-        "Correta. Passagem estruturada com metadados faz a atribuição sobreviver às etapas seguintes do pipeline.",
-        "Lista solta não diz qual afirmação vem de qual fonte; o mapa afirmação → fonte continua faltando.",
-        "Caro e frágil; recupera depois o que bastava não perder."
+        "A vague instruction about an input that already arrives without structure; the source is lost before the synthesis.",
+        "Correct. A structured handoff with metadata lets attribution survive the subsequent stages of the pipeline.",
+        "A loose list doesn't say which claim comes from which source; the claim → source mapping is still missing.",
+        "Expensive and fragile; it recovers after the fact what simply shouldn't have been lost."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nA InsightLab vai revisar as instruções do subagent de síntese para melhorar a confiabilidade dos relatórios. Quais DUAS práticas devem entrar? (Escolha DUAS.)",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nInsightLab is going to revise the synthesis subagent's instructions to improve the reliability of the reports. Which TWO practices should be included? (Choose TWO.)",
       "opcoes": [
-        "Remover ressalvas e limitações das fontes, para o texto ficar mais assertivo.",
-        "Rotular o grau de certeza de cada achado: consolidado (várias fontes), contestado ou fonte única.",
-        "Quando fontes divergirem, apresentar apenas o valor mais conservador.",
-        "Citar as fontes só numa bibliografia geral no final, sem ligar afirmações a fontes.",
-        "Escolher o formato conforme o conteúdo: tabela para dados financeiros comparáveis, cronologia para eventos."
+        "Remove caveats and limitations from the sources, so the text is more assertive.",
+        "Label the degree of certainty of each finding: well-established (multiple sources), contested, or single source.",
+        "When sources diverge, present only the most conservative value.",
+        "Cite sources only in a general bibliography at the end, without linking claims to sources.",
+        "Choose the format according to the content: a table for comparable financial data, a timeline for events."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Síntese confiável: rotule certeza (consolidado/contestado/fonte única), preserve ressalvas, ligue cada afirmação à fonte e escolha o formato pelo conteúdo.",
+      "explicacao": "Reliable synthesis: label certainty (well-established/contested/single source), preserve caveats, link each claim to its source, and choose the format based on the content.",
       "feedbacks": [
-        "Perder ressalvas distorce a evidência; elas devem ser preservadas.",
-        "Correta. O rótulo de certeza mostra ao leitor quão sólido é cada achado.",
-        "Escolher um valor em silêncio, mesmo 'conservador', esconde o conflito.",
-        "Sem o mapa afirmação → fonte, a proveniência se perde.",
-        "Correta. Formato adequado ao conteúdo faz parte de uma boa síntese."
+        "Losing caveats distorts the evidence; they should be preserved.",
+        "Correct. The certainty label shows the reader how solid each finding is.",
+        "Silently picking a value, even a 'conservative' one, hides the conflict.",
+        "Without the claim → source mapping, provenance is lost.",
+        "Correct. A format suited to the content is part of a good synthesis."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca tem duas tools: search (\"busca informações\") e find_documents (\"encontra documentos relevantes\"). A primeira consulta a web; a segunda, o acervo interno de relatórios licenciados. O subagent frequentemente busca na web o que existe no acervo. Qual é a correção mais simples e eficaz?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent has two tools: search (\"searches for information\") and find_documents (\"finds relevant documents\"). The first queries the web; the second, the internal collection of licensed reports. The subagent frequently searches the web for what exists in the collection. What is the simplest and most effective fix?",
       "opcoes": [
-        "Adicionar um classificador antes do subagent, que analisa cada consulta e decide qual das duas tools deve ser usada antes de o modelo agir.",
-        "Remover a busca na web, deixando só o acervo interno.",
-        "Renomear e redescrever as tools (ex.: web_search e search_licensed_reports), dizendo quando usar cada uma.",
-        "Forçar o subagent a chamar sempre as duas tools em cada consulta."
+        "Add a classifier in front of the subagent that analyzes each query and decides which of the two tools should be used before the model acts.",
+        "Remove web search, leaving only the internal collection.",
+        "Rename the tools and rewrite their descriptions (e.g., web_search and search_licensed_reports), stating when to use each one.",
+        "Force the subagent to always call both tools for every query."
       ],
       "correta": 2,
-      "explicacao": "Descrições vagas e sobrepostas causam roteamento errado: renomeie e descreva para separar os propósitos.",
+      "explicacao": "Vague, overlapping descriptions cause misrouting: rename and describe the tools to separate their purposes.",
       "feedbacks": [
-        "Mais complexo do que o necessário; diferenciar as descrições vem antes.",
-        "Elimina capacidade necessária para temas fora do acervo.",
-        "Correta. Nome e descrição são o critério de seleção; tools com propósitos sobrepostos na descrição causam roteamento errado.",
-        "Dobra custo e latência e despeja resultados redundantes no contexto, em vez de corrigir a seleção."
+        "More complex than necessary; differentiating the descriptions comes first.",
+        "It eliminates a capability needed for topics outside the collection.",
+        "Correct. The name and description are the selection criterion; tools whose descriptions overlap in purpose cause misrouting.",
+        "It doubles cost and latency and dumps redundant results into the context, instead of fixing the selection."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de síntese recebe, num único prompt, os resultados brutos de 12 subagents (cerca de 150 mil tokens). Achados importantes que aparecem no meio desse material quase nunca chegam ao relatório. O que fazer?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe synthesis subagent receives, in a single prompt, the raw results from 12 subagents (about 150,000 tokens). Important findings that appear in the middle of this material almost never make it into the report. What should be done?",
       "opcoes": [
-        "Cada subagent devolve um resumo enxuto (achados-chave primeiro, com fonte), organizado por cabeçalhos de tema.",
-        "Usar um modelo com janela de 1M de tokens, para que os 150 mil tokens caibam com folga e o modelo tenha espaço para considerar todos os resultados.",
-        "Repetir os 150 mil tokens duas vezes no prompt para reforçar a atenção.",
-        "Embaralhar a ordem dos resultados a cada execução para que cada achado tenha chance de ficar no início."
+        "Each subagent returns a concise summary (key findings first, with source), organized under topic headings.",
+        "Use a model with a 1M-token window, so the 150,000 tokens fit comfortably and the model has room to consider all the results.",
+        "Repeat the 150,000 tokens twice in the prompt to reinforce attention.",
+        "Shuffle the order of the results on each run so that every finding has a chance of being at the beginning."
       ],
       "correta": 0,
-      "explicacao": "Lost in the middle: achados-chave no começo, cabeçalhos de seção, nada crítico no meio; e corte o volume com saídas enxutas.",
+      "explicacao": "Lost in the middle: key findings at the beginning, section headings, nothing critical in the middle; and cut the volume with concise outputs.",
       "feedbacks": [
-        "Correta. Lost in the middle: coloque achados-chave no começo, use cabeçalhos e reduza o volume com saídas enxutas e estruturadas.",
-        "Caber não é o problema; janela maior custa mais e o efeito 'lost in the middle' continua ou piora.",
-        "Dobra custo e ruído sem resolver a organização do material.",
-        "Torna o resultado aleatório e não reprodutível; não corrige a causa."
+        "Correct. Lost in the middle: put key findings at the beginning, use headings, and reduce the volume with concise, structured outputs.",
+        "Fitting is not the problem; a larger window costs more, and the 'lost in the middle' effect persists or gets worse.",
+        "It doubles cost and noise without solving how the material is organized.",
+        "It makes the result random and non-reproducible; it doesn't fix the cause."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPesquisas grandes rodam por horas. Quando o processo do coordenador cai na terceira hora, tudo recomeça do zero, inclusive as buscas que já tinham terminado. Qual desenho resolve?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nLarge research jobs run for hours. When the coordinator process crashes in the third hour, everything restarts from scratch, including the searches that had already finished. Which design solves this?",
       "opcoes": [
-        "Retomar o coordenador com --resume na mesma sessão, confiando no histórico da conversa para saber quais buscas já tinham terminado antes da queda.",
-        "Reduzir o escopo das pesquisas para que terminem antes de uma hora.",
-        "Adicionar um limite de tempo por pesquisa e marcar como falha as que passarem dele.",
-        "Manter um manifesto em local conhecido (subtarefas, status, caminhos dos resultados) e retomar a partir dele."
+        "Resume the coordinator with --resume in the same session, relying on the conversation history to know which searches had already finished before the crash.",
+        "Reduce the scope of the research jobs so they finish in under an hour.",
+        "Add a time limit per research job and mark those that exceed it as failed.",
+        "Keep a manifest in a known location (subtasks, status, result paths) and resume from it."
       ],
       "correta": 3,
-      "explicacao": "Estado salvo em local conhecido + manifesto do coordenador permite retomar após crash. O que não pode se perder vai para arquivo.",
+      "explicacao": "State saved in a known location + a coordinator manifest makes it possible to resume after a crash. Whatever cannot be lost goes to a file.",
       "feedbacks": [
-        "Depende do scrollback, que pode ter sido compactado ou perdido; o que não pode se perder vai para arquivo.",
-        "Sacrifica o produto para contornar uma falha de engenharia.",
-        "Não recupera nada; só transforma crashes em falhas declaradas.",
-        "Correta. Estado salvo em arquivo + manifesto permite retomar após crash sem refazer o que já terminou."
+        "It depends on the scrollback, which may have been compacted or lost; whatever cannot be lost goes to a file.",
+        "It sacrifices the product to work around an engineering flaw.",
+        "It doesn't recover anything; it only turns crashes into declared failures.",
+        "Correct. State saved to a file + a manifest makes it possible to resume after a crash without redoing what has already finished."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO sistema é implementado com o Claude Agent SDK, e os subagents são declarados via AgentDefinition. Quais DUAS afirmações sobre essa implementação estão corretas? (Escolha DUAS.)",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe system is implemented with the Claude Agent SDK, and the subagents are declared via AgentDefinition. Which TWO statements about this implementation are correct? (Choose TWO.)",
       "opcoes": [
-        "Cada subagent recebe automaticamente o histórico completo do coordenador.",
-        "Subagents podem chamar diretamente outros subagents irmãos para trocar resultados.",
-        "O coordenador precisa ter a tool Agent em allowedTools para conseguir criar subagents.",
-        "Mensagens produzidas dentro de um subagent trazem parent_tool_use_id, o que permite atribuí-las à chamada que o criou.",
-        "Para rodar em paralelo, cada subagent precisa ser iniciado num processo separado do SDK."
+        "Each subagent automatically receives the coordinator's full history.",
+        "Subagents can directly call sibling subagents to exchange results.",
+        "The coordinator must have the Agent tool in allowedTools to be able to create subagents.",
+        "Messages produced inside a subagent carry parent_tool_use_id, which allows them to be attributed to the call that created it.",
+        "To run in parallel, each subagent must be started in a separate SDK process."
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Agent SDK: a tool Agent precisa estar em allowedTools; mensagens de subagent trazem parent_tool_use_id. Contexto é isolado e a comunicação passa pelo coordenador.",
+      "explicacao": "Agent SDK: the Agent tool must be in allowedTools; subagent messages carry parent_tool_use_id. Context is isolated, and communication goes through the coordinator.",
       "feedbacks": [
-        "Falso: o contexto do subagent é isolado, e tudo o que ele precisa vai no prompt.",
-        "Contraria o hub-and-spoke: a comunicação passa pelo coordenador.",
-        "Correta. Subagents são criados pela tool Agent (antes chamada Task), que precisa estar liberada para o coordenador.",
-        "Correta. É assim que se rastreia qual subagent produziu o quê.",
-        "O paralelismo vem de várias chamadas Agent na mesma resposta do coordenador."
+        "False: the subagent's context is isolated, and everything it needs goes in the prompt.",
+        "It contradicts hub-and-spoke: communication goes through the coordinator.",
+        "Correct. Subagents are created via the Agent tool (formerly called Task), which must be allowed for the coordinator.",
+        "Correct. This is how you trace which subagent produced what.",
+        "Parallelism comes from multiple Agent calls in the same coordinator response."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D4",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO prompt do subagent de análise diz \"descarte fontes pouco confiáveis\". Em execuções diferentes, o mesmo blog técnico é aceito numa e descartado noutra, e estudos de associações setoriais são tratados de forma inconsistente. Qual é a melhor correção?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe analysis subagent's prompt says \"discard unreliable sources\". In different runs, the same technical blog is accepted in one and discarded in another, and studies from industry associations are treated inconsistently. What is the best fix?",
       "opcoes": [
-        "Pedir ao subagent que atribua a cada fonte uma nota de confiabilidade de 0 a 10, justificando a nota, e descarte automaticamente as que ficarem abaixo de 7.",
-        "Adicionar \"seja rigoroso\" à instrução atual.",
-        "Definir critérios explícitos: tipos de fonte que contam, os que não contam e exemplos de fronteira com o motivo.",
-        "Colocar um segundo subagent que revisa cada decisão do primeiro com o mesmo prompt."
+        "Ask the subagent to assign each source a reliability score from 0 to 10, justifying the score, and automatically discard those below 7.",
+        "Add \"be rigorous\" to the current instruction.",
+        "Define explicit criteria: the source types that count, those that don't, and boundary examples with the reason.",
+        "Add a second subagent that reviews each decision of the first one using the same prompt."
       ],
       "correta": 2,
-      "explicacao": "Critérios explícitos (o que conta, o que não conta, exemplos de fronteira) vencem instruções vagas como 'descarte fontes pouco confiáveis'.",
+      "explicacao": "Explicit criteria (what counts, what doesn't, boundary examples) beat vague instructions like 'discard unreliable sources'.",
       "feedbacks": [
-        "Desloca o julgamento vago para uma nota autodeclarada sem régua; continua inconsistente.",
-        "Mais uma instrução vaga; não define rigor.",
-        "Correta. Critério explícito, com o que conta, o que não conta e casos de fronteira, torna a decisão consistente.",
-        "Dobra o custo e replica o mesmo critério vago; não resolve a raiz."
+        "It shifts the vague judgment to a self-reported score with no yardstick; it remains inconsistent.",
+        "Yet another vague instruction; it doesn't define rigor.",
+        "Correct. Explicit criteria, with what counts, what doesn't, and boundary cases, make the decision consistent.",
+        "It doubles the cost and replicates the same vague criterion; it doesn't solve the root cause."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nO subagent de busca usa a tool server-side de web search. Em pesquisas extensas, às vezes a resposta volta com stop_reason \"pause_turn\", e o código atual trata isso como fim, entregando um resultado incompleto. Qual é o tratamento correto?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent uses the server-side web search tool. In extensive research, the response sometimes comes back with stop_reason \"pause_turn\", and the current code treats this as the end, delivering an incomplete result. What is the correct handling?",
       "opcoes": [
-        "Tratar pause_turn como erro e repetir o request original do zero.",
-        "Reenviar a conversa incluindo a resposta recebida, para o modelo continuar o loop server-side de onde parou.",
-        "Aumentar max_tokens, pois pause_turn indica que a saída foi cortada.",
-        "Mudar para tool_choice none no próximo turno para forçar uma resposta final."
+        "Treat pause_turn as an error and repeat the original request from scratch.",
+        "Resend the conversation including the response received, so the model continues the server-side loop where it left off.",
+        "Increase max_tokens, since pause_turn indicates that the output was cut off.",
+        "Switch to tool_choice none on the next turn to force a final answer."
       ],
       "correta": 1,
-      "explicacao": "pause_turn = o loop de tool server-side atingiu o teto de iterações; reenvie a resposta para continuar.",
+      "explicacao": "pause_turn = the server-side tool loop hit its iteration cap; resend the response to continue.",
       "feedbacks": [
-        "Descarta o trabalho já feito no turno e pode bater no mesmo teto de novo.",
-        "Correta. pause_turn indica que o loop server-side atingiu o teto de iterações; reenviar a resposta permite continuar.",
-        "Confunde pause_turn com max_tokens; são sinais diferentes.",
-        "Força uma resposta antes de a busca terminar; entrega exatamente o resultado incompleto que se quer evitar."
+        "It discards the work already done in the turn and may hit the same cap again.",
+        "Correct. pause_turn indicates that the server-side loop hit its iteration cap; resending the response allows it to continue.",
+        "It confuses pause_turn with max_tokens; they are different signals.",
+        "It forces an answer before the search finishes; it delivers exactly the incomplete result you want to avoid."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D4",
-      "pergunta": "Cenário: a InsightLab opera um sistema de pesquisa multiagente: um coordenador decompõe a pergunta do cliente e delega a subagents de busca na web, análise de documentos e síntese, que juntos produzem relatórios com citações.\n\nPara reduzir citações erradas, a equipe pediu que o subagent de síntese, ao terminar o relatório, \"revise suas próprias citações\". A taxa de citações que não sustentam a afirmação quase não mudou. Qual abordagem é melhor?",
+      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTo reduce incorrect citations, the team asked the synthesis subagent, when it finishes the report, to \"review its own citations\". The rate of citations that don't support the claim barely changed. Which approach is better?",
       "opcoes": [
-        "Um subagent verificador independente, com contexto novo, que checa se cada trecho citado sustenta a afirmação.",
-        "Pedir ao subagent de síntese para revisar as citações duas vezes.",
-        "Pedir ao subagent de síntese um score de confiança para cada citação, com justificativa, e remover do relatório as citações com score abaixo do limite.",
-        "Aumentar o effort do subagent de síntese."
+        "An independent verifier subagent, with a fresh context, that checks whether each cited excerpt supports the claim.",
+        "Ask the synthesis subagent to review the citations twice.",
+        "Ask the synthesis subagent for a confidence score for each citation, with a justification, and remove from the report the citations scored below the threshold.",
+        "Increase the synthesis subagent's effort."
       ],
       "correta": 0,
-      "explicacao": "Revisão deve ser feita por instância independente (sem o contexto de raciocínio do autor), com critério explícito.",
+      "explicacao": "Review should be done by an independent instance (without the author's reasoning context), with explicit criteria.",
       "feedbacks": [
-        "Correta. Auto-revisão no mesmo contexto sofre do viés do raciocínio que gerou o texto; um verificador independente, com critério explícito, pega o que o autor racionalizou.",
-        "Mesma sessão, mesmo viés; repetir não muda o ponto de vista.",
-        "Confiança autodeclarada é mal calibrada; as citações erradas costumam vir com alta confiança.",
-        "Mais raciocínio no mesmo contexto enviesado não resolve a auto-revisão."
+        "Correct. Self-review in the same context suffers from the bias of the reasoning that generated the text; an independent verifier, with explicit criteria, catches what the author rationalized.",
+        "Same session, same bias; repeating doesn't change the point of view.",
+        "Self-reported confidence is poorly calibrated; incorrect citations usually come with high confidence.",
+        "More reasoning in the same biased context doesn't fix self-review."
       ]
     }
   ]

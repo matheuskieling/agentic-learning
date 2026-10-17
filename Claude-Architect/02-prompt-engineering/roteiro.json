@@ -118,6 +118,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação do módulo",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas sobre critérios explícitos, falso positivo, few-shot, refinamento iterativo e boas práticas de base",
         "Depois de cada resposta, explique por que as erradas são tentadoras"
       ],
@@ -130,7 +131,8 @@
       "fase": "prova",
       "titulo": "Prova do módulo",
       "pontos": [
-        "20 questões em estilo de cenário, feedback por alternativa, algumas 'Escolha DUAS'",
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo de cenário, feedback por alternativa, algumas 'Choose TWO'",
         "Aprovação 70%; só seguir para o Módulo 03 após passar"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-02/questions.json --id prova",

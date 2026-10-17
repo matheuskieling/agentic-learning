@@ -1,213 +1,213 @@
 {
-  "titulo": "Módulo 06 — Quiz: o loop agêntico, hooks e handoff",
+  "titulo": "Module 06 — Quiz: the agentic loop, hooks, and handoff",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Qual campo da resposta da Messages API deve decidir se o loop agêntico continua ou termina?",
+      "pergunta": "Which field of the Messages API response should decide whether the agentic loop continues or ends?",
       "opcoes": [
-        "O último bloco `text` do `content`, procurando sinais como \"concluído\"",
-        "O `stop_reason`",
-        "O número de blocos em `content`",
-        "O `usage.output_tokens` comparado com o `max_tokens`"
+        "The last `text` block in `content`, looking for signals such as \"done\"",
+        "The `stop_reason`",
+        "The number of blocks in `content`",
+        "`usage.output_tokens` compared with `max_tokens`"
       ],
       "correta": 1,
-      "explicacao": "`stop_reason` é o contrato da API: `tool_use` → executa e continua; `end_turn` → terminou. O texto é ambíguo e não é sinal de parada.",
+      "explicacao": "`stop_reason` is the API contract: `tool_use` → execute and continue; `end_turn` → finished. Text is ambiguous and is not a stop signal.",
       "feedbacks": [
-        "Anti-padrão clássico nº 1: decidir a parada lendo linguagem natural. O modelo pode escrever \"pronto\" e ainda pedir uma tool no mesmo turno.",
-        "Correto. `stop_reason` é o sinal estruturado que dirige o loop.",
-        "Contar blocos não diz nada: uma resposta final pode ter um bloco só, e uma com tools pode ter vários.",
-        "Comparar tokens só ajudaria a detectar corte, e para isso o próprio `stop_reason: max_tokens` já existe."
+        "Classic anti-pattern #1: deciding when to stop by reading natural language. The model can write \"all set\" and still request a tool in the same turn.",
+        "Correct. `stop_reason` is the structured signal that drives the loop.",
+        "Counting blocks tells you nothing: a final response can have a single block, and one with tools can have several.",
+        "Comparing tokens would only help detect truncation, and `stop_reason: max_tokens` already exists for that."
       ]
     },
     {
-      "pergunta": "A resposta veio com `stop_reason: \"max_tokens\"`. O que isso indica?",
+      "pergunta": "The response came back with `stop_reason: \"max_tokens\"`. What does this indicate?",
       "opcoes": [
-        "O modelo terminou normalmente e usou exatamente o orçamento",
-        "A janela de contexto encheu",
-        "A resposta foi cortada no teto de saída e está incompleta",
-        "Uma tool server-side atingiu o teto de iterações"
+        "The model finished normally and used exactly its budget",
+        "The context window filled up",
+        "The response was cut off at the output ceiling and is incomplete",
+        "A server-side tool hit its iteration cap"
       ],
       "correta": 2,
-      "explicacao": "`max_tokens` = cortou no limite de SAÍDA no meio da resposta. Continue a geração ou aumente o teto; nunca trate como completa.",
+      "explicacao": "`max_tokens` = it was cut off at the OUTPUT limit, mid-response. Continue the generation or raise the ceiling; never treat it as complete.",
       "feedbacks": [
-        "Terminar normalmente é `end_turn`. `max_tokens` significa corte, não conclusão.",
-        "Janela cheia antes do teto de saída é `model_context_window_exceeded`, outro valor.",
-        "Correto. A saída está truncada (JSON cortado, frase pela metade).",
-        "Isso é `pause_turn`, ligado a loops de tool server-side."
+        "Finishing normally is `end_turn`. `max_tokens` means truncation, not completion.",
+        "A full window before reaching the output ceiling is `model_context_window_exceeded`, a different value.",
+        "Correct. The output is truncated (cut-off JSON, a half-finished sentence).",
+        "That's `pause_turn`, tied to server-side tool loops."
       ]
     },
     {
-      "pergunta": "Seu agente usa a tool server-side de web search e a resposta chega com `stop_reason: \"pause_turn\"`. O que fazer?",
+      "pergunta": "Your agent uses the server-side web search tool, and the response arrives with `stop_reason: \"pause_turn\"`. What should you do?",
       "opcoes": [
-        "Reenviar a conversa, anexando a resposta como turno do assistant, para o modelo continuar",
-        "Tratar como erro e abortar a tarefa",
-        "Montar um `tool_result` para a web search e devolver",
-        "Encerrar e mostrar o texto parcial como resposta final"
+        "Resend the conversation, appending the response as an assistant turn, so the model can continue",
+        "Treat it as an error and abort the task",
+        "Build a `tool_result` for the web search and send it back",
+        "Stop and show the partial text as the final answer"
       ],
       "correta": 0,
-      "explicacao": "`pause_turn` = o loop server-side bateu no teto de iterações. Reenvie para que o modelo retome de onde parou.",
+      "explicacao": "`pause_turn` = the server-side loop hit its iteration cap. Resend so the model picks up where it left off.",
       "feedbacks": [
-        "Correto. Basta reenviar com a resposta anexada; o modelo continua o trabalho.",
-        "Não é erro: é uma pausa prevista pelo protocolo.",
-        "Tools server-side são executadas pela Anthropic; você não monta `tool_result` para elas.",
-        "A tarefa não terminou. Mostrar o parcial como final entrega trabalho incompleto."
+        "Correct. Just resend with the response appended; the model continues the work.",
+        "It's not an error: it's a pause anticipated by the protocol.",
+        "Server-side tools are executed by Anthropic; you don't build a `tool_result` for them.",
+        "The task isn't finished. Showing the partial text as final delivers incomplete work."
       ]
     },
     {
-      "pergunta": "Por que um código que só checa `HTTP 200` pode tratar uma recusa de segurança como \"sucesso vazio\"?",
+      "pergunta": "Why can code that only checks for `HTTP 200` treat a safety refusal as an \"empty success\"?",
       "opcoes": [
-        "Porque recusas vêm com HTTP 400 e o código não trata 400",
-        "Porque a recusa só aparece no header da resposta",
-        "Porque a recusa vem como um bloco `tool_use` especial",
-        "Porque a recusa chega com HTTP 200 e `stop_reason: \"refusal\"`"
+        "Because refusals come with HTTP 400 and the code doesn't handle 400",
+        "Because the refusal only appears in the response header",
+        "Because the refusal comes as a special `tool_use` block",
+        "Because the refusal arrives with HTTP 200 and `stop_reason: \"refusal\"`"
       ],
       "correta": 3,
-      "explicacao": "A recusa é uma resposta válida da API (HTTP 200). Só olhando `stop_reason` dá para distingui-la de uma resposta normal.",
+      "explicacao": "A refusal is a valid API response (HTTP 200). Only by looking at `stop_reason` can you distinguish it from a normal response.",
       "feedbacks": [
-        "Recusa não é erro HTTP; se fosse 400, o código que checa 200 nem trataria como sucesso.",
-        "A recusa é sinalizada no corpo, pelo `stop_reason`, não por header.",
-        "Não existe `tool_use` de recusa; o sinal é `stop_reason: refusal`.",
-        "Correto. Por isso se checa `stop_reason` antes de ler `content`."
+        "A refusal isn't an HTTP error; if it were a 400, code that checks for 200 wouldn't even treat it as a success.",
+        "The refusal is signaled in the body, via `stop_reason`, not via a header.",
+        "There's no refusal `tool_use`; the signal is `stop_reason: refusal`.",
+        "Correct. That's why you check `stop_reason` before reading `content`."
       ]
     },
     {
-      "pergunta": "O `content` de uma resposta tem um bloco `text` (\"Vou consultar seu pedido.\") e um bloco `tool_use`. O que o loop deve fazer?",
+      "pergunta": "A response's `content` has a `text` block (\"I'll look up your order.\") and a `tool_use` block. What should the loop do?",
       "opcoes": [
-        "Mostrar o texto ao usuário e encerrar, porque já há resposta textual",
-        "Executar a tool, devolver o `tool_result` e continuar o loop",
-        "Descartar o texto e reenviar pedindo só o `tool_use`",
-        "Pedir ao modelo que escolha entre responder ou chamar a tool"
+        "Show the text to the user and stop, since there's already a text response",
+        "Execute the tool, return the `tool_result`, and continue the loop",
+        "Discard the text and resend, asking only for the `tool_use`",
+        "Ask the model to choose between responding and calling the tool"
       ],
       "correta": 1,
-      "explicacao": "Texto e `tool_use` misturados são normais. O `stop_reason` será `tool_use`: execute e continue. Ter texto não significa que terminou.",
+      "explicacao": "Mixed text and `tool_use` are normal. The `stop_reason` will be `tool_use`: execute and continue. Having text doesn't mean it's finished.",
       "feedbacks": [
-        "Erro clássico: ter texto não é sinal de fim. A tool pedida nunca seria executada.",
-        "Correto. O texto é narração; o `tool_use` é a ação pedida.",
-        "O conteúdo misto é válido e o texto deve permanecer no histórico.",
-        "O modelo já decidiu: chamou a tool. Não há escolha a refazer."
+        "Classic mistake: having text isn't a signal of completion. The requested tool would never be executed.",
+        "Correct. The text is narration; the `tool_use` is the requested action.",
+        "Mixed content is valid, and the text should remain in the history.",
+        "The model has already decided: it called the tool. There's no choice to redo."
       ]
     },
     {
-      "pergunta": "O modelo pediu três tools na mesma resposta. Como os resultados devem voltar?",
+      "pergunta": "The model requested three tools in the same response. How should the results come back?",
       "opcoes": [
-        "Três mensagens `user`, uma por resultado, na ordem de execução",
-        "Só o resultado da primeira tool; o modelo pede as outras depois",
-        "Uma única mensagem `user` com três `tool_result`, cada um com o `tool_use_id` exato",
-        "Um único `tool_result` concatenando as três saídas"
+        "Three `user` messages, one per result, in order of execution",
+        "Only the first tool's result; the model will ask for the others later",
+        "A single `user` message with three `tool_result` blocks, each with the exact `tool_use_id`",
+        "A single `tool_result` concatenating the three outputs"
       ],
       "correta": 2,
-      "explicacao": "Tool use paralelo: todos os `tool_result` numa única mensagem `user`, cada um casado pelo `tool_use_id` do pedido.",
+      "explicacao": "Parallel tool use: all `tool_result` blocks go in a single `user` message, each matched by the request's `tool_use_id`.",
       "feedbacks": [
-        "Espalhar resultados em várias mensagens `user` quebra o protocolo.",
-        "Todos os `tool_use` precisam de resposta; faltar resultado gera erro.",
-        "Correto. Um resultado por pedido, ids exatos, uma mensagem.",
-        "Concatenar perde o vínculo entre cada pedido e seu resultado."
+        "Spreading results across several `user` messages breaks the protocol.",
+        "Every `tool_use` needs a response; a missing result causes an error.",
+        "Correct. One result per request, exact ids, one message.",
+        "Concatenating loses the link between each request and its result."
       ]
     },
     {
-      "pergunta": "Uma tool deu timeout. Qual é a forma certa de informar o modelo?",
+      "pergunta": "A tool timed out. What is the right way to inform the model?",
       "opcoes": [
-        "Devolver `tool_result` com `is_error: true` e uma mensagem explicando a falha",
-        "Omitir o `tool_result` dessa tool para não confundir o modelo",
-        "Devolver `tool_result` com conteúdo vazio, como se não houvesse dados",
-        "Lançar exceção e reiniciar a conversa do zero"
+        "Return a `tool_result` with `is_error: true` and a message explaining the failure",
+        "Omit that tool's `tool_result` so as not to confuse the model",
+        "Return a `tool_result` with empty content, as if there were no data",
+        "Throw an exception and restart the conversation from scratch"
       ],
       "correta": 0,
-      "explicacao": "A falha também recebe resultado, com `is_error: true`, para o modelo raciocinar sobre a recuperação (tentar de novo, outra tool, escalar).",
+      "explicacao": "The failure also gets a result, with `is_error: true`, so the model can reason about recovery (retry, another tool, escalate).",
       "feedbacks": [
-        "Correto. Erro explícito permite ao modelo decidir como se recuperar.",
-        "Omitir resultado quebra o protocolo e esconde o problema.",
-        "Vazio como sucesso é supressão silenciosa: o modelo conclui \"não há dados\" quando a busca nem rodou.",
-        "Abortar tudo por uma falha desperdiça o trabalho feito; o modelo pode se recuperar."
+        "Correct. An explicit error lets the model decide how to recover.",
+        "Omitting the result breaks the protocol and hides the problem.",
+        "Empty as success is silent suppression: the model concludes \"there's no data\" when the lookup never even ran.",
+        "Aborting everything over one failure wastes the work already done; the model can recover."
       ]
     },
     {
-      "pergunta": "Um time configurou o loop para parar após exatamente 5 iterações em todas as tarefas. Qual o problema?",
+      "pergunta": "A team configured the loop to stop after exactly 5 iterations on every task. What is the problem?",
       "opcoes": [
-        "Nenhum, desde que o número seja escolhido com base na média histórica",
-        "O problema é só de custo: 5 iterações são caras demais",
-        "Limite de iterações é proibido em qualquer forma",
-        "Um limite fixo como critério principal corta tarefas longas e não reflete o fim real; deve ser só backstop"
+        "None, as long as the number is chosen based on the historical average",
+        "The problem is only cost: 5 iterations are too expensive",
+        "Iteration limits are forbidden in any form",
+        "A fixed limit as the primary criterion cuts off long tasks and doesn't reflect the real end; it should only be a backstop"
       ],
       "correta": 3,
-      "explicacao": "Limite arbitrário como mecanismo principal de parada é anti-padrão. Um teto alto como backstop (com alerta) é aceitável; o fim normal é `end_turn`.",
+      "explicacao": "An arbitrary limit as the primary stopping mechanism is an anti-pattern. A high cap as a backstop (with an alert) is acceptable; the normal end is `end_turn`.",
       "feedbacks": [
-        "A média não resolve: tarefas acima dela seriam cortadas no meio.",
-        "O problema não é custo, é correção: o critério de parada é arbitrário.",
-        "Exagero: como rede de segurança contra loop infinito, um teto é correto.",
-        "Correto. Backstop sim; critério de parada, não."
+        "The average doesn't solve it: tasks above it would be cut off midway.",
+        "The problem isn't cost, it's correctness: the stopping criterion is arbitrary.",
+        "An overstatement: as a safety net against infinite loops, a cap is correct.",
+        "Correct. As a backstop, yes; as a stopping criterion, no."
       ]
     },
     {
-      "pergunta": "Qual a diferença essencial entre task budget e `max_tokens`?",
+      "pergunta": "What is the essential difference between a task budget and `max_tokens`?",
       "opcoes": [
-        "Task budget vale por resposta; `max_tokens` vale para a tarefa inteira",
-        "Task budget é visível ao modelo, que se organiza para caber; `max_tokens` é invisível e corta no meio",
-        "Os dois são equivalentes; muda só o nome",
-        "`max_tokens` limita a entrada; task budget limita a saída"
+        "Task budget applies per response; `max_tokens` applies to the entire task",
+        "Task budget is visible to the model, which organizes itself to fit; `max_tokens` is invisible and cuts off midway",
+        "The two are equivalent; only the name changes",
+        "`max_tokens` limits the input; task budget limits the output"
       ],
       "correta": 1,
-      "explicacao": "Task budget [volátil, beta] é um orçamento da tarefa que o modelo enxerga e respeita planejando. `max_tokens` é um teto de saída por resposta que o modelo não vê.",
+      "explicacao": "Task budget [volatile, beta] is a task-level budget that the model sees and respects by planning. `max_tokens` is a per-response output ceiling that the model doesn't see.",
       "feedbacks": [
-        "Invertido: `max_tokens` é por resposta; o budget é da tarefa.",
-        "Correto. Visível (organiza) vs. invisível (corta).",
-        "Não são equivalentes: o comportamento ao atingir o limite é oposto.",
-        "`max_tokens` é teto de saída, não de entrada."
+        "Reversed: `max_tokens` is per response; the budget is for the task.",
+        "Correct. Visible (it organizes) vs. invisible (it cuts off).",
+        "They're not equivalent: the behavior when the limit is reached is the opposite.",
+        "`max_tokens` is an output ceiling, not an input ceiling."
       ]
     },
     {
-      "pergunta": "Uma equipe precisa de um agente com 4 tools internas, sem acesso a arquivos, sem subagents nem sessões retomáveis. Qual forma de construir é a mais adequada?",
+      "pergunta": "A team needs an agent with 4 internal tools, no file access, no subagents, and no resumable sessions. What is the most appropriate way to build it?",
       "opcoes": [
-        "Claude Agent SDK, por ser o mais completo",
-        "Managed Agents, para não ter de escrever código",
-        "Loop manual na Messages API ou Tool Runner do SDK",
-        "Um orquestrador com um subagent por tool"
+        "Claude Agent SDK, since it's the most complete",
+        "Managed Agents, to avoid writing code",
+        "A manual loop on the Messages API, or the SDK's Tool Runner",
+        "An orchestrator with one subagent per tool"
       ],
       "correta": 2,
-      "explicacao": "Escolha a forma mais simples que atende. Sem hooks, subagents, sessões ou tools de arquivo, loop manual/Tool Runner bastam.",
+      "explicacao": "Choose the simplest approach that meets the need. Without hooks, subagents, sessions, or file tools, a manual loop/Tool Runner is enough.",
       "feedbacks": [
-        "O Agent SDK traz o harness inteiro do Claude Code; aqui é complexidade sem necessidade.",
-        "Managed Agents servem quando você não quer operar a execução/sandbox; o enunciado não pede isso.",
-        "Correto. A mais simples que resolve.",
-        "Subagent por tool é decomposição desnecessária para 4 tools."
+        "The Agent SDK brings Claude Code's entire harness; here that's unnecessary complexity.",
+        "Managed Agents are for when you don't want to operate the execution/sandbox; the question doesn't call for that.",
+        "Correct. The simplest one that solves the problem.",
+        "One subagent per tool is unnecessary decomposition for 4 tools."
       ]
     },
     {
-      "pergunta": "Uma regra diz que reembolsos só podem ser processados após verificar a identidade. Como garanti-la?",
+      "pergunta": "A rule says refunds may only be processed after identity has been verified. How do you guarantee it?",
       "opcoes": [
-        "Enforcement programático, como um hook `PreToolUse` ou um pré-requisito dentro da tool de reembolso",
-        "Repetir a regra em maiúsculas no system prompt e na mensagem do usuário",
-        "Adicionar três exemplos few-shot de verificação antes do reembolso",
-        "Um segundo modelo que revisa a conversa antes de cada reembolso"
+        "Programmatic enforcement, such as a `PreToolUse` hook or a prerequisite inside the refund tool",
+        "Repeat the rule in capital letters in the system prompt and in the user message",
+        "Add three few-shot examples of verification before the refund",
+        "A second model that reviews the conversation before each refund"
       ],
       "correta": 0,
-      "explicacao": "Regra com consequência financeira exige garantia determinística: código (hook/pré-requisito). Prompt, few-shot e revisor LLM são probabilísticos.",
+      "explicacao": "A rule with financial consequences requires a deterministic guarantee: code (hook/prerequisite). Prompts, few-shot, and an LLM reviewer are probabilistic.",
       "feedbacks": [
-        "Correto. Determinístico: sem verificação, a tool não roda.",
-        "Ênfase no prompt reduz a taxa de falha, mas não a zera.",
-        "Few-shot melhora a média; não é garantia.",
-        "Outro LLM continua probabilístico e adiciona custo e latência."
+        "Correct. Deterministic: without verification, the tool doesn't run.",
+        "Emphasis in the prompt lowers the failure rate, but doesn't bring it to zero.",
+        "Few-shot improves the average; it's not a guarantee.",
+        "Another LLM is still probabilistic and adds cost and latency."
       ]
     },
     {
-      "pergunta": "Num hook do tipo `command` no `PreToolUse`, o script termina com exit code 2. O que acontece?",
+      "pergunta": "In a `command`-type `PreToolUse` hook, the script ends with exit code 2. What happens?",
       "opcoes": [
-        "A tool roda normalmente e o erro é só registrado em log",
-        "A sessão inteira é encerrada",
-        "O hook é ignorado e o próximo hook decide",
-        "A tool é bloqueada e o stderr volta ao Claude como motivo"
+        "The tool runs normally and the error is only logged",
+        "The entire session is terminated",
+        "The hook is ignored and the next hook decides",
+        "The tool is blocked and stderr goes back to Claude as the reason"
       ],
       "correta": 3,
-      "explicacao": "Exit 0 passa; exit 2 bloqueia e devolve o stderr ao Claude, que lê o motivo e se ajusta. Outros códigos são erro não bloqueante.",
+      "explicacao": "Exit 0 passes; exit 2 blocks and sends stderr back to Claude, which reads the reason and adjusts. Other codes are a non-blocking error.",
       "feedbacks": [
-        "Esse é o comportamento de outros códigos de saída (erro não bloqueante), não do 2.",
-        "O bloqueio é da ação, não da sessão; o Claude continua trabalhando.",
-        "Exit 2 tem significado próprio: bloquear.",
-        "Correto. Bloqueio com feedback para o modelo."
+        "That's the behavior of other exit codes (non-blocking error), not of 2.",
+        "What's blocked is the action, not the session; Claude keeps working.",
+        "Exit 2 has its own meaning: block.",
+        "Correct. Blocking with feedback to the model."
       ]
     },
     {
-      "pergunta": "Você quer que o resultado de uma tool de CRM chegue ao modelo com o número do cartão mascarado. Qual evento de hook usar?",
+      "pergunta": "You want a CRM tool's result to reach the model with the card number masked. Which hook event should you use?",
       "opcoes": [
         "`PreToolUse`",
         "`PostToolUse`",
@@ -215,48 +215,51 @@
         "`Stop`"
       ],
       "correta": 1,
-      "explicacao": "`PostToolUse` roda depois da tool e é o lugar para normalizar, limpar e anotar o resultado (ex.: mascarar PII).",
+      "explicacao": "`PostToolUse` runs after the tool and is the place to normalize, clean up, and annotate the result (e.g., mask PII).",
       "feedbacks": [
-        "`PreToolUse` age antes da execução; o resultado ainda não existe.",
-        "Correto. Pós-execução, tratando o que o modelo vai ver.",
-        "`UserPromptSubmit` trata o prompt do usuário, não a saída de tools.",
-        "`Stop` dispara quando o agente vai encerrar o turno."
+        "`PreToolUse` acts before execution; the result doesn't exist yet.",
+        "Correct. Post-execution, handling what the model will see.",
+        "`UserPromptSubmit` handles the user's prompt, not tool output.",
+        "`Stop` fires when the agent is about to end its turn."
       ]
     },
     {
-      "pergunta": "Um hook precisa valer para todos os desenvolvedores do repositório. Onde configurá-lo?",
+      "pergunta": "A hook needs to apply to every developer in the repository. Where should you configure it?",
       "opcoes": [
-        "`~/.claude/settings.json` de cada desenvolvedor",
+        "Each developer's `~/.claude/settings.json`",
         "`.claude/settings.local.json`",
-        "`.claude/settings.json` do projeto, versionado no git",
-        "No CLAUDE.md, como instrução"
+        "The project's `.claude/settings.json`, versioned in git",
+        "In CLAUDE.md, as an instruction"
       ],
       "correta": 2,
-      "explicacao": "Settings de projeto (`.claude/settings.json`) são compartilhados pelo git. `settings.local.json` é pessoal e gitignored; `~/.claude` é do usuário.",
+      "explicacao": "Project settings (`.claude/settings.json`) are shared via git. `settings.local.json` is personal and gitignored; `~/.claude` belongs to the user.",
       "feedbacks": [
-        "Exigiria que cada pessoa configurasse manualmente; nada garante que todos o façam.",
-        "O `.local` é pessoal e fica fora do git.",
-        "Correto. Projeto = compartilhado com o time.",
-        "CLAUDE.md é instrução (probabilística), não executa hook."
+        "It would require each person to configure it manually; nothing guarantees everyone will.",
+        "The `.local` file is personal and stays out of git.",
+        "Correct. Project = shared with the team.",
+        "CLAUDE.md is an instruction (probabilistic); it doesn't run hooks."
       ]
     },
     {
-      "pergunta": "Quais itens devem constar no handoff de um agente de suporte para um atendente humano? (Escolha DUAS.)",
+      "pergunta": "Which items should be included in a support agent's handoff to a human representative? (Choose TWO.)",
       "opcoes": [
-        "O transcript completo, sem edição, para não perder nada",
-        "As ações já tomadas pelo agente e o motivo do escalonamento",
-        "O nível de confiança autodeclarado pelo modelo na própria análise",
-        "A identidade do cliente (e se já foi verificada), o problema e a ação recomendada",
-        "A pontuação de sentimento do cliente como justificativa principal"
+        "The complete, unedited transcript, so nothing is lost",
+        "The actions the agent has already taken and the reason for the escalation",
+        "The model's self-reported confidence level in its own analysis",
+        "The customer's identity (and whether it has been verified), the problem, and the recommended action",
+        "The customer's sentiment score as the main justification"
       ],
-      "corretas": [1, 3],
-      "explicacao": "Handoff = resumo estruturado: cliente/verificação, problema, pedido, causa raiz, ações tomadas, por que escalou, ação recomendada, valor.",
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "Handoff = a structured summary: customer/verification, problem, request, root cause, actions taken, why it was escalated, recommended action, amount.",
       "feedbacks": [
-        "Transcript bruto obriga o humano a reler tudo; o objetivo é destacar o que importa.",
-        "Correto. Evita que o humano repita o que já foi feito.",
-        "Confiança autodeclarada é mal calibrada; não é base para decisão.",
-        "Correto. Identidade, problema e recomendação são o núcleo do handoff.",
-        "Sentimento não é critério de escalonamento nem informação central do caso."
+        "A raw transcript forces the human to reread everything; the goal is to highlight what matters.",
+        "Correct. It keeps the human from repeating what has already been done.",
+        "Self-reported confidence is poorly calibrated; it's not a basis for decisions.",
+        "Correct. Identity, problem, and recommendation are the core of the handoff.",
+        "Sentiment is neither an escalation criterion nor central information about the case."
       ]
     }
   ]

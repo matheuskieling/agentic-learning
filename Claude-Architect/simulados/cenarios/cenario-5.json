@@ -1,400 +1,400 @@
 {
-  "titulo": "Cenário 5 — Claude Code for Continuous Integration",
+  "titulo": "Scenario 5 — Claude Code for Continuous Integration",
   "aprovacao": 72,
   "questoes": [
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "A Orbital Logística roda o Claude Code nos pipelines de GitHub Actions do seu monorepo para revisar pull requests e gerar testes.\n\nO primeiro job de review foi escrito como `claude \"Revise o diff deste PR e liste problemas\"`. O job fica parado até estourar o timeout de 60 minutos, sem produzir saída. Qual é a correção?",
+      "pergunta": "Orbital Logística runs Claude Code in the GitHub Actions pipelines of its monorepo to review pull requests and generate tests.\n\nThe first review job was written as `claude \"Review this PR's diff and list problems\"`. The job hangs until it hits the 60-minute timeout, without producing any output. What is the fix?",
       "opcoes": [
-        "Aumentar o timeout do job para 120 minutos, porque diffs grandes demoram para ser analisados.",
-        "Rodar em modo não interativo com `-p` (`--print`), que processa o prompt, imprime o resultado e encerra.",
-        "Adicionar `--permission-mode bypassPermissions`, para que o agente nunca pare esperando aprovação de ferramentas durante o job.",
-        "Encadear `yes |` antes do comando, respondendo automaticamente a qualquer pergunta interativa."
+        "Increase the job timeout to 120 minutes, because large diffs take a long time to analyze.",
+        "Run in non-interactive mode with `-p` (`--print`), which processes the prompt, prints the result, and exits.",
+        "Add `--permission-mode bypassPermissions`, so the agent never stops waiting for tool approval during the job.",
+        "Pipe `yes |` before the command, automatically answering any interactive question."
       ],
       "correta": 1,
-      "explicacao": "Sem `-p` o Claude Code abre a sessão interativa e espera input indefinidamente. `-p` é a primitiva para uso em scripts e CI.",
+      "explicacao": "Without `-p`, Claude Code opens the interactive session and waits for input indefinitely. `-p` is the primitive for use in scripts and CI.",
       "feedbacks": [
-        "Ataca o sintoma: o processo nunca vai terminar sozinho em modo interativo, com qualquer timeout.",
-        "Correta: o processo trava porque está em modo interativo; `-p` resolve.",
-        "Tentadora porque prompts de permissão também travam, mas a sessão continuaria interativa; além disso, bypass não é a postura certa para CI.",
-        "Gambiarra que não transforma a sessão em não interativa e pode aprovar ações indesejadas."
+        "Treats the symptom: in interactive mode the process will never finish on its own, whatever the timeout.",
+        "Correct: the process hangs because it's in interactive mode; `-p` solves it.",
+        "Tempting because permission prompts also hang, but the session would remain interactive; besides, bypass isn't the right posture for CI.",
+        "A hack that doesn't make the session non-interactive and may approve unwanted actions."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Orbital Logística, o job de review do Claude Code roda com `-p` e a etapa seguinte do pipeline publica cada achado como comentário de linha no PR.\n\nHoje essa etapa extrai os achados do texto livre com expressões regulares e quebra sempre que a redação muda. Qual é a melhor solução?",
+      "pergunta": "At Orbital Logística, the Claude Code review job runs with `-p`, and the next pipeline step posts each finding as a line comment on the PR.\n\nToday that step extracts the findings from free text with regular expressions and breaks whenever the wording changes. What is the best solution?",
       "opcoes": [
-        "Reforçar no prompt: \"responda SOMENTE com JSON válido, sem texto antes ou depois\".",
-        "Trocar para `--output-format stream-json`, que já entrega cada achado como um objeto separado.",
-        "Usar `--output-format json` com `--json-schema` descrevendo os achados e consumir o JSON validado.",
-        "Adicionar uma segunda chamada ao Claude que converte o texto livre da primeira em JSON antes da etapa de publicação."
+        "Reinforce in the prompt: \"respond ONLY with valid JSON, with no text before or after\".",
+        "Switch to `--output-format stream-json`, which already delivers each finding as a separate object.",
+        "Use `--output-format json` with `--json-schema` describing the findings and consume the validated JSON.",
+        "Add a second call to Claude that converts the first call's free text into JSON before the posting step."
       ],
       "correta": 2,
-      "explicacao": "Para consumo por máquina, use saída JSON com schema: o resultado vem estruturado e conforme o formato que a próxima etapa espera.",
+      "explicacao": "For machine consumption, use JSON output with a schema: the result comes back structured and conforming to the format the next step expects.",
       "feedbacks": [
-        "Melhora, mas continua probabilístico: instrução em prompt não garante formato.",
-        "`stream-json` emite eventos da execução (mensagens, tool calls) em streaming; não estrutura o conteúdo do review nos campos que a etapa precisa.",
-        "Correta: saída estruturada com schema elimina o parsing frágil.",
-        "Mais custo e mais um ponto de falha para resolver algo que a própria invocação resolve com schema."
+        "An improvement, but still probabilistic: a prompt instruction doesn't guarantee format.",
+        "`stream-json` emits execution events (messages, tool calls) as a stream; it doesn't structure the review content into the fields the step needs.",
+        "Correct: structured output with a schema eliminates fragile parsing.",
+        "More cost and one more point of failure to solve something the invocation itself solves with a schema."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "A Orbital Logística quer que o job de review no CI rode sem intervenção humana, sem travar em pedidos de permissão, sem conseguir alterar o repositório e sem rodar indefinidamente.\n\nQuais duas configurações atendem esses requisitos? (Escolha DUAS.)",
+      "pergunta": "Orbital Logística wants the CI review job to run without human intervention, without hanging on permission requests, without being able to modify the repository, and without running indefinitely.\n\nWhich two configurations meet these requirements? (Choose TWO.)",
       "opcoes": [
-        "Instrução no prompt: \"não edite nenhum arquivo e termine o mais rápido possível\".",
-        "`--allowedTools` liberando só as tools de leitura (Read, Grep, Glob) e o comando de teste específico do projeto.",
-        "Um token do GitHub com permissão de administrador, para que o agente nunca esbarre em falta de acesso.",
-        "`--max-turns` com um limite compatível com o tamanho típico de um review, como teto de segurança.",
-        "`--permission-mode bypassPermissions`, para que nenhuma tool peça aprovação."
+        "A prompt instruction: \"do not edit any file and finish as quickly as possible\".",
+        "`--allowedTools` allowing only the read tools (Read, Grep, Glob) and the project's specific test command.",
+        "A GitHub token with administrator permission, so the agent never runs into a lack of access.",
+        "`--max-turns` with a limit compatible with the typical size of a review, as a safety ceiling.",
+        "`--permission-mode bypassPermissions`, so no tool asks for approval."
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "Em CI, restrinja as tools explicitamente (mínimo privilégio, sem prompts de permissão para o que está liberado) e use `--max-turns` como backstop contra execução sem fim.",
+      "explicacao": "In CI, restrict the tools explicitly (least privilege, no permission prompts for what is allowed) and use `--max-turns` as a backstop against endless execution.",
       "feedbacks": [
-        "Regra crítica por prompt é probabilística; não impede edição nem garante término.",
-        "Correta: libera o necessário sem perguntas e impede edição de forma determinística.",
-        "Viola mínimo privilégio e amplia o estrago possível de uma ação errada.",
-        "Correta: teto de turnos é um backstop válido (não o mecanismo principal de término, que continua sendo o fim natural da tarefa).",
-        "Remove os prompts, mas também todos os controles: o agente poderia editar ou executar qualquer coisa."
+        "A critical rule in the prompt is probabilistic; it doesn't prevent edits or guarantee termination.",
+        "Correct: allows what's needed without prompts and prevents edits deterministically.",
+        "Violates least privilege and widens the possible damage from a wrong action.",
+        "Correct: a turn ceiling is a valid backstop (not the primary termination mechanism, which remains the task's natural completion).",
+        "Removes the prompts, but also all the controls: the agent could edit or execute anything."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "Na Orbital Logística, o job de review usa `claude -p --output-format json --max-turns 25`. A etapa seguinte aprova o check do PR quando a lista de achados está vazia.\n\nNum PR muito grande, a execução bate no limite de turnos antes de terminar e o resultado vem sem achados. O check fica verde. Como o pipeline deveria tratar esse caso?",
+      "pergunta": "At Orbital Logística, the review job uses `claude -p --output-format json --max-turns 25`. The next step approves the PR check when the list of findings is empty.\n\nOn a very large PR, the run hits the turn limit before finishing and the result comes back with no findings. The check turns green. How should the pipeline handle this case?",
       "opcoes": [
-        "Procurar no texto do resultado palavras como \"LGTM\" ou \"aprovado\" para decidir o status do check.",
-        "Repetir automaticamente a execução com o mesmo limite até ela terminar sem atingi-lo, quantas vezes forem necessárias, e só então publicar o status do check.",
-        "Verificar o status/subtipo do resultado JSON e, se a execução não terminou normalmente, marcar o check como falho ou inconclusivo, nunca como aprovado.",
-        "Considerar a ausência de achados como aprovação, já que o agente analisou o que conseguiu dentro do limite."
+        "Search the result text for words like \"LGTM\" or \"approved\" to decide the check status.",
+        "Automatically rerun with the same limit until it finishes without hitting it, as many times as needed, and only then publish the check status.",
+        "Check the status/subtype of the JSON result and, if the run did not finish normally, mark the check as failed or inconclusive, never as approved.",
+        "Treat the absence of findings as approval, since the agent analyzed what it could within the limit."
       ],
       "correta": 2,
-      "explicacao": "Execução interrompida não é sucesso vazio. O pipeline deve olhar o status estruturado do resultado (como se olha `stop_reason` num loop) e propagar a falha em vez de silenciá-la.",
+      "explicacao": "An interrupted run is not an empty success. The pipeline must look at the result's structured status (just as you look at `stop_reason` in a loop) and propagate the failure instead of silencing it.",
       "feedbacks": [
-        "Decidir término lendo linguagem natural é anti-padrão; use o campo estruturado de status.",
-        "Retry sem limite pode nunca convergir num PR que é grande demais; o problema pede tratamento explícito (e talvez review multi-pass).",
-        "Correta: distingue \"nada encontrado\" de \"não terminou\" e evita aprovação silenciosa.",
-        "É o anti-padrão de tratar falha como vazio: o review simplesmente não aconteceu por inteiro."
+        "Deciding termination by reading natural language is an anti-pattern; use the structured status field.",
+        "Unbounded retry may never converge on a PR that is too large; the problem calls for explicit handling (and perhaps multi-pass review).",
+        "Correct: distinguishes \"nothing found\" from \"didn't finish\" and avoids silent approval.",
+        "It's the anti-pattern of treating failure as empty: the review simply didn't happen in full."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Os devs da Orbital Logística querem mencionar `@claude` em comentários de pull request para pedir explicações e pequenas correções, com o mínimo de infraestrutura própria para manter.\n\nQual abordagem atende melhor?",
+      "pergunta": "Orbital Logística's developers want to mention `@claude` in pull request comments to ask for explanations and small fixes, with minimal in-house infrastructure to maintain.\n\nWhich approach best meets this need?",
       "opcoes": [
-        "Pedir que cada dev rode o Claude Code localmente e cole a resposta no PR.",
-        "Construir um servidor de webhooks próprio que recebe os eventos do GitHub e chama `claude -p` para cada menção, com controle total sobre o fluxo.",
-        "Usar a integração gerenciada do GitHub Actions (`claude-code-action`), configurada no workflow do repositório.",
-        "Agendar um job a cada 10 minutos que lê todos os comentários novos e envia um lote para a Batch API."
+        "Ask each developer to run Claude Code locally and paste the response into the PR.",
+        "Build an in-house webhook server that receives GitHub events and calls `claude -p` for each mention, with full control over the flow.",
+        "Use the managed GitHub Actions integration (`claude-code-action`), configured in the repository's workflow.",
+        "Schedule a job every 10 minutes that reads all new comments and sends a batch to the Batch API."
       ],
       "correta": 2,
-      "explicacao": "Para o caso padrão de interagir com PRs/issues no GitHub, a integração gerenciada resolve com menos manutenção. `-p` é a primitiva quando se precisa de controle total.",
+      "explicacao": "For the standard case of interacting with PRs/issues on GitHub, the managed integration solves it with less maintenance. `-p` is the primitive when you need full control.",
       "feedbacks": [
-        "Não automatiza nada e não atende ao pedido de integração no PR.",
-        "Funciona, mas é mais complexo que o necessário; reinventa o que a integração gerenciada já oferece.",
-        "Correta: atende o requisito com a solução mais simples e pronta.",
-        "A Batch API tem janela de até 24h e não é para interação; a resposta a uma menção precisa ser rápida."
+        "Automates nothing and doesn't meet the request for integration in the PR.",
+        "Works, but it's more complex than necessary; it reinvents what the managed integration already offers.",
+        "Correct: meets the requirement with the simplest ready-made solution.",
+        "The Batch API has a window of up to 24h and isn't meant for interaction; the response to a mention needs to be fast."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Um pipeline da Orbital Logística tem duas etapas: uma sessão `claude -p` gera a correção de um bug e, em seguida, a mesma sessão é retomada com `--resume` e recebe o pedido \"agora revise criticamente o código que você escreveu\".\n\nA etapa de revisão quase nunca aponta problemas, mas os humanos encontram vários depois. Qual é a melhor mudança?",
+      "pergunta": "An Orbital Logística pipeline has two steps: a `claude -p` session generates a bug fix and then the same session is resumed with `--resume` and receives the request \"now critically review the code you wrote\".\n\nThe review step almost never flags problems, but humans find several afterward. What is the best change?",
       "opcoes": [
-        "Aumentar o `effort` da etapa de revisão, para que o modelo raciocine mais profundamente sobre cada uma das decisões tomadas no código que ele mesmo acabou de escrever.",
-        "Fazer a revisão numa invocação independente (sessão nova, sem o histórico de geração), recebendo apenas o diff e os critérios de revisão.",
-        "Rodar a revisão duas vezes seguidas na mesma sessão e unir os achados.",
-        "Manter a mesma sessão, mas reforçar no prompt: \"seja extremamente crítico e encontre pelo menos três problemas\"."
+        "Increase the review step's `effort`, so the model reasons more deeply about each of the decisions made in the code it just wrote itself.",
+        "Do the review in an independent invocation (new session, without the generation history), receiving only the diff and the review criteria.",
+        "Run the review twice in a row in the same session and merge the findings.",
+        "Keep the same session, but reinforce in the prompt: \"be extremely critical and find at least three problems\"."
       ],
       "correta": 1,
-      "explicacao": "Quem gerou o código carrega o contexto de raciocínio que justificou as decisões e tende a não questioná-las. Revisão deve acontecer em sessão independente.",
+      "explicacao": "Whoever generated the code carries the reasoning context that justified the decisions and tends not to question them. Review must happen in an independent session.",
       "feedbacks": [
-        "Mais esforço na mesma sessão continua enviesado pelo raciocínio que produziu o código.",
-        "Correta: elimina o viés do contexto de raciocínio da geração.",
-        "Repetir no mesmo contexto repete o mesmo viés.",
-        "Forçar uma cota de problemas gera falsos positivos e não remove o viés da sessão que escreveu o código."
+        "More effort in the same session remains biased by the reasoning that produced the code.",
+        "Correct: eliminates the bias from the generation's reasoning context.",
+        "Repeating in the same context repeats the same bias.",
+        "Forcing a quota of problems generates false positives and doesn't remove the bias of the session that wrote the code."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "A Orbital Logística recebe PRs de refatoração com 40 a 60 arquivos. O job atual de review passa o diff inteiro ao Claude numa única chamada.\n\nOs reviews desses PRs são inconsistentes: alguns arquivos recebem análise detalhada, outros nenhuma, e bugs que envolvem dois módulos passam despercebidos. Qual arquitetura de review resolve?",
+      "pergunta": "Orbital Logística receives refactoring PRs with 40 to 60 files. The current review job passes the entire diff to Claude in a single call.\n\nThe reviews of these PRs are inconsistent: some files get detailed analysis, others none, and bugs involving two modules go unnoticed. Which review architecture solves this?",
       "opcoes": [
-        "Usar um modelo com janela de contexto maior, para que o diff inteiro caiba com folga numa chamada só.",
-        "Acrescentar ao prompt: \"revise todos os arquivos com o mesmo nível de detalhe e atenção a bugs entre módulos\".",
-        "Dividir o diff em lotes fixos de 10 arquivos, revisar cada lote e concatenar os resultados.",
-        "Review multi-pass: uma passada por arquivo com o mesmo prompt de análise local, seguida de uma passada de integração que recebe os achados e examina interações entre arquivos."
+        "Use a model with a larger context window, so the entire diff fits comfortably in a single call.",
+        "Add to the prompt: \"review all files with the same level of detail and attention to cross-module bugs\".",
+        "Split the diff into fixed batches of 10 files, review each batch, and concatenate the results.",
+        "Multi-pass review: one pass per file with the same local-analysis prompt, followed by an integration pass that receives the findings and examines the interactions between files."
       ],
       "correta": 3,
-      "explicacao": "Em PR grande, uma só passada dilui a atenção. A passada por arquivo garante análise local consistente; a de integração cobre fluxo de dados e contratos entre módulos.",
+      "explicacao": "On a large PR, a single pass dilutes attention. The per-file pass ensures consistent local analysis; the integration pass covers data flow and contracts between modules.",
       "feedbacks": [
-        "Caber na janela não resolve a diluição de atenção; contexto maior ainda sofre com lost in the middle.",
-        "Instrução não muda a limitação estrutural de uma chamada única sobre um diff enorme.",
-        "Melhora a análise local, mas lotes arbitrários sem passada de integração continuam perdendo bugs entre arquivos.",
-        "Correta: ataca tanto a diluição de atenção quanto os bugs entre arquivos."
+        "Fitting in the window doesn't solve attention dilution; a larger context still suffers from lost in the middle.",
+        "An instruction doesn't change the structural limitation of a single call over an enormous diff.",
+        "Improves local analysis, but arbitrary batches without an integration pass still miss cross-file bugs.",
+        "Correct: addresses both attention dilution and cross-file bugs."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "A Orbital Logística implementou review multi-pass: cada arquivo do PR é analisado em uma chamada separada e, depois, roda a passada de integração.\n\nO que a passada de integração deve receber como entrada para ser eficaz?",
+      "pergunta": "Orbital Logística implemented multi-pass review: each file in the PR is analyzed in a separate call, and then the integration pass runs.\n\nWhat should the integration pass receive as input to be effective?",
       "opcoes": [
-        "Os achados estruturados das passadas por arquivo e as mudanças em interfaces e contratos entre módulos, com a instrução de focar em fluxo de dados e erros na fronteira.",
-        "O mesmo prompt das passadas por arquivo, aplicado agora a todos os arquivos juntos.",
-        "Apenas o diff completo do PR, sem os achados por arquivo, para que a análise não seja influenciada.",
-        "Somente a descrição do PR escrita pelo autor, que resume a intenção da mudança."
+        "The structured findings from the per-file passes and the changes to interfaces and contracts between modules, with the instruction to focus on data flow and errors at the boundaries.",
+        "The same prompt as the per-file passes, now applied to all the files together.",
+        "Only the full PR diff, without the per-file findings, so the analysis isn't influenced.",
+        "Only the PR description written by the author, which summarizes the intent of the change."
       ],
       "correta": 0,
-      "explicacao": "A passada de integração recebe os achados locais e se concentra no que só aparece entre arquivos: fluxo de dados, contratos e tratamento de erro nas fronteiras.",
+      "explicacao": "The integration pass receives the local findings and focuses on what only shows up between files: data flow, contracts, and error handling at the boundaries.",
       "feedbacks": [
-        "Correta: dá à integração o material certo e um foco diferente das passadas locais.",
-        "Repetir a análise local em escala reproduz a falha de passada única; a integração precisa de outro prompt.",
-        "Volta ao problema original: uma chamada sobre o diff inteiro, sem foco, com atenção diluída.",
-        "A intenção do autor é útil como contexto, mas sozinha não permite achar bugs no código."
+        "Correct: gives the integration pass the right material and a different focus from the local passes.",
+        "Repeating the local analysis at scale reproduces the single-pass failure; the integration pass needs a different prompt.",
+        "Goes back to the original problem: one call over the entire diff, without focus, with diluted attention.",
+        "The author's intent is useful as context, but on its own it doesn't make it possible to find bugs in the code."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "A Orbital Logística está revendo seus usos do Claude no CI para reduzir custo. A Batch API custa 50% menos, mas processa em até 24 horas, sem SLA.\n\nQuais duas cargas de trabalho são boas candidatas a migrar para a Batch API? (Escolha DUAS.)",
+      "pergunta": "Orbital Logística is reviewing its uses of Claude in CI to reduce cost. The Batch API costs 50% less, but processes within up to 24 hours, with no SLA.\n\nWhich two workloads are good candidates to migrate to the Batch API? (Choose TWO.)",
       "opcoes": [
-        "A auditoria noturna de segurança que analisa os 3.000 arquivos do monorepo e publica um relatório pela manhã.",
-        "O check obrigatório de review que bloqueia o merge até receber o resultado.",
-        "O agente que corrige testes quebrados lendo arquivos e rodando a suíte em várias rodadas.",
-        "A depuração interativa de um build quebrado, feita por um dev de plantão.",
-        "O relatório semanal de dívida técnica gerado a partir de todos os módulos."
+        "The nightly security audit that analyzes the monorepo's 3,000 files and publishes a report in the morning.",
+        "The mandatory review check that blocks the merge until it receives the result.",
+        "The agent that fixes broken tests by reading files and running the suite over several rounds.",
+        "The interactive debugging of a broken build, done by an on-call developer.",
+        "The weekly technical debt report generated from all the modules."
       ],
       "corretas": [
         0,
         4
       ],
-      "explicacao": "Batch serve para trabalho em massa sem urgência (noturno, semanal). Não serve para passo bloqueante, interação em tempo real ou loop multi-turn de tools.",
+      "explicacao": "Batch is for bulk work with no urgency (nightly, weekly). It isn't for a blocking step, real-time interaction, or a multi-turn tool loop.",
       "feedbacks": [
-        "Correta: trabalho noturno em massa tolera a janela do batch.",
-        "Pré-merge bloqueante não pode esperar até 24h sem SLA; precisa ser síncrono.",
-        "Um request de batch não suporta loop multi-turn de tools; esse agente precisa rodar de forma síncrona.",
-        "Depuração interativa exige resposta imediata.",
-        "Correta: relatório periódico sem urgência é o caso de uso típico."
+        "Correct: nightly bulk work tolerates the batch window.",
+        "A blocking pre-merge check can't wait up to 24h with no SLA; it needs to be synchronous.",
+        "A batch request doesn't support a multi-turn tool loop; this agent needs to run synchronously.",
+        "Interactive debugging requires an immediate response.",
+        "Correct: a periodic report with no urgency is the typical use case."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "A auditoria noturna da Orbital Logística envia um batch com um request por arquivo. O script que processa os resultados associa cada resultado ao arquivo pela posição na lista enviada.\n\nO relatório da manhã começou a atribuir vulnerabilidades a arquivos errados. Qual é a correção?",
+      "pergunta": "Orbital Logística's nightly audit sends a batch with one request per file. The script that processes the results matches each result to its file by its position in the submitted list.\n\nThe morning report has started attributing vulnerabilities to the wrong files. What is the fix?",
       "opcoes": [
-        "Ordenar os resultados pela data de conclusão de cada request antes de casá-los com a lista de arquivos, reproduzindo a ordem original de envio.",
-        "Trocar o batch por chamadas síncronas sequenciais, que preservam a ordem.",
-        "Enviar um batch separado para cada arquivo, garantindo a correspondência um a um.",
-        "Dar a cada request um `custom_id` que identifica o arquivo (ex.: caminho ou hash dele) e casar os resultados por esse campo."
+        "Sort the results by each request's completion time before matching them to the file list, reproducing the original submission order.",
+        "Replace the batch with sequential synchronous calls, which preserve order.",
+        "Send a separate batch for each file, guaranteeing one-to-one correspondence.",
+        "Give each request a `custom_id` that identifies the file (e.g., its path or hash) and match the results by that field."
       ],
       "correta": 3,
-      "explicacao": "Resultados de batch podem chegar fora da ordem de envio. O casamento deve ser feito pelo `custom_id`.",
+      "explicacao": "Batch results may arrive out of submission order. Matching must be done by `custom_id`.",
       "feedbacks": [
-        "A ordem de conclusão também não tem relação com a ordem de envio; o problema continua.",
-        "Perde o desconto de 50% e a escala do batch para resolver um problema de correlação.",
-        "Funciona, mas cria milhares de batches para contornar algo que o `custom_id` resolve.",
-        "Correta: `custom_id` é o mecanismo previsto para casar requests e resultados."
+        "Completion order also has no relation to submission order; the problem remains.",
+        "Gives up the 50% discount and the batch's scale to solve a correlation problem.",
+        "Works, but creates thousands of batches to work around something `custom_id` solves.",
+        "Correct: `custom_id` is the designed mechanism for matching requests and results."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "O batch noturno da Orbital Logística tem 3.000 requests. Pela manhã, 2.880 estão como `succeeded`, 90 como `errored` e 30 como `expired`.\n\nQual é a ação correta para completar a auditoria?",
+      "pergunta": "Orbital Logística's nightly batch has 3,000 requests. In the morning, 2,880 are `succeeded`, 90 are `errored`, and 30 are `expired`.\n\nWhat is the correct action to complete the audit?",
       "opcoes": [
-        "Migrar toda a auditoria para chamadas síncronas, já que o batch se mostrou pouco confiável.",
-        "Ignorar os 120 requests, já que 96% de cobertura é suficiente para um relatório noturno.",
-        "Reenviar o batch inteiro, para garantir que todos os resultados venham da mesma execução.",
-        "Reenviar num novo batch apenas os 120 requests que falharam ou expiraram, identificados pelos `custom_id`, depois de checar o motivo dos erros."
+        "Migrate the entire audit to synchronous calls, since the batch has proven unreliable.",
+        "Ignore the 120 requests, since 96% coverage is enough for a nightly report.",
+        "Resubmit the entire batch, to ensure all results come from the same run.",
+        "Resubmit in a new batch only the 120 requests that failed or expired, identified by their `custom_id`, after checking the cause of the errors."
       ],
       "correta": 3,
-      "explicacao": "Reprocesse só os `custom_id` que falharam; reenviar tudo custa em dobro sem ganho. Verificar a causa dos erros evita repetir uma falha de validação.",
+      "explicacao": "Reprocess only the `custom_id`s that failed; resubmitting everything costs double with no gain. Checking the cause of the errors avoids repeating a validation failure.",
       "feedbacks": [
-        "Reação desproporcional: falhas parciais são esperadas e tratadas por reenvio seletivo.",
-        "Silencia uma lacuna: arquivos não auditados viram falsa sensação de cobertura.",
-        "Paga de novo por 2.880 resultados que já estão prontos.",
-        "Correta: barato e completo, com diagnóstico antes do reenvio."
+        "A disproportionate reaction: partial failures are expected and handled by selective resubmission.",
+        "Silences a gap: unaudited files create a false sense of coverage.",
+        "Pays again for 2,880 results that are already done.",
+        "Correct: cheap and complete, with diagnosis before resubmission."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "A Orbital Logística tentou mover para o batch noturno uma análise em que, para cada arquivo, o Claude chama uma tool para ler os arquivos importados antes de concluir.\n\nOs resultados vêm com `tool_use` pendente e nenhuma conclusão. Como redesenhar essa carga para o batch?",
+      "pergunta": "Orbital Logística tried to move to the nightly batch an analysis in which, for each file, Claude calls a tool to read the imported files before concluding.\n\nThe results come back with a pending `tool_use` and no conclusion. How should this workload be redesigned for the batch?",
       "opcoes": [
-        "Pré-coletar no código o conteúdo necessário (o arquivo e seus imports relevantes) e enviar tudo em cada request, para que a análise termine numa única resposta.",
-        "Forçar com `tool_choice` que o modelo nunca chame tools dentro do batch.",
-        "Consultar o status do batch com mais frequência para devolver os resultados de tool a tempo.",
-        "Configurar o batch para executar automaticamente as tools e continuar a conversa até `end_turn`."
+        "Pre-collect in code the necessary content (the file and its relevant imports) and send it all in each request, so the analysis finishes in a single response.",
+        "Use `tool_choice` to force the model to never call tools inside the batch.",
+        "Poll the batch status more frequently to return the tool results in time.",
+        "Configure the batch to automatically execute the tools and continue the conversation until `end_turn`."
       ],
       "correta": 0,
-      "explicacao": "Um request de batch não executa loop multi-turn de tools. Ou o contexto vai completo no request, ou a carga precisa rodar como agente síncrono.",
+      "explicacao": "A batch request doesn't run a multi-turn tool loop. Either the full context goes in the request, or the workload must run as a synchronous agent.",
       "feedbacks": [
-        "Correta: transforma a tarefa em single-turn, compatível com o batch.",
-        "Impedir a tool não resolve: o modelo continuaria sem os imports de que precisa para concluir.",
-        "Polling não permite injetar `tool_result` num request de batch já processado.",
-        "Não existe essa execução de loop de tools client-side dentro do batch."
+        "Correct: turns the task into a single-turn one, compatible with the batch.",
+        "Preventing the tool doesn't solve it: the model would still lack the imports it needs to conclude.",
+        "Polling doesn't allow injecting a `tool_result` into a batch request that has already been processed.",
+        "No such client-side tool loop execution exists inside the batch."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Cada review da Orbital Logística envia ao Claude ~30 mil tokens de diretrizes de código e definições de tools, seguidos do diff. O system prompt começa com `Build #{BUILD_ID} - {timestamp}` e depois traz as diretrizes, com um breakpoint de `cache_control` no fim delas.\n\nO time esperava economizar com prompt caching, mas `usage.cache_read_input_tokens` é sempre zero. Qual é a causa e a correção?",
+      "pergunta": "Each Orbital Logística review sends Claude ~30,000 tokens of coding guidelines and tool definitions, followed by the diff. The system prompt starts with `Build #{BUILD_ID} - {timestamp}` and then contains the guidelines, with a `cache_control` breakpoint at their end.\n\nThe team expected to save with prompt caching, but `usage.cache_read_input_tokens` is always zero. What is the cause and the fix?",
       "opcoes": [
-        "O TTL padrão é curto demais; trocar para o cache de 1 hora resolve, já que os builds são espaçados.",
-        "As diretrizes são grandes demais para o cache; é preciso reduzi-las para abaixo do mínimo.",
-        "Um breakpoint só não basta para 30 mil tokens; é preciso usar os quatro breakpoints disponíveis.",
-        "O ID e o timestamp no início mudam o prefixo a cada execução; movê-los para depois do último breakpoint (ou para a mensagem do usuário), deixando o conteúdo estável primeiro."
+        "The default TTL is too short; switching to the 1-hour cache solves it, since the builds are spaced apart.",
+        "The guidelines are too large for the cache; they must be reduced to below the minimum.",
+        "A single breakpoint isn't enough for 30,000 tokens; you must use all four available breakpoints.",
+        "The ID and timestamp at the start change the prefix on every run; move them after the last breakpoint (or into the user message), leaving the stable content first."
       ],
       "correta": 3,
-      "explicacao": "O cache casa o prefixo exato (tools → system → messages). Qualquer byte variável antes do breakpoint invalida tudo. Conteúdo estável primeiro, volátil depois.",
+      "explicacao": "The cache matches the exact prefix (tools → system → messages). Any variable byte before the breakpoint invalidates everything. Stable content first, volatile content after.",
       "feedbacks": [
-        "Com o prefixo mudando a cada build, nenhum TTL ajuda: o cache nunca casa.",
-        "Inverte a regra: existe tamanho mínimo para cachear (abaixo dele não cacheia), não máximo nessa faixa.",
-        "Mais breakpoints não corrigem um prefixo que muda logo no início.",
-        "Correta: remove o invalidador silencioso do prefixo."
+        "With the prefix changing on every build, no TTL helps: the cache never matches.",
+        "Inverts the rule: there's a minimum size for caching (below it nothing is cached), not a maximum in this range.",
+        "More breakpoints don't fix a prefix that changes right at the start.",
+        "Correct: removes the silent invalidator from the prefix."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Depois de corrigir o system prompt, a Orbital Logística ainda vê `cache_read_input_tokens` oscilando entre zero e o esperado nos reviews do CI.\n\nQuais duas práticas do pipeline podem estar invalidando o cache em silêncio? (Escolha DUAS.)",
+      "pergunta": "After fixing the system prompt, Orbital Logística still sees `cache_read_input_tokens` fluctuating between zero and the expected value in the CI reviews.\n\nWhich two pipeline practices may be silently invalidating the cache? (Choose TWO.)",
       "opcoes": [
-        "O diff do PR é colocado na mensagem do usuário, depois do breakpoint de cache.",
-        "As diretrizes ficam num arquivo versionado e só mudam quando o time atualiza o padrão de código.",
-        "As definições de tools são montadas a partir de um dicionário sem ordem estável, e a ordem varia entre execuções.",
-        "O ID do repositório e o nome da branch são interpolados no system prompt antes das diretrizes.",
-        "O breakpoint de `cache_control` fica no fim do bloco de diretrizes, que é idêntico em todas as execuções."
+        "The PR diff is placed in the user message, after the cache breakpoint.",
+        "The guidelines live in a versioned file and only change when the team updates the coding standard.",
+        "The tool definitions are built from a dictionary without stable ordering, and the order varies between runs.",
+        "The repository ID and the branch name are interpolated into the system prompt before the guidelines.",
+        "The `cache_control` breakpoint is at the end of the guidelines block, which is identical in every run."
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Invalidadores silenciosos: ordem não determinística de tools/chaves, valores variáveis (IDs, branch, timestamp) no prefixo, tools que variam por request. Conteúdo volátil depois do breakpoint não atrapalha.",
+      "explicacao": "Silent invalidators: non-deterministic ordering of tools/keys, variable values (IDs, branch, timestamp) in the prefix, tools that vary per request. Volatile content after the breakpoint doesn't hurt.",
       "feedbacks": [
-        "É o certo: conteúdo volátil após o breakpoint não invalida o prefixo cacheado.",
-        "Mudança ocasional e intencional gera um novo cache; não explica a oscilação entre execuções.",
-        "Correta: tools fazem parte do prefixo; ordem diferente é prefixo diferente.",
-        "Correta: valores que variam entre execuções no início do system mudam o prefixo.",
-        "É o posicionamento recomendado: breakpoint no fim do conteúdo estável."
+        "That's the right way: volatile content after the breakpoint doesn't invalidate the cached prefix.",
+        "An occasional, intentional change creates a new cache; it doesn't explain the fluctuation between runs.",
+        "Correct: tools are part of the prefix; a different order is a different prefix.",
+        "Correct: values that vary between runs at the start of the system prompt change the prefix.",
+        "This is the recommended placement: the breakpoint at the end of the stable content."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "O review automático da Orbital Logística classifica achados em quatro categorias: segurança, bugs, desempenho e estilo. A categoria estilo gera muitos falsos positivos.\n\nOs devs passaram a ignorar todos os comentários do bot, inclusive os de segurança, que costumam ser corretos. Qual é a melhor estratégia?",
+      "pergunta": "Orbital Logística's automated review classifies findings into four categories: security, bugs, performance, and style. The style category generates many false positives.\n\nThe developers have started ignoring all the bot's comments, including the security ones, which are usually correct. What is the best strategy?",
       "opcoes": [
-        "Adicionar um segundo modelo que revisa os achados do primeiro e descarta os que parecerem falsos positivos.",
-        "Desligar temporariamente a categoria estilo, reescrever seus critérios com o que conta, o que não conta e exemplos de fronteira, e religá-la depois de medir.",
-        "Acrescentar ao prompt \"seja conservador ao apontar problemas de estilo\".",
-        "Publicar só os achados em que o modelo declara confiança acima de 90%."
+        "Add a second model that reviews the first one's findings and discards those that look like false positives.",
+        "Temporarily turn off the style category, rewrite its criteria with what counts, what doesn't, and boundary examples, and turn it back on after measuring.",
+        "Add to the prompt \"be conservative when flagging style issues\".",
+        "Publish only the findings for which the model declares confidence above 90%."
       ],
       "correta": 1,
-      "explicacao": "Uma categoria ruidosa corrói a confiança nas boas. Desligue-a, refine com critérios explícitos e exemplos de fronteira, e só então religue.",
+      "explicacao": "A noisy category erodes trust in the good ones. Turn it off, refine it with explicit criteria and boundary examples, and only then turn it back on.",
       "feedbacks": [
-        "Mais complexo que o necessário; a prova prefere critério explícito antes de um segundo modelo para checar o primeiro.",
-        "Correta: recupera a confiança imediatamente e corrige a causa com critério explícito.",
-        "Instrução vaga produz resultado inconsistente; \"conservador\" não define o que conta.",
-        "Confiança autodeclarada é mal calibrada; não é um filtro confiável."
+        "More complex than necessary; the exam prefers explicit criteria before a second model to check the first.",
+        "Correct: restores trust immediately and fixes the cause with explicit criteria.",
+        "A vague instruction produces inconsistent results; \"conservative\" doesn't define what counts.",
+        "Self-reported confidence is poorly calibrated; it isn't a reliable filter."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "No review automático da Orbital Logística, problemas parecidos recebem severidades diferentes em PRs diferentes (o mesmo `catch` vazio vira \"baixa\" num PR e \"alta\" em outro).\n\nQual mudança no prompt tende a dar mais consistência?",
+      "pergunta": "In Orbital Logística's automated review, similar problems receive different severities in different PRs (the same empty `catch` becomes \"low\" in one PR and \"high\" in another).\n\nWhich prompt change tends to give more consistency?",
       "opcoes": [
-        "Instruir \"use seu bom senso de engenheiro sênior para definir a severidade\".",
-        "Rodar o review três vezes e usar a severidade mais frequente.",
-        "Incluir 2 a 4 exemplos de casos de fronteira, cada um com o trecho, a severidade e o raciocínio.",
-        "Incluir 40 exemplos reais de achados anteriores com suas severidades, para cobrir o máximo de situações possível."
+        "Instruct \"use your good judgment as a senior engineer to define the severity\".",
+        "Run the review three times and use the most frequent severity.",
+        "Include 2 to 4 examples of boundary cases, each with the snippet, the severity, and the reasoning.",
+        "Include 40 real examples of previous findings with their severities, to cover as many situations as possible."
       ],
       "correta": 2,
-      "explicacao": "Few-shot com poucos exemplos variados, cada um com o raciocínio, ensina o critério de forma generalizável. Combine com critérios explícitos por severidade.",
+      "explicacao": "Few-shot with a few varied examples, each with its reasoning, teaches the criterion in a generalizable way. Combine it with explicit criteria per severity.",
       "feedbacks": [
-        "\"Bom senso\" é o oposto de critério explícito; é a origem da inconsistência.",
-        "Votação reduz variância, mas não define o critério; triplica o custo sem corrigir a causa.",
-        "Correta: exemplos com raciocínio em casos ambíguos são o uso certo de few-shot.",
-        "Exemplos demais custam caro, favorecem decoreba e tendem a repetir os casos comuns em vez das fronteiras."
+        "\"Good judgment\" is the opposite of an explicit criterion; it's the source of the inconsistency.",
+        "Voting reduces variance, but doesn't define the criterion; it triples the cost without fixing the cause.",
+        "Correct: examples with reasoning on ambiguous cases are the right use of few-shot.",
+        "Too many examples are expensive, encourage rote memorization, and tend to repeat the common cases instead of the boundaries."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "A Orbital Logística quer que o review no CI siga exatamente as mesmas convenções que os devs usam localmente com o Claude Code (arquitetura, padrões de teste, tratamento de erros).\n\nQual é a forma mais simples e sustentável de garantir isso?",
+      "pergunta": "Orbital Logística wants the CI review to follow exactly the same conventions the developers use locally with Claude Code (architecture, testing patterns, error handling).\n\nWhat is the simplest and most sustainable way to ensure this?",
       "opcoes": [
-        "Manter as convenções no `CLAUDE.md` do projeto, versionado no repositório; o `claude -p` no checkout do CI carrega o mesmo arquivo que os devs.",
-        "Copiar as convenções para um `--append-system-prompt` no workflow do CI, garantindo que o review sempre as receba, e mantê-las sincronizadas com o CLAUDE.md.",
-        "Criar um `~/.claude/CLAUDE.md` na imagem do runner de CI com as convenções.",
-        "Colar as convenções no texto do prompt do job a cada execução."
+        "Keep the conventions in the project's `CLAUDE.md`, versioned in the repository; `claude -p` in the CI checkout loads the same file as the developers.",
+        "Copy the conventions into an `--append-system-prompt` in the CI workflow, ensuring the review always receives them, and keep them in sync with CLAUDE.md.",
+        "Create a `~/.claude/CLAUDE.md` in the CI runner image with the conventions.",
+        "Paste the conventions into the job's prompt text on every run."
       ],
       "correta": 0,
-      "explicacao": "CLI, IDE e CI usam o mesmo motor: o CLAUDE.md do projeto vale em todas as superfícies. Uma única fonte de verdade evita deriva.",
+      "explicacao": "CLI, IDE, and CI use the same engine: the project CLAUDE.md applies on every surface. A single source of truth avoids drift.",
       "feedbacks": [
-        "Correta: uma fonte só, versionada junto com o código.",
-        "Duplica a fonte de verdade; as duas cópias vão divergir. `--append-system-prompt` serve para instruções específicas do CI.",
-        "Fica fora do repositório e diverge do que os devs usam; é a configuração do usuário do runner, não a do time.",
-        "Mesma duplicação, agora no workflow; manutenção manual e propensa a deriva."
+        "Correct: a single source, versioned alongside the code.",
+        "Duplicates the source of truth; the two copies will diverge. `--append-system-prompt` is for CI-specific instructions.",
+        "Lives outside the repository and diverges from what the developers use; it's the runner's user configuration, not the team's.",
+        "Same duplication, now in the workflow; manual maintenance that is prone to drift."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "No CI da Orbital Logística, o job de review precisa de instruções que só valem ali: \"não proponha correções, apenas aponte achados\" e \"ignore arquivos gerados em `/generated`\".\n\nComo acrescentar essas instruções sem perder o comportamento padrão do Claude Code e sem afetar os devs?",
+      "pergunta": "In Orbital Logística's CI, the review job needs instructions that only apply there: \"don't propose fixes, only point out findings\" and \"ignore generated files in `/generated`\".\n\nHow do you add these instructions without losing Claude Code's default behavior and without affecting the developers?",
       "opcoes": [
-        "Criar um hook `SessionStart` que remove a pasta `/generated` antes de cada sessão.",
-        "Passar as instruções com `--append-system-prompt` na invocação do job.",
-        "Substituir o system prompt inteiro com `--system-prompt` contendo só essas duas regras.",
-        "Adicionar as regras ao `CLAUDE.md` do projeto, para que valham também no CI."
+        "Create a `SessionStart` hook that deletes the `/generated` folder before each session.",
+        "Pass the instructions with `--append-system-prompt` in the job's invocation.",
+        "Replace the entire system prompt with `--system-prompt` containing only these two rules.",
+        "Add the rules to the project's `CLAUDE.md`, so they also apply in CI."
       ],
       "correta": 1,
-      "explicacao": "`--append-system-prompt` acrescenta instruções ao prompt padrão, sem substituí-lo. Regras só do CI ficam na invocação do CI.",
+      "explicacao": "`--append-system-prompt` adds instructions to the default prompt without replacing it. CI-only rules stay in the CI invocation.",
       "feedbacks": [
-        "Apagar arquivos do checkout é efeito colateral desnecessário e não trata a regra de não propor correções.",
-        "Correta: acrescenta o necessário mantendo o comportamento padrão.",
-        "Substituir descarta as instruções padrão do Claude Code, o que muda o comportamento do agente de formas inesperadas.",
-        "Afetaria os devs localmente, que muitas vezes querem justamente que o Claude proponha correções."
+        "Deleting files from the checkout is an unnecessary side effect and doesn't address the rule about not proposing fixes.",
+        "Correct: adds what's needed while keeping the default behavior.",
+        "Replacing discards Claude Code's default instructions, which changes the agent's behavior in unexpected ways.",
+        "It would affect the developers locally, who often specifically want Claude to propose fixes."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "A Orbital Logística tem auto-merge para PRs de dependências. A política diz: nunca fazer merge se o review do Claude apontar achado de severidade crítica.\n\nHoje essa regra está só no prompt (\"se houver achado crítico, não aprove\"), e um PR com vulnerabilidade crítica foi mesclado. Como impor a regra?",
+      "pergunta": "Orbital Logística has auto-merge for dependency PRs. The policy says: never merge if Claude's review flags a critical-severity finding.\n\nToday that rule lives only in the prompt (\"if there is a critical finding, do not approve\"), and a PR with a critical vulnerability was merged. How do you enforce the rule?",
       "opcoes": [
-        "Emitir JSON validado por schema com a severidade de cada achado e bloquear o merge numa etapa determinística do pipeline se houver achado crítico.",
-        "Reforçar o prompt com letras maiúsculas e repetir a regra no início e no fim.",
-        "Dar ao agente permissão para rodar `gh pr merge` e instruí-lo a só fazer o merge depois de conferir, achado por achado, que nenhum deles tem severidade crítica.",
-        "Bloquear o merge apenas quando o modelo declarar baixa confiança na própria análise."
+        "Emit schema-validated JSON with each finding's severity and block the merge in a deterministic pipeline step if there is a critical finding.",
+        "Reinforce the prompt with capital letters and repeat the rule at the beginning and the end.",
+        "Give the agent permission to run `gh pr merge` and instruct it to merge only after checking, finding by finding, that none of them has critical severity.",
+        "Block the merge only when the model declares low confidence in its own analysis."
       ],
       "correta": 0,
-      "explicacao": "Regra com consequência de segurança vai para código determinístico. O modelo produz dados estruturados; o pipeline decide.",
+      "explicacao": "A rule with security consequences belongs in deterministic code. The model produces structured data; the pipeline decides.",
       "feedbacks": [
-        "Correta: a decisão crítica sai do prompt e vai para uma checagem determinística.",
-        "Continua probabilístico; reforço de prompt reduz, mas não elimina a taxa de falha.",
-        "Coloca a decisão crítica nas mãos do modelo, que é exatamente o que falhou.",
-        "Confiança autodeclarada é mal calibrada e não tem relação com a presença de achados críticos."
+        "Correct: the critical decision moves out of the prompt and into a deterministic check.",
+        "Still probabilistic; prompt reinforcement reduces, but doesn't eliminate, the failure rate.",
+        "Puts the critical decision in the hands of the model, which is exactly what failed.",
+        "Self-reported confidence is poorly calibrated and has no relation to the presence of critical findings."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D5",
-      "pergunta": "O review da Orbital Logística roda quatro subagents em paralelo (segurança, bugs, desempenho, testes) e um coordenador consolida. Num PR recente, o subagent de segurança estourou o timeout.\n\nO relatório publicado no PR disse \"Segurança: nenhum achado\". Como o sistema deveria ter se comportado?",
+      "pergunta": "Orbital Logística's review runs four subagents in parallel (security, bugs, performance, tests) and a coordinator consolidates them. On a recent PR, the security subagent timed out.\n\nThe report posted on the PR said \"Security: no findings\". How should the system have behaved?",
       "opcoes": [
-        "O subagent tenta recuperar localmente (retry com backoff); persistindo a falha, devolve erro estruturado e o coordenador publica o relatório parcial marcando segurança como \"não analisado\" e o check como inconclusivo.",
-        "O coordenador deveria abortar o review inteiro e não publicar nada até que todos os subagents concluíssem.",
-        "O coordenador deveria omitir a seção de segurança do relatório, já que não há achados a mostrar.",
-        "O subagent deveria devolver lista vazia, mas o coordenador deveria reexecutar o review inteiro na próxima vez."
+        "The subagent tries to recover locally (retry with backoff); if the failure persists, it returns a structured error and the coordinator publishes the partial report marking security as \"not analyzed\" and the check as inconclusive.",
+        "The coordinator should have aborted the entire review and published nothing until all subagents completed.",
+        "The coordinator should have omitted the security section from the report, since there are no findings to show.",
+        "The subagent should have returned an empty list, but the coordinator should rerun the entire review next time."
       ],
       "correta": 0,
-      "explicacao": "Falha ≠ vazio. Recupere transitórios localmente; o que não se resolve é propagado com contexto, e o resultado parcial segue com a lacuna explícita.",
+      "explicacao": "Failure ≠ empty. Recover transient errors locally; what can't be resolved is propagated with context, and the partial result goes ahead with the gap made explicit.",
       "feedbacks": [
-        "Correta: recupera o que dá, propaga o que não dá e não esconde a lacuna.",
-        "Abortar tudo por uma etapa desperdiça os achados válidos dos outros três subagents.",
-        "Omitir esconde a lacuna; o leitor conclui que segurança foi revisada.",
-        "Lista vazia como sucesso é o anti-padrão de supressão silenciosa de erro."
+        "Correct: recovers what it can, propagates what it can't, and doesn't hide the gap.",
+        "Aborting everything because of one step wastes the valid findings of the other three subagents.",
+        "Omitting it hides the gap; the reader concludes that security was reviewed.",
+        "An empty list as success is the anti-pattern of silent error suppression."
       ]
     }
   ]

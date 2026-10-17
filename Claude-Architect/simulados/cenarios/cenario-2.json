@@ -1,400 +1,400 @@
 {
-  "titulo": "Cenário 2 — Code Generation with Claude Code",
+  "titulo": "Scenario 2 — Code Generation with Claude Code",
   "aprovacao": 72,
   "questoes": [
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO tech lead escreveu as convenções do time (nomenclatura, padrão de camadas, uso de Result<T> em vez de exceções) no próprio ~/.claude/CLAUDE.md. No Claude Code dele tudo sai certo, mas os outros devs recebem código fora do padrão. Qual é a correção?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe tech lead wrote the team's conventions (naming, layering pattern, use of Result<T> instead of exceptions) in his own ~/.claude/CLAUDE.md. In his Claude Code everything comes out right, but the other developers get code that doesn't follow the standard. What is the fix?",
       "opcoes": [
-        "Pedir a cada dev que copie o conteúdo para o próprio ~/.claude/CLAUDE.md.",
-        "Mover as convenções para o CLAUDE.md do projeto (./CLAUDE.md ou ./.claude/CLAUDE.md), versionado no repositório.",
-        "Colocar as convenções no CLAUDE.local.md da raiz do repositório.",
-        "Criar uma skill /convencoes que os devs devem invocar no início de cada sessão."
+        "Ask each developer to copy the content into their own ~/.claude/CLAUDE.md.",
+        "Move the conventions to the project CLAUDE.md (./CLAUDE.md or ./.claude/CLAUDE.md), versioned in the repository.",
+        "Put the conventions in the CLAUDE.local.md at the repository root.",
+        "Create a /conventions skill that developers must invoke at the start of each session."
       ],
       "correta": 1,
-      "explicacao": "Hierarquia: usuário (~/.claude/CLAUDE.md) é pessoal; projeto (./CLAUDE.md) é do time e versionado; CLAUDE.local.md é pessoal e gitignored.",
+      "explicacao": "Hierarchy: user level (~/.claude/CLAUDE.md) is personal; project level (./CLAUDE.md) belongs to the team and is versioned; CLAUDE.local.md is personal and gitignored.",
       "feedbacks": [
-        "Funciona no começo, mas gera cópias divergentes e sem versionamento; qualquer mudança precisa ser replicada à mão em 30 máquinas.",
-        "Correta. ~/.claude/CLAUDE.md é pessoal e vale só na máquina dele. Convenção de time vai no CLAUDE.md de projeto, compartilhado pelo git.",
-        "CLAUDE.local.md é pessoal e fica fora do git (gitignored); os outros devs continuariam sem as regras.",
-        "Depende de cada dev lembrar de invocar; convenção que deve valer sempre pertence ao CLAUDE.md de projeto, carregado automaticamente."
+        "It works at first, but it creates divergent, unversioned copies; any change has to be replicated by hand on 30 machines.",
+        "Correct. ~/.claude/CLAUDE.md is personal and applies only on his machine. Team conventions go in the project CLAUDE.md, shared through git.",
+        "CLAUDE.local.md is personal and stays out of git (gitignored); the other developers would still be without the rules.",
+        "It depends on each developer remembering to invoke it; a convention that should always apply belongs in the project CLAUDE.md, which is loaded automatically."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nDois pedidos chegaram ao responsável pela configuração: (1) uma dev quer que o Claude Code use a URL do sandbox pessoal dela nos testes de integração, sem afetar ninguém; (2) parte do time usa outro agente que lê AGENTS.md, e as regras gerais já estão nesse arquivo. Quais DUAS ações atendem aos pedidos? (Escolha DUAS.)",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nTwo requests reached the person responsible for the configuration: (1) a developer wants Claude Code to use the URL of her personal sandbox in integration tests, without affecting anyone else; (2) part of the team uses another agent that reads AGENTS.md, and the general rules are already in that file. Which TWO actions fulfill the requests? (Choose TWO.)",
       "opcoes": [
-        "Colocar a URL do sandbox no CLAUDE.local.md dela, que é pessoal e não vai para o git.",
-        "Colocar a URL do sandbox no CLAUDE.md do projeto, numa seção \"configuração da Ana\".",
-        "Copiar todo o conteúdo do AGENTS.md para o CLAUDE.md, para o Claude Code não depender do outro arquivo.",
-        "No CLAUDE.md do projeto, importar as regras com @AGENTS.md, mantendo uma única fonte.",
-        "Apagar o CLAUDE.md, pois o Claude Code lê o AGENTS.md e não faz sentido manter os dois."
+        "Put the sandbox URL in her CLAUDE.local.md, which is personal and doesn't go to git.",
+        "Put the sandbox URL in the project CLAUDE.md, in an \"Ana's configuration\" section.",
+        "Copy all the content of AGENTS.md into CLAUDE.md, so Claude Code doesn't depend on the other file.",
+        "In the project CLAUDE.md, import the rules with @AGENTS.md, keeping a single source.",
+        "Delete CLAUDE.md, since Claude Code reads AGENTS.md and there's no point in keeping both."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "CLAUDE.local.md é a camada pessoal e gitignored do projeto. AGENTS.md pode ser importado no CLAUDE.md com @AGENTS.md, mantendo uma fonte só.",
+      "explicacao": "CLAUDE.local.md is the project's personal, gitignored layer. AGENTS.md can be imported into CLAUDE.md with @AGENTS.md, keeping a single source.",
       "feedbacks": [
-        "Correta. Preferência pessoal de projeto vai no CLAUDE.local.md (gitignored).",
-        "Mistura configuração pessoal com regra do time e afeta todos os devs (e vaza para o repositório).",
-        "Duplicação que diverge com o tempo; o @import resolve com uma única fonte de verdade.",
-        "Correta. O @import evita duplicação: os dois agentes leem as mesmas regras. Com ambos presentes, o Claude Code usa o CLAUDE.md, que puxa o AGENTS.md.",
-        "Perde a camada própria do Claude Code e não resolve o pedido 1; o padrão recomendado é CLAUDE.md importando o AGENTS.md."
+        "Correct. A personal project preference goes in CLAUDE.local.md (gitignored).",
+        "It mixes personal configuration with team rules and affects every developer (and leaks into the repository).",
+        "Duplication that diverges over time; the @import solves this with a single source of truth.",
+        "Correct. The @import avoids duplication: both agents read the same rules. With both present, Claude Code uses CLAUDE.md, which pulls in AGENTS.md.",
+        "It loses Claude Code's own layer and doesn't address request 1; the recommended pattern is CLAUDE.md importing AGENTS.md."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nOs projetos de teste ficam espalhados: services/*/tests/, libs/*/Tests/ e alguns tests/ novos surgem todo mês. O time quer que o Claude Code siga as convenções de teste (xUnit, padrão AAA, nomes Metodo_Cenario_Resultado) só quando estiver mexendo em testes. Qual é a MELHOR forma?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe test projects are scattered: services/*/tests/, libs/*/Tests/, and a few new tests/ directories appear every month. The team wants Claude Code to follow the testing conventions (xUnit, AAA pattern, Method_Scenario_Result names) only when it is working on tests. What is the BEST approach?",
       "opcoes": [
-        "Criar um CLAUDE.md dentro de cada diretório de testes com as mesmas convenções, já que CLAUDE.md de subdiretório carrega sob demanda quando esses arquivos são lidos.",
-        "Colocar as convenções de teste no CLAUDE.md da raiz.",
-        "Criar uma skill /testes que os devs invocam quando forem escrever testes.",
-        "Criar .claude/rules/testes.md com paths: contendo globs dos arquivos de teste."
+        "Create a CLAUDE.md inside each test directory with the same conventions, since a subdirectory CLAUDE.md loads on demand when those files are read.",
+        "Put the testing conventions in the root CLAUDE.md.",
+        "Create a /tests skill that developers invoke when they are going to write tests.",
+        "Create .claude/rules/tests.md with paths: containing globs of the test files."
       ],
       "correta": 3,
-      "explicacao": "Regras por caminho (.claude/rules/ com paths: glob) carregam só quando arquivos que batem são tocados e cobrem diretórios futuros.",
+      "explicacao": "Path-scoped rules (.claude/rules/ with a paths: glob) load only when matching files are touched, and they cover future directories.",
       "feedbacks": [
-        "Duplicação que diverge com o tempo e não cobre automaticamente os diretórios novos.",
-        "Funciona, mas carrega as regras de teste em toda sessão, mesmo quando ninguém mexe em teste, gastando contexto à toa.",
-        "Depende de lembrar de invocar; regra condicional a arquivos é exatamente o caso de rules com paths:.",
-        "Correta. Convenção que atravessa diretórios vai num arquivo em .claude/rules/ com paths:. Cobre diretórios futuros sem duplicar nada."
+        "Duplication that diverges over time and doesn't automatically cover new directories.",
+        "It works, but it loads the testing rules in every session, even when nobody is touching tests, wasting context for nothing.",
+        "It depends on remembering to invoke it; a rule that is conditional on files is exactly the use case for rules with paths:.",
+        "Correct. A convention that spans directories goes in a file in .claude/rules/ with paths:. It covers future directories without duplicating anything."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm dev vai migrar a serialização de Newtonsoft.Json para System.Text.Json em 60 arquivos de 8 serviços, com conversores customizados e algumas incompatibilidades conhecidas de comportamento. Como ele deve conduzir o trabalho no Claude Code?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer is going to migrate serialization from Newtonsoft.Json to System.Text.Json across 60 files in 8 services, with custom converters and some known behavioral incompatibilities. How should the developer carry out the work in Claude Code?",
       "opcoes": [
-        "Começar em plan mode e aprovar a abordagem proposta antes de qualquer edição.",
-        "Pedir a migração direto com o modo acceptEdits ligado, para não precisar aprovar 60 edições uma a uma, e revisar o diff completo no final.",
-        "Usar bypassPermissions para a tarefa rodar sem interrupções até o fim.",
-        "Fazer arquivo por arquivo em execução direta, uma sessão por arquivo."
+        "Start in plan mode and approve the proposed approach before any edits.",
+        "Request the migration directly with acceptEdits mode on, so they don't have to approve 60 edits one by one, and review the full diff at the end.",
+        "Use bypassPermissions so the task runs uninterrupted until the end.",
+        "Go file by file with direct execution, one session per file."
       ],
       "correta": 0,
-      "explicacao": "Plan mode para mudança multi-arquivo, decisão arquitetural, várias abordagens válidas e escopo grande. Execução direta para fix pontual e claro.",
+      "explicacao": "Plan mode for multi-file changes, architectural decisions, multiple valid approaches, and large scope. Direct execution for a targeted, clear fix.",
       "feedbacks": [
-        "Correta. Mudança multi-arquivo, com decisões de abordagem e risco de comportamento: o caso típico de plan mode, que explora e pede aprovação antes de editar.",
-        "Pula a etapa de desenho numa migração com várias abordagens válidas; o volume de edições automáticas sem plano aprovado aumenta o risco.",
-        "bypassPermissions não é rotina para tarefa longa e não contida, e não resolve a falta de planejamento.",
-        "Perde a visão do conjunto (conversores compartilhados, ordem da migração) e multiplica decisões inconsistentes entre arquivos."
+        "Correct. A multi-file change with decisions about the approach and behavioral risk: the typical case for plan mode, which explores and asks for approval before editing.",
+        "It skips the design step in a migration with multiple valid approaches; the volume of automatic edits without an approved plan increases the risk.",
+        "bypassPermissions is not routine for a long, uncontained task, and it doesn't address the lack of planning.",
+        "It loses the big picture (shared converters, migration order) and multiplies inconsistent decisions across files."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nNa fila de tarefas do sprint há vários itens. Quais DOIS deveriam começar em plan mode em vez de execução direta? (Escolha DUAS.)",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThere are several items in the sprint's task queue. Which TWO should start in plan mode instead of direct execution? (Choose TWO.)",
       "opcoes": [
-        "Corrigir um NullReferenceException com stack trace apontando a linha exata em PaymentService.cs.",
-        "Adicionar autenticação entre serviços, em que o time ainda não decidiu entre mTLS e tokens JWT internos.",
-        "Trocar o valor da constante MaxRetries de 3 para 5.",
-        "Adicionar uma linha de log no início do método Handle de um handler.",
-        "Reorganizar as fronteiras entre os módulos Billing e Invoicing, movendo classes entre projetos."
+        "Fix a NullReferenceException whose stack trace points to the exact line in PaymentService.cs.",
+        "Add service-to-service authentication, where the team has not yet decided between mTLS and internal JWT tokens.",
+        "Change the value of the MaxRetries constant from 3 to 5.",
+        "Add a log line at the start of a handler's Handle method.",
+        "Reorganize the boundaries between the Billing and Invoicing modules, moving classes between projects."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Plan mode: multi-arquivo, arquitetural, várias abordagens válidas, requisito pouco claro. Direto: fix de um arquivo, escopo óbvio, instrução clara.",
+      "explicacao": "Plan mode: multi-file, architectural, multiple valid approaches, unclear requirement. Direct: single-file fix, obvious scope, clear instruction.",
       "feedbacks": [
-        "Fix de um arquivo com causa clara: execução direta resolve; plan mode só adicionaria atrito.",
-        "Correta. Várias abordagens válidas e decisão arquitetural: plan mode explora e propõe antes de editar.",
-        "Mudança trivial e óbvia: execução direta.",
-        "Escopo pontual e instrução clara: execução direta.",
-        "Correta. Mudança estrutural multi-arquivo e de escopo amplo: desenhe e aprove o plano primeiro."
+        "A single-file fix with a clear cause: direct execution solves it; plan mode would only add friction.",
+        "Correct. Multiple valid approaches and an architectural decision: plan mode explores and proposes before editing.",
+        "A trivial, obvious change: direct execution.",
+        "Targeted scope and a clear instruction: direct execution.",
+        "Correct. A broad, multi-file structural change: design and approve the plan first."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO repositório tem .claude/commands/nova-feature.md (antigo) e, desde a última semana, também .claude/skills/nova-feature/SKILL.md (nova versão do mesmo fluxo). Um dev digita /nova-feature. O que acontece?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe repository has .claude/commands/new-feature.md (old) and, since last week, also .claude/skills/new-feature/SKILL.md (a new version of the same workflow). A developer types /new-feature. What happens?",
       "opcoes": [
-        "Roda o comando de .claude/commands/, porque arquivos de comando explícitos têm precedência sobre skills, que são pensadas para auto-carregamento.",
-        "O Claude Code pergunta ao dev qual das duas versões usar.",
-        "Roda a skill: comandos foram fundidos em skills e, em conflito de nome, a skill vence.",
-        "Os dois arquivos rodam em sequência, primeiro o comando e depois a skill."
+        "The command from .claude/commands/ runs, because explicit command files take precedence over skills, which are meant for auto-loading.",
+        "Claude Code asks the developer which of the two versions to use.",
+        "The skill runs: commands were merged into skills, and in a name conflict, the skill wins.",
+        "Both files run in sequence, first the command and then the skill."
       ],
       "correta": 2,
-      "explicacao": "Comandos customizados foram fundidos em skills: .claude/commands/x.md e .claude/skills/x/SKILL.md criam /x; em conflito, a skill vence.",
+      "explicacao": "Custom commands were merged into skills: .claude/commands/x.md and .claude/skills/x/SKILL.md both create /x; in a conflict, the skill wins.",
       "feedbacks": [
-        "Inverte a regra: em conflito, a skill vence.",
-        "Não há esse prompt de desambiguação; a precedência é determinística.",
-        "Correta. Os dois formatos criam /nova-feature; quando colidem, a skill tem precedência. Vale remover o arquivo antigo para evitar confusão.",
-        "Não existe execução combinada; apenas uma definição atende ao nome."
+        "It inverts the rule: in a conflict, the skill wins.",
+        "There is no such disambiguation prompt; precedence is deterministic.",
+        "Correct. Both formats create /new-feature; when they collide, the skill takes precedence. It's worth removing the old file to avoid confusion.",
+        "There is no combined execution; only one definition serves the name."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nA skill /mapear-dependencias lê dezenas de arquivos .csproj e gera um relatório. Depois de rodá-la, a sessão principal fica lotada com a saída das leituras e o Claude começa a esquecer o que estava implementando. Qual ajuste no frontmatter da skill resolve melhor?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe /map-dependencies skill reads dozens of .csproj files and generates a report. After it runs, the main session is packed with the output of those reads and Claude starts forgetting what it was implementing. Which change to the skill's frontmatter solves this best?",
       "opcoes": [
-        "Adicionar disable-model-invocation: true.",
-        "Restringir allowed-tools a Read e Grep.",
-        "Manter a skill como está e rodar /compact logo após cada execução, preservando na sessão principal só um resumo do que foi lido.",
-        "Adicionar context: fork, para a skill rodar num subagent isolado."
+        "Add disable-model-invocation: true.",
+        "Restrict allowed-tools to Read and Grep.",
+        "Keep the skill as it is and run /compact right after each execution, preserving only a summary of what was read in the main session.",
+        "Add context: fork, so the skill runs in an isolated subagent."
       ],
       "correta": 3,
-      "explicacao": "context: fork executa a skill num subagent isolado (CLAUDE.md carrega, histórico não) e devolve só o resultado: ideal para trabalho volumoso.",
+      "explicacao": "context: fork runs the skill in an isolated subagent (CLAUDE.md loads, the history doesn't) and returns only the result: ideal for high-volume work.",
       "feedbacks": [
-        "Isso só impede o modelo de invocar a skill sozinho; quando ela roda, polui o contexto do mesmo jeito.",
-        "Limita as ferramentas, não o volume de saída que entra na sessão principal.",
-        "Remenda o sintoma depois do estrago e pode perder detalhes da tarefa principal; o isolamento evita o problema.",
-        "Correta. context: fork roda a skill num subagent com contexto próprio; o trabalho ruidoso fica lá e só o relatório volta."
+        "This only prevents the model from invoking the skill on its own; when it runs, it pollutes the context just the same.",
+        "It limits the tools, not the volume of output that enters the main session.",
+        "It patches the symptom after the damage is done and may lose details of the main task; isolation avoids the problem.",
+        "Correct. context: fork runs the skill in a subagent with its own context; the noisy work stays there and only the report comes back."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nA skill /deploy-staging publica o serviço no ambiente de staging. O time percebeu que o Claude às vezes a invoca sozinho quando alguém comenta \"acho que está pronto para testar\". Eles querem que ela rode só quando um dev digitar o comando. Qual ajuste?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe /deploy-staging skill publishes the service to the staging environment. The team noticed that Claude sometimes invokes it on its own when someone comments \"I think it's ready to test\". They want it to run only when a developer types the command. Which change should they make?",
       "opcoes": [
-        "Adicionar disable-model-invocation: true ao frontmatter da skill.",
-        "Escrever na description: \"não use esta skill automaticamente\".",
-        "Adicionar user-invocable: false ao frontmatter.",
-        "Mover a skill para ~/.claude/skills/ de cada dev."
+        "Add disable-model-invocation: true to the skill's frontmatter.",
+        "Write in the description: \"do not use this skill automatically\".",
+        "Add user-invocable: false to the frontmatter.",
+        "Move the skill to each developer's ~/.claude/skills/."
       ],
       "correta": 0,
-      "explicacao": "disable-model-invocation: true faz a skill rodar só por invocação explícita do usuário. user-invocable: false faz o contrário (só o modelo vê).",
+      "explicacao": "disable-model-invocation: true makes the skill run only through explicit invocation by the user. user-invocable: false does the opposite (only the model sees it).",
       "feedbacks": [
-        "Correta. Esse campo impede o auto-carregamento pelo modelo; a skill continua disponível quando o usuário a invoca explicitamente.",
-        "Instrução probabilística no campo que justamente dirige o auto-carregamento; não garante o comportamento.",
-        "Faz o contrário do desejado: esconde a skill do usuário e a deixa só para o modelo.",
-        "Muda o escopo (pessoal), não o modo de invocação; o modelo continuaria podendo acioná-la."
+        "Correct. This field prevents auto-loading by the model; the skill remains available when the user invokes it explicitly.",
+        "A probabilistic instruction in the very field that drives auto-loading; it doesn't guarantee the behavior.",
+        "It does the opposite of what is wanted: it hides the skill from the user and leaves it only to the model.",
+        "It changes the scope (personal), not the invocation mode; the model could still trigger it."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D1",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO CLAUDE.md diz \"nunca edite arquivos em Migrations/ nem arquivos .env\". Mesmo assim, duas vezes no mês o Claude alterou uma migration já aplicada em produção. Qual é a correção adequada?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe CLAUDE.md says \"never edit files in Migrations/ or .env files\". Even so, twice a month Claude has modified a migration already applied in production. What is the appropriate fix?",
       "opcoes": [
-        "Repetir a regra em negrito no início e no fim do CLAUDE.md.",
-        "Um hook PreToolUse em Edit|Write que bloqueia (exit 2 ou deny com motivo) alvos em Migrations/ ou .env.",
-        "Criar um subagent revisor que examina os diffs ao final de cada sessão.",
-        "Um hook PostToolUse em Edit|Write que detecta alterações em Migrations/ ou .env e avisa o dev imediatamente, com o diff da mudança feita."
+        "Repeat the rule in bold at the beginning and at the end of CLAUDE.md.",
+        "A PreToolUse hook on Edit|Write that blocks (exit 2 or deny with a reason) targets in Migrations/ or .env.",
+        "Create a reviewer subagent that examines the diffs at the end of each session.",
+        "A PostToolUse hook on Edit|Write that detects changes in Migrations/ or .env and alerts the developer immediately, with the diff of the change made."
       ],
       "correta": 1,
-      "explicacao": "Regra crítica vai em código: PreToolUse bloqueia antes (exit 2 bloqueia; exit 0 passa). PostToolUse é para normalizar/anotar depois.",
+      "explicacao": "A critical rule goes in code: PreToolUse blocks beforehand (exit 2 blocks; exit 0 lets it through). PostToolUse is for normalizing/annotating afterward.",
       "feedbacks": [
-        "Prompt continua probabilístico; a falha observada vai se repetir com menor frequência, mas não some.",
-        "Correta. Regra de segurança/integridade precisa de enforcement determinístico; o hook bloqueia sempre e o motivo orienta o Claude a seguir outro caminho.",
-        "Detecta depois do fato e acrescenta complexidade; o bloqueio tem que acontecer antes da edição.",
-        "PostToolUse roda depois que a edição já aconteceu: avisa, mas não impede."
+        "The prompt is still probabilistic; the observed failure will recur less often, but it won't go away.",
+        "Correct. A safety/integrity rule needs deterministic enforcement; the hook always blocks, and the reason steers Claude toward another path.",
+        "It detects after the fact and adds complexity; the block has to happen before the edit.",
+        "PostToolUse runs after the edit has already happened: it alerts, but it doesn't prevent."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D1",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO time quer que todo arquivo .cs editado pelo Claude passe por dotnet format automaticamente, sem depender de alguém lembrar de pedir. Onde e como configurar?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team wants every .cs file edited by Claude to go through dotnet format automatically, without depending on someone remembering to ask. Where and how should this be configured?",
       "opcoes": [
-        "Uma instrução no CLAUDE.md: \"sempre rode dotnet format após editar\".",
-        "Um hook PreToolUse em Edit|Write que roda dotnet format antes da edição.",
-        "Hook PostToolUse (matcher Edit|Write) no .claude/settings.json, rodando dotnet format.",
-        "Um hook PostToolUse com matcher Edit|Write no .claude/settings.local.json de cada dev, executando dotnet format no arquivo alterado."
+        "An instruction in CLAUDE.md: \"always run dotnet format after editing\".",
+        "A PreToolUse hook on Edit|Write that runs dotnet format before the edit.",
+        "A PostToolUse hook (matcher Edit|Write) in .claude/settings.json, running dotnet format.",
+        "A PostToolUse hook with matcher Edit|Write in each developer's .claude/settings.local.json, running dotnet format on the changed file."
       ],
       "correta": 2,
-      "explicacao": "PostToolUse normaliza o resultado depois da tool; settings de projeto (.claude/settings.json) é compartilhado, settings.local.json é pessoal.",
+      "explicacao": "PostToolUse normalizes the result after the tool runs; project settings (.claude/settings.json) are shared, settings.local.json is personal.",
       "feedbacks": [
-        "Probabilística: o Claude vai esquecer às vezes. O pedido é justamente não depender de lembrança.",
-        "Evento errado: antes da edição o arquivo ainda não tem a alteração a formatar.",
-        "Correta. PostToolUse roda depois de cada edição, de forma determinística; no settings do projeto vale para todo o time via git.",
-        "Evento certo, escopo errado: settings.local.json é pessoal e gitignored, então não vale para o time."
+        "Probabilistic: Claude will forget sometimes. The request is precisely not to depend on someone remembering.",
+        "Wrong event: before the edit, the file doesn't yet have the change to format.",
+        "Correct. PostToolUse runs after every edit, deterministically; in the project settings, it applies to the whole team via git.",
+        "Right event, wrong scope: settings.local.json is personal and gitignored, so it doesn't apply to the team."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nOs devs reclamam que o Claude pede permissão toda vez que vai rodar dotnet build e dotnet test. Ao mesmo tempo, a segurança quer garantir que comandos como git push --force nunca rodem. Qual configuração atende às duas demandas?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nDevelopers complain that Claude asks for permission every time it is about to run dotnet build and dotnet test. At the same time, security wants to guarantee that commands like git push --force never run. Which configuration meets both demands?",
       "opcoes": [
-        "permissions.allow para build/test e permissions.deny para git push --force, no .claude/settings.json.",
-        "Rodar o Claude Code em bypassPermissions para eliminar os prompts e colocar no CLAUDE.md, em destaque, que push forçado é proibido em qualquer situação.",
-        "Usar o modo acceptEdits para todos os devs.",
-        "Pedir a cada dev que aprove os comandos com \"sempre permitir\" na primeira vez."
+        "permissions.allow for build/test and permissions.deny for git push --force, in .claude/settings.json.",
+        "Run Claude Code in bypassPermissions to eliminate the prompts, and state prominently in CLAUDE.md that force pushes are prohibited in any situation.",
+        "Use acceptEdits mode for all developers.",
+        "Ask each developer to approve the commands with \"always allow\" the first time."
       ],
       "correta": 0,
-      "explicacao": "Permissões allow/deny no settings de projeto: libere o seguro e repetitivo, negue o perigoso. bypassPermissions não é rotina.",
+      "explicacao": "allow/deny permissions in the project settings: allow what is safe and repetitive, deny what is dangerous. bypassPermissions is not for routine use.",
       "feedbacks": [
-        "Correta. Allow remove o atrito do que é seguro e repetitivo; deny bloqueia o perigoso; no settings de projeto vale para todos.",
-        "Remove todos os controles e deixa a proibição só no prompt; bypassPermissions não é para rotina.",
-        "acceptEdits aceita edições de arquivo automaticamente, mas não é uma regra para comandos específicos e não bloqueia o push forçado.",
-        "Fica pessoal e inconsistente entre devs, e não resolve o bloqueio exigido pela segurança."
+        "Correct. allow removes the friction from what is safe and repetitive; deny blocks what is dangerous; in the project settings, it applies to everyone.",
+        "It removes all controls and leaves the prohibition only in the prompt; bypassPermissions is not for routine use.",
+        "acceptEdits accepts file edits automatically, but it is not a rule for specific commands and doesn't block the force push.",
+        "It stays personal and inconsistent across developers, and it doesn't provide the block that security requires."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D1",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO time vai criar um subagent revisor-seguranca para analisar mudanças em busca de vulnerabilidades, sem poder alterar nada. Quais DUAS afirmações estão corretas sobre esse desenho? (Escolha DUAS.)",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team is going to create a security-reviewer subagent to analyze changes for vulnerabilities, without the ability to modify anything. Which TWO statements about this design are correct? (Choose TWO.)",
       "opcoes": [
-        "O subagent herda automaticamente todo o histórico da sessão principal, então basta pedir \"revise o que fizemos\".",
-        "O frontmatter do subagent pode definir bypassPermissions para ele trabalhar sem interrupções, mesmo que a sessão principal esteja em modo default.",
-        "Ele deve ser definido em .claude/agents/revisor-seguranca.md, com frontmatter limitando as tools a leitura (por exemplo, Read, Grep e Glob).",
-        "Como o contexto do subagent é isolado, o pedido de delegação precisa dizer explicitamente o que revisar (arquivos, objetivo, critérios).",
-        "Para ser reconhecido, o subagent precisa ser listado no CLAUDE.md do projeto."
+        "The subagent automatically inherits the entire history of the main session, so it's enough to ask \"review what we did\".",
+        "The subagent's frontmatter can set bypassPermissions so it works without interruptions, even if the main session is in default mode.",
+        "It should be defined in .claude/agents/security-reviewer.md, with frontmatter restricting the tools to read-only ones (for example, Read, Grep, and Glob).",
+        "Since the subagent's context is isolated, the delegation request must explicitly state what to review (files, goal, criteria).",
+        "To be recognized, the subagent must be listed in the project CLAUDE.md."
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Subagents customizados vivem em .claude/agents/ com frontmatter (tools, model...). Contexto isolado exige prompt explícito, e o modo de permissão do pai não pode ser sobrescrito.",
+      "explicacao": "Custom subagents live in .claude/agents/ with frontmatter (tools, model...). An isolated context requires an explicit prompt, and the parent's permission mode cannot be overridden.",
       "feedbacks": [
-        "Falso: um subagent novo tem contexto próprio. 'Revise o que fizemos' falha por falta de contexto.",
-        "O modo de permissão do pai desce para o subagent e não pode ser sobrescrito por ele.",
-        "Correta. Subagents customizados ficam em .claude/agents/ (markdown + frontmatter com tools, model, permissões...).",
-        "Correta. O subagent não herda o histórico da conversa principal; tudo o que ele precisa vai no prompt.",
-        "Não é necessário: o Claude Code descobre os subagents em .claude/agents/."
+        "False: a new subagent has its own context. 'Review what we did' fails for lack of context.",
+        "The parent's permission mode carries down to the subagent and cannot be overridden by it.",
+        "Correct. Custom subagents live in .claude/agents/ (markdown + frontmatter with tools, model, permissions...).",
+        "Correct. The subagent doesn't inherit the main conversation's history; everything it needs goes in the prompt.",
+        "Not necessary: Claude Code discovers the subagents in .claude/agents/."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D4",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm dev pediu três vezes, em prosa, que o Claude escrevesse um parser para o formato de data dos extratos bancários (\"dia, mês abreviado em português e ano com dois dígitos, às vezes com hora\"). Cada tentativa erra um caso diferente. Qual é a forma mais eficaz de destravar?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer asked Claude three times, in prose, to write a parser for the date format of bank statements (\"day, month abbreviated in Portuguese, and two-digit year, sometimes with a time\"). Each attempt gets a different case wrong. What is the most effective way to get unstuck?",
       "opcoes": [
-        "Reescrever a descrição em prosa com mais detalhes sobre cada variação do formato e pedir explicitamente que o Claude preste atenção aos casos com hora.",
-        "Mudar para plan mode e pedir um plano antes de reescrever o parser.",
-        "Pedir que outro subagent reescreva o parser do zero, sem o histórico das tentativas.",
-        "Fornecer 2–3 pares concretos de entrada e saída esperada, incluindo os casos de borda."
+        "Rewrite the prose description with more detail about each variation of the format and explicitly ask Claude to pay attention to the cases with a time.",
+        "Switch to plan mode and ask for a plan before rewriting the parser.",
+        "Ask another subagent to rewrite the parser from scratch, without the history of the attempts.",
+        "Provide 2–3 concrete pairs of input and expected output, including the edge cases."
       ],
       "correta": 3,
-      "explicacao": "Refinamento iterativo: 2–3 exemplos concretos de entrada/saída vencem instrução em prosa, especialmente em formatos com casos de borda.",
+      "explicacao": "Iterative refinement: 2–3 concrete input/output examples beat prose instructions, especially for formats with edge cases.",
       "feedbacks": [
-        "Continua na via que já falhou três vezes; prosa mais longa não elimina a ambiguidade.",
-        "Plan mode não falta aqui: o escopo é pequeno e claro; o que falta é especificar o formato com exemplos.",
-        "Muda quem escreve, mas não a especificação, que é a causa dos erros.",
-        "Correta. Exemplos concretos de entrada/saída comunicam o formato melhor do que descrição em prosa e cobrem as bordas que causam os erros."
+        "It stays on the path that has already failed three times; longer prose doesn't eliminate the ambiguity.",
+        "Plan mode isn't what's missing here: the scope is small and clear; what's missing is specifying the format with examples.",
+        "It changes who writes the code, but not the specification, which is the cause of the errors.",
+        "Correct. Concrete input/output examples communicate the format better than a prose description, and they cover the edge cases that cause the errors."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nO time vai implementar o cálculo de juros pro rata de um contrato, com várias regras de arredondamento definidas pelo jurídico. As tentativas anteriores com o Claude produziram código \"quase certo\" que só falhava em produção. Qual fluxo é mais adequado?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team is going to implement the pro rata interest calculation for a contract, with several rounding rules defined by the legal department. Previous attempts with Claude produced \"almost right\" code that only failed in production. Which workflow is most appropriate?",
       "opcoes": [
-        "Pedir a implementação completa e, em seguida, pedir ao Claude que escreva testes unitários cobrindo todos os caminhos do código gerado.",
-        "Escrever primeiro os testes com os casos do jurídico, compartilhar as falhas e iterar até passarem.",
-        "Pedir a implementação e revisar manualmente o código linha a linha antes do merge.",
-        "Descrever as regras em detalhes no CLAUDE.md do projeto para todas as sessões."
+        "Request the complete implementation and then ask Claude to write unit tests covering all paths of the generated code.",
+        "Write the tests with the legal department's cases first, share the failures, and iterate until they pass.",
+        "Request the implementation and manually review the code line by line before the merge.",
+        "Describe the rules in detail in the project CLAUDE.md for all sessions."
       ],
       "correta": 1,
-      "explicacao": "TDD como refinamento iterativo: testes que falham primeiro, compartilhe as falhas, itere até passar.",
+      "explicacao": "TDD as iterative refinement: failing tests first, share the failures, iterate until they pass.",
       "feedbacks": [
-        "Testes escritos a partir do próprio código tendem a confirmar os mesmos erros, sem o critério externo do jurídico.",
-        "Correta. TDD dá ao Claude um critério verificável e objetivo de sucesso; as falhas concretas guiam cada iteração.",
-        "Revisão manual ajuda, mas é a abordagem que já deixou passar erros sutis de arredondamento.",
-        "Regras específicas de uma tarefa não pertencem ao CLAUDE.md, e prosa não verifica nada."
+        "Tests written from the code itself tend to confirm the same errors, without the external criteria from the legal department.",
+        "Correct. TDD gives Claude a verifiable, objective success criterion; the concrete failures guide each iteration.",
+        "Manual review helps, but it is the approach that has already let subtle rounding errors through.",
+        "Task-specific rules don't belong in CLAUDE.md, and prose doesn't verify anything."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D4",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm PO pediu \"uma tela de conciliação que funcione como a planilha do financeiro\". O dev não conhece a planilha a fundo e o requisito tem muitas lacunas (tolerâncias, moedas, o que fazer com divergências). Como ele deve começar com o Claude Code?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA PO asked for \"a reconciliation screen that works like the finance team's spreadsheet\". The developer doesn't know the spreadsheet in depth, and the requirement has many gaps (tolerances, currencies, what to do with discrepancies). How should the developer start with Claude Code?",
       "opcoes": [
-        "Pedir a implementação imediatamente e corrigir o que estiver errado nas revisões.",
-        "Pedir que o Claude implemente as regras \"mais comuns em sistemas de conciliação\".",
-        "Pedir que o Claude o entreviste com perguntas de esclarecimento antes de implementar.",
-        "Colar a planilha inteira do financeiro no prompt, com as fórmulas visíveis, e pedir que o Claude replique exatamente o comportamento dela na tela."
+        "Request the implementation immediately and fix whatever is wrong during reviews.",
+        "Ask Claude to implement the rules \"most common in reconciliation systems\".",
+        "Ask Claude to interview them with clarifying questions before implementing.",
+        "Paste the finance team's entire spreadsheet into the prompt, with the formulas visible, and ask Claude to replicate its behavior exactly on the screen."
       ],
       "correta": 2,
-      "explicacao": "Refinamento iterativo: em requisito ambíguo, peça para o Claude entrevistar você antes de implementar.",
+      "explicacao": "Iterative refinement: with an ambiguous requirement, ask Claude to interview you before implementing.",
       "feedbacks": [
-        "Gera código sobre suposições não validadas; o retrabalho tende a ser maior do que o custo de perguntar.",
-        "Delega ao modelo um critério vago; o resultado será genérico e provavelmente diferente da planilha.",
-        "Correta. Com requisito ambíguo, a técnica da entrevista faz as lacunas aparecerem antes do código, evitando implementação baseada em suposições.",
-        "Pode ajudar como insumo, mas não resolve as decisões que não estão na planilha (tolerância, tratamento de divergências)."
+        "It generates code on top of unvalidated assumptions; the rework tends to cost more than asking.",
+        "It delegates a vague criterion to the model; the result will be generic and probably different from the spreadsheet.",
+        "Correct. With an ambiguous requirement, the interview technique surfaces the gaps before the code, avoiding an implementation based on assumptions.",
+        "It may help as input, but it doesn't settle the decisions that aren't in the spreadsheet (tolerance, handling of discrepancies)."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm dev tem três bugs para corrigir: um erro de fuso horário no relatório de faturas, um typo numa mensagem de validação e um vazamento de conexão no cliente HTTP. Os três estão em partes diferentes do código e não interagem. Como ele deve pedir ao Claude?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer has three bugs to fix: a time zone error in the invoice report, a typo in a validation message, and a connection leak in the HTTP client. All three are in different parts of the code and don't interact. How should the developer ask Claude?",
       "opcoes": [
-        "Um bug por vez, em sequência, revisando cada correção antes de passar para a próxima.",
-        "Os três numa única mensagem, para o Claude ter o contexto completo.",
-        "Os três em plan mode, já que são várias mudanças.",
-        "Abrir três subagents em paralelo, cada um corrigindo um bug sem supervisão."
+        "One bug at a time, in sequence, reviewing each fix before moving on to the next.",
+        "All three in a single message, so Claude has the full context.",
+        "All three in plan mode, since there are several changes.",
+        "Launch three subagents in parallel, each fixing one bug without supervision."
       ],
       "correta": 0,
-      "explicacao": "Problemas relacionados que interagem vão numa mensagem; independentes, em sequência, para manter as mudanças revisáveis.",
+      "explicacao": "Related problems that interact go in one message; independent ones go in sequence, to keep the changes reviewable.",
       "feedbacks": [
-        "Correta. Problemas independentes vão em sequência: cada mudança fica pequena e revisável.",
-        "Juntar problemas só faz sentido quando eles interagem; aqui gera um diff misturado e mais difícil de revisar.",
-        "Cada bug é pontual; o número de tarefas não transforma fixes simples em decisão arquitetural.",
-        "Mais complexo do que o necessário para três fixes pequenos, e perde a revisão incremental."
+        "Correct. Independent problems go in sequence: each change stays small and reviewable.",
+        "Combining problems only makes sense when they interact; here it produces a mixed diff that is harder to review.",
+        "Each bug is targeted; the number of tasks doesn't turn simple fixes into an architectural decision.",
+        "More complex than necessary for three small fixes, and it loses the incremental review."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D4",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm dev gerou um módulo de conciliação com o Claude ao longo de uma sessão longa e, no fim, pediu na mesma sessão: \"revise tudo o que você escreveu e aponte bugs\". A revisão voltou limpa, mas o QA achou dois erros de lógica. Como melhorar a revisão?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer generated a reconciliation module with Claude over a long session and, at the end, asked in the same session: \"review everything you wrote and point out bugs\". The review came back clean, but QA found two logic errors. How can the review be improved?",
       "opcoes": [
-        "Pedir na mesma sessão uma segunda revisão, \"mais rigorosa\".",
-        "Aumentar o effort da mesma sessão antes de pedir a revisão.",
-        "Pedir que o Claude atribua uma nota de confiança a cada função gerada e concentrar a revisão humana nas funções que receberem nota baixa.",
-        "Revisar numa sessão independente (ou subagent novo), com o código e critérios explícitos de revisão."
+        "Ask in the same session for a second, \"more rigorous\" review.",
+        "Increase the effort of the same session before asking for the review.",
+        "Ask Claude to assign a confidence score to each generated function and focus human review on the functions that receive a low score.",
+        "Review in an independent session (or a new subagent), with the code and explicit review criteria."
       ],
       "correta": 3,
-      "explicacao": "A sessão que escreveu o código não deve revisá-lo: use sessão/subagent independente com critérios explícitos.",
+      "explicacao": "The session that wrote the code should not review it: use an independent session/subagent with explicit criteria.",
       "feedbacks": [
-        "Continua no mesmo contexto enviesado; insistir não muda o ponto de vista.",
-        "Mais esforço no mesmo contexto não remove o viés de quem justificou cada decisão ao escrever.",
-        "Confiança autodeclarada é mal calibrada; os bugs estavam justamente onde o modelo achava que estava certo.",
-        "Correta. Quem gerou o código tende a não questionar as próprias decisões (viés do contexto de raciocínio). Revisão independente enxerga o que a sessão original racionalizou."
+        "It stays in the same biased context; insisting doesn't change the point of view.",
+        "More effort in the same context doesn't remove the bias of whoever justified each decision while writing.",
+        "Self-reported confidence is poorly calibrated; the bugs were precisely where the model thought it was right.",
+        "Correct. Whoever generated the code tends not to question their own decisions (reasoning-context bias). An independent review sees what the original session rationalized."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D5",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nDepois de horas numa sessão explorando o serviço de pagamentos, o Claude passou a dar respostas como \"isso segue os padrões típicos de repositório\" em vez de citar as classes reais, e repete perguntas já respondidas no início. O que fazer?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nAfter hours in a session exploring the payment service, Claude started giving answers like \"this follows typical repository patterns\" instead of citing the actual classes, and it repeats questions that were already answered at the start. What should be done?",
       "opcoes": [
-        "Continuar na mesma sessão e repetir as informações perdidas sempre que o Claude esquecer.",
-        "Abrir uma sessão nova, sem nenhum contexto da anterior, e refazer a exploração do serviço de pagamentos do zero, agora com mais foco e menos desvios.",
-        "Salvar os achados num arquivo de notas, rodar /compact proativamente e delegar exploração volumosa a subagents.",
-        "Pedir ao Claude que leia todos os arquivos do serviço de novo para recuperar o contexto."
+        "Continue in the same session and repeat the lost information whenever Claude forgets.",
+        "Open a new session, without any context from the previous one, and redo the exploration of the payment service from scratch, now with more focus and fewer detours.",
+        "Save the findings to a notes file, run /compact proactively, and delegate high-volume exploration to subagents.",
+        "Ask Claude to read all of the service's files again to recover the context."
       ],
       "correta": 2,
-      "explicacao": "Sinais de degradação: respostas vagas, inconsistência, esquecer descobertas. Mitigue com arquivos de rascunho, /compact proativo e subagents que exploram e devolvem só o resumo.",
+      "explicacao": "Signs of degradation: vague answers, inconsistency, forgetting findings. Mitigate with scratchpad files, proactive /compact, and subagents that explore and return only the summary.",
       "feedbacks": [
-        "Agrava o problema: mais tokens no mesmo contexto já degradado.",
-        "Evita a degradação, mas joga fora horas de descobertas; o certo é persisti-las antes.",
-        "Correta. Esses são sinais de degradação de contexto. Arquivos de rascunho sobrevivem à compressão, o /compact proativo libera espaço e subagents mantêm o ruído fora da sessão principal.",
-        "Encher o contexto com leituras em massa é a causa do problema, não a solução."
+        "It aggravates the problem: more tokens in the same already-degraded context.",
+        "It avoids the degradation, but it throws away hours of findings; the right move is to persist them first.",
+        "Correct. These are signs of context degradation. Scratchpad files survive compression, a proactive /compact frees up space, and subagents keep the noise out of the main session.",
+        "Filling the context with bulk reads is the cause of the problem, not the solution."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D2",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nUm dev novo pede ao Claude: \"entenda como funciona o fluxo de emissão de nota fiscal\". O serviço tem mais de 900 arquivos. Qual estratégia de exploração é a mais adequada?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA new developer asks Claude: \"figure out how the tax invoice (nota fiscal) issuance flow works\". The service has more than 900 files. Which exploration strategy is most appropriate?",
       "opcoes": [
-        "Ler todos os arquivos do serviço primeiro, para ter a visão completa antes de responder.",
-        "Grep pelos pontos de entrada, ler, seguir imports e chamadas com novas buscas e ler só o necessário.",
-        "Usar Glob para listar todos os arquivos .cs do serviço e ler primeiro os 50 maiores, que costumam concentrar a lógica de negócio principal.",
-        "Pedir ao dev que cole no prompt os arquivos que ele acha importantes."
+        "Read all of the service's files first, to get the complete picture before answering.",
+        "Grep for the entry points, read them, follow imports and calls with new searches, and read only what is necessary.",
+        "Use Glob to list all of the service's .cs files and first read the 50 largest, which usually contain the core business logic.",
+        "Ask the developer to paste into the prompt the files they think are important."
       ],
       "correta": 1,
-      "explicacao": "Exploração de codebase: grep pelos pontos de entrada, ler, seguir imports com grep, ler. Para varreduras volumosas, um subagent Explore devolve só a conclusão.",
+      "explicacao": "Codebase exploration: grep for the entry points, read, follow imports with grep, read. For high-volume sweeps, an Explore subagent returns only the conclusion.",
       "feedbacks": [
-        "Anti-padrão: ler tudo de antemão gasta o contexto e piora a atenção justamente no que importa.",
-        "Correta. Exploração incremental: grep pelos pontos de entrada → lê → segue as dependências. Constrói entendimento sem gastar contexto à toa.",
-        "Tamanho não indica relevância para o fluxo; continua sendo leitura em massa sem direção.",
-        "O dev é novo e não sabe quais são; o Claude tem ferramentas para descobrir isso sozinho."
+        "Anti-pattern: reading everything up front uses up the context and worsens attention precisely on what matters.",
+        "Correct. Incremental exploration: grep for the entry points → read → follow the dependencies. It builds understanding without wasting context.",
+        "Size doesn't indicate relevance to the flow; it is still undirected bulk reading.",
+        "The developer is new and doesn't know which files those are; Claude has the tools to discover this on its own."
       ]
     },
     {
       "cenario": 2,
       "dominio": "D1",
-      "pergunta": "Cenário: a FinStack, um time de 30 devs .NET, adotou o Claude Code para gerar, refatorar e testar código num monorepo de microsserviços. A configuração do Claude Code (CLAUDE.md, rules, skills, hooks, settings) é compartilhada pelo git.\n\nDepois de uma longa sessão analisando o módulo de cobrança, um dev quer testar duas estratégias de refatoração diferentes (Strategy pattern e tabela de regras), partindo da mesma análise, sem que uma tentativa contamine a outra. O que ele deve usar?",
+      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nAfter a long session analyzing the billing module, a developer wants to try two different refactoring strategies (Strategy pattern and a rules table), starting from the same analysis, without one attempt contaminating the other. What should the developer use?",
       "opcoes": [
-        "--fork-session ao retomar a sessão de análise, criando um ramo com novo ID para cada estratégia.",
-        "--resume na mesma sessão para as duas estratégias, uma depois da outra.",
-        "Duas sessões novas do zero, refazendo a análise em cada uma.",
-        "Pedir na mesma sessão para o Claude \"esquecer\" a primeira estratégia antes de tentar a segunda."
+        "--fork-session when resuming the analysis session, creating a branch with a new ID for each strategy.",
+        "--resume on the same session for both strategies, one after the other.",
+        "Two new sessions from scratch, redoing the analysis in each one.",
+        "Ask Claude, in the same session, to \"forget\" the first strategy before trying the second."
       ],
       "correta": 0,
-      "explicacao": "--fork-session cria um novo ID a partir de uma base comum, então os ramos não se contaminam; --resume continua a mesma conversa.",
+      "explicacao": "--fork-session creates a new ID from a common base, so the branches don't contaminate each other; --resume continues the same conversation.",
       "feedbacks": [
-        "Correta. --fork-session cria uma nova sessão a partir da base comum; os ramos não se contaminam e a análise não precisa ser refeita.",
-        "A segunda tentativa herdaria o histórico e as decisões da primeira: exatamente a contaminação que se quer evitar.",
-        "Evita a contaminação, mas desperdiça a análise já feita (e pode chegar a conclusões diferentes).",
-        "O histórico continua no contexto; pedir para esquecer não remove nada."
+        "Correct. --fork-session creates a new session from the common base; the branches don't contaminate each other, and the analysis doesn't need to be redone.",
+        "The second attempt would inherit the history and decisions of the first: exactly the contamination you want to avoid.",
+        "It avoids contamination, but it wastes the analysis already done (and may reach different conclusions).",
+        "The history is still in the context; asking it to forget doesn't remove anything."
       ]
     }
   ]

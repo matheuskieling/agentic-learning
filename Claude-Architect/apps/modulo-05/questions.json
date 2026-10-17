@@ -1,26 +1,26 @@
 {
-  "titulo": "Módulo 05 — Quiz: MCP",
+  "titulo": "Module 05 — Quiz: MCP",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "O Claude Code está configurado com 3 servidores MCP. Quantos clients MCP o host mantém?",
+      "pergunta": "Claude Code is configured with 3 MCP servers. How many MCP clients does the host maintain?",
       "opcoes": [
-        "Um único client compartilhado pelos 3 servers",
-        "Três: um client por server (conexão 1:1)",
-        "Nenhum: o modelo fala MCP diretamente",
-        "Depende do transporte: só servers remotos usam client"
+        "A single client shared by the 3 servers",
+        "Three: one client per server (1:1 connection)",
+        "None: the model speaks MCP directly",
+        "It depends on the transport: only remote servers use a client"
       ],
       "correta": 1,
-      "explicacao": "O host roda um client por server; cada conexão é 1:1.",
+      "explicacao": "The host runs one client per server; each connection is 1:1.",
       "feedbacks": [
-        "Tentador por economia, mas a arquitetura MCP é 1:1.",
-        "Correto.",
-        "Quem fala o protocolo é o client dentro do host, não o modelo.",
-        "Vale para stdio e remoto igualmente."
+        "Tempting for the sake of economy, but the MCP architecture is 1:1.",
+        "Correct.",
+        "The protocol is spoken by the client inside the host, not by the model.",
+        "It applies equally to stdio and remote."
       ]
     },
     {
-      "pergunta": "Qual a ordem correta do início de uma sessão MCP?",
+      "pergunta": "What is the correct order at the start of an MCP session?",
       "opcoes": [
         "`tools/call` → `initialize` → `tools/list`",
         "`tools/list` → `initialize` → `notifications/initialized`",
@@ -28,67 +28,67 @@
         "`initialize` → `notifications/initialized` → `tools/list`"
       ],
       "correta": 3,
-      "explicacao": "Handshake: `initialize` (negocia versão e capabilities), confirmação com `notifications/initialized`, depois descoberta e uso.",
+      "explicacao": "Handshake: `initialize` (negotiates version and capabilities), confirmation with `notifications/initialized`, then discovery and use.",
       "feedbacks": [
-        "Não se chama tool antes de inicializar.",
-        "A descoberta vem depois do handshake.",
-        "A notificação confirma um `initialize` que já aconteceu.",
-        "Correto."
+        "You don't call a tool before initializing.",
+        "Discovery comes after the handshake.",
+        "The notification confirms an `initialize` that has already happened.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Qual protocolo de mensagens o MCP usa?",
+      "pergunta": "Which messaging protocol does MCP use?",
       "opcoes": [
         "JSON-RPC 2.0",
-        "gRPC com Protobuf",
-        "REST com OpenAPI",
+        "gRPC with Protobuf",
+        "REST with OpenAPI",
         "GraphQL"
       ],
       "correta": 0,
-      "explicacao": "MCP usa JSON-RPC 2.0 (requests, responses, notificações).",
+      "explicacao": "MCP uses JSON-RPC 2.0 (requests, responses, notifications).",
       "feedbacks": [
-        "Correto.",
-        "Não é a base do MCP.",
-        "O transporte pode ser HTTP, mas as mensagens são JSON-RPC.",
-        "Não é a base do MCP."
+        "Correct.",
+        "It's not the basis of MCP.",
+        "The transport can be HTTP, but the messages are JSON-RPC.",
+        "It's not the basis of MCP."
       ]
     },
     {
-      "pergunta": "Qual primitiva de server expõe conteúdo somente leitura endereçado por URI, como um catálogo navegável?",
+      "pergunta": "Which server primitive exposes read-only content addressed by URI, such as a browsable catalog?",
       "opcoes": [
         "Tools (`tools/call`)",
         "Prompts (`prompts/get`)",
         "Resources",
-        "Roots (limites de URI)"
+        "Roots (URI boundaries)"
       ],
       "correta": 2,
-      "explicacao": "Resources são conteúdo somente leitura por URI; reduzem chamadas exploratórias às cegas.",
+      "explicacao": "Resources are read-only content addressed by URI; they reduce blind exploratory calls.",
       "feedbacks": [
-        "Tools são ações/consultas executáveis.",
-        "Prompts são templates reutilizáveis.",
-        "Correto.",
-        "Roots é primitiva do client (limites de URI)."
+        "Tools are executable actions/queries.",
+        "Prompts are reusable templates.",
+        "Correct.",
+        "Roots is a client primitive (URI boundaries)."
       ]
     },
     {
-      "pergunta": "O que é sampling no MCP?",
+      "pergunta": "What is sampling in MCP?",
       "opcoes": [
-        "O server pede ao host uma completion do modelo",
-        "O client sorteia qual server chamar",
-        "O server pede input ao usuário",
-        "Amostragem de logs do server para depuração de performance"
+        "The server asks the host for a completion from the model",
+        "The client randomly picks which server to call",
+        "The server asks the user for input",
+        "Sampling of server logs for performance debugging"
       ],
       "correta": 0,
-      "explicacao": "Sampling: o server solicita uma completion ao modelo do host, sem precisar de API key própria.",
+      "explicacao": "Sampling: the server requests a completion from the host's model, without needing its own API key.",
       "feedbacks": [
-        "Correto.",
-        "Não existe essa primitiva.",
-        "Isso é elicitation.",
-        "Não é primitiva do protocolo."
+        "Correct.",
+        "No such primitive exists.",
+        "That's elicitation.",
+        "It's not a protocol primitive."
       ]
     },
     {
-      "pergunta": "Um server MCP precisa que o usuário confirme um valor no meio de uma operação. Qual primitiva usar?",
+      "pergunta": "An MCP server needs the user to confirm a value in the middle of an operation. Which primitive should it use?",
       "opcoes": [
         "Sampling",
         "Elicitation",
@@ -96,165 +96,165 @@
         "Resources (`resources/read`)"
       ],
       "correta": 1,
-      "explicacao": "Elicitation: o server pede input ao usuário através do client.",
+      "explicacao": "Elicitation: the server asks the user for input through the client.",
       "feedbacks": [
-        "Sampling pede uma completion ao modelo, não ao usuário.",
-        "Correto.",
-        "Roots define limites de URI/filesystem.",
-        "Resources são conteúdo para leitura."
+        "Sampling asks the model for a completion, not the user.",
+        "Correct.",
+        "Roots defines URI/filesystem boundaries.",
+        "Resources are content to be read."
       ]
     },
     {
-      "pergunta": "Para que serve a primitiva roots?",
+      "pergunta": "What is the roots primitive for?",
       "opcoes": [
-        "Listar as tools disponíveis",
-        "Autenticar o server via OAuth",
-        "Informar ao server os limites de URI/filesystem em que ele pode operar",
-        "Definir o diretório em que o `.mcp.json` do projeto deve ficar no repositório"
+        "Listing the available tools",
+        "Authenticating the server via OAuth",
+        "Telling the server the URI/filesystem boundaries within which it may operate",
+        "Defining the directory where the project's `.mcp.json` should live in the repository"
       ],
       "correta": 2,
-      "explicacao": "Roots: o client informa os limites (URIs/diretórios) permitidos ao server.",
+      "explicacao": "Roots: the client tells the server the allowed boundaries (URIs/directories).",
       "feedbacks": [
-        "Isso é `tools/list`.",
-        "Autenticação é outra camada.",
-        "Correto.",
-        "O `.mcp.json` fica na raiz do projeto, sem relação com roots."
+        "That's `tools/list`.",
+        "Authentication is a different layer.",
+        "Correct.",
+        "The `.mcp.json` lives at the project root, unrelated to roots."
       ]
     },
     {
-      "pergunta": "Qual transporte é o padrão para servidores MCP remotos e o único remoto com OAuth no Claude Code?",
+      "pergunta": "Which transport is the default for remote MCP servers and the only remote one with OAuth in Claude Code?",
       "opcoes": [
-        "stdio (processo local)",
-        "SSE (Server-Sent Events, legado)",
-        "WebSocket persistente",
+        "stdio (local process)",
+        "SSE (Server-Sent Events, legacy)",
+        "Persistent WebSocket",
         "Streamable HTTP (`type: http`)"
       ],
       "correta": 3,
-      "explicacao": "Streamable HTTP é o transporte remoto padrão e suporta OAuth; SSE é legado.",
+      "explicacao": "Streamable HTTP is the default remote transport and supports OAuth; SSE is legacy.",
       "feedbacks": [
-        "stdio é local.",
-        "SSE é legado/depreciado.",
-        "[volátil] e não é o padrão.",
-        "Correto."
+        "stdio is local.",
+        "SSE is legacy/deprecated.",
+        "[volatile] and it's not the default.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Uma entrada remota no `.mcp.json` tem apenas `\"url\": \"https://...\"`, sem `type`. O que acontece?",
+      "pergunta": "A remote entry in `.mcp.json` has only `\"url\": \"https://...\"`, with no `type`. What happens?",
       "opcoes": [
-        "É tratada como stdio e falha; é preciso declarar `\"type\": \"http\"`",
-        "É detectada automaticamente como HTTP pelo esquema `https://` da URL",
-        "É tratada como SSE",
-        "Funciona, mas sem OAuth"
+        "It's treated as stdio and fails; you need to declare `\"type\": \"http\"`",
+        "It's automatically detected as HTTP from the URL's `https://` scheme",
+        "It's treated as SSE",
+        "It works, but without OAuth"
       ],
       "correta": 0,
-      "explicacao": "Sem `type`, a entrada é lida como stdio (sem `command`) e falha.",
+      "explicacao": "Without `type`, the entry is read as stdio (with no `command`) and fails.",
       "feedbacks": [
-        "Correto.",
-        "Tentador, mas não há autodetecção.",
-        "Não há fallback para SSE.",
-        "Nem chega a conectar."
+        "Correct.",
+        "Tempting, but there's no autodetection.",
+        "There's no fallback to SSE.",
+        "It doesn't even connect."
       ]
     },
     {
-      "pergunta": "Onde fica um servidor adicionado com `claude mcp add` sem `--scope`?",
+      "pergunta": "Where does a server added with `claude mcp add` without `--scope` end up?",
       "opcoes": [
-        "No `.mcp.json` da raiz do projeto, para ser compartilhado com o time",
-        "No escopo local (padrão), em `~/.claude.json`, só para você neste projeto",
-        "Em `.claude/settings.local.json`, que é o arquivo pessoal do projeto",
-        "No escopo user, em `~/.claude.json`, valendo para todos os seus projetos"
+        "In the `.mcp.json` at the project root, to be shared with the team",
+        "In the local scope (the default), in `~/.claude.json`, only for you in this project",
+        "In `.claude/settings.local.json`, which is the project's personal file",
+        "In the user scope, in `~/.claude.json`, applying to all your projects"
       ],
       "correta": 1,
-      "explicacao": "O padrão é local, guardado em `~/.claude.json`. Local do MCP ≠ `settings.local.json`.",
+      "explicacao": "The default is local, stored in `~/.claude.json`. MCP's local scope ≠ `settings.local.json`.",
       "feedbacks": [
-        "Isso é o escopo project.",
-        "Correto.",
-        "Pegadinha clássica: não é esse arquivo.",
-        "User exige `--scope user`."
+        "That's the project scope.",
+        "Correct.",
+        "Classic trap: it's not that file.",
+        "User requires `--scope user`."
       ]
     },
     {
-      "pergunta": "Qual arquivo guarda servidores MCP de escopo project, compartilhados com o time via git?",
+      "pergunta": "Which file holds project-scoped MCP servers, shared with the team via git?",
       "opcoes": [
         "`~/.claude.json`",
         "`.claude/settings.json`",
-        "`.mcp.json` na raiz do projeto",
-        "`CLAUDE.md` do projeto, na seção de ferramentas"
+        "`.mcp.json` at the project root",
+        "The project's `CLAUDE.md`, in the tools section"
       ],
       "correta": 2,
-      "explicacao": "Escopo project = `.mcp.json` versionado na raiz.",
+      "explicacao": "Project scope = `.mcp.json` versioned at the root.",
       "feedbacks": [
-        "Guarda local e user.",
-        "Settings do projeto, não a lista de servers MCP.",
-        "Correto.",
-        "Instruções, não configuração de servers."
+        "It holds the local and user scopes.",
+        "Project settings, not the list of MCP servers.",
+        "Correct.",
+        "Instructions, not server configuration."
       ]
     },
     {
-      "pergunta": "Como colocar um token de API no `.mcp.json` versionado sem expor o segredo?",
+      "pergunta": "How do you put an API token in the versioned `.mcp.json` without exposing the secret?",
       "opcoes": [
-        "Usar `${API_TOKEN}` (expansão de variável de ambiente)",
-        "Codificar o token em base64 antes de colar no arquivo",
-        "Colocar o token num comentário",
-        "Adicionar o `.mcp.json` ao `.gitignore` do repositório"
+        "Use `${API_TOKEN}` (environment variable expansion)",
+        "Base64-encode the token before pasting it into the file",
+        "Put the token in a comment",
+        "Add `.mcp.json` to the repository's `.gitignore`"
       ],
       "correta": 0,
-      "explicacao": "O `.mcp.json` expande `${VAR}` (e `${VAR:-default}`); cada dev define a variável no seu ambiente.",
+      "explicacao": "`.mcp.json` expands `${VAR}` (and `${VAR:-default}`); each developer sets the variable in their own environment.",
       "feedbacks": [
-        "Correto.",
-        "Base64 não é segredo.",
-        "JSON nem tem comentário, e continuaria exposto.",
-        "Perde o compartilhamento, que é o objetivo do escopo project."
+        "Correct.",
+        "Base64 isn't a secret.",
+        "JSON doesn't even support comments, and the token would still be exposed.",
+        "You lose the sharing, which is the whole point of the project scope."
       ]
     },
     {
-      "pergunta": "O server interno exige um token de SSO que expira a cada hora. Qual mecanismo usar?",
+      "pergunta": "The internal server requires an SSO token that expires every hour. Which mechanism should you use?",
       "opcoes": [
-        "Token fixo em `headers`, renovado manualmente quando expirar",
-        "Variável em `env`",
-        "`headersHelper`, um comando que gera os headers na hora",
-        "Transporte SSE"
+        "A fixed token in `headers`, renewed manually when it expires",
+        "A variable in `env`",
+        "`headersHelper`, a command that generates the headers on the fly",
+        "SSE transport"
       ],
       "correta": 2,
-      "explicacao": "`headersHelper` gera headers dinamicamente: ideal para credencial de curta duração.",
+      "explicacao": "`headersHelper` generates headers dynamically: ideal for short-lived credentials.",
       "feedbacks": [
-        "Expira e quebra em uma hora.",
-        "`env` é para server stdio e também ficaria estático.",
-        "Correto.",
-        "Transporte não resolve credencial; e SSE é legado."
+        "It expires and breaks within an hour.",
+        "`env` is for stdio servers and would also be static.",
+        "Correct.",
+        "The transport doesn't solve the credential problem; and SSE is legacy."
       ]
     },
     {
-      "pergunta": "Em `claude mcp add notas -- npx -y @exemplo/notas-server`, para que serve o `--`?",
+      "pergunta": "In `claude mcp add notes -- npx -y @example/notes-server`, what is the `--` for?",
       "opcoes": [
-        "Indica que o server é remoto e deve usar Streamable HTTP",
-        "Separa as opções do `claude` do comando do server stdio",
-        "Ativa o escopo project e grava no `.mcp.json`",
-        "Desliga a pergunta de aprovação do server na primeira execução"
+        "It indicates that the server is remote and should use Streamable HTTP",
+        "It separates the `claude` options from the stdio server's command",
+        "It enables the project scope and writes to `.mcp.json`",
+        "It disables the server approval prompt on the first run"
       ],
       "correta": 1,
-      "explicacao": "Tudo depois de `--` é o comando do server; sem ele, flags como `-y` seriam interpretadas pelo `claude`.",
+      "explicacao": "Everything after `--` is the server's command; without it, flags such as `-y` would be interpreted by `claude`.",
       "feedbacks": [
-        "Remoto usa `--transport http` e URL.",
-        "Correto.",
-        "Escopo é `--scope`.",
-        "Não tem relação com aprovação."
+        "Remote uses `--transport http` and a URL.",
+        "Correct.",
+        "Scope is set with `--scope`.",
+        "It has nothing to do with approval."
       ]
     },
     {
-      "pergunta": "Como uma tool `create_issue` de um server MCP chamado `github` aparece no Claude Code (por exemplo, em regras de permissão e hooks)?",
+      "pergunta": "How does a `create_issue` tool from an MCP server named `github` appear in Claude Code (for example, in permission rules and hooks)?",
       "opcoes": [
         "`github.create_issue`",
-        "`create_issue` (sem prefixo de server)",
+        "`create_issue` (no server prefix)",
         "`github/create_issue`",
         "`mcp__github__create_issue`"
       ],
       "correta": 3,
-      "explicacao": "Tools MCP no Claude Code seguem `mcp__<server>__<tool>`.",
+      "explicacao": "MCP tools in Claude Code follow `mcp__<server>__<tool>`.",
       "feedbacks": [
-        "Não é o formato usado.",
-        "Sem o prefixo haveria colisão entre servers.",
-        "Não é o formato usado.",
-        "Correto."
+        "That's not the format used.",
+        "Without the prefix, tools from different servers would collide.",
+        "That's not the format used.",
+        "Correct."
       ]
     }
   ]
