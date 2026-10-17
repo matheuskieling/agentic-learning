@@ -154,24 +154,33 @@
       }
     ]
   },
-  "pos": 2,
-  "marco_sessao": 0,
+  "pos": 11,
+  "marco_sessao": 2,
   "status": {
     "intro": "visto",
     "t1": "visto",
-    "t2": "pendente",
-    "t3": "pendente",
-    "t4": "pendente",
-    "t5": "pendente",
-    "t6": "pendente",
-    "t7": "pendente",
-    "q1": "pendente",
-    "prova": "pendente",
-    "fim": "pendente"
+    "t2": "visto",
+    "t3": "visto",
+    "t4": "visto",
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
+    "q1": "visto",
+    "prova": "visto",
+    "fim": "visto"
   },
   "concluido_em": {
     "intro": "2026-10-16T18:14:13+00:00",
-    "t1": "2026-10-16T18:22:33+00:00"
+    "t1": "2026-10-16T18:22:33+00:00",
+    "t2": "2026-10-17T13:25:34+00:00",
+    "t3": "2026-10-17T13:32:29+00:00",
+    "t4": "2026-10-17T13:40:04+00:00",
+    "t5": "2026-10-17T13:50:54+00:00",
+    "t6": "2026-10-17T14:10:28+00:00",
+    "t7": "2026-10-17T14:18:09+00:00",
+    "q1": "2026-10-17T14:25:03+00:00",
+    "prova": "2026-10-17T14:34:47+00:00",
+    "fim": "2026-10-17T14:36:14+00:00"
   },
   "notes": [
     {
@@ -183,6 +192,46 @@
       "beat": "t1",
       "ts": "2026-10-16T18:20:46+00:00",
       "text": "t1: na checagem (tool só p/ JSON + tool_choice forçado dá 400) escolheu auto+instrução+strict+retry (funciona, mas não é a mais limpa). Pista 'só existe para obter JSON' → structured outputs. Reforçar: ler a pista do enunciado que desempata alternativas válidas."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-10-17T13:02:54+00:00",
+      "text": "Revisão t1 (Q1): ERROU — agente com tools que executam ações (reembolso) mandando string em vez de número; escolheu structured outputs (A) em vez de strict:true (B). Sobrecorrigiu a regra de ontem. Reforçar: structured outputs = formato da RESPOSTA; strict = formato do INPUT das tools. Pulou o cenário pela 3ª vez (era Cenário 1)."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-10-17T13:09:36+00:00",
+      "text": "PEDIDO DO ALUNO (vale p/ o resto do curso): sempre que citar campo da API (tool_choice, strict, output_config, stop_reason...), mostrar o JSON do request/response com o campo situado. Revisão t1 Q2: 2/3 V/F — achou que tool-como-schema precisa de implementação no backend (é F); achou que existe um campo p/ nomear a tool com auto (não existe: é texto no system/user)."
+    },
+    {
+      "beat": "t2",
+      "ts": "2026-10-17T13:15:36+00:00",
+      "text": "Dúvida: diferença entre tool de AÇÃO e tool COMO SCHEMA (achava que SalvarAsync = implementação da tool). Esclarecido pelo loop: ação → tool_result volta e o modelo continua; schema → input é o produto final, uma chamada só, sem tool_result. (Minha frase 'não tem implementação' foi imprecisa.)"
+    },
+    {
+      "beat": "t4",
+      "ts": "2026-10-17T13:39:02+00:00",
+      "text": "Aluno apontou (com razão) que perguntas sem contexto deixam o cenário ambíguo. Na prova real o cenário vem dado e as questões se penduram nele. Ajuste: parar de cobrar 'qual o cenário' em pergunta solta; escrever as questões já dentro de um cenário e cobrar as ARMADILHAS típicas dele."
+    },
+    {
+      "beat": "t5",
+      "ts": "2026-10-17T13:47:44+00:00",
+      "text": "Aluno cobrou de novo: mostrei 'achados' como JSON solto. Regra reforçada: SEMPRE situar o fragmento no request/response completo e dizer para onde o dado vai no sistema. Checkpoint t5 (CNPJ ausente): respondeu 'erro explícito' e citou bem os distratores (mais retries; salvar último e escalar) — faltou o insight: CNPJ 'errado' é INVENTADO porque o schema obriga → nullable + null + revisão humana."
+    },
+    {
+      "beat": "t6",
+      "ts": "2026-10-17T14:07:08+00:00",
+      "text": "Dúvida: diferença tool como schema × structured outputs — mostrei os 2 requests/responses lado a lado (schema em tools[].input_schema vs output_config.format.schema; JSON em tool_use.input vs text). Checkpoint t6 (casar por posição): acertou (sem garantia de ordem → dado associado à fatura errada)."
+    },
+    {
+      "beat": "q1",
+      "ts": "2026-10-17T14:24:39+00:00",
+      "text": "Quiz M03: 15/15 (100%). Acertou de primeira as que errou na teoria (Q5 pista 'só p/ JSON' → structured outputs; Q8 input do tool_use). Q6: acertou 'other' mas pelo motivo errado ('detalha melhor') — reforçado: other = claro mas fora da lista; unclear = fonte não permite decidir."
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-10-17T14:34:47+00:00",
+      "text": "Prova M03: 20/20 (100%). Acertou de primeira a parente da revisão que errou de manhã (Q5: create_ticket em loop → strict, não structured outputs). Todas as 'Escolha DUAS' certas. Dica passada: formato 'conclusão certa, motivo errado' (Q14-D)."
     }
   ],
   "iniciado_em": "2026-10-16T18:11:47+00:00"

@@ -1,287 +1,287 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-02/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-03/questions.json",
   "bank": {
-    "titulo": "Módulo 02 — Quiz: critérios explícitos, few-shot e refinamento iterativo",
+    "titulo": "Módulo 03 — Quiz: saída estruturada, validação com retry e Batch API",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Um prompt diz 'sinalize apenas problemas relevantes'. Qual o efeito esperado?",
+        "pergunta": "Qual parâmetro atual da Messages API faz a RESPOSTA seguir um JSON schema?",
         "opcoes": [
-          "Comportamento conservador e estável",
-          "Menos tokens de saída e mais precisão",
-          "Resultados inconsistentes entre execuções",
-          "O modelo pede esclarecimento antes de responder"
-        ],
-        "correta": 2,
-        "explicacao": "Termos vagos são interpretados de forma diferente a cada chamada; o critério precisa ser explícito.",
-        "feedbacks": [
-          "Errado: 'relevante' sem definição não produz estabilidade.",
-          "Errado: não há garantia de precisão sem critério.",
-          "Correto: vago → inconsistente.",
-          "Errado: o modelo normalmente interpreta por conta própria, sem perguntar."
-        ]
-      },
-      {
-        "pergunta": "Quais são os três componentes de um critério explícito?",
-        "opcoes": [
-          "O que conta, o que não conta e exemplos de fronteira",
-          "Papel, tom e formato",
-          "Instrução, ênfase em maiúsculas e uma nota de confiança autodeclarada",
-          "Objetivo, prazo e responsável"
-        ],
-        "correta": 0,
-        "explicacao": "Definição positiva, exclusões e casos ambíguos tornam o julgamento reprodutível.",
-        "feedbacks": [
-          "Correto.",
-          "Errado: são boas práticas de system prompt, não de critério de julgamento.",
-          "Errado: ênfase e confiança autodeclarada não definem critério.",
-          "Errado: isso é gestão de tarefa, não critério."
-        ]
-      },
-      {
-        "pergunta": "A categoria 'nomenclatura' de um bot de review tem 55% de falso positivo, e os devs passaram a ignorar também os alertas de segurança. Qual a correção?",
-        "opcoes": [
-          "Desligar o bot inteiro até resolver",
-          "Pedir no prompt para o bot errar menos em nomenclatura",
-          "Adicionar um segundo modelo para filtrar os comentários de todas as categorias",
-          "Desligar só a categoria nomenclatura, refinar e religar"
+          "output_format no topo do request, ao lado de model",
+          "response_format",
+          "tool_choice: {type: json}",
+          "output_config.format com json_schema"
         ],
         "correta": 3,
-        "explicacao": "Desliga, refina, religa: preserva as categorias boas e recupera a confiança.",
+        "explicacao": "Structured outputs usa output_config.format; o output_format de topo está depreciado.",
         "feedbacks": [
-          "Errado: joga fora as categorias que funcionam.",
-          "Errado: instrução vaga não resolve critério vago.",
-          "Errado: mais complexo que o necessário; o problema é o critério.",
+          "Errado: depreciado.",
+          "Errado: não é o nome do parâmetro na Messages API.",
+          "Errado: não existe esse tipo de tool_choice.",
           "Correto."
         ]
       },
       {
-        "pergunta": "Por que uma categoria com muitos falsos positivos é perigosa mesmo que as outras categorias sejam boas?",
+        "pergunta": "Qual exigência o schema precisa cumprir para usar strict: true?",
         "opcoes": [
-          "Porque aumenta o custo de tokens",
-          "Corrói a confiança no sistema inteiro: ignoram tudo",
-          "Porque o modelo aprende com os próprios erros entre chamadas e piora com o tempo",
-          "Porque invalida o prompt caching"
+          "Ter pelo menos um campo do tipo string",
+          "additionalProperties: false em todo objeto",
+          "Usar só tipos numéricos",
+          "Declarar minimum e maximum em todos os campos numéricos do schema"
         ],
         "correta": 1,
-        "explicacao": "Confiança é do sistema: ruído numa categoria faz ignorar os acertos das outras.",
+        "explicacao": "Strict exige objetos fechados (additionalProperties: false). Opcionais são permitidas, mas contam para um limite; a recomendação é required + nullable.",
         "feedbacks": [
-          "Errado: custo não é o problema central.",
+          "Errado: não há exigência de tipo.",
           "Correto.",
-          "Errado: o modelo não aprende entre chamadas.",
-          "Errado: nada a ver com caching."
+          "Errado: qualquer tipo básico é suportado.",
+          "Errado: faixas numéricas nem são garantidas pelo strict."
         ]
       },
       {
-        "pergunta": "Qual a quantidade e composição recomendadas de exemplos few-shot?",
+        "pergunta": "Na extração via tool use, o que é o JSON extraído?",
         "opcoes": [
-          "Um único exemplo do caso mais comum",
-          "Dezenas de exemplos para cobrir tudo",
-          "2–4 exemplos variados, cada um com entrada, saída e raciocínio",
-          "4 exemplos idênticos para reforçar o formato"
+          "O input do bloco tool_use que o modelo gera",
+          "O conteúdo do tool_result que você devolve",
+          "O texto livre após o tool_use",
+          "O campo usage da resposta"
+        ],
+        "correta": 0,
+        "explicacao": "A tool existe só como schema: o input do tool_use é o dado estruturado.",
+        "feedbacks": [
+          "Correto.",
+          "Errado: tool_result é o que você devolveria após executar uma tool.",
+          "Errado: o texto livre não tem garantia de formato.",
+          "Errado: usage é contagem de tokens."
+        ]
+      },
+      {
+        "pergunta": "Num modelo novo, tool_choice: {type: tool, name: extrair} retorna 400. Qual alternativa é recomendada se a tool existia só para obter JSON?",
+        "opcoes": [
+          "tool_choice: {type: any}",
+          "Prefill do assistant com '{'",
+          "Structured outputs via output_config.format",
+          "Remover o schema e pedir JSON no texto"
         ],
         "correta": 2,
-        "explicacao": "Poucos exemplos direcionados e variados, com raciocínio, ensinam o padrão.",
+        "explicacao": "Nos modelos novos, any/tool forçados dão 400; structured outputs é o substituto quando o objetivo era só JSON.",
         "feedbacks": [
-          "Errado: um exemplo do caso fácil não ensina a fronteira.",
-          "Errado: custo alto e risco de o modelo se prender à superfície.",
+          "Errado: any também é forçado e também dá 400.",
+          "Errado: prefill também dá 400 nos modelos novos.",
           "Correto.",
-          "Errado: exemplos idênticos ensinam só o caso fácil."
+          "Errado: perde a garantia de formato."
         ]
       },
       {
-        "pergunta": "Por que incluir o raciocínio em cada exemplo few-shot?",
+        "pergunta": "O schema strict valida todas as saídas, mas a soma dos itens não bate com o total em 3% das faturas. O que isso mostra?",
         "opcoes": [
-          "Para aumentar o número de tokens e melhorar o cache",
-          "Para o modelo generalizar o critério em vez de copiar só o formato",
-          "Porque a API exige um campo de raciocínio",
-          "Para substituir a instrução principal"
+          "Que o strict está desligado",
+          "Que é preciso aumentar max_tokens",
+          "Schema ≠ semântica: valide a soma no código",
+          "Que o modelo precisa de temperatura menor para somar com precisão"
+        ],
+        "correta": 2,
+        "explicacao": "Schema garante tipo e formato; regras de negócio (somas, datas) são validadas no seu código.",
+        "feedbacks": [
+          "Errado: o formato está correto; o problema é semântico.",
+          "Errado: não há truncamento.",
+          "Correto.",
+          "Errado: temperatura não é o problema (e é rejeitada nos modelos novos)."
+        ]
+      },
+      {
+        "pergunta": "O documento às vezes não tem data de vencimento, e o modelo inventa uma. Qual ajuste de schema ajuda?",
+        "opcoes": [
+          "Tornar o campo vencimento nullable",
+          "Remover vencimento de required sem strict",
+          "Adicionar format: date",
+          "Adicionar um enum com datas possíveis"
+        ],
+        "correta": 0,
+        "explicacao": "Campo nullable dá ao modelo a saída honesta (null) em vez de forçá-lo a inventar.",
+        "feedbacks": [
+          "Correto.",
+          "Errado: sem strict perde-se a garantia de formato; e campo opcional não impede a invenção. Prefira required + nullable.",
+          "Errado: format garante o formato, não impede invenção.",
+          "Errado: não faz sentido para datas."
+        ]
+      },
+      {
+        "pergunta": "Uma classificação de despesas tem enum fechado [viagem, alimentação, software]. Despesas de locação estão sendo classificadas como 'software'. Qual padrão de schema resolve?",
+        "opcoes": [
+          "Tornar o campo categoria do tipo string livre",
+          "Adicionar 'unclear' ao enum",
+          "Remover o enum e usar few-shot",
+          "Adicionar 'other' ao enum mais um campo de detalhe"
+        ],
+        "correta": 3,
+        "explicacao": "Enum com 'other' + detalhe evita forçar uma categoria errada e preserva a informação.",
+        "feedbacks": [
+          "Errado: perde a padronização das categorias conhecidas.",
+          "Errado: 'unclear' é para fonte ambígua; aqui a categoria é clara, só não está na lista.",
+          "Errado: perde a garantia estrutural.",
+          "Correto."
+        ]
+      },
+      {
+        "pergunta": "Quando usar o valor 'unclear' num enum?",
+        "opcoes": [
+          "Quando a categoria existe mas não está na lista",
+          "Quando a fonte é ambígua ou ilegível",
+          "Quando o campo é numérico",
+          "Sempre, como valor padrão"
         ],
         "correta": 1,
-        "explicacao": "O raciocínio mostra POR QUE a saída é aquela; o modelo aprende a regra, não a superfície.",
+        "explicacao": "'unclear' evita chute quando a fonte não permite decidir.",
         "feedbacks": [
-          "Errado: não é sobre cache.",
+          "Errado: esse caso é 'other' + detalhe.",
+          "Correto.",
+          "Errado: enum de categorias, não números.",
+          "Errado: virar padrão esconderia casos decidíveis."
+        ]
+      },
+      {
+        "pergunta": "Qual destas restrições o modo strict NÃO suporta, devendo ser validada no seu código?",
+        "opcoes": [
+          "minimum: 0 num campo numérico",
+          "enum de valores permitidos",
+          "additionalProperties: false",
+          "Tipo string vs. number"
+        ],
+        "correta": 0,
+        "explicacao": "Faixas numéricas (e tamanho de string, arrays além de minItems 0/1, recursão) não são suportadas: num schema cru dão 400; os helpers do SDK movem para a descrição e validam localmente.",
+        "feedbacks": [
+          "Correto.",
+          "Errado: enum é suportado.",
+          "Errado: é exigido e suportado.",
+          "Errado: tipos básicos são garantidos."
+        ]
+      },
+      {
+        "pergunta": "Qual mensagem de retry é a mais eficaz num loop de validação?",
+        "opcoes": [
+          "'O JSON está inválido. Tente novamente.'",
+          "'Revise sua resposta com mais cuidado e confira todos os campos antes de responder.'",
+          "'Erro 422.'",
+          "'total 1250.00 ≠ soma dos itens 1205.00 (item 3?)'"
+        ],
+        "correta": 3,
+        "explicacao": "Erros específicos (o quê e onde) dão ao modelo o que corrigir.",
+        "feedbacks": [
+          "Errado: genérico; tende a produzir a mesma resposta.",
+          "Errado: vago.",
+          "Errado: código sem contexto (anti-padrão de erro genérico).",
+          "Correto."
+        ]
+      },
+      {
+        "pergunta": "O campo CNPJ do tomador vem errado após 3 retries, e o documento não contém o CNPJ. O que fazer?",
+        "opcoes": [
+          "Aumentar o limite para 10 retries",
+          "Mudar o prompt para 'encontre o CNPJ a qualquer custo'",
+          "null no campo + revisão humana, se o negócio exigir",
+          "Preencher com o CNPJ do prestador"
+        ],
+        "correta": 2,
+        "explicacao": "Retry não recupera informação ausente da fonte; insistir só gera invenção.",
+        "feedbacks": [
+          "Errado: mais tentativas, mesma ausência de dado.",
+          "Errado: induz alucinação.",
+          "Correto.",
+          "Errado: dado inventado/errado."
+        ]
+      },
+      {
+        "pergunta": "Por que extrair tanto o total declarado quanto a soma calculada dos itens?",
+        "opcoes": [
+          "Para economizar tokens",
+          "Para detectar discrepâncias em vez de escondê-las",
+          "Porque o strict exige campos duplicados para validar números",
+          "Para o Batch API casar os resultados"
+        ],
+        "correta": 1,
+        "explicacao": "Declarado + calculado expõe inconsistência do documento ou da extração.",
+        "feedbacks": [
+          "Errado: custa um pouco mais, não menos.",
           "Correto.",
           "Errado: não há tal exigência.",
-          "Errado: exemplos complementam a instrução, não a substituem."
+          "Errado: o batch casa por custom_id."
         ]
       },
       {
-        "pergunta": "Um extrator inventa a data de vencimento quando ela não aparece no documento. Qual técnica de prompt ajuda diretamente?",
+        "pergunta": "Qual afirmação sobre a Batch API está correta?",
         "opcoes": [
-          "Few-shot mostrando um documento sem a data e a saída com o campo null",
-          "Pedir para o modelo ser mais honesto",
-          "Aumentar max_tokens",
-          "Remover o campo do schema"
-        ],
-        "correta": 0,
-        "explicacao": "Few-shot reduz alucinação em extração mostrando o comportamento esperado para dado ausente (null).",
-        "feedbacks": [
-          "Correto (combinado a um campo nullable no schema, Módulo 03).",
-          "Errado: instrução vaga.",
-          "Errado: não tem relação com invenção de dado.",
-          "Errado: o campo é necessário quando existe."
-        ]
-      },
-      {
-        "pergunta": "Onde colocar o texto de um contrato enviado pelo usuário num prompt de análise?",
-        "opcoes": [
-          "Misturado às instruções, para dar contexto",
-          "No nome da tool",
-          "Depois da pergunta, no fim do prompt",
-          "Dentro de uma tag como <contrato>, separado das instruções"
+          "Garante resposta em até 1 hora",
+          "Devolve os resultados na mesma ordem dos requests",
+          "Suporta loop multi-turn de tools dentro de um request",
+          "~50% mais barata, até 24h, sem SLA"
         ],
         "correta": 3,
-        "explicacao": "Tags XML separam dados de instruções e permitem referenciar o conteúdo. Documentos longos vão no início, pergunta no fim.",
+        "explicacao": "50% de desconto, até 24h, sem SLA; resultados fora de ordem; sem multi-turn de tools.",
         "feedbacks": [
-          "Errado: misturar faz o modelo confundir conteúdo com ordem.",
-          "Errado: não faz sentido.",
-          "Errado: documentos longos vão antes da pergunta.",
+          "Errado: não há SLA; pode levar até 24h.",
+          "Errado: fora de ordem → case por custom_id.",
+          "Errado: cada request é uma chamada única.",
           "Correto."
         ]
       },
       {
-        "pergunta": "Num julgamento complexo (aprovar ou não um sinistro), qual prática melhora a qualidade e a auditabilidade?",
+        "pergunta": "Qual uso da Batch API é ADEQUADO?",
         "opcoes": [
-          "Pedir o veredito primeiro e a justificativa depois",
-          "Pedir só o veredito, para economizar tokens",
-          "Pedir a análise/evidências antes do veredito",
-          "Pedir uma nota de confiança de 0 a 100"
-        ],
-        "correta": 2,
-        "explicacao": "Raciocínio antes da resposta: as evidências fundamentam a decisão e ficam auditáveis.",
-        "feedbacks": [
-          "Errado: justificativa depois tende a racionalizar uma decisão já tomada.",
-          "Errado: perde a auditabilidade.",
-          "Correto.",
-          "Errado: confiança autodeclarada é mal calibrada."
-        ]
-      },
-      {
-        "pergunta": "Após três tentativas de explicar em texto uma transformação de datas, o Claude Code continua errando casos de borda. Qual a próxima melhor ação?",
-        "opcoes": [
-          "2–3 pares concretos de entrada → saída, incluindo as bordas",
-          "Explicar novamente com mais detalhes, em maiúsculas e com a especificação completa do formato",
-          "Trocar para um modelo maior",
-          "Pedir para o Claude 'pensar mais'"
+          "Análise noturna de 200 mil tickets do dia",
+          "Checagem obrigatória antes do merge de um PR",
+          "Resposta ao cliente no chat de suporte",
+          "Depuração interativa de um prompt"
         ],
         "correta": 0,
-        "explicacao": "Exemplos concretos batem prosa quando a descrição não está funcionando.",
+        "explicacao": "Batch serve para volume sem ninguém esperando.",
         "feedbacks": [
           "Correto.",
-          "Errado: mais prosa repete o que não funcionou.",
-          "Errado: pula a correção mais simples.",
-          "Errado: não dá o alvo concreto que falta."
+          "Errado: passo bloqueante; o PR pode esperar até 24h.",
+          "Errado: tempo real.",
+          "Errado: interativo exige resposta rápida."
         ]
       },
       {
-        "pergunta": "No TDD com o Claude, qual é o fluxo?",
+        "pergunta": "Um batch de 10 mil requests terminou: 9.700 succeeded, 250 errored e 50 expired. Quais DUAS ações são corretas? (Escolha DUAS.)",
         "opcoes": [
-          "Pedir a implementação primeiro e, depois, pedir testes que passem nela",
-          "Escrever a implementação e pedir ao Claude para revisar",
-          "Pedir ao Claude que descreva os testes que faria",
-          "Testes que falham → compartilhar as falhas → iterar até passarem"
-        ],
-        "correta": 3,
-        "explicacao": "Testes falhando definem o alvo verificável; o Claude itera até passarem.",
-        "feedbacks": [
-          "Errado: testes escritos depois tendem a validar o que já existe, inclusive bugs.",
-          "Errado: isso é revisão, não TDD.",
-          "Errado: descrever não é executar.",
-          "Correto."
-        ]
-      },
-      {
-        "pergunta": "A especificação de uma feature tem várias decisões de negócio em aberto. Qual técnica usar antes de implementar?",
-        "opcoes": [
-          "Implementar direto e corrigir depois",
-          "Entrevista: o Claude pergunta antes de implementar",
-          "Dividir em 10 mensagens independentes",
-          "Usar few-shot com features parecidas de outro projeto da empresa"
-        ],
-        "correta": 1,
-        "explicacao": "A entrevista expõe premissas ocultas cedo, antes de o código seguir na direção errada.",
-        "feedbacks": [
-          "Errado: descobre as premissas erradas tarde demais.",
-          "Correto.",
-          "Errado: não resolve as decisões em aberto.",
-          "Errado: exemplos de outro contexto não respondem às decisões deste."
-        ]
-      },
-      {
-        "pergunta": "Você tem dois bugs na mesma função de cálculo de frete. Como pedir a correção ao Claude?",
-        "opcoes": [
-          "Os dois numa mesma mensagem, porque interagem",
-          "Um por vez, em sessões diferentes",
-          "Só o mais grave; o outro depois de uma semana",
-          "Junto com todos os outros bugs abertos do projeto"
-        ],
-        "correta": 0,
-        "explicacao": "Problemas relacionados vão juntos para o Claude ver a interação e não corrigir um quebrando o outro.",
-        "feedbacks": [
-          "Correto.",
-          "Errado: separar problemas que interagem causa correções que se atropelam.",
-          "Errado: não há motivo para adiar; eles se afetam.",
-          "Errado: misturar problemas independentes gera mudança gigante e difícil de revisar."
-        ]
-      },
-      {
-        "pergunta": "Qual instrução tende a funcionar melhor nos modelos recentes?",
-        "opcoes": [
-          "'É EXTREMAMENTE IMPORTANTE QUE VOCÊ NUNCA ESQUEÇA O CAMPO ID!!!'",
-          "'Faça o melhor possível.'",
-          "'Inclua sempre o campo id: ele concilia com o ERP.'",
-          "'Use seu bom senso sobre os campos.'"
-        ],
-        "correta": 2,
-        "explicacao": "Instrução direta e com o porquê funciona melhor que ênfase; modelos novos seguem instruções com precisão.",
-        "feedbacks": [
-          "Errado: ênfase exagerada pode gerar excesso de zelo e não acrescenta informação.",
-          "Errado: vago.",
-          "Correto: clara e com motivo.",
-          "Errado: vago, gera inconsistência."
-        ]
-      },
-      {
-        "pergunta": "Um classificador de tickets varia o rótulo para casos parecidos. Quais DUAS ações são o primeiro passo adequado? (Escolha DUAS.)",
-        "opcoes": [
-          "Adicionar um segundo modelo que vota contra o primeiro",
-          "Definir para cada categoria o que conta, o que não conta e casos de fronteira",
-          "Pedir ao modelo uma nota de confiança e descartar as baixas",
-          "Adicionar 2–4 exemplos variados com raciocínio cobrindo os casos ambíguos",
-          "Fixar temperature em 0"
+          "Reenviar o lote inteiro para garantir consistência",
+          "Casar cada resultado ao documento de origem pelo custom_id",
+          "Reenviar apenas os custom_id com errored ou expired",
+          "Casar os resultados pela ordem das linhas do arquivo de entrada",
+          "Descartar os que falharam, já que 97% é uma boa taxa"
         ],
         "corretas": [
           1,
-          3
+          2
         ],
-        "explicacao": "Critério explícito + few-shot são os degraus mais simples que atacam a causa (critério vago).",
+        "explicacao": "Resultados vêm fora de ordem (case por custom_id) e só os que falharam são reenviados.",
         "feedbacks": [
-          "Errado: degrau 4, sem antes definir o critério.",
+          "Errado: desperdiça custo reprocessando 9.700 sucessos.",
           "Correto.",
-          "Errado: confiança autodeclarada é mal calibrada.",
           "Correto.",
-          "Errado: sampling é rejeitado nos modelos novos e não define critério."
+          "Errado: resultados chegam fora de ordem.",
+          "Errado: descartar em silêncio é perder dado (supressão de erro)."
         ]
       }
     ]
   },
   "order": [
-    6,
-    0,
-    8,
-    12,
-    4,
-    2,
-    10,
-    3,
-    13,
-    11,
-    9,
-    1,
     5,
+    12,
+    1,
+    7,
+    3,
+    6,
+    10,
+    2,
+    13,
+    8,
+    0,
     14,
-    7
+    9,
+    4,
+    11
   ],
   "pos": 15,
   "answers": [
@@ -295,21 +295,21 @@
     {
       "pos": 1,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
@@ -330,64 +330,64 @@
     {
       "pos": 6,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 8,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 9,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        0
+        3
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        0
+        1,
+        2
       ],
       "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 13,
       "escolha": [
-        1,
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     }
