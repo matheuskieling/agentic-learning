@@ -1,400 +1,400 @@
 {
-  "titulo": "Cenário 1 — Customer Support Resolution Agent",
+  "titulo": "Scenario 1 — Customer Support Resolution Agent",
   "aprovacao": 72,
   "questoes": [
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO system prompt diz \"sempre verifique a identidade do cliente com get_customer antes de qualquer reembolso\". Mesmo assim, a auditoria encontrou cerca de 3% de chamadas a process_refund sem verificação prévia. Qual é a MELHOR correção?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe system prompt says \"always verify the customer's identity with get_customer before any refund\". Even so, an audit found that about 3% of process_refund calls happened without prior verification. What is the BEST fix?",
       "opcoes": [
-        "Reforçar a instrução no system prompt com letras maiúsculas, repeti-la no fim do prompt e incluir a justificativa de compliance, já que o modelo segue melhor regras que entende.",
-        "Um hook PreToolUse que nega process_refund enquanto a sessão não tiver verificação de identidade registrada.",
-        "Adicionar três exemplos few-shot mostrando a sequência get_customer → process_refund em conversas de reembolso.",
-        "Criar um segundo modelo que revisa cada conversa depois do encerramento e sinaliza reembolsos feitos sem verificação."
+        "Reinforce the instruction in the system prompt with capital letters, repeat it at the end of the prompt, and include the compliance rationale, since the model follows rules better when it understands them.",
+        "A PreToolUse hook that denies process_refund until the session has a recorded identity verification.",
+        "Add three few-shot examples showing the get_customer → process_refund sequence in refund conversations.",
+        "Create a second model that reviews each conversation after it closes and flags refunds made without verification."
       ],
       "correta": 1,
-      "explicacao": "Regra crítica (financeira, segurança, compliance) vai em código: um hook PreToolUse que nega process_refund até a verificação de identidade. Prompt e few-shot só servem para o que pode ser best-effort.",
+      "explicacao": "A critical rule (financial, security, compliance) belongs in code: a PreToolUse hook that denies process_refund until identity is verified. Prompts and few-shot examples are only for what can be best-effort.",
       "feedbacks": [
-        "Tentadora porque costuma reduzir a taxa de erro, mas prompt é probabilístico: a falha continua com probabilidade não nula. Anti-padrão: regra de negócio crítica imposta só por prompt.",
-        "Correta. Regra com consequência financeira exige enforcement determinístico. O hook bloqueia sempre, independentemente do que o modelo decidir, e o motivo devolvido permite que o agente se corrija (verificar primeiro, depois reembolsar).",
-        "Few-shot melhora o padrão médio, mas continua sendo orientação probabilística. Para uma regra financeira e de compliance, 'quase sempre' não basta.",
-        "Detecta o problema só depois do dinheiro sair, e adiciona complexidade. É auditoria, não prevenção. O bloqueio tem que acontecer antes da execução da tool."
+        "Tempting because it usually lowers the error rate, but prompts are probabilistic: the failure still has a non-zero probability. Anti-pattern: a critical business rule enforced by prompt alone.",
+        "Correct. A rule with financial consequences requires deterministic enforcement. The hook always blocks, regardless of what the model decides, and the returned reason lets the agent self-correct (verify first, then refund).",
+        "Few-shot improves the average pattern, but it is still probabilistic guidance. For a financial and compliance rule, 'almost always' is not enough.",
+        "It detects the problem only after the money is gone, and it adds complexity. This is auditing, not prevention. The block has to happen before the tool executes."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nUm cliente escreve em caixa alta, furioso, porque recebeu uma taxa de atraso de R$ 8. A política da empresa permite estornar automaticamente taxas de até R$ 15 na primeira ocorrência, e é a primeira vez dele. O cliente não pediu para falar com um humano. O que o agente deve fazer?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer writes in all caps, furious, because he was charged a R$ 8 late fee. Company policy allows late fees of up to R$ 15 to be reversed automatically on the first occurrence, and this is his first time. The customer has not asked to talk to a human. What should the agent do?",
       "opcoes": [
-        "Escalar imediatamente com escalate_to_human, já que clientes muito irritados tendem a ser mais bem atendidos por pessoas e o risco de perder o cliente é alto.",
-        "Pedir ao modelo que estime a própria confiança de 0 a 1 e escalar se ela ficar abaixo de 0,8.",
-        "Oferecer um cupom de desconto no lugar do estorno, para acalmar o cliente sem mexer na cobrança.",
-        "Reconhecer a frustração, aplicar o estorno previsto na política e confirmar a resolução."
+        "Escalate immediately with escalate_to_human, since very angry customers tend to be better served by people and the risk of losing the customer is high.",
+        "Ask the model to estimate its own confidence from 0 to 1 and escalate if it falls below 0.8.",
+        "Offer a discount coupon instead of the reversal, to calm the customer down without touching the charge.",
+        "Acknowledge the frustration, apply the reversal provided for in the policy, and confirm the resolution."
       ],
       "correta": 3,
-      "explicacao": "Cliente bravo com problema simples e coberto pela política: resolva. Escalonamento se baseia em pedido explícito de humano, exceção/lacuna de política ou falta de progresso, não em sentimento.",
+      "explicacao": "Angry customer with a simple issue covered by policy: resolve it. Escalation is based on an explicit request for a human, a policy exception/gap, or lack of progress, not on sentiment.",
       "feedbacks": [
-        "Tentadora por parecer empática, mas é o anti-padrão de escalonar por sentimento. O caso é simples e resolvível; o gatilho de escalonamento é pedido explícito, lacuna de política ou falta de progresso.",
-        "Anti-padrão: confiança autodeclarada pelo modelo é mal calibrada e não indica se o caso está coberto pela política.",
-        "Ataca o sintoma errado (o humor do cliente) e ignora a política que resolve o problema de fato. Também inventa uma ação que a política não prevê.",
-        "Correta. Sentimento não é complexidade: o caso está totalmente coberto pela política e o agente tem a ferramenta para resolver. Escalar aqui só piora a métrica de primeiro contato e a experiência."
+        "Tempting because it seems empathetic, but it is the anti-pattern of escalating based on sentiment. The case is simple and resolvable; the escalation trigger is an explicit request, a policy gap, or lack of progress.",
+        "Anti-pattern: the model's self-reported confidence is poorly calibrated and does not indicate whether the case is covered by policy.",
+        "It targets the wrong symptom (the customer's mood) and ignores the policy that actually solves the problem. It also invents an action the policy does not provide for.",
+        "Correct. Sentiment is not complexity: the case is fully covered by policy and the agent has the tool to resolve it. Escalating here only hurts the first-contact metric and the experience."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO cliente se identifica como \"Carlos Souza\" e get_customer devolve três cadastros com esse nome, em cidades diferentes. O cliente quer cancelar um pedido. Qual é a MELHOR próxima ação do agente?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe customer identifies himself as \"Carlos Souza\", and get_customer returns three records with that name, in different cities. The customer wants to cancel an order. What is the agent's BEST next action?",
       "opcoes": [
-        "Pedir um identificador adicional (e-mail ou número do pedido) e repetir a busca.",
-        "Selecionar o cadastro com a compra mais recente, já que é o mais provável de estar ligado a um cancelamento.",
-        "Escalar para um humano, porque a ambiguidade de identidade está fora do escopo do agente.",
-        "Listar os três cadastros com endereço e telefone para que o cliente escolha qual é o dele."
+        "Ask for an additional identifier (email or order number) and repeat the search.",
+        "Select the record with the most recent purchase, since it is the most likely to be linked to a cancellation.",
+        "Escalate to a human, because identity ambiguity is outside the agent's scope.",
+        "List the three records with address and phone number so the customer can choose which one is theirs."
       ],
       "correta": 0,
-      "explicacao": "Vários clientes batem na busca: peça um identificador para desambiguar. Não chute, não exponha dados de outros clientes e não escale o que dá para resolver com uma pergunta.",
+      "explicacao": "Multiple customers match the search: ask for an identifier to disambiguate. Don't guess, don't expose other customers' data, and don't escalate what can be resolved with one question.",
       "feedbacks": [
-        "Correta. Com vários resultados, o agente deve desambiguar com um dado que o cliente possui, sem chutar. É barato e evita agir na conta errada.",
-        "Tentadora pela heurística 'mais provável', mas é um chute que pode cancelar o pedido de outra pessoa. Agir em conta errada é um risco de segurança e privacidade.",
-        "Escalonamento desnecessário: o agente consegue resolver a ambiguidade sozinho com uma pergunta. Escalar aqui derruba a resolução no primeiro contato.",
-        "Resolve a ambiguidade, mas expõe dados pessoais de terceiros. Quem confirma a identidade é o cliente, informando um dado que só ele tem."
+        "Correct. With multiple results, the agent should disambiguate using a piece of data the customer has, without guessing. It is cheap and avoids acting on the wrong account.",
+        "Tempting because of the 'most likely' heuristic, but it is a guess that could cancel someone else's order. Acting on the wrong account is a security and privacy risk.",
+        "Unnecessary escalation: the agent can resolve the ambiguity on its own with one question. Escalating here drags down first-contact resolution.",
+        "It resolves the ambiguity, but it exposes third parties' personal data. The customer is the one who confirms identity, by providing a piece of data only they have."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nQuando o sistema de pedidos dá timeout, a tool lookup_order captura a exceção e devolve {\"orders\": []}. Nesses momentos o agente tem dito aos clientes que \"não encontrou nenhum pedido no seu nome\". Qual mudança corrige o problema na origem?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nWhen the order system times out, the lookup_order tool catches the exception and returns {\"orders\": []}. At those moments, the agent has been telling customers that it \"found no orders under your name\". Which change fixes the problem at the source?",
       "opcoes": [
-        "Instruir o agente, no system prompt, a desconfiar de listas vazias e sempre repetir a consulta uma vez antes de responder.",
-        "Capturar a exceção e devolver a mensagem \"Operation failed\" com status 500, para que o agente pelo menos saiba que algo deu errado e avise o cliente.",
-        "Devolver um erro estruturado (isError, errorCategory \"transient\", isRetryable: true) em vez de lista vazia.",
-        "Aumentar o timeout da chamada ao sistema de pedidos de 5 para 30 segundos."
+        "Instruct the agent, in the system prompt, to be suspicious of empty lists and always repeat the query once before answering.",
+        "Catch the exception and return the message \"Operation failed\" with status 500, so the agent at least knows something went wrong and informs the customer.",
+        "Return a structured error (isError, errorCategory \"transient\", isRetryable: true) instead of an empty list.",
+        "Increase the timeout of the call to the order system from 5 to 30 seconds."
       ],
       "correta": 2,
-      "explicacao": "Anti-padrão: supressão silenciosa (lista vazia como sucesso quando o backend caiu). A tool deve devolver erro estruturado com categoria e indicação de retentável, separando 'vazio' de 'falhou'.",
+      "explicacao": "Anti-pattern: silent suppression (an empty list reported as success when the backend is down). The tool should return a structured error with a category and a retryable indication, separating 'empty' from 'failed'.",
       "feedbacks": [
-        "Contorna o sintoma no lugar errado: o modelo continua sem saber se a lista vazia é real ou falha, e repetir buscas legítimas sem resultado desperdiça chamadas.",
-        "Melhor do que silenciar, mas é o anti-padrão do erro genérico: sem categoria, sem saber se é retentável e sem contexto do que foi tentado, o modelo não consegue planejar a recuperação.",
-        "Correta. Vazio é informação ('nada encontrado'); timeout significa que a busca não rodou. O erro estruturado deixa o modelo distinguir os casos, tentar de novo ou avisar o cliente com honestidade.",
-        "Reduz a frequência do problema, mas não o elimina: quando o timeout acontecer, a falha continua disfarçada de 'nenhum pedido'."
+        "It works around the symptom in the wrong place: the model still doesn't know whether the empty list is real or a failure, and repeating legitimate searches that have no results wastes calls.",
+        "Better than silencing it, but it is the generic-error anti-pattern: without a category, without knowing whether it is retryable, and without context on what was attempted, the model cannot plan the recovery.",
+        "Correct. Empty is information ('nothing found'); a timeout means the search didn't run. The structured error lets the model distinguish the cases, retry, or inform the customer honestly.",
+        "It reduces how often the problem happens but doesn't eliminate it: when the timeout does happen, the failure is still disguised as 'no orders'."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nUm cliente pede reembolso de R$ 2.300. process_refund responde com um erro dizendo que o valor excede o limite de R$ 1.000 para reembolso automático, e o agente fica chamando a tool de novo, às vezes dividindo o valor em parcelas menores. Como a resposta de erro da tool deveria ser desenhada?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer requests a R$ 2,300 refund. process_refund responds with an error saying the amount exceeds the R$ 1,000 limit for automatic refunds, and the agent keeps calling the tool again, sometimes splitting the amount into smaller installments. How should the tool's error response be designed?",
       "opcoes": [
-        "Como erro transitório com retry-after, para o agente tentar de novo mais tarde.",
-        "Como erro de validação, indicando o campo amount como inválido, para que o agente corrija a entrada e reenvie a solicitação com um valor dentro do limite permitido.",
-        "Sem mudanças na tool; basta limitar o agente a três chamadas de process_refund por conversa.",
-        "Como erro de negócio: errorCategory \"business\", isRetryable: false e a regra de política explicada."
+        "As a transient error with retry-after, so the agent tries again later.",
+        "As a validation error, flagging the amount field as invalid, so the agent corrects the input and resubmits the request with an amount within the allowed limit.",
+        "No changes to the tool; just limit the agent to three process_refund calls per conversation.",
+        "As a business error: errorCategory \"business\", isRetryable: false, and the policy rule explained."
       ],
       "correta": 3,
-      "explicacao": "Erros de negócio (limite de política) são não retentáveis: explique a política ou escale. A categoria do erro orienta a estratégia de recuperação do agente.",
+      "explicacao": "Business errors (policy limits) are non-retryable: explain the policy or escalate. The error category guides the agent's recovery strategy.",
       "feedbacks": [
-        "Categoria errada: o limite não vai mudar com o tempo. Classificar mal o erro induz exatamente o loop de novas tentativas que se quer evitar.",
-        "Tentadora porque o problema 'parece' ser o valor, mas isso incentiva o agente a fracionar o reembolso para contornar a política, que é justamente o comportamento indesejado.",
-        "Limite arbitrário como mecanismo principal: corta o loop, mas não dá ao modelo a informação para explicar a política ou escalar corretamente.",
-        "Correta. Erro de política não é retentável; a categoria e o isRetryable: false dizem ao modelo que insistir não adianta, e a descrição permite explicar ou escalar (exceção de política é gatilho de escalonamento)."
+        "Wrong category: the limit won't change over time. Misclassifying the error induces exactly the retry loop you want to avoid.",
+        "Tempting because the problem 'seems' to be the amount, but it encourages the agent to split the refund to get around the policy, which is precisely the undesired behavior.",
+        "An arbitrary limit as the primary mechanism: it cuts the loop, but it doesn't give the model the information to explain the policy or escalate correctly.",
+        "Correct. A policy error is not retryable; the category and isRetryable: false tell the model that insisting won't help, and the description lets it explain or escalate (a policy exception is an escalation trigger)."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO loop do agente foi escrito assim: se a resposta do modelo contém um bloco de texto, a conversa termina e o texto é enviado ao cliente. Em vários casos o cliente recebe \"Vou verificar o status do seu pedido\" e mais nada. Qual é a causa e a correção?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe agent loop was written like this: if the model's response contains a text block, the conversation ends and the text is sent to the customer. In several cases, the customer receives \"I'll check the status of your order\" and nothing else. What is the cause, and what is the fix?",
       "opcoes": [
-        "A resposta trazia texto e tool_use; o loop deve seguir o stop_reason, encerrando só em \"end_turn\".",
-        "O modelo está encerrando cedo; a correção é instruí-lo a nunca escrever texto antes de chamar uma tool.",
-        "O loop deveria procurar no texto frases de encerramento como \"pronto\" ou \"resolvido\" e só terminar quando uma delas aparecer, mantendo o resto do código igual.",
-        "O max_tokens está baixo e corta a resposta; aumentá-lo resolve."
+        "The response contained text and tool_use; the loop should follow stop_reason, ending only on \"end_turn\".",
+        "The model is ending early; the fix is to instruct it to never write text before calling a tool.",
+        "The loop should search the text for closing phrases such as \"done\" or \"resolved\" and only end when one of them appears, keeping the rest of the code the same.",
+        "max_tokens is too low and cuts off the response; increasing it solves the problem."
       ],
       "correta": 0,
-      "explicacao": "Decida o loop pelo stop_reason: tool_use → executa e devolve tool_result; end_turn → termina. Texto no content não indica fim.",
+      "explicacao": "Drive the loop by stop_reason: tool_use → execute and return tool_result; end_turn → finish. Text in content does not signal the end.",
       "feedbacks": [
-        "Correta. content pode misturar texto e tool_use; ter texto não significa que terminou. O stop_reason é o sinal de controle do loop.",
-        "Ataca o comportamento normal do modelo em vez do bug do loop. Texto antes de tool_use é legítimo; quem erra é o código que interpreta texto como fim.",
-        "Anti-padrão clássico: encerrar o loop lendo linguagem natural. É frágil e continua ignorando o sinal estruturado que existe para isso.",
-        "Corte por max_tokens apareceria com stop_reason \"max_tokens\", não como texto curto seguido de tool_use. Diagnóstico errado."
+        "Correct. content can mix text and tool_use; having text doesn't mean it's finished. stop_reason is the loop's control signal.",
+        "It attacks the model's normal behavior instead of the loop bug. Text before tool_use is legitimate; what's wrong is the code that interprets text as the end.",
+        "Classic anti-pattern: ending the loop by parsing natural language. It is fragile and still ignores the structured signal that exists for this purpose.",
+        "A max_tokens cutoff would show up as stop_reason \"max_tokens\", not as short text followed by tool_use. Wrong diagnosis."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nEm atendimentos longos (40+ turnos), o histórico é resumido automaticamente para caber na janela. A auditoria notou que, depois do resumo, o agente às vezes cita o valor errado do pedido (R$ 129 em vez de R$ 192) ou troca o número do pedido. Qual é a MELHOR correção?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nIn long sessions (40+ turns), the history is summarized automatically to fit in the window. An audit noticed that, after summarization, the agent sometimes cites the wrong order amount (R$ 129 instead of R$ 192) or mixes up the order number. What is the BEST fix?",
       "opcoes": [
-        "Trocar para um modelo com janela de contexto maior, eliminando a necessidade de resumir e mantendo todo o histórico original da conversa disponível em cada turno.",
-        "Um bloco persistente de case facts (IDs, valores, datas, status) que nunca é resumido e é reinjetado a cada turno.",
-        "Pedir ao resumidor para \"ser mais cuidadoso com números\".",
-        "Encerrar automaticamente a conversa depois de 30 turnos e pedir ao cliente que abra um novo chamado."
+        "Switch to a model with a larger context window, eliminating the need to summarize and keeping the entire original conversation history available on every turn.",
+        "A persistent block of case facts (IDs, amounts, dates, status) that is never summarized and is re-injected on every turn.",
+        "Ask the summarizer to \"be more careful with numbers\".",
+        "Automatically end the conversation after 30 turns and ask the customer to open a new ticket."
       ],
       "correta": 1,
-      "explicacao": "Resumo perde valores exatos, IDs, datas e percentuais. A correção é um bloco de CASE FACTS persistente e nunca resumido.",
+      "explicacao": "Summaries lose exact values, IDs, dates, and percentages. The fix is a persistent CASE FACTS block that is never summarized.",
       "feedbacks": [
-        "Adia o problema e aumenta o custo de cada turno; conversas longas ainda degradam (lost in the middle). Não garante a fidelidade dos números.",
-        "Correta. Resumos perdem justamente valores exatos, IDs e datas. Um bloco de fatos do caso que nunca é resumido preserva o que não pode ser parafraseado.",
-        "Critério vago e probabilístico. Continua passando os fatos críticos por paráfrase, que é a origem do erro.",
-        "Prejudica o cliente e a meta de resolução no primeiro contato, e o tamanho da conversa não é critério válido de encerramento ou escalonamento."
+        "It postpones the problem and increases the cost of every turn; long conversations still degrade (lost in the middle). It doesn't guarantee the accuracy of the numbers.",
+        "Correct. Summaries lose precisely the exact values, IDs, and dates. A case facts block that is never summarized preserves what cannot be paraphrased.",
+        "A vague, probabilistic criterion. The critical facts still go through paraphrasing, which is the source of the error.",
+        "It harms the customer and the first-contact resolution goal, and conversation length is not a valid criterion for closing or escalating."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nOs atendentes humanos reclamam que, ao receber um caso escalado, precisam ler a conversa inteira para entender o que aconteceu, e muitos nem têm acesso ao transcript completo na ferramenta deles. O que o agente deve enviar junto com escalate_to_human?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nHuman support agents complain that, when they receive an escalated case, they have to read the entire conversation to understand what happened, and many don't even have access to the full transcript in their tool. What should the agent send along with escalate_to_human?",
       "opcoes": [
-        "O transcript completo da conversa, para que o atendente tenha todo o contexto disponível.",
-        "Uma frase curta com o motivo do escalonamento, para não sobrecarregar o atendente.",
-        "Um resumo estruturado: cliente, problema, pedido e valor, causa raiz, ações tomadas e ação recomendada.",
-        "A pontuação de sentimento do cliente e a confiança do modelo, para o atendente priorizar a fila."
+        "The full conversation transcript, so the human agent has all the context available.",
+        "A short sentence with the reason for the escalation, so as not to overload the human agent.",
+        "A structured summary: customer, issue, order and amount, root cause, actions taken, and recommended action.",
+        "The customer's sentiment score and the model's confidence, so the human agent can prioritize the queue."
       ],
       "correta": 2,
-      "explicacao": "Handoff para humano exige resumo estruturado: cliente, problema, pedido, causa raiz, ações tomadas, motivo do bloqueio, ação recomendada e valor.",
+      "explicacao": "A human handoff requires a structured summary: customer, issue, order, root cause, actions taken, reason for the blocker, recommended action, and amount.",
       "feedbacks": [
-        "Tentadora por ser 'completo', mas é justamente o que gera retrabalho, e o atendente pode nem ter onde ler. Não destaca causa, ações tomadas nem próxima ação.",
-        "Curta demais: faltam identidade, valores, ações já tomadas e recomendação; o atendente teria que reconstruir o caso.",
-        "Correta. O humano normalmente não vê o transcript; o handoff precisa ser autossuficiente e estruturado para ele agir sem retrabalho.",
-        "Métricas pouco úteis para resolver o caso (e a confiança autodeclarada é mal calibrada). Não diz o que aconteceu nem o que fazer."
+        "Tempting because it is 'complete', but it is exactly what causes rework, and the human agent may not even have a place to read it. It doesn't highlight the cause, the actions taken, or the next action.",
+        "Too short: it lacks identity, amounts, actions already taken, and a recommendation; the human agent would have to reconstruct the case.",
+        "Correct. The human usually doesn't see the transcript; the handoff needs to be self-contained and structured so they can act without rework.",
+        "Metrics of little use for resolving the case (and self-reported confidence is poorly calibrated). It doesn't say what happened or what to do."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO servidor MCP expõe lookup_order (\"busca informações de pedido\") e get_shipment (\"busca informações do pedido e entrega\"). Em perguntas sobre rastreio, o agente escolhe a tool errada em cerca de 30% dos casos. Qual é a primeira correção a tentar?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe MCP server exposes lookup_order (\"retrieves order information\") and get_shipment (\"retrieves order and delivery information\"). For tracking questions, the agent picks the wrong tool in about 30% of cases. What is the first fix to try?",
       "opcoes": [
-        "Reescrever as descrições para separar os propósitos e dizer quando usar cada uma (ou fundir as duas tools).",
-        "Colocar um classificador de intenção antes do agente, treinado com conversas rotuladas, que decide qual das duas tools deve ser usada em cada pergunta.",
-        "Adicionar no system prompt uma lista de palavras-chave que indicam cada tool.",
-        "Forçar tool_choice para get_shipment sempre que a mensagem do cliente mencionar \"entrega\"."
+        "Rewrite the descriptions to separate their purposes and say when to use each one (or merge the two tools).",
+        "Put an intent classifier in front of the agent, trained on labeled conversations, that decides which of the two tools should be used for each question.",
+        "Add to the system prompt a list of keywords that point to each tool.",
+        "Force tool_choice to get_shipment whenever the customer's message mentions \"delivery\"."
       ],
       "correta": 0,
-      "explicacao": "Descrições vagas e sobrepostas causam seleção errada. A primeira correção é melhorar/diferenciar as descrições (ou fundir as tools); classificadores externos são complexidade desnecessária.",
+      "explicacao": "Vague, overlapping descriptions cause wrong selection. The first fix is to improve/differentiate the descriptions (or merge the tools); external classifiers are unnecessary complexity.",
       "feedbacks": [
-        "Correta. A descrição é o critério de seleção da tool. Tools sobrepostas com descrições quase iguais causam roteamento errado; a correção mais simples é diferenciar (ou unificar).",
-        "Funciona, mas é mais complexo do que o necessário. A regra de desempate da prova: descrição melhor antes de classificador de roteamento.",
-        "Remendo frágil fora do lugar certo; a informação de seleção deve estar na própria definição da tool, que o modelo consulta no momento da decisão.",
-        "Transfere a decisão para uma regra externa por palavra-chave (árvore de decisão por fora do modelo) e erra quando 'entrega' aparece em outro contexto."
+        "Correct. The description is the tool-selection criterion. Overlapping tools with nearly identical descriptions cause misrouting; the simplest fix is to differentiate them (or unify them).",
+        "It works, but it is more complex than necessary. The exam's tiebreaker rule: a better description before a routing classifier.",
+        "A fragile patch in the wrong place; selection information should be in the tool definition itself, which the model consults at decision time.",
+        "It shifts the decision to an external keyword rule (a decision tree outside the model) and fails when 'delivery' appears in another context."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nCom a expansão do projeto, o agente único passou a ter 18 tools (CRM, faturamento, logística, base de conhecimento, cupons, fidelidade...). A escolha de tools piorou visivelmente, mesmo depois de a equipe revisar todas as descrições. Qual arquitetura resolve melhor?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nAs the project expanded, the single agent grew to 18 tools (CRM, billing, logistics, knowledge base, coupons, loyalty...). Tool selection got visibly worse, even after the team reviewed all the descriptions. Which architecture solves this best?",
       "opcoes": [
-        "Ordenar as tools alfabeticamente e numerá-las no system prompt para facilitar a escolha.",
-        "Aumentar o max_tokens e ativar um esforço de raciocínio maior para o modelo pensar melhor na escolha.",
-        "Juntar as 18 tools numa única tool genérica execute_action com um parâmetro action, reduzindo o número de tools que o modelo precisa considerar para uma só.",
-        "Dividir em subagents especializados com 4–5 tools cada, coordenados por um agente que delega conforme o caso."
+        "Sort the tools alphabetically and number them in the system prompt to make selection easier.",
+        "Increase max_tokens and enable a higher reasoning effort so the model thinks harder about the selection.",
+        "Combine the 18 tools into a single generic execute_action tool with an action parameter, reducing the number of tools the model needs to consider to just one.",
+        "Split into specialized subagents with 4–5 tools each, coordinated by an agent that delegates according to the case."
       ],
       "correta": 3,
-      "explicacao": "Diretriz: 4–5 tools por agente na decisão. Com 18 tools, divida em subagents especializados; descrições melhores sozinhas não bastam.",
+      "explicacao": "Guideline: 4–5 tools per agent at decision time. With 18 tools, split into specialized subagents; better descriptions alone are not enough.",
       "feedbacks": [
-        "Não reduz o número de opções na decisão; é cosmético.",
-        "Ataca o sintoma errado: o problema é excesso de opções sobrepostas, não falta de espaço de saída.",
-        "Esconde a complexidade dentro de um parâmetro, perde as descrições específicas e piora a validação de entradas. A seleção continua difícil, só que agora menos visível.",
-        "Correta. Com muitas tools visíveis, a seleção degrada e melhorar descrições sozinho não basta. Agentes especializados mantêm poucas tools na hora da decisão."
+        "It doesn't reduce the number of options at decision time; it's cosmetic.",
+        "It targets the wrong symptom: the problem is too many overlapping options, not a lack of output space.",
+        "It hides the complexity inside a parameter, loses the specific descriptions, and makes input validation worse. Selection is still hard, just less visible now.",
+        "Correct. With many visible tools, selection degrades, and improving descriptions alone is not enough. Specialized agents keep few tools at decision time."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nA equipe está listando regras do agente para decidir quais vão em código (hooks) e quais podem ficar no system prompt. Quais DUAS regras devem ser impostas de forma determinística? (Escolha DUAS.)",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is listing the agent's rules to decide which ones go in code (hooks) and which can stay in the system prompt. Which TWO rules should be enforced deterministically? (Choose TWO.)",
       "opcoes": [
-        "Reembolsos acima de R$ 1.000 só podem ser executados após aprovação de um supervisor.",
-        "O agente deve tratar o cliente pelo primeiro nome e manter um tom cordial.",
-        "Quando fizer sentido, o agente pode sugerir produtos relacionados ao pedido do cliente.",
-        "Números completos de cartão nunca podem chegar ao modelo nem aparecer no histórico.",
-        "O agente deve encerrar a conversa perguntando se pode ajudar em algo mais."
+        "Refunds above R$ 1,000 can only be executed after a supervisor's approval.",
+        "The agent should address the customer by first name and keep a friendly tone.",
+        "When it makes sense, the agent may suggest products related to the customer's order.",
+        "Full card numbers must never reach the model or appear in the history.",
+        "The agent should end the conversation by asking whether it can help with anything else."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Regras com consequência financeira, de segurança ou de compliance vão em código (hooks/validação). Estilo e comportamentos opcionais ficam no prompt.",
+      "explicacao": "Rules with financial, security, or compliance consequences go in code (hooks/validation). Style and optional behaviors stay in the prompt.",
       "feedbacks": [
-        "Correta. Consequência financeira: um hook PreToolUse em process_refund nega a chamada sem aprovação, não importa o que o modelo decida.",
-        "Preferência de estilo: best-effort, cabe perfeitamente no system prompt.",
-        "Comportamento opcional e de baixo risco; orientação por prompt é suficiente.",
-        "Correta. Exigência de segurança/compliance: um hook PostToolUse (ou a própria tool) mascara o dado antes de ele entrar no contexto.",
-        "Regra de experiência sem consequência financeira ou de segurança; não justifica enforcement em código."
+        "Correct. Financial consequence: a PreToolUse hook on process_refund denies the call without approval, no matter what the model decides.",
+        "A style preference: best-effort, it fits perfectly in the system prompt.",
+        "Optional, low-risk behavior; prompt guidance is sufficient.",
+        "Correct. A security/compliance requirement: a PostToolUse hook (or the tool itself) masks the data before it enters the context.",
+        "An experience rule with no financial or security consequence; it doesn't justify enforcement in code."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nA equipe está definindo critérios explícitos para o agente chamar escalate_to_human imediatamente. Quais DOIS sinais justificam escalonamento imediato? (Escolha DUAS.)",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is defining explicit criteria for the agent to call escalate_to_human immediately. Which TWO signals justify immediate escalation? (Choose TWO.)",
       "opcoes": [
-        "A análise de sentimento classifica a mensagem do cliente como muito negativa.",
-        "O cliente pede explicitamente para falar com uma pessoa.",
-        "O modelo informa confiança de 0,4 na própria resposta.",
-        "A conversa ultrapassou 25 mensagens.",
-        "O cliente pede um reembolso fora do prazo por motivo que a política não prevê, exigindo uma exceção."
+        "Sentiment analysis classifies the customer's message as very negative.",
+        "The customer explicitly asks to talk to a person.",
+        "The model reports a confidence of 0.4 in its own answer.",
+        "The conversation has exceeded 25 messages.",
+        "The customer requests a refund past the deadline for a reason the policy does not cover, requiring an exception."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Escale de imediato quando o cliente pede humano, quando há lacuna/exceção de política ou quando não há progresso após tentativas razoáveis. Não escale por sentimento, confiança autodeclarada ou tamanho da conversa.",
+      "explicacao": "Escalate immediately when the customer asks for a human, when there is a policy gap/exception, or when there is no progress after reasonable attempts. Don't escalate based on sentiment, self-reported confidence, or conversation length.",
       "feedbacks": [
-        "Anti-padrão: escalar por sentimento. Cliente irritado com caso simples deve ser atendido pelo agente.",
-        "Correta. Pedido explícito de humano é gatilho imediato; insistir em resolver contraria o cliente.",
-        "Anti-padrão: confiança autodeclarada é mal calibrada e não serve de gatilho confiável.",
-        "Tamanho da conversa não indica complexidade nem falta de progresso por si só; não é critério de escalonamento.",
-        "Correta. Lacuna ou exceção de política está fora da autoridade do agente: escale com handoff estruturado."
+        "Anti-pattern: escalating based on sentiment. An irritated customer with a simple case should be handled by the agent.",
+        "Correct. An explicit request for a human is an immediate trigger; insisting on resolving it goes against the customer's wishes.",
+        "Anti-pattern: self-reported confidence is poorly calibrated and is not a reliable trigger.",
+        "Conversation length does not by itself indicate complexity or lack of progress; it is not an escalation criterion.",
+        "Correct. A policy gap or exception is outside the agent's authority: escalate with a structured handoff."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO modelo passou a emitir dois tool_use de lookup_order na mesma resposta (dois pedidos do cliente). O código do loop envia cada tool_result numa mensagem user separada, e a API começou a rejeitar a conversa. Como o loop deve devolver os resultados?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe model started emitting two lookup_order tool_use blocks in the same response (two of the customer's orders). The loop code sends each tool_result in a separate user message, and the API started rejecting the conversation. How should the loop return the results?",
       "opcoes": [
-        "Numa única mensagem user com um só tool_result que concatena as duas respostas.",
-        "Numa única mensagem user com os dois blocos tool_result, cada um com o tool_use_id exato da chamada.",
-        "Desligar o uso paralelo com disable_parallel_tool_use: true, para que o modelo chame uma tool por resposta e o loop atual continue funcionando sem alterações.",
-        "Executar só a primeira chamada e pedir ao modelo que repita a segunda no próximo turno."
+        "In a single user message with just one tool_result that concatenates both responses.",
+        "In a single user message with both tool_result blocks, each with the exact tool_use_id of its call.",
+        "Turn off parallel use with disable_parallel_tool_use: true, so the model calls one tool per response and the current loop keeps working without changes.",
+        "Execute only the first call and ask the model to repeat the second one on the next turn."
       ],
       "correta": 1,
-      "explicacao": "Tool use paralelo: execute as chamadas e devolva todos os tool_result numa única mensagem user, cada um com o tool_use_id exato.",
+      "explicacao": "Parallel tool use: execute the calls and return all the tool_result blocks in a single user message, each with the exact tool_use_id.",
       "feedbacks": [
-        "Quebra a correspondência um-para-um com os tool_use_id; o modelo não sabe qual resultado é de qual chamada e a API exige um resultado por chamada.",
-        "Correta. Em chamadas paralelas, todos os resultados vão juntos numa única mensagem user, cada um referenciando o seu tool_use_id.",
-        "Contorna o bug restringindo o modelo e deixa o atendimento mais lento; o defeito real é o formato de retorno do loop.",
-        "Deixa um tool_use sem resultado (a API exige resposta para cada um) e desperdiça um turno."
+        "It breaks the one-to-one correspondence with the tool_use_ids; the model doesn't know which result belongs to which call, and the API requires one result per call.",
+        "Correct. With parallel calls, all the results go together in a single user message, each referencing its own tool_use_id.",
+        "It works around the bug by restricting the model and makes the support session slower; the real defect is the loop's return format.",
+        "It leaves a tool_use without a result (the API requires a response for each one) and wastes a turn."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nNuma resposta, o modelo chamou get_customer e lookup_order em paralelo. get_customer funcionou, mas lookup_order lançou exceção por indisponibilidade do serviço. O que o loop deve devolver ao modelo?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nIn one response, the model called get_customer and lookup_order in parallel. get_customer succeeded, but lookup_order threw an exception because the service was unavailable. What should the loop return to the model?",
       "opcoes": [
-        "Só o resultado de get_customer, omitindo lookup_order para não confundir o modelo.",
-        "Abortar o turno inteiro e responder ao cliente que o sistema está fora do ar.",
-        "O resultado de get_customer e, para lookup_order, um tool_result com is_error: true e a descrição do erro.",
-        "Repetir lookup_order no código até o serviço responder e só então devolver os dois resultados juntos, para o modelo não precisar lidar com a falha."
+        "Only the get_customer result, omitting lookup_order so as not to confuse the model.",
+        "Abort the entire turn and tell the customer that the system is down.",
+        "The get_customer result and, for lookup_order, a tool_result with is_error: true and the error description.",
+        "Retry lookup_order in code until the service responds and only then return both results together, so the model doesn't have to deal with the failure."
       ],
       "correta": 2,
-      "explicacao": "Na falha de uma chamada paralela, devolva todos os tool_result juntos, com is_error: true na que falhou. Nada de omitir resultado nem abortar tudo.",
+      "explicacao": "When one parallel call fails, return all the tool_result blocks together, with is_error: true on the one that failed. No omitting results and no aborting everything.",
       "feedbacks": [
-        "Deixa um tool_use sem resposta (erro de protocolo) e esconde a falha: supressão silenciosa.",
-        "Anti-padrão: abortar o workflow por uma falha parcial. Há dados úteis e o modelo pode tentar de novo ou seguir com o parcial.",
-        "Correta. Toda chamada recebe resultado; a que falhou vai com is_error: true para o modelo raciocinar sobre a recuperação, aproveitando o resultado que deu certo.",
-        "Retry sem limite e invisível pode travar o atendimento; backoff com limite é aceitável, mas o modelo precisa saber quando a falha persiste."
+        "It leaves a tool_use without a response (a protocol error) and hides the failure: silent suppression.",
+        "Anti-pattern: aborting the workflow over a partial failure. There is useful data, and the model can retry or proceed with the partial results.",
+        "Correct. Every call gets a result; the failed one goes with is_error: true so the model can reason about recovery, making use of the result that succeeded.",
+        "Unbounded, invisible retries can stall the support session; bounded backoff is acceptable, but the model needs to know when the failure persists."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nget_customer devolve o cadastro completo: 40 campos, incluindo histórico de navegação e todas as preferências de marketing. Em conversas com várias consultas, o contexto incha e as respostas pioram. Qual é a MELHOR correção?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nget_customer returns the full customer record: 40 fields, including browsing history and all marketing preferences. In conversations with several lookups, the context bloats and the responses get worse. What is the BEST fix?",
       "opcoes": [
-        "Reduzir a saída da tool aos campos relevantes ao atendimento (na tool ou num hook PostToolUse).",
-        "Migrar para um modelo com janela de contexto maior.",
-        "Pedir no system prompt que o modelo ignore campos irrelevantes.",
-        "Resumir a conversa a cada cinco turnos para liberar espaço."
+        "Trim the tool's output to the fields relevant to customer support (in the tool or in a PostToolUse hook).",
+        "Migrate to a model with a larger context window.",
+        "Ask in the system prompt for the model to ignore irrelevant fields.",
+        "Summarize the conversation every five turns to free up space."
       ],
       "correta": 0,
-      "explicacao": "Corte a saída das tools: devolva só os campos relevantes, não os 40. Isso preserva contexto e qualidade.",
+      "explicacao": "Trim tool output: return only the relevant fields, not all 40. This preserves context and quality.",
       "feedbacks": [
-        "Correta. Corte a saída das tools: só os campos relevantes entram no contexto. Menos ruído, menos tokens, melhor atenção.",
-        "Janela maior não é de graça (todo token é cobrado a cada turno) e não resolve o ruído que degrada a atenção.",
-        "Os tokens continuam no contexto e ocupando atenção; a instrução não reduz o volume.",
-        "Trata o efeito e introduz perda de fatos exatos no resumo. A causa é a saída excessiva da tool."
+        "Correct. Trim tool output: only the relevant fields enter the context. Less noise, fewer tokens, better attention.",
+        "A larger window isn't free (every token is billed on every turn) and doesn't solve the noise that degrades attention.",
+        "The tokens remain in the context and still take up attention; the instruction doesn't reduce the volume.",
+        "It treats the effect and introduces loss of exact facts in the summary. The cause is the tool's excessive output."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D4",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nO system prompt diz \"seja flexível com reembolsos quando o caso justificar\". Casos parecidos recebem decisões diferentes, e a auditoria não consegue explicar o padrão. Qual mudança no prompt resolve melhor?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe system prompt says \"be flexible with refunds when the case warrants it\". Similar cases receive different decisions, and the audit cannot explain the pattern. Which prompt change solves this best?",
       "opcoes": [
-        "Pedir que o modelo avalie a satisfação provável do cliente e conceda o reembolso quando ela for baixa.",
-        "Diminuir a temperatura para zero, para que casos parecidos passem a receber exatamente a mesma decisão em todas as execuções do agente.",
-        "Acrescentar \"seja consistente\" ao final da instrução atual.",
-        "Trocar a instrução por critérios explícitos: o que é elegível, o que não é e exemplos de fronteira."
+        "Ask the model to assess the customer's likely satisfaction and grant the refund when it is low.",
+        "Lower the temperature to zero, so that similar cases receive exactly the same decision on every run of the agent.",
+        "Append \"be consistent\" to the end of the current instruction.",
+        "Replace the instruction with explicit criteria: what is eligible, what is not, and boundary examples."
       ],
       "correta": 3,
-      "explicacao": "Critérios explícitos (o que conta, o que não conta, exemplos de fronteira) vencem 'use seu bom senso'.",
+      "explicacao": "Explicit criteria (what counts, what doesn't, boundary examples) beat 'use your good judgment'.",
       "feedbacks": [
-        "Troca um critério vago por outro, e ainda baseado em sentimento. Continua inconsistente.",
-        "Ataca a variação de amostragem, não a falta de critério; em modelos recentes, parâmetros de amostragem podem nem ser aceitos. O critério continua indefinido.",
-        "Mais uma instrução vaga: não diz o que é elegível. O modelo continua julgando caso a caso sem régua.",
-        "Correta. Instruções vagas ('seja flexível', 'use o bom senso') geram inconsistência. Critério explícito com exemplos de fronteira torna a decisão reproduzível e auditável."
+        "It swaps one vague criterion for another, and one based on sentiment at that. It remains inconsistent.",
+        "It targets sampling variation, not the lack of criteria; on recent models, sampling parameters may not even be accepted. The criterion remains undefined.",
+        "Yet another vague instruction: it doesn't say what is eligible. The model keeps judging case by case without a yardstick.",
+        "Correct. Vague instructions ('be flexible', 'use good judgment') produce inconsistency. Explicit criteria with boundary examples make the decision reproducible and auditable."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nPara evitar loops infinitos, o loop do agente encerra após 5 chamadas de tool. Casos complexos (devolução com troca e reembolso parcial) estão sendo cortados no meio, deixando o cliente sem resposta. Qual desenho é o correto?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nTo avoid infinite loops, the agent loop stops after 5 tool calls. Complex cases (a return with an exchange and a partial refund) are being cut off midway, leaving the customer without an answer. Which design is correct?",
       "opcoes": [
-        "Aumentar o limite para 15 chamadas, que cobre os casos complexos observados.",
-        "Pedir ao modelo para escrever \"ATENDIMENTO CONCLUÍDO\" quando terminar e encerrar o loop ao detectar a frase.",
-        "Seguir o stop_reason (continuar em \"tool_use\", parar em \"end_turn\"), com limite alto só como backstop.",
-        "Codificar uma árvore de decisão que define a sequência de tools para cada tipo de atendimento, garantindo que todo caso termine num número previsível de passos."
+        "Raise the limit to 15 calls, which covers the complex cases observed.",
+        "Ask the model to write \"SUPPORT COMPLETED\" when it finishes and end the loop when the phrase is detected.",
+        "Follow stop_reason (continue on \"tool_use\", stop on \"end_turn\"), with a high limit only as a backstop.",
+        "Code a decision tree that defines the tool sequence for each type of support case, ensuring every case ends in a predictable number of steps."
       ],
       "correta": 2,
-      "explicacao": "stop_reason decide o loop. Limite de iterações é aceitável só como backstop, nunca como mecanismo principal de parada.",
+      "explicacao": "stop_reason drives the loop. An iteration limit is acceptable only as a backstop, never as the primary stopping mechanism.",
       "feedbacks": [
-        "Continua usando limite arbitrário como mecanismo principal; algum caso ainda vai ser cortado e não há tratamento para o corte.",
-        "Anti-padrão: encerrar o loop lendo linguagem natural em vez do stop_reason.",
-        "Correta. O modelo decide quando parar, sinalizando pelo stop_reason. Limite de iterações é rede de segurança, não o mecanismo principal.",
-        "Tira do modelo a decisão de qual tool usar e quando parar, perdendo a flexibilidade para casos ambíguos, que são o forte do agente."
+        "It still uses an arbitrary limit as the primary mechanism; some case will still get cut off, and there is no handling for the cutoff.",
+        "Anti-pattern: ending the loop by parsing natural language instead of stop_reason.",
+        "Correct. The model decides when to stop, signaling it through stop_reason. An iteration limit is a safety net, not the primary mechanism.",
+        "It takes away from the model the decision of which tool to use and when to stop, losing the flexibility for ambiguous cases, which are the agent's strength."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nA equipe vai padronizar as respostas de erro das tools MCP para que o agente consiga escolher a recuperação certa sozinho. Quais DOIS campos são mais importantes para isso? (Escolha DUAS.)",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is going to standardize the MCP tools' error responses so that the agent can choose the right recovery on its own. Which TWO fields are most important for this? (Choose TWO.)",
       "opcoes": [
-        "O stack trace completo da exceção no servidor.",
-        "Apenas o código HTTP numérico retornado pelo backend.",
-        "errorCategory (por exemplo transient, validation, business, permission).",
-        "isRetryable, indicando se tentar de novo pode funcionar.",
-        "Uma mensagem fixa \"Operation failed, please try again\"."
+        "The full stack trace of the exception on the server.",
+        "Only the numeric HTTP status code returned by the backend.",
+        "errorCategory (for example transient, validation, business, permission).",
+        "isRetryable, indicating whether trying again might work.",
+        "A fixed message \"Operation failed, please try again\"."
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Erro estruturado útil traz categoria e isRetryable (mais descrição, ação tentada e resultados parciais). Erro genérico, status cru ou stack trace não orientam a recuperação.",
+      "explicacao": "A useful structured error carries a category and isRetryable (plus a description, the attempted action, and partial results). A generic error, a raw status code, or a stack trace does not guide recovery.",
       "feedbacks": [
-        "Ruído caro no contexto e possível vazamento de detalhes internos; não ajuda o modelo a decidir a recuperação.",
-        "Status sem contexto do que foi tentado: o mesmo 500 pode ser transitório ou permanente. Insuficiente.",
-        "Correta. A categoria define a estratégia: retry, corrigir entrada, explicar a política ou escalar.",
-        "Correta. Evita loops inúteis de retry em erros de negócio/permissão e autoriza retry em transitórios.",
-        "Anti-padrão do erro genérico, e ainda induz retry em erros que não são retentáveis."
+        "Costly noise in the context and possible leakage of internal details; it doesn't help the model decide on recovery.",
+        "A status code without context on what was attempted: the same 500 can be transient or permanent. Insufficient.",
+        "Correct. The category defines the strategy: retry, fix the input, explain the policy, or escalate.",
+        "Correct. It prevents pointless retry loops on business/permission errors and authorizes retries on transient ones.",
+        "The generic-error anti-pattern, and it also induces retries on errors that are not retryable."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nUm cliente volta no dia seguinte para continuar um atendimento sobre um pedido que, ontem, estava \"em separação\". Desde então o pedido foi despachado e um reembolso parcial foi processado por um atendente humano. Como o sistema deve retomar o caso?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer comes back the next day to continue a support case about an order that, yesterday, was \"being picked\". Since then, the order has shipped and a partial refund was processed by a human agent. How should the system resume the case?",
       "opcoes": [
-        "Retomar a sessão anterior exatamente como estava, já que ela contém todo o histórico do atendimento.",
-        "Nova sessão com resumo estruturado do caso, reconsultando o status atual do pedido antes de responder.",
-        "Retomar a sessão anterior e deixar que o cliente informe o que mudou desde ontem.",
-        "Abrir uma nova sessão sem nenhum contexto anterior e pedir que o cliente explique o problema de novo."
+        "Resume the previous session exactly as it was, since it contains the entire history of the case.",
+        "A new session with a structured summary of the case, re-querying the current order status before answering.",
+        "Resume the previous session and let the customer say what has changed since yesterday.",
+        "Open a new session without any prior context and ask the customer to explain the problem again."
       ],
       "correta": 1,
-      "explicacao": "Retomar só faz sentido quando os resultados de tool ainda valem. Se o estado mudou, comece do zero com um resumo estruturado e reconsulte os dados (ou, ao retomar, informe explicitamente o que mudou).",
+      "explicacao": "Resuming only makes sense when the tool results are still valid. If the state has changed, start fresh with a structured summary and re-query the data (or, when resuming, explicitly state what changed).",
       "feedbacks": [
-        "Tentadora pela continuidade, mas o histórico traz resultados de tool que não valem mais ('em separação'); retomar sem avisar o que mudou leva a respostas erradas.",
-        "Correta. Os resultados de tool da sessão anterior estão desatualizados; começar do zero com resumo estruturado e dados frescos evita que o agente aja sobre estado velho.",
-        "Joga no cliente a responsabilidade de corrigir o estado, e ele pode nem saber do reembolso feito pelo atendente.",
-        "Evita estado velho, mas perde todo o contexto útil e piora a experiência; o certo é levar um resumo estruturado."
+        "Tempting because of continuity, but the history contains tool results that are no longer valid ('being picked'); resuming without stating what changed leads to wrong answers.",
+        "Correct. The tool results from the previous session are stale; starting fresh with a structured summary and fresh data keeps the agent from acting on old state.",
+        "It shifts the responsibility for correcting the state onto the customer, who may not even know about the refund made by the human agent.",
+        "It avoids stale state, but it loses all the useful context and worsens the experience; the right approach is to carry over a structured summary."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Cenário: a VarejoMax atende clientes com um agente construído no Claude Agent SDK, que usa tools MCP (get_customer, lookup_order, process_refund, escalate_to_human) para resolver devoluções, cobranças e problemas de conta. A meta é 80% de resolução no primeiro contato, escalando só quando necessário.\n\nMonitorando produção, a equipe encontrou atendimentos em que o cliente recebeu uma mensagem vazia. Nos logs, a chamada à API retornou HTTP 200, mas o código só lia o texto de content e o enviava. Qual verificação estava faltando?",
+      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nWhile monitoring production, the team found support sessions in which the customer received an empty message. In the logs, the API call returned HTTP 200, but the code only read the text from content and sent it. Which check was missing?",
       "opcoes": [
-        "Checar o stop_reason antes de ler content: \"refusal\" chega com HTTP 200 e precisa de tratamento próprio.",
-        "Checar o código HTTP da resposta antes de ler o conteúdo, tratando como falha qualquer status diferente de 200, pois recusas de segurança chegam como erro 4xx.",
-        "Aumentar max_tokens, porque a resposta provavelmente foi truncada antes do texto.",
-        "Fazer retry automático sempre que content vier vazio, até obter texto."
+        "Check stop_reason before reading content: \"refusal\" arrives with HTTP 200 and needs its own handling.",
+        "Check the response's HTTP status code before reading the content, treating any status other than 200 as a failure, since safety refusals arrive as 4xx errors.",
+        "Increase max_tokens, because the response was probably truncated before the text.",
+        "Retry automatically whenever content comes back empty, until text is obtained."
       ],
       "correta": 0,
-      "explicacao": "Recusa chega como HTTP 200 com stop_reason \"refusal\". Sempre cheque stop_reason antes de consumir content.",
+      "explicacao": "A refusal arrives as HTTP 200 with stop_reason \"refusal\". Always check stop_reason before consuming content.",
       "feedbacks": [
-        "Correta. Recusa vem com HTTP 200 e stop_reason \"refusal\"; código que ignora o stop_reason trata como sucesso vazio.",
-        "Premissa falsa: a recusa vem com HTTP 200. Checar só o status deixa o problema passar.",
-        "Truncamento apareceria como stop_reason \"max_tokens\" com texto parcial; o diagnóstico só é possível olhando o stop_reason, que o código ignora.",
-        "Trata o sintoma sem entender a causa; numa recusa, repetir o mesmo request tende a repetir a recusa e atrasa o atendimento."
+        "Correct. A refusal comes with HTTP 200 and stop_reason \"refusal\"; code that ignores stop_reason treats it as an empty success.",
+        "False premise: the refusal comes with HTTP 200. Checking only the status code lets the problem slip through.",
+        "Truncation would show up as stop_reason \"max_tokens\" with partial text; the diagnosis is only possible by looking at stop_reason, which the code ignores.",
+        "It treats the symptom without understanding the cause; with a refusal, repeating the same request tends to repeat the refusal, and it delays the support session."
       ]
     }
   ]

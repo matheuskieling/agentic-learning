@@ -1,265 +1,265 @@
 {
-  "titulo": "Módulo 02 — Quiz: critérios explícitos, few-shot e refinamento iterativo",
+  "titulo": "Module 02 — Quiz: explicit criteria, few-shot, and iterative refinement",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Um prompt diz 'sinalize apenas problemas relevantes'. Qual o efeito esperado?",
+      "pergunta": "A prompt says 'flag only relevant issues'. What is the expected effect?",
       "opcoes": [
-        "Comportamento conservador e estável",
-        "Menos tokens de saída e mais precisão",
-        "Resultados inconsistentes entre execuções",
-        "O modelo pede esclarecimento antes de responder"
+        "Conservative, stable behavior",
+        "Fewer output tokens and more precision",
+        "Inconsistent results across runs",
+        "The model asks for clarification before responding"
       ],
       "correta": 2,
-      "explicacao": "Termos vagos são interpretados de forma diferente a cada chamada; o critério precisa ser explícito.",
+      "explicacao": "Vague terms are interpreted differently on each call; the criterion needs to be explicit.",
       "feedbacks": [
-        "Errado: 'relevante' sem definição não produz estabilidade.",
-        "Errado: não há garantia de precisão sem critério.",
-        "Correto: vago → inconsistente.",
-        "Errado: o modelo normalmente interpreta por conta própria, sem perguntar."
+        "Incorrect: an undefined 'relevant' doesn't produce stability.",
+        "Incorrect: there's no guarantee of precision without a criterion.",
+        "Correct: vague → inconsistent.",
+        "Incorrect: the model usually interprets on its own, without asking."
       ]
     },
     {
-      "pergunta": "Quais são os três componentes de um critério explícito?",
+      "pergunta": "What are the three components of an explicit criterion?",
       "opcoes": [
-        "O que conta, o que não conta e exemplos de fronteira",
-        "Papel, tom e formato",
-        "Instrução, ênfase em maiúsculas e uma nota de confiança autodeclarada",
-        "Objetivo, prazo e responsável"
+        "What counts, what doesn't count, and boundary examples",
+        "Role, tone, and format",
+        "An instruction, emphasis in capital letters, and a self-reported confidence score",
+        "Goal, deadline, and owner"
       ],
       "correta": 0,
-      "explicacao": "Definição positiva, exclusões e casos ambíguos tornam o julgamento reprodutível.",
+      "explicacao": "A positive definition, exclusions, and ambiguous cases make the judgment reproducible.",
       "feedbacks": [
-        "Correto.",
-        "Errado: são boas práticas de system prompt, não de critério de julgamento.",
-        "Errado: ênfase e confiança autodeclarada não definem critério.",
-        "Errado: isso é gestão de tarefa, não critério."
+        "Correct.",
+        "Incorrect: those are system prompt best practices, not a judgment criterion.",
+        "Incorrect: emphasis and self-reported confidence don't define a criterion.",
+        "Incorrect: that's task management, not a criterion."
       ]
     },
     {
-      "pergunta": "A categoria 'nomenclatura' de um bot de review tem 55% de falso positivo, e os devs passaram a ignorar também os alertas de segurança. Qual a correção?",
+      "pergunta": "The 'naming' category of a review bot has a 55% false positive rate, and the developers have started ignoring the security alerts as well. What is the fix?",
       "opcoes": [
-        "Desligar o bot inteiro até resolver",
-        "Pedir no prompt para o bot errar menos em nomenclatura",
-        "Adicionar um segundo modelo para filtrar os comentários de todas as categorias",
-        "Desligar só a categoria nomenclatura, refinar e religar"
+        "Turn off the entire bot until it's resolved",
+        "Ask in the prompt for the bot to make fewer mistakes on naming",
+        "Add a second model to filter the comments from every category",
+        "Turn off only the naming category, refine it, and turn it back on"
       ],
       "correta": 3,
-      "explicacao": "Desliga, refina, religa: preserva as categorias boas e recupera a confiança.",
+      "explicacao": "Turn off, refine, turn back on: it preserves the good categories and restores trust.",
       "feedbacks": [
-        "Errado: joga fora as categorias que funcionam.",
-        "Errado: instrução vaga não resolve critério vago.",
-        "Errado: mais complexo que o necessário; o problema é o critério.",
-        "Correto."
+        "Incorrect: it throws away the categories that work.",
+        "Incorrect: a vague instruction doesn't fix a vague criterion.",
+        "Incorrect: more complex than necessary; the problem is the criterion.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Por que uma categoria com muitos falsos positivos é perigosa mesmo que as outras categorias sejam boas?",
+      "pergunta": "Why is a category with many false positives dangerous even if the other categories are good?",
       "opcoes": [
-        "Porque aumenta o custo de tokens",
-        "Corrói a confiança no sistema inteiro: ignoram tudo",
-        "Porque o modelo aprende com os próprios erros entre chamadas e piora com o tempo",
-        "Porque invalida o prompt caching"
+        "Because it increases token cost",
+        "It erodes trust in the entire system: people ignore everything",
+        "Because the model learns from its own mistakes between calls and gets worse over time",
+        "Because it invalidates prompt caching"
       ],
       "correta": 1,
-      "explicacao": "Confiança é do sistema: ruído numa categoria faz ignorar os acertos das outras.",
+      "explicacao": "Trust belongs to the system as a whole: noise in one category makes people ignore the correct findings in the others.",
       "feedbacks": [
-        "Errado: custo não é o problema central.",
-        "Correto.",
-        "Errado: o modelo não aprende entre chamadas.",
-        "Errado: nada a ver com caching."
+        "Incorrect: cost isn't the core problem.",
+        "Correct.",
+        "Incorrect: the model doesn't learn between calls.",
+        "Incorrect: nothing to do with caching."
       ]
     },
     {
-      "pergunta": "Qual a quantidade e composição recomendadas de exemplos few-shot?",
+      "pergunta": "What is the recommended number and composition of few-shot examples?",
       "opcoes": [
-        "Um único exemplo do caso mais comum",
-        "Dezenas de exemplos para cobrir tudo",
-        "2–4 exemplos variados, cada um com entrada, saída e raciocínio",
-        "4 exemplos idênticos para reforçar o formato"
+        "A single example of the most common case",
+        "Dozens of examples to cover everything",
+        "2–4 varied examples, each with input, output, and reasoning",
+        "4 identical examples to reinforce the format"
       ],
       "correta": 2,
-      "explicacao": "Poucos exemplos direcionados e variados, com raciocínio, ensinam o padrão.",
+      "explicacao": "A few targeted, varied examples with reasoning teach the pattern.",
       "feedbacks": [
-        "Errado: um exemplo do caso fácil não ensina a fronteira.",
-        "Errado: custo alto e risco de o modelo se prender à superfície.",
-        "Correto.",
-        "Errado: exemplos idênticos ensinam só o caso fácil."
+        "Incorrect: one example of the easy case doesn't teach the boundary.",
+        "Incorrect: high cost and a risk of the model latching onto surface features.",
+        "Correct.",
+        "Incorrect: identical examples teach only the easy case."
       ]
     },
     {
-      "pergunta": "Por que incluir o raciocínio em cada exemplo few-shot?",
+      "pergunta": "Why include the reasoning in each few-shot example?",
       "opcoes": [
-        "Para aumentar o número de tokens e melhorar o cache",
-        "Para o modelo generalizar o critério em vez de copiar só o formato",
-        "Porque a API exige um campo de raciocínio",
-        "Para substituir a instrução principal"
+        "To increase the token count and improve caching",
+        "So the model generalizes the criterion instead of copying only the format",
+        "Because the API requires a reasoning field",
+        "To replace the main instruction"
       ],
       "correta": 1,
-      "explicacao": "O raciocínio mostra POR QUE a saída é aquela; o modelo aprende a regra, não a superfície.",
+      "explicacao": "The reasoning shows WHY the output is what it is; the model learns the rule, not the surface.",
       "feedbacks": [
-        "Errado: não é sobre cache.",
-        "Correto.",
-        "Errado: não há tal exigência.",
-        "Errado: exemplos complementam a instrução, não a substituem."
+        "Incorrect: it's not about caching.",
+        "Correct.",
+        "Incorrect: there's no such requirement.",
+        "Incorrect: examples complement the instruction; they don't replace it."
       ]
     },
     {
-      "pergunta": "Um extrator inventa a data de vencimento quando ela não aparece no documento. Qual técnica de prompt ajuda diretamente?",
+      "pergunta": "An extractor makes up the due date when it doesn't appear in the document. Which prompting technique helps directly?",
       "opcoes": [
-        "Few-shot mostrando um documento sem a data e a saída com o campo null",
-        "Pedir para o modelo ser mais honesto",
-        "Aumentar max_tokens",
-        "Remover o campo do schema"
+        "Few-shot showing a document without the date and the output with the field set to null",
+        "Ask the model to be more honest",
+        "Increase max_tokens",
+        "Remove the field from the schema"
       ],
       "correta": 0,
-      "explicacao": "Few-shot reduz alucinação em extração mostrando o comportamento esperado para dado ausente (null).",
+      "explicacao": "Few-shot reduces hallucination in extraction by showing the expected behavior for missing data (null).",
       "feedbacks": [
-        "Correto (combinado a um campo nullable no schema, Módulo 03).",
-        "Errado: instrução vaga.",
-        "Errado: não tem relação com invenção de dado.",
-        "Errado: o campo é necessário quando existe."
+        "Correct (combined with a nullable field in the schema, Module 03).",
+        "Incorrect: vague instruction.",
+        "Incorrect: it has nothing to do with fabricated data.",
+        "Incorrect: the field is needed when the data exists."
       ]
     },
     {
-      "pergunta": "Onde colocar o texto de um contrato enviado pelo usuário num prompt de análise?",
+      "pergunta": "Where should you place the text of a contract submitted by the user in an analysis prompt?",
       "opcoes": [
-        "Misturado às instruções, para dar contexto",
-        "No nome da tool",
-        "Depois da pergunta, no fim do prompt",
-        "Dentro de uma tag como <contrato>, separado das instruções"
+        "Mixed in with the instructions, to provide context",
+        "In the tool name",
+        "After the question, at the end of the prompt",
+        "Inside a tag such as <contract>, separate from the instructions"
       ],
       "correta": 3,
-      "explicacao": "Tags XML separam dados de instruções e permitem referenciar o conteúdo. Documentos longos vão no início, pergunta no fim.",
+      "explicacao": "XML tags separate data from instructions and let you reference the content. Long documents go at the beginning, the question at the end.",
       "feedbacks": [
-        "Errado: misturar faz o modelo confundir conteúdo com ordem.",
-        "Errado: não faz sentido.",
-        "Errado: documentos longos vão antes da pergunta.",
-        "Correto."
+        "Incorrect: mixing them makes the model confuse content with commands.",
+        "Incorrect: it makes no sense.",
+        "Incorrect: long documents go before the question.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Num julgamento complexo (aprovar ou não um sinistro), qual prática melhora a qualidade e a auditabilidade?",
+      "pergunta": "In a complex judgment (whether or not to approve an insurance claim), which practice improves quality and auditability?",
       "opcoes": [
-        "Pedir o veredito primeiro e a justificativa depois",
-        "Pedir só o veredito, para economizar tokens",
-        "Pedir a análise/evidências antes do veredito",
-        "Pedir uma nota de confiança de 0 a 100"
+        "Ask for the verdict first and the justification afterward",
+        "Ask only for the verdict, to save tokens",
+        "Ask for the analysis/evidence before the verdict",
+        "Ask for a confidence score from 0 to 100"
       ],
       "correta": 2,
-      "explicacao": "Raciocínio antes da resposta: as evidências fundamentam a decisão e ficam auditáveis.",
+      "explicacao": "Reasoning before the answer: the evidence grounds the decision and remains auditable.",
       "feedbacks": [
-        "Errado: justificativa depois tende a racionalizar uma decisão já tomada.",
-        "Errado: perde a auditabilidade.",
-        "Correto.",
-        "Errado: confiança autodeclarada é mal calibrada."
+        "Incorrect: a justification given afterward tends to rationalize a decision already made.",
+        "Incorrect: it loses auditability.",
+        "Correct.",
+        "Incorrect: self-reported confidence is poorly calibrated."
       ]
     },
     {
-      "pergunta": "Após três tentativas de explicar em texto uma transformação de datas, o Claude Code continua errando casos de borda. Qual a próxima melhor ação?",
+      "pergunta": "After three attempts to explain a date transformation in prose, Claude Code keeps getting edge cases wrong. What is the next best action?",
       "opcoes": [
-        "2–3 pares concretos de entrada → saída, incluindo as bordas",
-        "Explicar novamente com mais detalhes, em maiúsculas e com a especificação completa do formato",
-        "Trocar para um modelo maior",
-        "Pedir para o Claude 'pensar mais'"
+        "2–3 concrete input → output pairs, including the edge cases",
+        "Explain it again in more detail, in capital letters and with the full format specification",
+        "Switch to a larger model",
+        "Ask Claude to 'think harder'"
       ],
       "correta": 0,
-      "explicacao": "Exemplos concretos batem prosa quando a descrição não está funcionando.",
+      "explicacao": "Concrete examples beat prose when the description isn't working.",
       "feedbacks": [
-        "Correto.",
-        "Errado: mais prosa repete o que não funcionou.",
-        "Errado: pula a correção mais simples.",
-        "Errado: não dá o alvo concreto que falta."
+        "Correct.",
+        "Incorrect: more prose repeats what didn't work.",
+        "Incorrect: it skips the simplest fix.",
+        "Incorrect: it doesn't provide the concrete target that is missing."
       ]
     },
     {
-      "pergunta": "No TDD com o Claude, qual é o fluxo?",
+      "pergunta": "In TDD with Claude, what is the workflow?",
       "opcoes": [
-        "Pedir a implementação primeiro e, depois, pedir testes que passem nela",
-        "Escrever a implementação e pedir ao Claude para revisar",
-        "Pedir ao Claude que descreva os testes que faria",
-        "Testes que falham → compartilhar as falhas → iterar até passarem"
+        "Ask for the implementation first, then ask for tests that pass against it",
+        "Write the implementation and ask Claude to review it",
+        "Ask Claude to describe the tests it would write",
+        "Failing tests → share the failures → iterate until they pass"
       ],
       "correta": 3,
-      "explicacao": "Testes falhando definem o alvo verificável; o Claude itera até passarem.",
+      "explicacao": "Failing tests define the verifiable target; Claude iterates until they pass.",
       "feedbacks": [
-        "Errado: testes escritos depois tendem a validar o que já existe, inclusive bugs.",
-        "Errado: isso é revisão, não TDD.",
-        "Errado: descrever não é executar.",
-        "Correto."
+        "Incorrect: tests written afterward tend to validate what already exists, bugs included.",
+        "Incorrect: that's review, not TDD.",
+        "Incorrect: describing isn't executing.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "A especificação de uma feature tem várias decisões de negócio em aberto. Qual técnica usar antes de implementar?",
+      "pergunta": "A feature's specification has several open business decisions. Which technique should you use before implementing?",
       "opcoes": [
-        "Implementar direto e corrigir depois",
-        "Entrevista: o Claude pergunta antes de implementar",
-        "Dividir em 10 mensagens independentes",
-        "Usar few-shot com features parecidas de outro projeto da empresa"
+        "Implement right away and fix it later",
+        "Interview: Claude asks questions before implementing",
+        "Split it into 10 independent messages",
+        "Use few-shot with similar features from another company project"
       ],
       "correta": 1,
-      "explicacao": "A entrevista expõe premissas ocultas cedo, antes de o código seguir na direção errada.",
+      "explicacao": "The interview surfaces hidden assumptions early, before the code heads in the wrong direction.",
       "feedbacks": [
-        "Errado: descobre as premissas erradas tarde demais.",
-        "Correto.",
-        "Errado: não resolve as decisões em aberto.",
-        "Errado: exemplos de outro contexto não respondem às decisões deste."
+        "Incorrect: it uncovers the wrong assumptions too late.",
+        "Correct.",
+        "Incorrect: it doesn't resolve the open decisions.",
+        "Incorrect: examples from another context don't answer this project's decisions."
       ]
     },
     {
-      "pergunta": "Você tem dois bugs na mesma função de cálculo de frete. Como pedir a correção ao Claude?",
+      "pergunta": "You have two bugs in the same shipping-cost calculation function. How should you ask Claude to fix them?",
       "opcoes": [
-        "Os dois numa mesma mensagem, porque interagem",
-        "Um por vez, em sessões diferentes",
-        "Só o mais grave; o outro depois de uma semana",
-        "Junto com todos os outros bugs abertos do projeto"
+        "Both in the same message, because they interact",
+        "One at a time, in different sessions",
+        "Only the more severe one; the other a week later",
+        "Together with all the other open bugs in the project"
       ],
       "correta": 0,
-      "explicacao": "Problemas relacionados vão juntos para o Claude ver a interação e não corrigir um quebrando o outro.",
+      "explicacao": "Related problems go together so Claude sees the interaction and doesn't fix one by breaking the other.",
       "feedbacks": [
-        "Correto.",
-        "Errado: separar problemas que interagem causa correções que se atropelam.",
-        "Errado: não há motivo para adiar; eles se afetam.",
-        "Errado: misturar problemas independentes gera mudança gigante e difícil de revisar."
+        "Correct.",
+        "Incorrect: splitting up problems that interact leads to fixes that trip over each other.",
+        "Incorrect: there's no reason to postpone; they affect each other.",
+        "Incorrect: mixing in independent problems produces a huge change that's hard to review."
       ]
     },
     {
-      "pergunta": "Qual instrução tende a funcionar melhor nos modelos recentes?",
+      "pergunta": "Which instruction tends to work best on recent models?",
       "opcoes": [
-        "'É EXTREMAMENTE IMPORTANTE QUE VOCÊ NUNCA ESQUEÇA O CAMPO ID!!!'",
-        "'Faça o melhor possível.'",
-        "'Inclua sempre o campo id: ele concilia com o ERP.'",
-        "'Use seu bom senso sobre os campos.'"
+        "'IT IS EXTREMELY IMPORTANT THAT YOU NEVER FORGET THE ID FIELD!!!'",
+        "'Do the best you can.'",
+        "'Always include the id field: it reconciles with the ERP.'",
+        "'Use your good judgment about the fields.'"
       ],
       "correta": 2,
-      "explicacao": "Instrução direta e com o porquê funciona melhor que ênfase; modelos novos seguem instruções com precisão.",
+      "explicacao": "A direct instruction that states the why works better than emphasis; newer models follow instructions precisely.",
       "feedbacks": [
-        "Errado: ênfase exagerada pode gerar excesso de zelo e não acrescenta informação.",
-        "Errado: vago.",
-        "Correto: clara e com motivo.",
-        "Errado: vago, gera inconsistência."
+        "Incorrect: exaggerated emphasis can cause overzealousness and adds no information.",
+        "Incorrect: vague.",
+        "Correct: clear and with a reason.",
+        "Incorrect: vague; it causes inconsistency."
       ]
     },
     {
-      "pergunta": "Um classificador de tickets varia o rótulo para casos parecidos. Quais DUAS ações são o primeiro passo adequado? (Escolha DUAS.)",
+      "pergunta": "A ticket classifier assigns different labels to similar cases. Which TWO actions are the appropriate first step? (Choose TWO.)",
       "opcoes": [
-        "Adicionar um segundo modelo que vota contra o primeiro",
-        "Definir para cada categoria o que conta, o que não conta e casos de fronteira",
-        "Pedir ao modelo uma nota de confiança e descartar as baixas",
-        "Adicionar 2–4 exemplos variados com raciocínio cobrindo os casos ambíguos",
-        "Fixar temperature em 0"
+        "Add a second model that votes against the first",
+        "Define, for each category, what counts, what doesn't count, and boundary cases",
+        "Ask the model for a confidence score and discard the low ones",
+        "Add 2–4 varied examples with reasoning covering the ambiguous cases",
+        "Set temperature to 0"
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "Critério explícito + few-shot são os degraus mais simples que atacam a causa (critério vago).",
+      "explicacao": "Explicit criteria + few-shot are the simplest rungs, and they attack the cause (a vague criterion).",
       "feedbacks": [
-        "Errado: degrau 4, sem antes definir o critério.",
-        "Correto.",
-        "Errado: confiança autodeclarada é mal calibrada.",
-        "Correto.",
-        "Errado: sampling é rejeitado nos modelos novos e não define critério."
+        "Incorrect: rung 4, without first defining the criterion.",
+        "Correct.",
+        "Incorrect: self-reported confidence is poorly calibrated.",
+        "Correct.",
+        "Incorrect: sampling is rejected on newer models and doesn't define a criterion."
       ]
     }
   ]

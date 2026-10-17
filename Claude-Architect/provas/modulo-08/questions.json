@@ -1,351 +1,360 @@
 {
-  "titulo": "Módulo 08 — Configurando o Claude Code (prova)",
+  "titulo": "Module 08 — Configuring Claude Code (exam)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Na fintech Lumen, a dev sênior Carla configurou o Claude Code para sempre usar `FluentValidation` nos DTOs, e funciona bem para ela. Um dev recém-contratado clonou o mesmo repositório e o Claude gera validação manual com `if`. A instrução de Carla está em `~/.claude/CLAUDE.md`. Qual a correção mais adequada?",
+      "pergunta": "At the fintech Lumen, senior developer Carla configured Claude Code to always use `FluentValidation` in DTOs, and it works well for her. A newly hired developer cloned the same repository, and Claude generates manual validation with `if` statements. Carla's instruction is in `~/.claude/CLAUDE.md`. What is the most appropriate fix?",
       "opcoes": [
-        "Pedir ao dev novo que copie o `~/.claude/CLAUDE.md` de Carla para a máquina dele",
-        "Criar um hook `PostToolUse` que reescreve validações manuais para FluentValidation",
-        "Mover a instrução para o `CLAUDE.md` do projeto, versionado no repositório",
-        "Colocar a instrução no `CLAUDE.local.md` do repositório"
+        "Ask the new developer to copy Carla's `~/.claude/CLAUDE.md` to their machine",
+        "Create a `PostToolUse` hook that rewrites manual validations to FluentValidation",
+        "Move the instruction to the project's `CLAUDE.md`, versioned in the repository",
+        "Put the instruction in the repository's `CLAUDE.local.md`"
       ],
       "correta": 2,
-      "explicacao": "A instrução é uma convenção do time, mas estava no nível do usuário (pessoal). O lugar é o CLAUDE.md do projeto, compartilhado via git.",
+      "explicacao": "The instruction is a team convention, but it was at the user level (personal). The right place is the project's CLAUDE.md, shared via git.",
       "feedbacks": [
-        "Resolve para uma pessoa, à mão, e quebra de novo no próximo contratado; a convenção continua fora do repositório.",
-        "Solução desproporcional: reescrever código via hook é complexo e frágil para algo que é orientação de estilo.",
-        "Correto: convenção do time vai no nível do projeto, versionado.",
-        "O CLAUDE.local.md é pessoal e gitignored; o time continuaria sem receber."
+        "Solves it for one person, by hand, and breaks again with the next hire; the convention remains outside the repository.",
+        "A disproportionate solution: rewriting code via a hook is complex and fragile for something that is style guidance.",
+        "Correct: a team convention goes at the project level, versioned.",
+        "CLAUDE.local.md is personal and gitignored; the team still wouldn't receive it."
       ]
     },
     {
-      "pergunta": "Rafael trabalha no repositório do time e quer que o Claude Code use a URL do seu ambiente de sandbox pessoal (`https://rafael-sbx.interno`) e uma massa de testes que só ele usa. Os colegas não devem ver essas informações. Onde ele deve registrar isso?",
+      "pergunta": "Rafael works in the team's repository and wants Claude Code to use the URL of his personal sandbox environment (`https://rafael-sbx.internal`) and a test dataset that only he uses. His colleagues should not see this information. Where should he record it?",
       "opcoes": [
-        "Em `CLAUDE.local.md` na raiz do projeto, mantido fora do git",
-        "No `CLAUDE.md` do projeto, numa seção \"Preferências do Rafael\"",
-        "Em `.claude/settings.json`, na chave `env`",
-        "Num `CLAUDE.md` dentro de `src/`, que só carrega sob demanda"
+        "In `CLAUDE.local.md` at the project root, kept out of git",
+        "In the project's `CLAUDE.md`, in a \"Rafael's Preferences\" section",
+        "In `.claude/settings.json`, under the `env` key",
+        "In a `CLAUDE.md` inside `src/`, which only loads on demand"
       ],
       "correta": 0,
-      "explicacao": "Preferência pessoal específica deste projeto → CLAUDE.local.md (gitignored).",
+      "explicacao": "A personal preference specific to this project → CLAUDE.local.md (gitignored).",
       "feedbacks": [
-        "Correto: é pessoal e restrito a este projeto.",
-        "Versionaria dados pessoais para todo o time e poluiria o contexto de todos.",
-        "O `.claude/settings.json` é compartilhado (versionado); continuaria indo para todos.",
-        "CLAUDE.md de subdiretório também é versionado; carregar sob demanda não o torna privado."
+        "Correct: it is personal and restricted to this project.",
+        "Would version personal data for the whole team and pollute everyone's context.",
+        "`.claude/settings.json` is shared (versioned); it would still go to everyone.",
+        "A subdirectory CLAUDE.md is also versioned; loading on demand doesn't make it private."
       ]
     },
     {
-      "pergunta": "Uma empresa de logística tem uma solução .NET com 38 projetos, e os testes ficam ao lado do código (`*Tests.cs`) em cada projeto. O time quer que as convenções de teste (xUnit, AAA, sem `Thread.Sleep`) sejam aplicadas sempre que o Claude mexe em testes, sem pesar no contexto quando ele está editando código de produção. Qual a melhor configuração?",
+      "pergunta": "A logistics company has a .NET solution with 38 projects, and the tests live next to the code (`*Tests.cs`) in each project. The team wants the testing conventions (xUnit, AAA, no `Thread.Sleep`) to be applied whenever Claude touches tests, without weighing on the context when it is editing production code. What is the best configuration?",
       "opcoes": [
-        "Um `CLAUDE.md` com as convenções em cada um dos 38 projetos",
-        "Uma seção \"Testes\" no `CLAUDE.md` da raiz",
-        "Uma skill `/convencoes-teste` que o dev invoca quando lembrar",
-        "Um arquivo `.claude/rules/testes.md` com `paths: [\"**/*Tests.cs\"]`"
+        "A `CLAUDE.md` with the conventions in each of the 38 projects",
+        "A \"Tests\" section in the root `CLAUDE.md`",
+        "A `/test-conventions` skill that developers invoke when they remember to",
+        "A `.claude/rules/tests.md` file with `paths: [\"**/*Tests.cs\"]`"
       ],
       "correta": 3,
-      "explicacao": "Convenção que atravessa diretórios → rule com `paths` glob: carrega só ao tocar arquivos que casam e cobre projetos futuros.",
+      "explicacao": "A convention that cuts across directories → a rule with a `paths` glob: it loads only when touching matching files and covers future projects.",
       "feedbacks": [
-        "Duplicação em 38 lugares, risco de divergência, e projeto novo nasce sem a regra.",
-        "Funciona, mas carrega sempre, inclusive quando o Claude está em código de produção: é o custo de contexto que se queria evitar.",
-        "Depende de lembrar de invocar; convenção que deve valer sempre não é skill.",
-        "Correto: escopo por caminho, um arquivo só, cobre pastas futuras."
+        "Duplication in 38 places, risk of divergence, and a new project starts without the rule.",
+        "Works, but it always loads, including when Claude is in production code: that is the context cost you wanted to avoid.",
+        "Depends on remembering to invoke it; a convention that must always apply is not a skill.",
+        "Correct: path-based scope, a single file, covers future folders."
       ]
     },
     {
-      "pergunta": "O `CLAUDE.md` raiz de um SaaS cresceu para 1.800 linhas, misturando regras de React, de ASP.NET Core e de Terraform. O time relata que o Claude ignora regras com frequência e que as sessões começam com o contexto já pesado. Qual a melhor ação?",
+      "pergunta": "The root `CLAUDE.md` of a SaaS product has grown to 1,800 lines, mixing React, ASP.NET Core, and Terraform rules. The team reports that Claude frequently ignores rules and that sessions start with an already heavy context. What is the best action?",
       "opcoes": [
-        "Repetir as regras mais importantes em MAIÚSCULAS no topo do arquivo",
-        "Enxugar o CLAUDE.md raiz e mover as regras de cada área para rules com `paths` (ou CLAUDE.md nos subdiretórios correspondentes)",
-        "Quebrar o arquivo em três e importá-los com `@frontend.md`, `@backend.md` e `@infra.md`",
-        "Configurar `claudeMdExcludes` para excluir o CLAUDE.md raiz"
+        "Repeat the most important rules in CAPITAL LETTERS at the top of the file",
+        "Slim down the root CLAUDE.md and move each area's rules to rules with `paths` (or CLAUDE.md files in the corresponding subdirectories)",
+        "Split the file into three and import them with `@frontend.md`, `@backend.md`, and `@infra.md`",
+        "Configure `claudeMdExcludes` to exclude the root CLAUDE.md"
       ],
       "correta": 1,
-      "explicacao": "Arquivo grande demais dilui a atenção e custa contexto. Instruções que valem só para parte do código devem carregar sob demanda (rules com paths ou CLAUDE.md de subdiretório).",
+      "explicacao": "An overly large file dilutes attention and costs context. Instructions that apply only to part of the code should load on demand (rules with paths or a subdirectory CLAUDE.md).",
       "feedbacks": [
-        "Ataca o sintoma; o arquivo continua enorme e o contexto continua pesado.",
-        "Correto: menos coisa sempre carregada e o específico carregado quando relevante.",
-        "Tentador, mas imports carregam no início junto com o CLAUDE.md: organiza o texto, não reduz o contexto.",
-        "Excluiria as regras gerais do time; claudeMdExcludes serve para pular CLAUDE.md de outros times num monorepo."
+        "Attacks the symptom; the file remains huge and the context remains heavy.",
+        "Correct: less content always loaded, and the specific content loaded when relevant.",
+        "Tempting, but imports load at startup along with CLAUDE.md: it organizes the text, it doesn't reduce the context.",
+        "Would exclude the team's general rules; claudeMdExcludes is for skipping other teams' CLAUDE.md files in a monorepo."
       ]
     },
     {
-      "pergunta": "Um time quer um relatório diário das issues abertas, gerado às 7h, mesmo com todos os notebooks desligados, e disparável também por evento do GitHub. Os dados vêm só da API pública do GitHub. Qual opção de agendamento combina com esses requisitos?",
+      "pergunta": "A team wants a daily report of open issues, generated at 7 a.m. even with all laptops turned off, and also triggerable by a GitHub event. The data comes only from the public GitHub API. Which scheduling option matches these requirements?",
       "opcoes": [
-        "Uma tarefa agendada no app desktop de um dev",
-        "Um `/loop` numa sessão deixada aberta no notebook de alguém",
-        "Uma routine na nuvem",
-        "Um hook `SessionStart` que gera o relatório quando alguém abre o Claude Code"
+        "A scheduled task in a developer's desktop app",
+        "A `/loop` in a session left open on someone's laptop",
+        "A cloud routine",
+        "A `SessionStart` hook that generates the report when someone opens Claude Code"
       ],
       "correta": 2,
-      "explicacao": "Precisa rodar com as máquinas desligadas e pode ser disparada por evento do GitHub, então é routine na nuvem. Tarefa local faz sentido quando é preciso acessar arquivos ou rede privada.",
+      "explicacao": "It needs to run with the machines turned off and can be triggered by a GitHub event, so it's a cloud routine. A local task makes sense when you need access to files or a private network.",
       "feedbacks": [
-        "Roda na máquina do dev: se ela estiver desligada, não roda.",
-        "O `/loop` vive dentro de uma sessão aberta; morre com ela.",
-        "Correto.",
-        "Só roda quando alguém abre uma sessão; não é agendamento."
+        "Runs on the developer's machine: if it's turned off, it doesn't run.",
+        "`/loop` lives inside an open session; it dies with it.",
+        "Correct.",
+        "Only runs when someone opens a session; it isn't scheduling."
       ]
     },
     {
-      "pergunta": "No repositório de uma healthtech, o arquivo `.env` contém credenciais de banco de produção. O CLAUDE.md já diz \"nunca leia o .env\", mas numa sessão de depuração o Claude abriu o arquivo. Qual a correção adequada?",
+      "pergunta": "In a healthtech company's repository, the `.env` file contains production database credentials. CLAUDE.md already says \"never read the .env\", but in a debugging session Claude opened the file. What is the appropriate fix?",
       "opcoes": [
-        "Adicionar `\"deny\": [\"Read(./.env)\"]` em `permissions` no `.claude/settings.json` do projeto",
-        "Reescrever a instrução do CLAUDE.md com mais ênfase e um exemplo",
-        "Mover a instrução para uma rule em `.claude/rules/` sem `paths`",
-        "Pedir aos devs que usem plan mode em sessões de depuração"
+        "Add `\"deny\": [\"Read(./.env)\"]` to `permissions` in the project's `.claude/settings.json`",
+        "Rewrite the CLAUDE.md instruction with more emphasis and an example",
+        "Move the instruction to a rule in `.claude/rules/` without `paths`",
+        "Ask developers to use plan mode in debugging sessions"
       ],
       "correta": 0,
-      "explicacao": "Regra crítica de segurança precisa de enforcement determinístico: um deny de permissão impede a leitura, coisa que o CLAUDE.md (probabilístico) não garante.",
+      "explicacao": "A critical security rule needs deterministic enforcement: a permission deny prevents the read, something CLAUDE.md (probabilistic) doesn't guarantee.",
       "feedbacks": [
-        "Correto: bloqueio determinístico, versionado para o time.",
-        "Continua sendo prompt: reduz a chance, não elimina. Anti-padrão de regra crítica só em prompt.",
-        "Rule também é texto no contexto; mesma natureza probabilística do CLAUDE.md.",
-        "Plan mode permite leituras; não impede ler o .env."
+        "Correct: a deterministic block, versioned for the team.",
+        "It's still a prompt: it reduces the chance, it doesn't eliminate it. The anti-pattern of a critical rule only in the prompt.",
+        "A rule is also text in the context; same probabilistic nature as CLAUDE.md.",
+        "Plan mode allows reads; it doesn't prevent reading the .env."
       ]
     },
     {
-      "pergunta": "Um time .NET quer que, para todos os devs do repositório, `dotnet test` rode sem prompt de permissão e que `git push --force` seja sempre bloqueado. Quais configurações atendem? (Escolha DUAS.)",
+      "pergunta": "A .NET team wants, for all developers in the repository, `dotnet test` to run without a permission prompt and `git push --force` to always be blocked. Which configurations achieve this? (Choose TWO.)",
       "opcoes": [
-        "Escrever no CLAUDE.md: \"pode rodar testes à vontade e nunca use push --force\"",
-        "Adicionar `\"allow\": [\"Bash(dotnet test *)\"]` em `.claude/settings.json`",
-        "Adicionar as duas regras no `.claude/settings.local.json` de quem configurar",
-        "Iniciar todas as sessões com `--permission-mode bypassPermissions`",
-        "Adicionar `\"deny\": [\"Bash(git push --force *)\"]` em `.claude/settings.json`"
+        "Write in CLAUDE.md: \"feel free to run tests and never use push --force\"",
+        "Add `\"allow\": [\"Bash(dotnet test *)\"]` to `.claude/settings.json`",
+        "Add both rules to the `.claude/settings.local.json` of whoever sets it up",
+        "Start all sessions with `--permission-mode bypassPermissions`",
+        "Add `\"deny\": [\"Bash(git push --force *)\"]` to `.claude/settings.json`"
       ],
-      "corretas": [1, 4],
-      "explicacao": "Allow por prefixo e deny no settings compartilhado do projeto: determinístico e versionado para todos.",
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "A prefix allow and a deny in the project's shared settings: deterministic and versioned for everyone.",
       "feedbacks": [
-        "Texto não libera permissão nem bloqueia comando; é probabilístico.",
-        "Correto: prefixo libera `dotnet test` com quaisquer argumentos.",
-        "O settings.local.json é pessoal e gitignored; o time não recebe.",
-        "Desliga todas as checagens: muito além do pedido e inseguro na máquina do dev.",
-        "Correto: deny é avaliado primeiro e nenhum allow abre exceção."
+        "Text doesn't grant permissions or block commands; it's probabilistic.",
+        "Correct: the prefix allows `dotnet test` with any arguments.",
+        "settings.local.json is personal and gitignored; the team doesn't receive it.",
+        "Turns off all checks: far beyond what was asked and unsafe on the developer's machine.",
+        "Correct: deny is evaluated first and no allow creates an exception."
       ]
     },
     {
-      "pergunta": "O time de segurança de uma seguradora precisa garantir que nenhum dev da empresa use `WebFetch` no Claude Code, em qualquer repositório, sem possibilidade de um projeto ou usuário reverter isso. Onde configurar?",
+      "pergunta": "An insurance company's security team needs to ensure that no developer at the company uses `WebFetch` in Claude Code, in any repository, with no possibility of a project or user reverting this. Where should this be configured?",
       "opcoes": [
-        "No `.claude/settings.json` de cada repositório da empresa",
-        "No `~/.claude/settings.json` de cada dev, via script de onboarding",
-        "Num CLAUDE.md managed com a instrução \"não use WebFetch\"",
-        "Em managed settings, com `permissions.deny` para `WebFetch`"
+        "In the `.claude/settings.json` of each company repository",
+        "In each developer's `~/.claude/settings.json`, via an onboarding script",
+        "In a managed CLAUDE.md with the instruction \"don't use WebFetch\"",
+        "In managed settings, with `permissions.deny` for `WebFetch`"
       ],
       "correta": 3,
-      "explicacao": "Política da organização que ninguém pode sobrescrever → managed settings (topo da precedência), com deny para a tool.",
+      "explicacao": "An organization policy that no one can override → managed settings (top of the precedence order), with a deny for the tool.",
       "feedbacks": [
-        "Precisa estar em cada repo, e repositório novo nasce sem; além disso não cobre uso fora desses repos.",
-        "O dev pode editar o próprio arquivo; não é imposição.",
-        "CLAUDE.md managed é orientação comportamental; bloquear tool é papel do settings (deny).",
-        "Correto: managed vence tudo e deny é determinístico."
+        "It has to be in every repo, and a new repository starts without it; plus, it doesn't cover use outside those repos.",
+        "The developer can edit their own file; it isn't enforced.",
+        "A managed CLAUDE.md is behavioral guidance; blocking a tool is the job of settings (deny).",
+        "Correct: managed overrides everything and deny is deterministic."
       ]
     },
     {
-      "pergunta": "Na Planetário Software, a skill `.claude/skills/migration/SKILL.md` tem `description: \"Utilitário de banco\"`. Quando os devs pedem \"crie uma migration para a tabela de pedidos\", o Claude escreve a migration à mão em vez de usar a skill. Invocando `/migration` manualmente, funciona. Qual o ajuste mais simples?",
+      "pergunta": "At Planetário Software, the skill `.claude/skills/migration/SKILL.md` has `description: \"Database utility\"`. When developers ask \"create a migration for the orders table\", Claude writes the migration by hand instead of using the skill. Invoking `/migration` manually works. What is the simplest adjustment?",
       "opcoes": [
-        "Adicionar `disable-model-invocation: true` para forçar o uso",
-        "Reescrever a `description` dizendo o que a skill faz e quando usar (ex.: \"Cria migrations EF Core... Use quando pedirem migration, alteração de schema ou nova tabela\")",
-        "Converter a skill em `.claude/commands/migration.md`",
-        "Adicionar `context: fork` para a skill rodar num subagent"
+        "Add `disable-model-invocation: true` to force its use",
+        "Rewrite the `description` saying what the skill does and when to use it (e.g., \"Creates EF Core migrations... Use when asked for a migration, a schema change, or a new table\")",
+        "Convert the skill into `.claude/commands/migration.md`",
+        "Add `context: fork` so the skill runs in a subagent"
       ],
       "correta": 1,
-      "explicacao": "A `description` é o critério de auto-carregamento. Vaga demais, o Claude não percebe que ela se aplica.",
+      "explicacao": "The `description` is the auto-loading criterion. If it's too vague, Claude doesn't realize the skill applies.",
       "feedbacks": [
-        "Faz o contrário: impede o Claude de invocar sozinho.",
-        "Correto: a descrição é o gatilho da escolha.",
-        "Comandos e skills foram fundidos; trocar o formato não melhora o gatilho (e perde recursos da skill).",
-        "Muda onde a skill roda, não se ela é escolhida."
+        "Does the opposite: it prevents Claude from invoking it on its own.",
+        "Correct: the description is the trigger for the choice.",
+        "Commands and skills have been merged; changing the format doesn't improve the trigger (and loses skill features).",
+        "Changes where the skill runs, not whether it is chosen."
       ]
     },
     {
-      "pergunta": "Uma skill `/release` contém no corpo: \"Nesta execução, atualize a versão para 2.3.0 e gere o changelog.\" Na sessão seguinte de outro release, o dev editou o arquivo para 2.4.0 no meio da conversa, sem reinvocar a skill, e o Claude continuou usando 2.3.0. Qual o diagnóstico e a melhor correção?",
+      "pergunta": "A `/release` skill contains in its body: \"In this run, update the version to 2.3.0 and generate the changelog.\" In the following session, for another release, the developer edited the file to 2.4.0 in the middle of the conversation, without re-invoking the skill, and Claude kept using 2.3.0. What is the diagnosis and the best fix?",
       "opcoes": [
-        "O corpo da skill entra uma vez na conversa e não é relido; a skill deve ter instruções permanentes e receber a versão por argumento (`$0`/`$ARGUMENTS`)",
-        "O Claude Code mantém cache da skill por 24 horas; basta limpar o cache",
-        "A skill precisa de `context: fork` para ser relida a cada turno",
-        "A versão deveria ficar no CLAUDE.md, que é relido a cada turno"
+        "The skill body enters the conversation once and is not reread; the skill should have permanent instructions and receive the version as an argument (`$0`/`$ARGUMENTS`)",
+        "Claude Code caches the skill for 24 hours; just clear the cache",
+        "The skill needs `context: fork` to be reread every turn",
+        "The version should be in CLAUDE.md, which is reread every turn"
       ],
       "correta": 0,
-      "explicacao": "Depois de invocada, a skill fica na conversa como texto e o arquivo não é relido. Instruções permanentes + parâmetros por argumento evitam valores fixos obsoletos.",
+      "explicacao": "Once invoked, the skill stays in the conversation as text and the file is not reread. Permanent instructions + parameters passed as arguments avoid stale hardcoded values.",
       "feedbacks": [
-        "Correto.",
-        "Não existe cache de 24h; o motivo é que o corpo entra uma vez e permanece.",
-        "`context: fork` isola a execução num subagent; não faz releitura por turno.",
-        "Trocaria um valor fixo de lugar; o dado variável do release deve vir como argumento."
+        "Correct.",
+        "There is no 24-hour cache; the reason is that the body enters once and stays.",
+        "`context: fork` isolates execution in a subagent; it doesn't reread per turn.",
+        "Would just move a hardcoded value somewhere else; the release's variable data should come in as an argument."
       ]
     },
     {
-      "pergunta": "A skill `/mapear-dependencias` lê dezenas de arquivos para montar um mapa de dependências entre projetos. Depois de usá-la, a sessão principal fica lenta e o Claude passa a esquecer decisões tomadas antes. Qual ajuste mais direto?",
+      "pergunta": "The `/map-dependencies` skill reads dozens of files to build a dependency map between projects. After using it, the main session becomes slow and Claude starts forgetting decisions made earlier. What is the most direct adjustment?",
       "opcoes": [
-        "Adicionar `user-invocable: false`",
-        "Dividir a skill em cinco skills menores",
-        "Adicionar `context: fork` (com `agent: Explore`) para a skill rodar num subagent isolado e devolver só o mapa",
-        "Rodar `/compact` antes de cada uso da skill"
+        "Add `user-invocable: false`",
+        "Split the skill into five smaller skills",
+        "Add `context: fork` (with `agent: Explore`) so the skill runs in an isolated subagent and returns only the map",
+        "Run `/compact` before each use of the skill"
       ],
       "correta": 2,
-      "explicacao": "Tarefa ruidosa que só precisa devolver um resultado → rodar em contexto isolado. O ruído fica no subagent; o principal recebe só a conclusão.",
+      "explicacao": "A noisy task that only needs to return a result → run it in an isolated context. The noise stays in the subagent; the main session receives only the conclusion.",
       "feedbacks": [
-        "Só muda quem pode invocar; o ruído continua no contexto principal.",
-        "Continua lendo os mesmos arquivos no contexto principal, só que em pedaços.",
-        "Correto.",
-        "Paliativo: compacta depois do estrago e perde detalhes; não evita o ruído."
+        "Only changes who can invoke it; the noise remains in the main context.",
+        "Still reads the same files in the main context, just in pieces.",
+        "Correct.",
+        "A stopgap: it compacts after the damage is done and loses details; it doesn't prevent the noise."
       ]
     },
     {
-      "pergunta": "Uma empresa mantém 12 repositórios e quer distribuir o mesmo conjunto de skills de review, um subagent de segurança e hooks de auditoria para todos, com versão controlada e sem copiar arquivos repositório por repositório. Qual mecanismo?",
+      "pergunta": "A company maintains 12 repositories and wants to distribute the same set of review skills, a security subagent, and audit hooks to all of them, with version control and without copying files repository by repository. Which mechanism?",
       "opcoes": [
-        "Copiar `.claude/skills` e `.claude/agents` em cada repositório via script",
-        "Colocar tudo em `~/.claude/` de cada dev",
-        "Um CLAUDE.md managed descrevendo as skills",
-        "Empacotar como um plugin (skills + subagents + hooks) e instalar nos repositórios"
+        "Copy `.claude/skills` and `.claude/agents` into each repository via a script",
+        "Put everything in each developer's `~/.claude/`",
+        "A managed CLAUDE.md describing the skills",
+        "Package it as a plugin (skills + subagents + hooks) and install it in the repositories"
       ],
       "correta": 3,
-      "explicacao": "Plugin é o pacote distribuível de skills, subagents, hooks e MCP, com namespace: feito para compartilhar entre repositórios e times.",
+      "explicacao": "A plugin is the distributable package of skills, subagents, hooks, and MCP, with a namespace: built for sharing across repositories and teams.",
       "feedbacks": [
-        "Funciona, mas é a duplicação que se queria evitar; as cópias divergem.",
-        "Fica pessoal e manual; não há controle de versão para o time.",
-        "Descrever uma skill em texto não a cria nem a distribui.",
-        "Correto."
+        "Works, but it's the duplication you wanted to avoid; the copies diverge.",
+        "It stays personal and manual; there's no version control for the team.",
+        "Describing a skill in text neither creates nor distributes it.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Bruno usa o Claude Code no notebook e no desktop. No notebook, o Claude já \"sabe\" que o projeto usa `pnpm` (aprendeu numa correção anterior); no desktop, insiste em `npm`. Ninguém escreveu isso em CLAUDE.md. Qual explicação e correção?",
+      "pergunta": "Bruno uses Claude Code on his laptop and on his desktop. On the laptop, Claude already \"knows\" that the project uses `pnpm` (it learned this from an earlier correction); on the desktop, it insists on `npm`. No one wrote this in CLAUDE.md. What is the explanation and the fix?",
       "opcoes": [
-        "Bug de sincronização; basta fazer login de novo no desktop",
-        "A auto memory é local da máquina; registre a convenção como instrução no CLAUDE.md do projeto (é do time) para valer em qualquer máquina",
-        "O desktop usa outro motor do Claude Code; é preciso configurar a extensão",
-        "A auto memory carrega só 200 linhas; aumente o limite em settings"
+        "A sync bug; just log in again on the desktop",
+        "Auto memory is local to the machine; record the convention as an instruction in the project's CLAUDE.md (it belongs to the team) so it applies on any machine",
+        "The desktop uses a different Claude Code engine; you need to configure the extension",
+        "Auto memory only loads 200 lines; increase the limit in settings"
       ],
       "correta": 1,
-      "explicacao": "A auto memory (MEMORY.md) é escrita pelo Claude e fica na máquina; não é compartilhada. O que precisa valer em toda máquina e para o time vai no CLAUDE.md versionado.",
+      "explicacao": "Auto memory (MEMORY.md) is written by Claude and stays on the machine; it isn't shared. Whatever needs to apply on every machine and for the team goes in the versioned CLAUDE.md.",
       "feedbacks": [
-        "Não é bug: a auto memory não sincroniza entre máquinas por desenho.",
-        "Correto.",
-        "É o mesmo motor em todas as superfícies.",
-        "O limite não é o problema: a memória simplesmente não existe na outra máquina."
+        "It isn't a bug: auto memory doesn't sync across machines, by design.",
+        "Correct.",
+        "It's the same engine on all surfaces.",
+        "The limit isn't the problem: the memory simply doesn't exist on the other machine."
       ]
     },
     {
-      "pergunta": "No time de pagamentos, a tarefa é \"substituir a autenticação por API key por OAuth 2.0 nos três serviços, mantendo compatibilidade por um período\". Não está decidido se haverá um gateway ou se cada serviço valida tokens. Como o dev deve conduzir no Claude Code?",
+      "pergunta": "On the payments team, the task is to \"replace API key authentication with OAuth 2.0 in the three services, maintaining backward compatibility for a period\". It hasn't been decided whether there will be a gateway or whether each service will validate tokens. How should the developer proceed in Claude Code?",
       "opcoes": [
-        "Usar plan mode: explorar os serviços, propor a abordagem e só editar depois de aprovar o plano",
-        "Pedir execução direta e revisar o diff ao final",
-        "Usar `bypassPermissions` para a tarefa longa andar sem interrupções",
-        "Abrir três sessões diretas, uma por serviço, em paralelo"
+        "Use plan mode: explore the services, propose the approach, and only edit after the plan is approved",
+        "Ask for direct execution and review the diff at the end",
+        "Use `bypassPermissions` so the long task runs without interruptions",
+        "Open three direct sessions, one per service, in parallel"
       ],
       "correta": 0,
-      "explicacao": "Mudança multi-serviço, arquitetural e com abordagem indefinida é o caso típico de plan mode.",
+      "explicacao": "A multi-service, architectural change with an undefined approach is the classic case for plan mode.",
       "feedbacks": [
-        "Correto.",
-        "Descobrir a decisão arquitetural no meio da edição gera retrabalho caro.",
-        "Bypass não resolve a incerteza da abordagem e é inseguro fora de ambiente isolado.",
-        "Paraleliza antes de decidir a arquitetura comum; os serviços podem divergir."
+        "Correct.",
+        "Discovering the architectural decision in the middle of editing leads to costly rework.",
+        "Bypass doesn't resolve the uncertainty about the approach and is unsafe outside an isolated environment.",
+        "Parallelizes before deciding on the common architecture; the services may diverge."
       ]
     },
     {
-      "pergunta": "Em quais situações o plan mode é a escolha recomendada? (Escolha DUAS.)",
+      "pergunta": "In which situations is plan mode the recommended choice? (Choose TWO.)",
       "opcoes": [
-        "Migrar de `Newtonsoft.Json` para `System.Text.Json` em mais de 50 arquivos, com conversores customizados",
-        "Corrigir o `NullReferenceException` apontado pelo stack trace na linha 88 de `PedidoService.cs`",
-        "Alterar o valor da constante `MaxRetries` de 3 para 5",
-        "Requisito vago: \"melhorar a performance do módulo de relatórios\", sem gargalo identificado",
-        "Adicionar um `using` faltante que impede a compilação"
+        "Migrating from `Newtonsoft.Json` to `System.Text.Json` across more than 50 files, with custom converters",
+        "Fixing the `NullReferenceException` pointed to by the stack trace at line 88 of `OrderService.cs`",
+        "Changing the value of the `MaxRetries` constant from 3 to 5",
+        "A vague requirement: \"improve the performance of the reports module\", with no identified bottleneck",
+        "Adding a missing `using` that prevents compilation"
       ],
-      "corretas": [0, 3],
-      "explicacao": "Plan mode vale para escopo grande/multi-arquivo e para requisito ambíguo. Fixes pontuais e claros vão direto.",
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Plan mode is worthwhile for large/multi-file scope and for ambiguous requirements. Targeted, clear fixes go straight to execution.",
       "feedbacks": [
-        "Correto: multi-arquivo com decisões (conversores) envolvidas.",
-        "Pontual, com localização exata: execução direta.",
-        "Trivial: execução direta.",
-        "Correto: requisito confuso pede exploração e proposta antes de editar.",
-        "Trivial e óbvio: execução direta."
+        "Correct: multi-file, with decisions (converters) involved.",
+        "Targeted, with an exact location: direct execution.",
+        "Trivial: direct execution.",
+        "Correct: a confusing requirement calls for exploration and a proposal before editing.",
+        "Trivial and obvious: direct execution."
       ]
     },
     {
-      "pergunta": "O tech lead quer que qualquer dev do repositório possa delegar a um \"revisor de segurança\" padronizado, que analisa controllers e código de autenticação e só reporta achados, sem alterar arquivos. Qual a configuração mais adequada?",
+      "pergunta": "The tech lead wants any developer in the repository to be able to delegate to a standardized \"security reviewer\" that analyzes controllers and authentication code and only reports findings, without modifying files. What is the most appropriate configuration?",
       "opcoes": [
-        "Uma seção no CLAUDE.md: \"ao revisar segurança, não edite arquivos\"",
-        "Usar o subagent nativo general-purpose com um prompt detalhado a cada vez",
-        "Criar `.claude/agents/revisor-seguranca.md` com `description` clara e `tools: Read, Grep, Glob`",
-        "Criar o subagent em `~/.claude/agents/` do tech lead"
+        "A section in CLAUDE.md: \"when reviewing security, don't edit files\"",
+        "Use the built-in general-purpose subagent with a detailed prompt each time",
+        "Create `.claude/agents/security-reviewer.md` with a clear `description` and `tools: Read, Grep, Glob`",
+        "Create the subagent in the tech lead's `~/.claude/agents/`"
       ],
       "correta": 2,
-      "explicacao": "Subagent customizado no nível do projeto (versionado), com tools restritas (menor privilégio) e descrição que orienta a delegação.",
+      "explicacao": "A custom subagent at the project level (versioned), with restricted tools (least privilege) and a description that guides delegation.",
       "feedbacks": [
-        "Texto não restringe tools; o revisor ainda poderia editar.",
-        "Funciona pontualmente, mas não é padronizado e o general-purpose tem acesso a todas as tools.",
-        "Correto.",
-        "Fica pessoal do tech lead; o time não recebe."
+        "Text doesn't restrict tools; the reviewer could still edit.",
+        "Works on a one-off basis, but it isn't standardized and general-purpose has access to all tools.",
+        "Correct.",
+        "It stays personal to the tech lead; the team doesn't receive it."
       ]
     },
     {
-      "pergunta": "Um dev criou `.claude/agents/gerador-docs.md` com `permissionMode: bypassPermissions`, esperando que o subagent escreva arquivos de documentação sem prompts. A sessão principal roda em `default` e os prompts continuam aparecendo. Por quê?",
+      "pergunta": "A developer created `.claude/agents/docs-generator.md` with `permissionMode: bypassPermissions`, expecting the subagent to write documentation files without prompts. The main session runs in `default` and the prompts keep appearing. Why?",
       "opcoes": [
-        "O campo correto é `permission-mode`, com hífen",
-        "Subagents nunca podem escrever arquivos",
-        "É preciso reiniciar o Claude Code para o frontmatter valer",
-        "Um subagent não pode escalar além do modo da conversa principal; a forma certa é liberar as escritas com regras `allow` (ou usar `acceptEdits` na sessão)"
+        "The correct field is `permission-mode`, with a hyphen",
+        "Subagents can never write files",
+        "Claude Code must be restarted for the frontmatter to take effect",
+        "A subagent cannot escalate beyond the main conversation's mode; the right way is to allow the writes with `allow` rules (or use `acceptEdits` in the session)"
       ],
       "correta": 3,
-      "explicacao": "A permissão do pai desce: um subagent configurado com bypass não ganha bypass numa sessão default. Libere o necessário com regras allow específicas.",
+      "explicacao": "The parent's permissions flow down: a subagent configured with bypass doesn't get bypass in a default session. Allow what's needed with specific allow rules.",
       "feedbacks": [
-        "O nome do campo é `permissionMode`; o problema não é de sintaxe.",
-        "Subagents como general-purpose ou customizados com Write podem escrever; Explore/Plan é que são só leitura.",
-        "Reiniciar não muda a regra de não escalar privilégio.",
-        "Correto."
+        "The field name is `permissionMode`; the problem isn't syntax.",
+        "Subagents such as general-purpose, or custom ones with Write, can write; it's Explore/Plan that are read-only.",
+        "Restarting doesn't change the rule against privilege escalation.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Num repositório de 2.000 arquivos, um dev pergunta ao Claude Code: \"como funciona o fluxo de estorno de pagamento?\" Qual abordagem de exploração segue a prática recomendada?",
+      "pergunta": "In a 2,000-file repository, a developer asks Claude Code: \"how does the payment refund flow work?\" Which exploration approach follows recommended practice?",
       "opcoes": [
-        "Ler todos os arquivos `.cs` primeiro para ter o contexto completo",
-        "Grep por pontos de entrada (ex.: `Estorno`, rota do controller), ler o que importa e seguir as dependências com novos Greps; ou delegar a exploração ao subagent Explore",
-        "Glob por `**/*.cs` e ler os 50 primeiros resultados",
-        "Pedir ao dev que cole os arquivos relevantes na conversa"
+        "Read all the `.cs` files first to have the complete context",
+        "Grep for entry points (e.g., `Refund`, the controller route), read what matters, and follow the dependencies with new Greps; or delegate the exploration to the Explore subagent",
+        "Glob for `**/*.cs` and read the first 50 results",
+        "Ask the developer to paste the relevant files into the conversation"
       ],
       "correta": 1,
-      "explicacao": "Exploração incremental: Grep → Read → Grep → Read. Para volume grande, Explore devolve só a conclusão.",
+      "explicacao": "Incremental exploration: Grep → Read → Grep → Read. For a large volume, Explore returns only the conclusion.",
       "feedbacks": [
-        "Anti-padrão clássico: ler tudo de antemão gasta a janela e degrada a qualidade.",
-        "Correto.",
-        "Glob não olha conteúdo; os 50 primeiros por nome podem não ter nada a ver com estorno.",
-        "Transfere ao humano um trabalho que as tools nativas fazem melhor."
+        "A classic anti-pattern: reading everything up front uses up the window and degrades quality.",
+        "Correct.",
+        "Glob doesn't look at content; the first 50 by name may have nothing to do with refunds.",
+        "Shifts to the human work that the built-in tools do better."
       ]
     },
     {
-      "pergunta": "O Claude tentou `Edit` em `appsettings.json` trocando `\"Enabled\": false` por `\"Enabled\": true`, mas a chamada falhou: o trecho aparece em quatro seções diferentes. Só a seção `Cache` deve mudar. Quais ações são adequadas? (Escolha DUAS.)",
+      "pergunta": "Claude attempted an `Edit` on `appsettings.json` replacing `\"Enabled\": false` with `\"Enabled\": true`, but the call failed: the snippet appears in four different sections. Only the `Cache` section should change. Which actions are appropriate? (Choose TWO.)",
       "opcoes": [
-        "Repetir a mesma chamada de Edit",
-        "Usar `replace_all: true` com o mesmo trecho",
-        "Ampliar o `old_string` incluindo a linha `\"Cache\": {` e as vizinhas, até o trecho ficar único",
-        "Usar Glob para localizar a seção correta",
-        "Ler o arquivo e reescrevê-lo com Write, se for mais seguro que montar um trecho único"
+        "Repeat the same Edit call",
+        "Use `replace_all: true` with the same snippet",
+        "Expand the `old_string` to include the `\"Cache\": {` line and its neighbors until the snippet is unique",
+        "Use Glob to locate the correct section",
+        "Read the file and rewrite it with Write, if that's safer than building a unique snippet"
       ],
-      "corretas": [2, 4],
-      "explicacao": "Edit exige trecho único. Amplie o contexto do trecho, ou leia e reescreva. `replace_all` trocaria as quatro seções, o que não é o desejado.",
+      "corretas": [
+        2,
+        4
+      ],
+      "explicacao": "Edit requires a unique snippet. Expand the snippet's context, or read and rewrite. `replace_all` would change all four sections, which is not what's wanted.",
       "feedbacks": [
-        "A mesma entrada falha do mesmo jeito.",
-        "Trocaria as quatro ocorrências, mas só a de Cache deveria mudar.",
-        "Correto.",
-        "Glob acha arquivos por nome; não localiza trechos dentro de um arquivo.",
-        "Correto: alternativa válida quando montar um trecho único é complicado."
+        "The same input fails the same way.",
+        "Would replace all four occurrences, but only the Cache one should change.",
+        "Correct.",
+        "Glob finds files by name; it doesn't locate snippets inside a file.",
+        "Correct: a valid alternative when building a unique snippet is complicated."
       ]
     },
     {
-      "pergunta": "Numa consultoria, metade do time usa o Claude Code no VS Code, parte no JetBrains e parte no terminal. O líder quer que todos tenham as mesmas convenções, as mesmas skills e as mesmas permissões. Qual a abordagem?",
+      "pergunta": "At a consulting firm, half the team uses Claude Code in VS Code, some in JetBrains, and some in the terminal. The lead wants everyone to have the same conventions, the same skills, and the same permissions. What is the approach?",
       "opcoes": [
-        "Versionar CLAUDE.md, `.claude/skills/` e `.claude/settings.json` no repositório: é o mesmo motor em todas as superfícies",
-        "Configurar cada extensão de IDE separadamente, pois cada uma tem seu próprio motor",
-        "Padronizar todos no terminal, porque as extensões não leem CLAUDE.md",
-        "Manter um CLAUDE.md por superfície (`CLAUDE.vscode.md`, `CLAUDE.jetbrains.md`)"
+        "Version CLAUDE.md, `.claude/skills/`, and `.claude/settings.json` in the repository: it's the same engine on all surfaces",
+        "Configure each IDE extension separately, since each one has its own engine",
+        "Standardize everyone on the terminal, because the extensions don't read CLAUDE.md",
+        "Keep one CLAUDE.md per surface (`CLAUDE.vscode.md`, `CLAUDE.jetbrains.md`)"
       ],
       "correta": 0,
-      "explicacao": "CLI, IDEs, desktop e web usam o mesmo motor e leem os mesmos arquivos de configuração.",
+      "explicacao": "The CLI, IDEs, desktop, and web use the same engine and read the same configuration files.",
       "feedbacks": [
-        "Correto.",
-        "Premissa falsa: é o mesmo motor.",
-        "As extensões leem CLAUDE.md, skills e settings normalmente.",
-        "Esses arquivos não existem como convenção; duplicaria conteúdo sem necessidade."
+        "Correct.",
+        "False premise: it's the same engine.",
+        "The extensions read CLAUDE.md, skills, and settings normally.",
+        "Those files don't exist as a convention; it would duplicate content unnecessarily."
       ]
     }
   ]

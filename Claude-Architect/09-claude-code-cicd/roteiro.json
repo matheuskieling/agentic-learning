@@ -134,6 +134,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação do Módulo 09 (15 questões)",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas: exemplos concretos, TDD, entrevista, agrupamento de problemas, -p, flags, JSON, Action, Batch, review",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora",
         "Meta: 70%"
@@ -147,8 +148,9 @@
       "fase": "prova",
       "titulo": "Prova do Módulo 09 (20 questões em estilo de cenário)",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "20 questões no estilo do exame (cenários 5 e 2), com feedback por alternativa",
-        "Algumas são de múltipla resposta ('Escolha DUAS'): responda com letras separadas por vírgula",
+        "Algumas são de múltipla resposta ('Choose TWO'): responda com letras separadas por vírgula",
         "Aprovação: 70%"
       ],
       "checkpoint": "Analise os erros por tópico; se ficou abaixo de 70%, revise a cola de véspera e refaça",

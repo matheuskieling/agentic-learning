@@ -140,6 +140,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação — Módulo 07",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas: padrões do Building Effective Agents, hub-and-spoke, contexto isolado, paralelismo, fork, decomposição, review multi-pass, sessões",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
       ],
@@ -152,7 +153,8 @@
       "fase": "prova",
       "titulo": "Prova do Módulo 07 (estilo cenário)",
       "pontos": [
-        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Escolha DUAS)",
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Choose TWO)",
         "Aprovação 70%; abaixo disso, revise a 'Cola de véspera' e os tópicos errados e refaça"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-07/questions.json --id prova",

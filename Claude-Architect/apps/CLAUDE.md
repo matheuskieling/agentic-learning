@@ -9,4 +9,4 @@ apps/modulo-NN/
 ```
 
 Conduzido pelo Claude: `python3 engine/session.py start Claude-Architect/apps/modulo-NN/questions.json`.
-Questões curtas e diretas (fato → decisão). O estilo cenário completo fica nas provas e nos simulados.
+Questões curtas e diretas (fato → decisão), em **inglês** como a prova real (a aula segue em PT-BR). O estilo cenário completo fica nas provas e nos simulados.

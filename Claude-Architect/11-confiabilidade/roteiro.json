@@ -120,6 +120,7 @@
       "fase": "quiz",
       "titulo": "Quiz do módulo",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas sobre escalonamento, erros, revisão humana, proveniência, guardrails e evals",
         "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
       ],
@@ -132,7 +133,8 @@
       "fase": "prova",
       "titulo": "Prova do módulo",
       "pontos": [
-        "20 questões em estilo cenário do exame, feedback por alternativa, algumas de múltipla resposta (Escolha DUAS)",
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo cenário do exame, feedback por alternativa, algumas de múltipla resposta (Choose TWO)",
         "Aprovação 70%; abaixo disso, revise as seções correspondentes antes dos simulados"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-11/questions.json --id prova",

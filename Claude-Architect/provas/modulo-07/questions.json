@@ -1,351 +1,360 @@
 {
-  "titulo": "Módulo 07 — Prova: orquestração multiagente, decomposição, review multi-pass e sessões",
+  "titulo": "Module 07 — Exam: multi-agent orchestration, decomposition, multi-pass review, and sessions",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Um sistema de pesquisa multiagente recebe: \"panorama das energias renováveis no Brasil\". O coordenador cria subtarefas sobre painéis solares residenciais, usinas solares e incentivos à energia solar. O relatório sai bem escrito e bem fundamentado, mas ignora eólica, hidrelétrica e biomassa. Os logs mostram que cada subagent cumpriu exatamente o que recebeu. Qual a melhor correção?",
+      "pergunta": "A multi-agent research system receives: \"overview of renewable energy in Brazil\". The coordinator creates subtasks on residential solar panels, solar power plants, and solar energy incentives. The report comes out well written and well supported, but it ignores wind, hydroelectric, and biomass. The logs show that each subagent did exactly what it was given. What is the best fix?",
       "opcoes": [
-        "Melhorar o prompt dos subagents de busca para que tragam fontes mais diversas",
-        "Corrigir a decomposição do coordenador para cobrir o escopo inteiro e incluir uma checagem explícita de cobertura antes da síntese",
-        "Adicionar um subagent revisor no final que reescreve o relatório com mais abrangência",
-        "Trocar o modelo do coordenador por um com janela de contexto maior"
+        "Improve the search subagents' prompt so they bring back more diverse sources",
+        "Fix the coordinator's decomposition to cover the entire scope and add an explicit coverage check before synthesis",
+        "Add a reviewer subagent at the end that rewrites the report with broader coverage",
+        "Switch the coordinator's model to one with a larger context window"
       ],
       "correta": 1,
-      "explicacao": "Decomposição estreita demais é defeito do coordenador. Os subagents fizeram o que receberam; a correção é decompor de forma mais ampla e checar a cobertura.",
+      "explicacao": "Overly narrow decomposition is a coordinator defect. The subagents did what they were given; the fix is to decompose more broadly and check coverage.",
       "feedbacks": [
-        "Ataca o componente que funcionou: os subagents buscaram exatamente o que lhes foi pedido.",
-        "Correto. A lacuna nasce na decomposição.",
-        "Um revisor no fim não tem material sobre eólica e hidrelétrica para incluir: nada disso foi pesquisado. Trata o sintoma tarde demais.",
-        "Janela de contexto não tem relação com o escopo da decomposição."
+        "Targets the component that worked: the subagents searched for exactly what they were asked to.",
+        "Correct. The gap originates in the decomposition.",
+        "A reviewer at the end has no material on wind and hydroelectric to include: none of that was researched. It treats the symptom too late.",
+        "The context window has nothing to do with the scope of the decomposition."
       ]
     },
     {
-      "pergunta": "No mesmo sistema de pesquisa, após 20 turnos discutindo com o usuário que o foco é \"startups de logística da América Latina com rodada série A em 2025\", o coordenador delega: \"Pesquise as empresas que discutimos e traga os dados de financiamento.\" O subagent volta com dados genéricos de grandes empresas de logística dos EUA. Qual a causa e a correção?",
+      "pergunta": "In the same research system, after 20 turns discussing with the user that the focus is \"Latin American logistics startups with a Series A round in 2025\", the coordinator delegates: \"Research the companies we discussed and bring back the funding data.\" The subagent comes back with generic data on large U.S. logistics companies. What is the cause and the fix?",
       "opcoes": [
-        "O subagent usa um modelo mais fraco; usar o mesmo modelo do coordenador",
-        "Falta uma tool de busca melhor; integrar uma base de dados de startups",
-        "O subagent deveria ter pedido esclarecimentos; instruí-lo a sempre perguntar quando estiver em dúvida",
-        "O subagent tem contexto isolado e não viu a conversa; a delegação precisa trazer explicitamente região, estágio, ano, critérios e formato de saída"
+        "The subagent uses a weaker model; use the same model as the coordinator",
+        "A better search tool is missing; integrate a startup database",
+        "The subagent should have asked for clarification; instruct it to always ask when in doubt",
+        "The subagent has an isolated context and did not see the conversation; the delegation must explicitly include region, stage, year, criteria, and output format"
       ],
       "correta": 3,
-      "explicacao": "Subagents não herdam o histórico do coordenador. \"As empresas que discutimos\" não existe para ele: tudo vai explícito no prompt de delegação.",
+      "explicacao": "Subagents do not inherit the coordinator's history. \"The companies we discussed\" doesn't exist for the subagent: everything goes explicitly into the delegation prompt.",
       "feedbacks": [
-        "Mesmo o melhor modelo não adivinha o que nunca recebeu.",
-        "A tool não é o problema: o subagent nem sabe o que procurar.",
-        "Transfere ao subagent o trabalho que é do coordenador e adiciona voltas desnecessárias; a correção direta é delegar com contexto completo.",
-        "Correto."
+        "Even the best model can't guess what it never received.",
+        "The tool isn't the problem: the subagent doesn't even know what to look for.",
+        "Shifts to the subagent work that belongs to the coordinator and adds unnecessary round trips; the direct fix is to delegate with full context.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "O coordenador de um sistema de pesquisa precisa consultar quatro fontes independentes para cada pergunta. As métricas mostram latência igual à soma das quatro consultas. Os logs revelam uma chamada `Agent` por turno do coordenador. Qual a correção mais simples?",
+      "pergunta": "The coordinator of a research system needs to query four independent sources for each question. Metrics show latency equal to the sum of the four queries. The logs reveal one `Agent` call per coordinator turn. What is the simplest fix?",
       "opcoes": [
-        "Instruir o coordenador a emitir as quatro chamadas `Agent` na mesma resposta quando as subtarefas forem independentes",
-        "Substituir os subagents por um único agente com todas as tools das quatro fontes",
-        "Aumentar a configuração de concorrência máxima de subagents",
-        "Mover cada fonte para um processo separado orquestrado por uma fila externa"
+        "Instruct the coordinator to emit the four `Agent` calls in the same response when the subtasks are independent",
+        "Replace the subagents with a single agent that has all the tools for the four sources",
+        "Increase the maximum subagent concurrency setting",
+        "Move each source to a separate process orchestrated by an external queue"
       ],
       "correta": 0,
-      "explicacao": "Paralelismo de subagents = vários `tool_use` de `Agent` na mesma resposta. Um por turno é sequencial por construção.",
+      "explicacao": "Subagent parallelism = multiple `Agent` `tool_use` blocks in the same response. One per turn is sequential by construction.",
       "feedbacks": [
-        "Correto.",
-        "Junta tools demais num agente e não resolve o paralelismo.",
-        "O limite não está sendo atingido: o coordenador emite um subagent por vez.",
-        "Infraestrutura nova para algo que o próprio protocolo já resolve: viola a correção mais simples."
+        "Correct.",
+        "Crams too many tools into one agent and doesn't solve the parallelism.",
+        "The limit isn't being hit: the coordinator emits one subagent at a time.",
+        "New infrastructure for something the protocol itself already solves: violates the simplest fix."
       ]
     },
     {
-      "pergunta": "Para \"ganhar velocidade\", um engenheiro propõe que o subagent de análise mande perguntas diretamente ao subagent de busca, sem passar pelo coordenador. Qual a melhor avaliação?",
+      "pergunta": "To \"gain speed\", an engineer proposes that the analysis subagent send questions directly to the search subagent, without going through the coordinator. What is the best assessment?",
       "opcoes": [
-        "Boa ideia, desde que as mensagens diretas sejam registradas em log",
-        "Boa ideia, pois reduz a carga de contexto do coordenador",
-        "Rejeitar: no hub-and-spoke o coordenador roteia toda a comunicação, o que mantém observabilidade, tratamento de erro e controle de cobertura",
-        "Rejeitar, porque subagents não podem chamar tools"
+        "Good idea, as long as the direct messages are logged",
+        "Good idea, because it reduces the coordinator's context load",
+        "Reject it: in hub-and-spoke the coordinator routes all communication, which preserves observability, error handling, and coverage control",
+        "Reject it, because subagents cannot call tools"
       ],
       "correta": 2,
-      "explicacao": "Comunicação direta entre subagents é anti-padrão: tira do coordenador a visão do todo, o tratamento de erros e a detecção de lacunas.",
+      "explicacao": "Direct communication between subagents is an anti-pattern: it takes away the coordinator's view of the whole, its error handling, and its gap detection.",
       "feedbacks": [
-        "Log não devolve ao coordenador o controle de erro nem a capacidade de avaliar lacunas.",
-        "Tentadora, mas o coordenador perde exatamente a visão de que precisa para agregar e redelegar.",
-        "Correto.",
-        "Subagents usam tools normalmente; o problema é a topologia da comunicação."
+        "Logging doesn't give the coordinator back control over error handling or the ability to assess gaps.",
+        "Tempting, but the coordinator loses exactly the view it needs to aggregate and re-delegate.",
+        "Correct.",
+        "Subagents use tools normally; the problem is the communication topology."
       ]
     },
     {
-      "pergunta": "Um assistente de pesquisa interno custa caro: até perguntas factuais simples (\"quando foi fundada a empresa X?\") passam por busca web, busca acadêmica, análise de tendências e revisão. A qualidade das respostas complexas é boa. O que mudar?",
+      "pergunta": "An internal research assistant is expensive: even simple factual questions (\"when was company X founded?\") go through web search, academic search, trend analysis, and review. The quality of the answers to complex questions is good. What should change?",
       "opcoes": [
-        "Criar um classificador separado, treinado para decidir a rota de cada pergunta",
-        "Fazer o coordenador avaliar cada consulta e acionar só os subagents necessários",
-        "Reduzir o `max_tokens` de todos os subagents",
-        "Remover a busca acadêmica e a revisão de todas as consultas"
+        "Create a separate classifier, trained to decide the route for each question",
+        "Have the coordinator evaluate each query and invoke only the subagents needed",
+        "Reduce the `max_tokens` of all subagents",
+        "Remove academic search and review from all queries"
       ],
       "correta": 1,
-      "explicacao": "Acionar só o que a consulta precisa é papel do coordenador; é a correção mais simples e preserva a qualidade das complexas.",
+      "explicacao": "Invoking only what the query needs is the coordinator's job; it is the simplest fix and preserves the quality of the complex queries.",
       "feedbacks": [
-        "Mais complexo que o necessário: o coordenador já pode decidir isso com critérios claros.",
-        "Correto.",
-        "Corta respostas no meio sem reduzir o número de subagents acionados.",
-        "Prejudica as consultas complexas, que hoje funcionam bem."
+        "More complex than necessary: the coordinator can already decide this with clear criteria.",
+        "Correct.",
+        "Cuts answers off midway without reducing the number of subagents invoked.",
+        "Hurts the complex queries, which currently work well."
       ]
     },
     {
-      "pergunta": "No relatório final de um sistema de pesquisa, um número de participação de mercado aparece sem fonte, e dois subagents tinham encontrado valores diferentes (31% e 27%), mas o relatório mostra só 29%. Os subagents devolvem parágrafos em prosa. Qual a melhor mudança?",
+      "pergunta": "In the final report of a research system, a market share figure appears without a source, and two subagents had found different values (31% and 27%), but the report shows only 29%. The subagents return prose paragraphs. What is the best change?",
       "opcoes": [
-        "Instruir o coordenador a sempre escolher o valor da fonte mais recente",
-        "Pedir ao sintetizador que cite as fontes ao final do relatório",
-        "Adicionar um subagent verificador que refaz todas as buscas",
-        "Fazer os subagents devolverem saída estruturada separando conteúdo de metadados (afirmação, evidência, fonte, data), e a síntese registrar os valores conflitantes com suas fontes"
+        "Instruct the coordinator to always pick the value from the most recent source",
+        "Ask the synthesizer to cite the sources at the end of the report",
+        "Add a verifier subagent that redoes all the searches",
+        "Have the subagents return structured output separating content from metadata (claim, evidence, source, date), and have the synthesis record the conflicting values with their sources"
       ],
       "correta": 3,
-      "explicacao": "Passagem estruturada (conteúdo + metadados) preserva a atribuição. Conflito entre fontes deve ser anotado, não resolvido por média nem escolha silenciosa.",
+      "explicacao": "Structured handoff (content + metadata) preserves attribution. A conflict between sources should be annotated, not resolved by averaging or by silent selection.",
       "feedbacks": [
-        "Escolher em silêncio esconde o conflito, e o mais recente pode medir outra coisa.",
-        "Sem metadados vindos dos subagents, o sintetizador não tem como saber de onde veio cada número.",
-        "Refazer buscas não resolve o formato que perde a atribuição; é custo dobrado.",
-        "Correto."
+        "Choosing silently hides the conflict, and the most recent source may be measuring something else.",
+        "Without metadata coming from the subagents, the synthesizer has no way of knowing where each number came from.",
+        "Redoing searches doesn't fix the format that loses attribution; it's double the cost.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Após a primeira rodada, o coordenador de pesquisa avalia a síntese e percebe que falta a perspectiva regulatória e que um dado de 2023 precisa de atualização. Qual o próximo passo mais adequado?",
+      "pergunta": "After the first round, the research coordinator evaluates the synthesis and notices that the regulatory perspective is missing and that a 2023 data point needs updating. What is the most appropriate next step?",
       "opcoes": [
-        "Disparar uma segunda rodada direcionada só a essas lacunas e então sintetizar",
-        "Rodar novamente todos os subagents com os mesmos prompts",
-        "Entregar o relatório com uma nota dizendo que pode estar incompleto",
-        "Pedir ao usuário que pesquise a parte regulatória"
+        "Launch a second round targeted only at those gaps, then synthesize",
+        "Rerun all the subagents with the same prompts",
+        "Deliver the report with a note saying it may be incomplete",
+        "Ask the user to research the regulatory part"
       ],
       "correta": 0,
-      "explicacao": "Refinamento iterativo: avaliar → identificar lacunas → 2ª rodada direcionada → sintetizar.",
+      "explicacao": "Iterative refinement: evaluate → identify gaps → targeted 2nd round → synthesize.",
       "feedbacks": [
-        "Correto.",
-        "Repete trabalho já feito e não mira as lacunas.",
-        "Desistir de lacunas identificáveis e corrigíveis não é o comportamento esperado do coordenador.",
-        "Transfere ao usuário um trabalho que o sistema consegue fazer."
+        "Correct.",
+        "Repeats work already done and doesn't target the gaps.",
+        "Giving up on identifiable, fixable gaps is not the expected behavior of the coordinator.",
+        "Shifts to the user work that the system can do."
       ]
     },
     {
-      "pergunta": "Uma empresa usa Claude Code em CI para revisar PRs. Em PRs com mais de 30 arquivos, a revisão aponta problemas superficiais, cobra um padrão em alguns arquivos e o ignora em outros, e não detectou uma mudança de assinatura que quebrou três chamadores em outros módulos. Qual a melhor reestruturação?",
+      "pergunta": "A company uses Claude Code in CI to review PRs. On PRs with more than 30 files, the review flags superficial issues, enforces a standard in some files and ignores it in others, and missed a signature change that broke three callers in other modules. What is the best restructuring?",
       "opcoes": [
-        "Usar um modelo com janela de contexto maior para o PR caber inteiro",
-        "Rodar a mesma revisão três vezes e consolidar por votação",
-        "Passo 1 por arquivo, com o mesmo prompt para todos; passo 2 de integração, com prompt separado, recebendo os achados do passo 1 para analisar contratos e fluxo entre módulos",
-        "Pedir que o autor divida todo PR em PRs de no máximo 5 arquivos"
+        "Use a model with a larger context window so the whole PR fits",
+        "Run the same review three times and consolidate by voting",
+        "Pass 1 per file, with the same prompt for all; pass 2 for integration, with a separate prompt, receiving the pass 1 findings to analyze contracts and flow between modules",
+        "Ask the author to split every PR into PRs of at most 5 files"
       ],
       "correta": 2,
-      "explicacao": "Review multi-pass resolve diluição de atenção (passo local), inconsistência (mesmo prompt por arquivo) e bugs cross-file (passo de integração).",
+      "explicacao": "Multi-pass review solves attention dilution (local pass), inconsistency (same prompt per file), and cross-file bugs (integration pass).",
       "feedbacks": [
-        "Caber na janela não resolve a diluição de atenção numa passada única.",
-        "Votação de revisões que sofrem do mesmo problema não cria o passo de integração.",
-        "Correto.",
-        "Restrição de processo que não resolve o problema da ferramenta e nem sempre é viável."
+        "Fitting in the window doesn't solve attention dilution in a single pass.",
+        "Voting across reviews that suffer from the same problem doesn't create the integration pass.",
+        "Correct.",
+        "A process constraint that doesn't solve the tool's problem and isn't always feasible."
       ]
     },
     {
-      "pergunta": "Um time usa uma sessão do Claude Code para implementar uma feature e, ao final, na mesma sessão, pede: \"agora revise criticamente seu código\". A revisão quase nunca encontra problemas, mas o QA encontra vários. Qual a causa mais provável e a melhor correção?",
+      "pergunta": "A team uses a Claude Code session to implement a feature and, at the end, in the same session, asks: \"now critically review your code\". The review almost never finds problems, but QA finds several. What is the most likely cause and the best fix?",
       "opcoes": [
-        "O prompt de revisão é fraco; pedir que o modelo seja \"extremamente rigoroso\"",
-        "Viés do contexto de raciocínio: quem gerou não questiona as próprias decisões. Revisar numa sessão independente, que vê só o código",
-        "Falta de tempo; rodar a revisão com `effort` máximo na mesma sessão",
-        "Fazer um fork da sessão para revisar, aproveitando o cache"
+        "The review prompt is weak; ask the model to be \"extremely rigorous\"",
+        "Reasoning-context bias: whoever generated it doesn't question its own decisions. Review in an independent session that sees only the code",
+        "Lack of time; run the review with maximum `effort` in the same session",
+        "Fork the session to review, taking advantage of the cache"
       ],
       "correta": 1,
-      "explicacao": "Auto-revisão na mesma sessão é anti-padrão. Uma instância independente avalia o artefato sem o raciocínio que o justificou.",
+      "explicacao": "Self-review in the same session is an anti-pattern. An independent instance evaluates the artifact without the reasoning that justified it.",
       "feedbacks": [
-        "Instrução não remove o contexto enviesado; o modelo continua \"convencido\" pelas próprias razões.",
-        "Correto.",
-        "Mais esforço no mesmo contexto mantém o viés.",
-        "O fork herda a conversa inteira, inclusive o raciocínio enviesado. Barato, mas não independente."
+        "An instruction doesn't remove the biased context; the model remains \"convinced\" by its own reasoning.",
+        "Correct.",
+        "More effort in the same context keeps the bias.",
+        "The fork inherits the entire conversation, including the biased reasoning. Cheap, but not independent."
       ]
     },
     {
-      "pergunta": "Você está desenhando o pipeline de review multi-pass para PRs grandes no CI. Quais decisões estão corretas? (Escolha DUAS.)",
+      "pergunta": "You are designing the multi-pass review pipeline for large PRs in CI. Which decisions are correct? (Choose TWO.)",
       "opcoes": [
-        "Usar no passo 2 a mesma sessão que gerou o código, porque ela conhece as intenções",
-        "Aplicar o mesmo prompt de revisão a cada arquivo no passo 1, para manter o critério consistente",
-        "Pular o passo 1 quando o PR couber na janela de contexto",
-        "Deixar cada arquivo usar um prompt diferente, adaptado pelo próprio modelo",
-        "Passar ao passo 2 os achados do passo 1, com foco em contratos, fluxo de dados e erros entre módulos"
+        "Use, in pass 2, the same session that generated the code, because it knows the intentions",
+        "Apply the same review prompt to each file in pass 1, to keep the criteria consistent",
+        "Skip pass 1 when the PR fits in the context window",
+        "Let each file use a different prompt, adapted by the model itself",
+        "Pass the pass 1 findings to pass 2, focusing on contracts, data flow, and errors across modules"
       ],
-      "corretas": [1, 4],
-      "explicacao": "Passo 1: por arquivo, prompt consistente. Passo 2: prompt separado de integração, alimentado pelos achados do passo 1. Tudo em sessão independente da geradora.",
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Pass 1: per file, consistent prompt. Pass 2: separate integration prompt, fed by the pass 1 findings. All in a session independent from the one that generated the code.",
       "feedbacks": [
-        "Reintroduz o viés do contexto de raciocínio.",
-        "Correto.",
-        "Caber na janela não elimina a diluição de atenção.",
-        "Prompts diferentes geram exatamente a inconsistência que se quer evitar.",
-        "Correto."
+        "Reintroduces reasoning-context bias.",
+        "Correct.",
+        "Fitting in the window doesn't eliminate attention dilution.",
+        "Different prompts produce exactly the inconsistency you want to avoid.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Ontem, uma sessão do Claude Code mapeou o módulo de faturamento e começou um plano de refatoração. Durante a noite, outro desenvolvedor fez merge de uma mudança que reorganizou metade dos arquivos desse módulo. Como continuar?",
+      "pergunta": "Yesterday, a Claude Code session mapped the billing module and started a refactoring plan. Overnight, another developer merged a change that reorganized half of that module's files. How should you continue?",
       "opcoes": [
-        "Usar `--resume` e seguir o plano normalmente",
-        "Usar `--resume` com `--fork-session` para ter um ID novo",
-        "Usar `--continue`, que recarrega os arquivos automaticamente",
-        "Começar uma sessão nova com um resumo estruturado do que foi decidido, deixando o Claude reler o estado atual do módulo"
+        "Use `--resume` and follow the plan normally",
+        "Use `--resume` with `--fork-session` to get a new ID",
+        "Use `--continue`, which reloads the files automatically",
+        "Start a new session with a structured summary of what was decided, letting Claude reread the current state of the module"
       ],
       "correta": 3,
-      "explicacao": "Quando arquivos mudaram, os resultados de tool no histórico estão velhos e o modelo confia neles. Sessão nova com resumo (ou, se retomar, dizer explicitamente o que mudou).",
+      "explicacao": "When files have changed, the tool results in the history are stale and the model trusts them. Start a new session with a summary (or, if resuming, state explicitly what changed).",
       "feedbacks": [
-        "O histórico tem o conteúdo antigo dos arquivos; o Claude editaria com base em código que não existe mais.",
-        "Um ID novo não atualiza os resultados velhos herdados da base.",
-        "`--continue` retoma a sessão mais recente com o mesmo histórico; não relê nada automaticamente.",
-        "Correto."
+        "The history holds the old file contents; Claude would edit based on code that no longer exists.",
+        "A new ID doesn't refresh the stale results inherited from the base.",
+        "`--continue` resumes the most recent session with the same history; it doesn't reread anything automatically.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Uma sessão do Claude Code passou uma hora analisando um serviço legado. O tech lead quer comparar duas estratégias de modernização (strangler fig vs. reescrita) a partir dessa análise, sem que os experimentos de uma contaminem a outra. Qual a melhor abordagem?",
+      "pergunta": "A Claude Code session spent an hour analyzing a legacy service. The tech lead wants to compare two modernization strategies (strangler fig vs. rewrite) based on that analysis, without the experiments of one contaminating the other. What is the best approach?",
       "opcoes": [
-        "Retomar a sessão duas vezes com `--resume` e `--fork-session`, uma por estratégia",
-        "Testar uma estratégia, desfazer com git e testar a outra na mesma sessão",
-        "Abrir duas sessões novas e repetir a análise em cada uma",
-        "Pedir na mesma sessão para o Claude \"esquecer\" a primeira estratégia antes da segunda"
+        "Resume the session twice with `--resume` and `--fork-session`, one per strategy",
+        "Try one strategy, undo it with git, and try the other in the same session",
+        "Open two new sessions and repeat the analysis in each one",
+        "Ask Claude, in the same session, to \"forget\" the first strategy before the second"
       ],
       "correta": 0,
-      "explicacao": "`--fork-session` cria ramos com IDs novos a partir da base comum: reaproveita a análise sem contaminação entre os ramos.",
+      "explicacao": "`--fork-session` creates branches with new IDs from the common base: it reuses the analysis without contamination between the branches.",
       "feedbacks": [
-        "Correto.",
-        "Desfazer os arquivos não remove do histórico as decisões e os resultados da primeira tentativa.",
-        "Funciona, mas joga fora uma hora de análise válida.",
-        "Pedir para esquecer não remove nada do contexto."
+        "Correct.",
+        "Undoing the files doesn't remove the decisions and results of the first attempt from the history.",
+        "Works, but throws away an hour of valid analysis.",
+        "Asking it to forget doesn't remove anything from the context."
       ]
     },
     {
-      "pergunta": "Um desenvolvedor precisa retomar uma sessão de investigação de bug porque a maior parte do contexto ainda vale, mas desde então ele mesmo alterou dois arquivos de configuração. Qual a forma correta de retomar?",
+      "pergunta": "A developer needs to resume a bug investigation session because most of the context is still valid, but since then the developer has personally changed two configuration files. What is the correct way to resume?",
       "opcoes": [
-        "Retomar e não mencionar nada; o Claude percebe as mudanças sozinho",
-        "Retomar e pedir ao Claude que releia todo o repositório",
-        "Retomar e informar explicitamente o que mudou (quais arquivos e como), pedindo para reler esses dois antes de continuar",
-        "Apagar o histórico de tool results da sessão antes de retomar"
+        "Resume and mention nothing; Claude will notice the changes on its own",
+        "Resume and ask Claude to reread the entire repository",
+        "Resume and state explicitly what changed (which files and how), asking Claude to reread those two before continuing",
+        "Delete the session's tool result history before resuming"
       ],
       "correta": 2,
-      "explicacao": "Ao retomar depois de mudanças, diga o que mudou: os resultados velhos continuam no histórico e o modelo confia neles.",
+      "explicacao": "When resuming after changes, say what changed: the stale results remain in the history and the model trusts them.",
       "feedbacks": [
-        "O Claude não tem como saber; os resultados antigos parecem válidos.",
-        "Exagero: gasta contexto relendo o que não mudou.",
-        "Correto.",
-        "Editar o histórico é arriscado e desnecessário; basta informar a mudança."
+        "Claude has no way of knowing; the old results look valid.",
+        "Overkill: wastes context rereading what didn't change.",
+        "Correct.",
+        "Editing the history is risky and unnecessary; just report the change."
       ]
     },
     {
-      "pergunta": "Uma empresa de extração de dados processa contratos sempre do mesmo jeito: extrair partes e datas, classificar cláusulas de risco, validar campos obrigatórios e gerar um resumo. Uma proposta sugere um agente orquestrador que decide dinamicamente as etapas. Qual a melhor recomendação?",
+      "pergunta": "A data extraction company always processes contracts the same way: extract parties and dates, classify risk clauses, validate required fields, and generate a summary. A proposal suggests an orchestrator agent that dynamically decides the steps. What is the best recommendation?",
       "opcoes": [
-        "Aprovar o orquestrador, pois ele se adapta a contratos futuros",
-        "Prompt chaining com os passos fixos e gates de validação entre eles",
-        "Parallelization por voting em todas as etapas",
-        "Um agente único com todas as tools, sem passos definidos"
+        "Approve the orchestrator, since it adapts to future contracts",
+        "Prompt chaining with the fixed steps and validation gates between them",
+        "Parallelization via voting at every step",
+        "A single agent with all the tools, with no defined steps"
       ],
       "correta": 1,
-      "explicacao": "Passos fixos e conhecidos → prompt chaining. Decomposição dinâmica traria custo e imprevisibilidade sem ganho.",
+      "explicacao": "Fixed, known steps → prompt chaining. Dynamic decomposition would bring cost and unpredictability with no gain.",
       "feedbacks": [
-        "Flexibilidade hipotética não justifica a complexidade presente; viola \"comece simples\".",
-        "Correto.",
-        "Voting repete a mesma tarefa para consenso; aqui as etapas são diferentes e sequenciais.",
-        "Abre mão da previsibilidade num processo que é previsível."
+        "Hypothetical flexibility doesn't justify present complexity; it violates \"start simple\".",
+        "Correct.",
+        "Voting repeats the same task for consensus; here the steps are different and sequential.",
+        "Gives up predictability in a process that is predictable."
       ]
     },
     {
-      "pergunta": "Um time de produto quer investigar por que a conversão do checkout caiu 12% na última semana. As causas possíveis vão de deploy de frontend a mudança no gateway de pagamento ou campanha de marketing, e cada descoberta muda onde procurar em seguida. Qual estratégia de decomposição é a mais adequada?",
+      "pergunta": "A product team wants to investigate why checkout conversion dropped 12% in the last week. Possible causes range from a frontend deploy to a change in the payment gateway or a marketing campaign, and each discovery changes where to look next. Which decomposition strategy is the most appropriate?",
       "opcoes": [
-        "Prompt chaining com cinco passos fixos definidos de antemão",
-        "Routing por tipo de causa, escolhido pela primeira mensagem",
-        "Parallelization por sectioning com subtarefas fixas, sem rodadas posteriores",
-        "Decomposição dinâmica (orchestrator-workers), em que as subtarefas surgem das descobertas"
+        "Prompt chaining with five fixed steps defined in advance",
+        "Routing by cause type, chosen from the first message",
+        "Parallelization via sectioning with fixed subtasks, with no later rounds",
+        "Dynamic decomposition (orchestrator-workers), in which subtasks emerge from the discoveries"
       ],
       "correta": 3,
-      "explicacao": "Investigação aberta, em que cada achado muda o plano, pede decomposição dinâmica/adaptativa.",
+      "explicacao": "An open-ended investigation, in which each finding changes the plan, calls for dynamic/adaptive decomposition.",
       "feedbacks": [
-        "Passos fixos ignoram o que as descobertas revelam.",
-        "A causa não é conhecida no início; não há o que rotear.",
-        "Pode ser útil numa primeira rodada, mas subtarefas fixas sem adaptação não acompanham as descobertas.",
-        "Correto."
+        "Fixed steps ignore what the discoveries reveal.",
+        "The cause isn't known at the start; there is nothing to route.",
+        "May be useful in a first round, but fixed subtasks without adaptation don't keep up with the discoveries.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Uma central de suporte recebe 70% de perguntas simples de FAQ e 30% de casos complexos de cobrança e técnicos. Hoje tudo vai para o maior modelo com o mesmo prompt, o que é caro e lento. Qual padrão de \"Building Effective Agents\" resolve melhor?",
+      "pergunta": "A support center receives 70% simple FAQ questions and 30% complex billing and technical cases. Today everything goes to the largest model with the same prompt, which is expensive and slow. Which pattern from \"Building Effective Agents\" solves this best?",
       "opcoes": [
-        "Routing: classificar a entrada e encaminhar perguntas simples para um modelo menor e os casos complexos para fluxos especializados",
-        "Evaluator-optimizer: um modelo gera e outro avalia cada resposta",
-        "Orchestrator-workers para todas as perguntas",
-        "Parallelization por voting para aumentar a confiança"
+        "Routing: classify the input and send simple questions to a smaller model and complex cases to specialized flows",
+        "Evaluator-optimizer: one model generates and another evaluates each answer",
+        "Orchestrator-workers for all questions",
+        "Parallelization via voting to increase confidence"
       ],
       "correta": 0,
-      "explicacao": "Routing separa categorias distintas e permite direcionar o fácil para modelos menores/mais baratos.",
+      "explicacao": "Routing separates distinct categories and lets you direct the easy ones to smaller/cheaper models.",
       "feedbacks": [
-        "Correto.",
-        "Adiciona custo a todas as perguntas, inclusive as triviais.",
-        "Decomposição dinâmica é exagero para perguntas de FAQ.",
-        "Multiplica o custo justamente do que se quer baratear."
+        "Correct.",
+        "Adds cost to every question, including the trivial ones.",
+        "Dynamic decomposition is overkill for FAQ questions.",
+        "Multiplies the cost of precisely what you want to make cheaper."
       ]
     },
     {
-      "pergunta": "Uma equipe traduz documentação técnica com regras claras de terminologia e estilo, e uma segunda leitura com feedback costuma melhorar a tradução de forma mensurável. Qual padrão se encaixa melhor?",
+      "pergunta": "A team translates technical documentation with clear terminology and style rules, and a second read with feedback usually improves the translation measurably. Which pattern fits best?",
       "opcoes": [
         "Routing",
-        "Prompt chaining sem gates",
-        "Evaluator-optimizer: um LLM traduz, outro avalia contra os critérios e devolve feedback, em loop até atender",
+        "Prompt chaining without gates",
+        "Evaluator-optimizer: one LLM translates, another evaluates it against the criteria and returns feedback, in a loop until it meets them",
         "Orchestrator-workers"
       ],
       "correta": 2,
-      "explicacao": "Critérios de avaliação claros + refinamento iterativo com ganho mensurável = evaluator-optimizer.",
+      "explicacao": "Clear evaluation criteria + iterative refinement with measurable gain = evaluator-optimizer.",
       "feedbacks": [
-        "Não há categorias distintas para encaminhar.",
-        "Uma sequência fixa sem avaliação não aproveita o feedback iterativo.",
-        "Correto.",
-        "As subtarefas não são imprevisíveis; o ganho vem de avaliar e refinar."
+        "There are no distinct categories to route.",
+        "A fixed sequence without evaluation doesn't take advantage of iterative feedback.",
+        "Correct.",
+        "The subtasks aren't unpredictable; the gain comes from evaluating and refining."
       ]
     },
     {
-      "pergunta": "Sobre spawn de subagents e passagem de contexto, quais afirmações estão corretas? (Escolha DUAS.)",
+      "pergunta": "Regarding subagent spawning and context passing, which statements are correct? (Choose TWO.)",
       "opcoes": [
-        "Para o coordenador criar subagents, a tool `Agent` precisa estar entre as tools permitidas dele",
-        "O subagent herda automaticamente todo o histórico do coordenador",
-        "No Agent SDK, mensagens produzidas dentro de um subagent trazem `parent_tool_use_id`, o que permite atribuí-las ao subagent certo",
-        "Subagents rodam em paralelo quando o coordenador os cria em turnos consecutivos",
-        "O subagent devolve ao coordenador todo o seu histórico de tool calls, além do resultado"
+        "For the coordinator to create subagents, the `Agent` tool must be among its allowed tools",
+        "The subagent automatically inherits the coordinator's entire history",
+        "In the Agent SDK, messages produced inside a subagent carry `parent_tool_use_id`, which allows attributing them to the right subagent",
+        "Subagents run in parallel when the coordinator creates them in consecutive turns",
+        "The subagent returns its entire tool call history to the coordinator, in addition to the result"
       ],
-      "corretas": [0, 2],
-      "explicacao": "`Agent` (antes `Task`) precisa estar em `allowedTools`; `parent_tool_use_id` dá a atribuição. O contexto é isolado, o paralelismo exige a mesma resposta e só o resultado final volta.",
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "`Agent` (formerly `Task`) must be in `allowedTools`; `parent_tool_use_id` provides attribution. Context is isolated, parallelism requires the same response, and only the final result comes back.",
       "feedbacks": [
-        "Correto.",
-        "Contexto isolado: só o prompt de delegação chega ao subagent fresco.",
-        "Correto.",
-        "Turnos consecutivos = sequencial. Paralelo exige vários `Agent` na mesma resposta.",
-        "Só o resultado final volta; é isso que mantém o contexto do coordenador limpo."
+        "Correct.",
+        "Isolated context: only the delegation prompt reaches the fresh subagent.",
+        "Correct.",
+        "Consecutive turns = sequential. Parallel requires multiple `Agent` calls in the same response.",
+        "Only the final result comes back; that is what keeps the coordinator's context clean."
       ]
     },
     {
-      "pergunta": "Numa sessão longa do Claude Code, um arquiteto e o Claude definiram dezenas de restrições para um novo módulo (padrões, limites de dependência, decisões de API). Agora o arquiteto quer delegar a geração de um protótipo que respeite todas essas restrições, sem poluir a sessão principal com o trabalho exploratório. Qual a melhor opção?",
+      "pergunta": "In a long Claude Code session, an architect and Claude defined dozens of constraints for a new module (patterns, dependency limits, API decisions). Now the architect wants to delegate generating a prototype that respects all these constraints, without polluting the main session with the exploratory work. What is the best option?",
       "opcoes": [
-        "Um subagent fresco com o prompt \"gere o protótipo conforme o que combinamos\"",
-        "Um fork, que herda a conversa inteira (com as restrições), compartilha o cache de prompt e devolve só o resultado final",
-        "Fazer o protótipo na sessão principal mesmo",
-        "Um subagent fresco e, se errar, corrigir na sessão principal"
+        "A fresh subagent with the prompt \"generate the prototype according to what we agreed on\"",
+        "A fork, which inherits the entire conversation (with the constraints), shares the prompt cache, and returns only the final result",
+        "Build the prototype in the main session anyway",
+        "A fresh subagent and, if it gets things wrong, fix them in the main session"
       ],
       "correta": 1,
-      "explicacao": "Quando a subtarefa depende de muito do que já foi discutido, o fork é o ideal: herda o contexto, sai mais barato pelo cache e mantém a sessão principal limpa.",
+      "explicacao": "When the subtask depends on much of what has already been discussed, the fork is ideal: it inherits the context, is cheaper thanks to the cache, and keeps the main session clean.",
       "feedbacks": [
-        "O subagent fresco não sabe o que foi \"combinado\": contexto isolado.",
-        "Correto.",
-        "Polui o contexto principal com o trabalho exploratório, o que o arquiteto quer evitar.",
-        "Aceita uma falha previsível e ainda polui a sessão principal com as correções."
+        "The fresh subagent doesn't know what was \"agreed on\": isolated context.",
+        "Correct.",
+        "Pollutes the main context with the exploratory work, which is what the architect wants to avoid.",
+        "Accepts a predictable failure and still pollutes the main session with the corrections."
       ]
     },
     {
-      "pergunta": "Uma startup quer um assistente que responda perguntas sobre sua base de 200 artigos de ajuda. A proposta do time é um sistema com coordenador, subagent de busca, subagent de redação e subagent revisor. Quais são os melhores primeiros passos? (Escolha DUAS.)",
+      "pergunta": "A startup wants an assistant that answers questions about its base of 200 help articles. The team's proposal is a system with a coordinator, a search subagent, a writing subagent, and a reviewer subagent. What are the best first steps? (Choose TWO.)",
       "opcoes": [
-        "Implementar os quatro agentes de uma vez para não precisar refatorar depois",
-        "Começar com uma única chamada de LLM com retrieval sobre os artigos e exemplos de boas respostas",
-        "Adotar um framework de agentes completo antes de qualquer protótipo",
-        "Medir a qualidade num conjunto de perguntas de teste e só adicionar etapas (ex.: revisor) se o ganho aparecer",
-        "Adicionar um subagent extra para cada categoria de artigo"
+        "Implement all four agents at once so there's no need to refactor later",
+        "Start with a single LLM call with retrieval over the articles and examples of good answers",
+        "Adopt a full agent framework before any prototype",
+        "Measure quality on a set of test questions and only add steps (e.g., a reviewer) if the gain shows up",
+        "Add an extra subagent for each article category"
       ],
-      "corretas": [1, 3],
-      "explicacao": "\"Building Effective Agents\": comece com a solução mais simples (LLM aumentado com retrieval) e só adicione complexidade quando ela comprovadamente melhora o resultado.",
+      "corretas": [
+        1,
+        3
+      ],
+      "explicacao": "\"Building Effective Agents\": start with the simplest solution (an LLM augmented with retrieval) and only add complexity when it demonstrably improves the result.",
       "feedbacks": [
-        "Complexidade antecipada: mais custo, latência e pontos de falha sem ganho comprovado.",
-        "Correto.",
-        "Frameworks abstraem prompts e respostas e dificultam o debug; não são o primeiro passo.",
-        "Correto.",
-        "Multiplica agentes sem evidência de necessidade."
+        "Premature complexity: more cost, latency, and points of failure with no proven gain.",
+        "Correct.",
+        "Frameworks abstract away prompts and responses and make debugging harder; they are not the first step.",
+        "Correct.",
+        "Multiplies agents without evidence of need."
       ]
     }
   ]

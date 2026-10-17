@@ -21,11 +21,11 @@
       "fase": "teoria",
       "titulo": "O exame: formato, os 6 cenários e os 5 domínios",
       "pontos": [
-        "60 questões (múltipla escolha + múltipla resposta 'Escolha DUAS'), 120 min (~2 min/questão), corte 720/1000, sem penalidade por chute: nunca deixe em branco",
+        "60 questões (múltipla escolha + múltipla resposta 'Choose TWO'), 120 min (~2 min/questão), corte 720/1000, sem penalidade por chute: nunca deixe em branco",
         "4 cenários sorteados de um banco de 6; as questões se penduram no cenário. Liste os 6: Customer Support, Code Generation com Claude Code, Multi-Agent Research, Developer Productivity, Claude Code em CI, Structured Data Extraction",
         "Pesos: D1 agêntica 27%, D2 tools/MCP 18%, D3 Claude Code 20%, D4 prompt/saída estruturada 20%, D5 contexto/confiabilidade 15%",
         "Implicação de estudo: D1+D3+D4 = 67%; os módulos 06 e 07 (D1) são os mais densos",
-        "Estratégia: identifique o cenário antes de ler as alternativas; em 'Escolha DUAS', as duas precisam estar certas"
+        "Estratégia: identifique o cenário antes de ler as alternativas; em 'Choose TWO', as duas precisam estar certas"
       ],
       "checkpoint": "Pergunte: qual domínio pesa mais, e por que chutar é sempre melhor que deixar em branco nesta prova?",
       "ref": "01-fundamentos-api/teoria.md#1-o-exame"
@@ -119,6 +119,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação do módulo",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas cobrindo exame, anti-padrões, Messages API, stop_reason, formas de construir e 4.7",
         "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
       ],
@@ -131,7 +132,8 @@
       "fase": "prova",
       "titulo": "Prova do módulo",
       "pontos": [
-        "20 questões em estilo de cenário do exame, com feedback por alternativa e algumas 'Escolha DUAS'",
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo de cenário do exame, com feedback por alternativa e algumas 'Choose TWO'",
         "Aprovação 70%; só seguir para o Módulo 02 após passar"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-01/questions.json --id prova",

@@ -1,351 +1,360 @@
 {
-  "titulo": "Módulo 06 — Prova: o loop agêntico, enforcement com hooks e handoff humano",
+  "titulo": "Module 06 — Exam: the agentic loop, enforcement with hooks, and human handoff",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Uma fintech roda um agente de suporte em loop manual na Messages API. O loop termina quando o texto da resposta contém \"resolvido\" ou \"posso ajudar em algo mais\". Em algumas conversas, o cliente recebe \"Seu estorno foi resolvido, vou processá-lo agora\" e o estorno nunca acontece. Qual a melhor correção?",
+      "pergunta": "A fintech runs a support agent in a manual loop on the Messages API. The loop ends when the response text contains \"resolved\" or \"anything else I can help with\". In some conversations, the customer receives \"Your refund has been resolved, I'll process it now\" and the refund never happens. What is the best fix?",
       "opcoes": [
-        "Instruir no system prompt que o modelo só use a palavra \"resolvido\" depois de chamar todas as tools",
-        "Adicionar mais frases de encerramento à lista para cobrir as variações",
-        "Decidir a continuação pelo `stop_reason`: com `tool_use`, executar as tools e seguir; encerrar só em `end_turn`",
-        "Forçar uma iteração extra depois de detectar \"resolvido\", por garantia"
+        "Instruct the model in the system prompt to use the word \"resolved\" only after calling all the tools",
+        "Add more closing phrases to the list to cover the variations",
+        "Decide whether to continue based on `stop_reason`: on `tool_use`, execute the tools and continue; stop only on `end_turn`",
+        "Force an extra iteration after detecting \"resolved\", just in case"
       ],
       "correta": 2,
-      "explicacao": "O modelo narrou (\"vou processá-lo agora\") e pediu a tool no mesmo turno. O sinal confiável é `stop_reason`; ler o texto é o anti-padrão nº 1.",
+      "explicacao": "The model narrated (\"I'll process it now\") and requested the tool in the same turn. The reliable signal is `stop_reason`; reading the text is anti-pattern #1.",
       "feedbacks": [
-        "Tentadora porque parece \"alinhar\" o modelo, mas continua dependendo de linguagem natural, que é probabilística e ambígua.",
-        "Ataca o sintoma: aumenta a lista de palavras, mas o critério continua sendo texto. Qualquer nova frase quebra de novo.",
-        "Correto. `stop_reason: tool_use` diz que há ação pendente; só `end_turn` encerra.",
-        "Gambiarra: uma volta a mais não garante que todas as tools foram executadas e mantém o critério errado."
+        "Tempting because it seems to \"align\" the model, but it still depends on natural language, which is probabilistic and ambiguous.",
+        "Attacks the symptom: it grows the word list, but the criterion is still text. Any new phrase breaks it again.",
+        "Correct. `stop_reason: tool_use` says there is a pending action; only `end_turn` ends the loop.",
+        "A hack: one more round doesn't guarantee that all the tools were executed, and it keeps the wrong criterion."
       ]
     },
     {
-      "pergunta": "Num pipeline de CI, o Claude gera um relatório JSON de revisão. Cerca de 3% das execuções falham no parse com \"unexpected end of input\", sempre em PRs muito grandes. O código só verifica se o HTTP foi 200. Qual a causa mais provável e a correção?",
+      "pergunta": "In a CI pipeline, Claude generates a JSON review report. About 3% of runs fail to parse with \"unexpected end of input\", always on very large PRs. The code only checks whether the HTTP status was 200. What is the most likely cause, and the fix?",
       "opcoes": [
-        "A resposta foi cortada (`stop_reason: max_tokens`); checar o `stop_reason` e tratar o corte (aumentar o teto, continuar ou dividir o PR)",
-        "O modelo está alucinando JSON inválido; adicionar few-shot com JSON bem formado",
-        "Instabilidade de rede; adicionar retry com backoff para todas as respostas",
-        "O schema é complexo demais; remover campos do relatório"
+        "The response was cut off (`stop_reason: max_tokens`); check `stop_reason` and handle the cutoff (raise the ceiling, continue, or split the PR)",
+        "The model is hallucinating invalid JSON; add few-shot with well-formed JSON",
+        "Network instability; add retry with backoff for all responses",
+        "The schema is too complex; remove fields from the report"
       ],
       "correta": 0,
-      "explicacao": "\"Fim inesperado\" em entradas grandes é a assinatura de truncamento por `max_tokens`. HTTP 200 não garante resposta completa: cheque `stop_reason`.",
+      "explicacao": "\"Unexpected end\" on large inputs is the signature of truncation by `max_tokens`. HTTP 200 doesn't guarantee a complete response: check `stop_reason`.",
       "feedbacks": [
-        "Correto. O corte acontece no meio do JSON; o `stop_reason` denunciaria isso.",
-        "Tentadora (\"melhore o prompt\"), mas o JSON não está malformado, está incompleto. Few-shot não aumenta o teto de saída.",
-        "Retry às cegas repete o mesmo corte; não é falha de rede, a resposta chegou com 200.",
-        "Reduzir campos pode mascarar o sintoma, mas sacrifica requisitos e não trata a causa (corte não detectado)."
+        "Correct. The cutoff happens in the middle of the JSON; `stop_reason` would have revealed it.",
+        "Tempting (\"improve the prompt\"), but the JSON isn't malformed, it's incomplete. Few-shot doesn't raise the output ceiling.",
+        "A blind retry repeats the same cutoff; it isn't a network failure, the response arrived with 200.",
+        "Reducing fields may mask the symptom, but it sacrifices requirements and doesn't address the cause (an undetected cutoff)."
       ]
     },
     {
-      "pergunta": "O agente de suporte de uma varejista pediu, na mesma resposta, `get_order`, `get_customer` e `get_shipping`. As duas primeiras retornaram; `get_shipping` deu timeout. Como o harness deve montar o próximo request?",
+      "pergunta": "A retailer's support agent requested `get_order`, `get_customer`, and `get_shipping` in the same response. The first two returned; `get_shipping` timed out. How should the harness build the next request?",
       "opcoes": [
-        "Enviar só os dois resultados bem-sucedidos e deixar o modelo perceber a ausência do terceiro",
-        "Enviar três mensagens `user`, uma por resultado, com o timeout por último",
-        "Abortar a conversa e pedir ao cliente para tentar mais tarde",
-        "Enviar uma única mensagem `user` com três `tool_result`, cada um com seu `tool_use_id`; o de `get_shipping` com `is_error: true` e a descrição do timeout"
+        "Send only the two successful results and let the model notice the absence of the third",
+        "Send three `user` messages, one per result, with the timeout last",
+        "Abort the conversation and ask the customer to try again later",
+        "Send a single `user` message with three `tool_result` blocks, each with its `tool_use_id`; the one for `get_shipping` with `is_error: true` and a description of the timeout"
       ],
       "correta": 3,
-      "explicacao": "Tool use paralelo: todo `tool_use` recebe `tool_result`, ids exatos, numa única mensagem `user`; a falha vai com `is_error: true` para o modelo decidir a recuperação.",
+      "explicacao": "Parallel tool use: every `tool_use` gets a `tool_result`, with exact ids, in a single `user` message; the failure goes with `is_error: true` so the model can decide how to recover.",
       "feedbacks": [
-        "Omitir o resultado quebra o protocolo (cada `tool_use` exige resposta) e esconde a falha.",
-        "Espalhar em várias mensagens `user` viola o formato esperado para resultados paralelos.",
-        "Abortar por uma falha transitória desperdiça o que já foi obtido; o modelo pode tentar de novo ou seguir sem o frete.",
-        "Correto. Resultado completo, inclusive o erro, para o modelo raciocinar."
+        "Omitting the result breaks the protocol (every `tool_use` requires a response) and hides the failure.",
+        "Spreading them across several `user` messages violates the expected format for parallel results.",
+        "Aborting because of a transient failure wastes what has already been obtained; the model can retry or proceed without the shipping info.",
+        "Correct. A complete result, including the error, so the model can reason about it."
       ]
     },
     {
-      "pergunta": "Um time de pesquisa percebeu que o agente às vezes consulta fontes acadêmicas antes das notícias, e escreveu um roteador em C# que decide a próxima tool com base em palavras-chave da pergunta. Agora o agente falha em perguntas que não se encaixam nas regras. Qual a melhor direção?",
+      "pergunta": "A research team noticed that the agent sometimes consults academic sources before news, and wrote a router in C# that decides the next tool based on keywords in the question. Now the agent fails on questions that don't fit the rules. What is the best direction?",
       "opcoes": [
-        "Ampliar o roteador com mais regras e um fallback para perguntas não reconhecidas",
-        "Devolver ao modelo a decisão de qual tool chamar e quando, melhorando as descrições das tools se a seleção estiver ruim",
-        "Treinar um classificador para escolher a tool antes de cada chamada",
-        "Fixar a ordem notícias → acadêmico → síntese em todas as perguntas"
+        "Expand the router with more rules and a fallback for unrecognized questions",
+        "Give the decision of which tool to call, and when, back to the model, improving the tool descriptions if selection is poor",
+        "Train a classifier to choose the tool before each call",
+        "Fix the order news → academic → synthesis for every question"
       ],
       "correta": 1,
-      "explicacao": "Em um agente, quem escolhe a tool é o modelo. Árvore de decisão externa é anti-padrão; se a seleção falha, a correção mais simples é a descrição da tool.",
+      "explicacao": "In an agent, the model is the one that chooses the tool. An external decision tree is an anti-pattern; if selection fails, the simplest fix is the tool description.",
       "feedbacks": [
-        "Aprofunda o anti-padrão: mais regras, mais casos não cobertos. É manter um script frágil.",
-        "Correto. O modelo adapta o caminho ao que descobre; descrições guiam a seleção.",
-        "Mais complexo que o necessário: um classificador antes de olhar as descrições viola \"a correção mais simples\".",
-        "Transforma o agente num pipeline fixo; a ordem de fontes nem é uma regra crítica que justifique isso."
+        "Deepens the anti-pattern: more rules, more uncovered cases. It means maintaining a fragile script.",
+        "Correct. The model adapts its path to what it discovers; descriptions guide selection.",
+        "More complex than necessary: a classifier before looking at the descriptions violates \"the simplest fix\".",
+        "Turns the agent into a fixed pipeline; the order of sources isn't even a critical rule that would justify it."
       ]
     },
     {
-      "pergunta": "Após um incidente em que um agente de pesquisa ficou em loop gastando tokens por horas, um engenheiro propõe: \"o loop para sempre na 8ª iteração\". Tarefas legítimas costumam levar de 3 a 25 iterações. Qual a melhor decisão?",
+      "pergunta": "After an incident in which a research agent got stuck in a loop burning tokens for hours, an engineer proposes: \"the loop always stops at the 8th iteration\". Legitimate tasks typically take 3 to 25 iterations. What is the best decision?",
       "opcoes": [
-        "Aceitar 8 iterações, pois atende à maioria das tarefas",
-        "Calcular o limite pela média histórica de iterações",
-        "Manter `end_turn` como critério de parada e adicionar um backstop bem acima do normal, com log e alerta quando disparar",
-        "Remover qualquer limite e confiar só no `stop_reason`"
+        "Accept 8 iterations, since that covers most tasks",
+        "Calculate the limit from the historical average number of iterations",
+        "Keep `end_turn` as the stopping criterion and add a backstop well above normal, with logging and an alert when it fires",
+        "Remove any limit and rely only on `stop_reason`"
       ],
       "correta": 2,
-      "explicacao": "Limite fixo como mecanismo principal é anti-padrão; como backstop contra bug é correto. O fim normal continua sendo `end_turn`.",
+      "explicacao": "A fixed limit as the primary mechanism is an anti-pattern; as a backstop against bugs, it's correct. The normal end is still `end_turn`.",
       "feedbacks": [
-        "Cortaria no meio as tarefas legítimas de 9 a 25 iterações.",
-        "Média ainda corta tudo acima dela; continua sendo número arbitrário como critério.",
-        "Correto. Rede de segurança alta + alerta, sem mudar o critério de parada.",
-        "Exagero no sentido oposto: sem backstop, um bug repete o incidente."
+        "It would cut off legitimate tasks of 9 to 25 iterations midway.",
+        "An average still cuts off everything above it; it's still an arbitrary number used as the criterion.",
+        "Correct. A high safety net + an alert, without changing the stopping criterion.",
+        "Overcorrection in the opposite direction: without a backstop, a bug repeats the incident."
       ]
     },
     {
-      "pergunta": "Um assistente de produtividade usa a tool server-side de web search. Em perguntas que exigem muitas buscas, os usuários recebem respostas pela metade. Os logs mostram `stop_reason: \"pause_turn\"` nessas respostas, que o código trata como finais. O que fazer?",
+      "pergunta": "A productivity assistant uses the server-side web search tool. On questions that require many searches, users receive half-finished answers. The logs show `stop_reason: \"pause_turn\"` on those responses, which the code treats as final. What should be done?",
       "opcoes": [
-        "Ao receber `pause_turn`, reenviar a conversa com a resposta anexada como turno do assistant para o modelo continuar",
-        "Aumentar o `max_tokens` da requisição",
-        "Trocar a web search server-side por uma tool client-side própria",
-        "Montar um `tool_result` vazio para a busca pendente e reenviar"
+        "On receiving `pause_turn`, resend the conversation with the response appended as an assistant turn so the model can continue",
+        "Increase the request's `max_tokens`",
+        "Replace the server-side web search with a custom client-side tool",
+        "Build an empty `tool_result` for the pending search and resend"
       ],
       "correta": 0,
-      "explicacao": "`pause_turn` = o loop server-side bateu no teto de iterações. Reenvie para que o modelo retome.",
+      "explicacao": "`pause_turn` = the server-side loop hit its iteration cap. Resend so the model can resume.",
       "feedbacks": [
-        "Correto. É uma pausa do protocolo, resolvida reenviando.",
-        "Confunde com `max_tokens`. O corte aqui não é de saída, é do loop server-side.",
-        "Reescrever a integração é muito mais complexo e não é necessário: o protocolo já prevê a continuação.",
-        "Tools server-side não recebem `tool_result` do cliente; isso quebraria a conversa."
+        "Correct. It's a protocol pause, resolved by resending.",
+        "Confuses it with `max_tokens`. The cutoff here isn't on output; it's on the server-side loop.",
+        "Rewriting the integration is much more complex and unnecessary: the protocol already provides for continuation.",
+        "Server-side tools don't receive a `tool_result` from the client; that would break the conversation."
       ]
     },
     {
-      "pergunta": "Um agente de suporte, ao receber pedidos que violam a política de uso, às vezes devolve ao cliente uma mensagem em branco. O código lê `content[0].text` sempre que o HTTP é 200. Qual a correção adequada?",
+      "pergunta": "A support agent, when it receives requests that violate the usage policy, sometimes returns a blank message to the customer. The code reads `content[0].text` whenever the HTTP status is 200. What is the appropriate fix?",
       "opcoes": [
-        "Tratar todo `content` vazio como erro de rede e repetir a chamada",
-        "Adicionar ao system prompt: \"nunca responda vazio\"",
-        "Usar `tool_choice` forçando uma tool de resposta em todas as chamadas",
-        "Checar `stop_reason` antes de ler `content` e tratar `refusal` explicitamente (mensagem adequada, registro, escalonamento se for o caso)"
+        "Treat every empty `content` as a network error and repeat the call",
+        "Add to the system prompt: \"never give an empty response\"",
+        "Use `tool_choice` to force a response tool on every call",
+        "Check `stop_reason` before reading `content` and handle `refusal` explicitly (appropriate message, logging, escalation where applicable)"
       ],
       "correta": 3,
-      "explicacao": "Recusas chegam com HTTP 200 e `stop_reason: refusal`. Código que ignora o `stop_reason` as trata como sucesso vazio.",
+      "explicacao": "Refusals arrive with HTTP 200 and `stop_reason: refusal`. Code that ignores `stop_reason` treats them as an empty success.",
       "feedbacks": [
-        "Não é erro de rede; repetir a chamada tende a gerar a mesma recusa e mascara o motivo.",
-        "Instrução no prompt não muda o comportamento de recusa nem o fato de o código não checar o sinal.",
-        "Forçar tool não é o tratamento de recusa e, em modelos novos, forçar tool pode nem ser aceito.",
-        "Correto. O sinal existe e precisa ser tratado."
+        "It isn't a network error; repeating the call tends to produce the same refusal and masks the reason.",
+        "A prompt instruction changes neither the refusal behavior nor the fact that the code doesn't check the signal.",
+        "Forcing a tool isn't how refusals are handled and, on newer models, forcing a tool may not even be accepted.",
+        "Correct. The signal exists and needs to be handled."
       ]
     },
     {
-      "pergunta": "Uma auditoria mostrou que, em cerca de 2% das conversas, o agente de suporte chamou `process_refund` antes de `verify_identity`. O system prompt já diz em maiúsculas que a verificação é obrigatória. Qual a melhor correção?",
+      "pergunta": "An audit showed that in about 2% of conversations, the support agent called `process_refund` before `verify_identity`. The system prompt already says, in capital letters, that verification is mandatory. What is the best fix?",
       "opcoes": [
-        "Repetir a regra no fim do system prompt e em cada mensagem do usuário",
-        "Bloquear programaticamente `process_refund` (hook `PreToolUse` ou pré-requisito na tool) enquanto a identidade não estiver verificada",
-        "Adicionar exemplos few-shot mostrando a ordem correta",
-        "Usar um segundo modelo para revisar cada conversa antes do reembolso"
+        "Repeat the rule at the end of the system prompt and in every user message",
+        "Programmatically block `process_refund` (a `PreToolUse` hook or a prerequisite in the tool) until the identity has been verified",
+        "Add few-shot examples showing the correct order",
+        "Use a second model to review each conversation before the refund"
       ],
       "correta": 1,
-      "explicacao": "Regra com consequência financeira exige enforcement determinístico. Prompt (mesmo enfático), few-shot e revisor LLM continuam probabilísticos.",
+      "explicacao": "A rule with financial consequences requires deterministic enforcement. A prompt (however emphatic), few-shot, and an LLM reviewer are all still probabilistic.",
       "feedbacks": [
-        "Reduz talvez a taxa, mas não a zera: é o anti-padrão \"regra crítica só em prompt\".",
-        "Correto. Determinístico: sem verificação, o reembolso não executa.",
-        "Few-shot melhora a média; ainda é probabilístico.",
-        "Mais caro, mais lento e ainda probabilístico."
+        "It may reduce the rate, but it won't eliminate it: this is the \"critical rule only in the prompt\" anti-pattern.",
+        "Correct. Deterministic: without verification, the refund doesn't execute.",
+        "Few-shot improves the average; it's still probabilistic.",
+        "More expensive, slower, and still probabilistic."
       ]
     },
     {
-      "pergunta": "Um arquiteto quer garantir que nenhum reembolso seja executado sem verificação de identidade no agente de suporte construído com o Agent SDK. Quais medidas oferecem essa garantia? (Escolha DUAS.)",
+      "pergunta": "An architect wants to guarantee that no refund is executed without identity verification in a support agent built with the Agent SDK. Which measures provide this guarantee? (Choose TWO.)",
       "opcoes": [
-        "Um hook `PreToolUse` que nega `process_refund` (`permissionDecision: \"deny\"`) quando a sessão não registrou verificação",
-        "Uma seção \"Regras críticas\" no topo do system prompt",
-        "Um hook do tipo `prompt` que pergunta a um LLM se a conversa parece verificada",
-        "Fazer `process_refund` exigir um `verification_token` emitido por `verify_identity`, rejeitando a chamada sem token válido",
-        "Um `PostToolUse` em `process_refund` que alerta quando não houve verificação"
+        "A `PreToolUse` hook that denies `process_refund` (`permissionDecision: \"deny\"`) when the session has no recorded verification",
+        "A \"Critical rules\" section at the top of the system prompt",
+        "A `prompt`-type hook that asks an LLM whether the conversation looks verified",
+        "Make `process_refund` require a `verification_token` issued by `verify_identity`, rejecting the call without a valid token",
+        "A `PostToolUse` hook on `process_refund` that raises an alert when there was no verification"
       ],
-      "corretas": [0, 3],
-      "explicacao": "Garantia = código determinístico antes da execução: hook `PreToolUse` com negação ou pré-requisito validado pela própria tool.",
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Guarantee = deterministic code before execution: a `PreToolUse` hook that denies, or a prerequisite validated by the tool itself.",
       "feedbacks": [
-        "Correto. Bloqueio determinístico antes da tool rodar.",
-        "Prompt é probabilístico; não garante.",
-        "Tentadora por ser um hook, mas o tipo `prompt` é uma decisão de LLM: continua probabilística para algo que tem critério objetivo.",
-        "Correto. O pré-requisito no código da tool é determinístico.",
-        "`PostToolUse` roda depois: o reembolso já foi feito. Alerta não é prevenção."
+        "Correct. Deterministic blocking before the tool runs.",
+        "A prompt is probabilistic; it doesn't guarantee anything.",
+        "Tempting because it's a hook, but the `prompt` type is an LLM decision: still probabilistic, for something that has an objective criterion.",
+        "Correct. The prerequisite in the tool's code is deterministic.",
+        "`PostToolUse` runs afterward: the refund has already been made. An alert isn't prevention."
       ]
     },
     {
-      "pergunta": "Os atendentes humanos reclamam que, quando o agente de suporte transfere um caso, precisam ler a conversa inteira e muitas vezes refazem a verificação de identidade. Qual mudança resolve melhor?",
+      "pergunta": "Human support staff complain that when the support agent transfers a case, they have to read the entire conversation and often redo the identity verification. Which change solves this best?",
       "opcoes": [
-        "Anexar o transcript completo ao ticket, destacando as mensagens do cliente",
-        "Pedir ao agente uma frase de resumo antes de transferir",
-        "Criar uma tool de handoff com schema estruturado: cliente e status de verificação, problema, pedido, causa raiz, ações tomadas, motivo do escalonamento, ação recomendada e valor",
-        "Transferir mais cedo, para que as conversas sejam mais curtas"
+        "Attach the full transcript to the ticket, highlighting the customer's messages",
+        "Ask the agent for a one-sentence summary before transferring",
+        "Create a handoff tool with a structured schema: customer and verification status, issue, order, root cause, actions taken, reason for escalation, recommended action, and amount",
+        "Transfer earlier, so conversations are shorter"
       ],
       "correta": 2,
-      "explicacao": "O humano normalmente não lê o transcript. O handoff precisa de resumo estruturado, com campos fixos que garantam completude (inclusive o que já foi feito).",
+      "explicacao": "The human typically doesn't read the transcript. The handoff needs a structured summary, with fixed fields that guarantee completeness (including what has already been done).",
       "feedbacks": [
-        "Continua exigindo leitura do transcript; não diz o que já foi feito nem o que se recomenda.",
-        "Prosa livre de uma frase esquece campos (ex.: verificação já feita) e é inconsistente.",
-        "Correto. Campos obrigatórios = handoff completo e acionável.",
-        "Ataca o sintoma errado e piora a resolução automática; o problema é a qualidade do handoff."
+        "Still requires reading the transcript; it doesn't say what has already been done or what is recommended.",
+        "A single sentence of free prose forgets fields (e.g., verification already done) and is inconsistent.",
+        "Correct. Required fields = a complete, actionable handoff.",
+        "Attacks the wrong symptom and worsens automatic resolution; the problem is the quality of the handoff."
       ]
     },
     {
-      "pergunta": "Um time usa Claude Code num monorepo e quer que, para todos os desenvolvedores, qualquer tentativa do Claude de editar arquivos `.env` seja bloqueada. Qual configuração atende?",
+      "pergunta": "A team uses Claude Code in a monorepo and wants any attempt by Claude to edit `.env` files to be blocked, for all developers. Which configuration achieves this?",
       "opcoes": [
-        "Hook `PreToolUse` com matcher `Edit|Write` em `.claude/settings.json` do projeto, com script que bloqueia (exit 2) quando o caminho é `.env`",
-        "Instrução no CLAUDE.md do projeto: \"nunca edite arquivos .env\"",
-        "Hook `PostToolUse` em `.claude/settings.local.json` que desfaz a edição",
-        "Hook `PreToolUse` em `~/.claude/settings.json` do tech lead"
+        "A `PreToolUse` hook with matcher `Edit|Write` in the project's `.claude/settings.json`, with a script that blocks (exit 2) when the path is `.env`",
+        "An instruction in the project's CLAUDE.md: \"never edit .env files\"",
+        "A `PostToolUse` hook in `.claude/settings.local.json` that undoes the edit",
+        "A `PreToolUse` hook in the tech lead's `~/.claude/settings.json`"
       ],
       "correta": 0,
-      "explicacao": "Bloquear antes = `PreToolUse`; valer para o time = settings de projeto versionado. Exit 2 bloqueia e explica o motivo ao Claude.",
+      "explicacao": "Block beforehand = `PreToolUse`; apply to the team = versioned project settings. Exit 2 blocks and explains the reason to Claude.",
       "feedbacks": [
-        "Correto. Evento certo, local compartilhado, bloqueio determinístico.",
-        "CLAUDE.md é instrução: probabilística, não bloqueia.",
-        "Errado duas vezes: `PostToolUse` age depois da edição e `settings.local.json` é pessoal (gitignored).",
-        "Settings de usuário valem só para o tech lead, não para o time."
+        "Correct. The right event, a shared location, deterministic blocking.",
+        "CLAUDE.md is an instruction: probabilistic, it doesn't block.",
+        "Incorrect on two counts: `PostToolUse` acts after the edit, and `settings.local.json` is personal (gitignored).",
+        "User settings apply only to the tech lead, not to the team."
       ]
     },
     {
-      "pergunta": "Uma empresa de saúde usa um agente de produtividade conectado a um servidor MCP de prontuários. Exigência: o modelo nunca deve ver CPF nem nome completo dos pacientes, e nenhum usuário pode desativar essa proteção. Quais medidas atendem? (Escolha DUAS.)",
+      "pergunta": "A healthcare company uses a productivity agent connected to a medical records MCP server. Requirement: the model must never see patients' CPF numbers or full names, and no user can disable this protection. Which measures meet this requirement? (Choose TWO.)",
       "opcoes": [
-        "Instruir no CLAUDE.md que o modelo ignore CPFs que encontrar",
-        "Um hook `PostToolUse` nas tools do servidor de prontuários que mascara CPF e nome antes de o resultado chegar ao modelo",
-        "Um hook `PreToolUse` que bloqueia todas as chamadas ao servidor de prontuários",
-        "Configurar o hook em `.claude/settings.local.json` de cada máquina",
-        "Distribuir a configuração do hook via managed policy da organização"
+        "Instruct the model in CLAUDE.md to ignore any CPFs it finds",
+        "A `PostToolUse` hook on the medical records server's tools that masks CPF and name before the result reaches the model",
+        "A `PreToolUse` hook that blocks all calls to the medical records server",
+        "Configure the hook in `.claude/settings.local.json` on each machine",
+        "Distribute the hook configuration via the organization's managed policy"
       ],
-      "corretas": [1, 4],
-      "explicacao": "Tratar o resultado = `PostToolUse` (mascarar PII). \"Ninguém pode desativar\" = managed policy, acima das settings de usuário/projeto.",
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "Processing the result = `PostToolUse` (mask PII). \"No one can disable it\" = managed policy, which sits above user/project settings.",
       "feedbacks": [
-        "O dado já estaria no contexto; instrução não impede o modelo de ver.",
-        "Correto. Normaliza/mascara o resultado antes de chegar ao modelo.",
-        "Resolve a privacidade matando a funcionalidade; o objetivo é usar os prontuários sem expor PII.",
-        "Local é pessoal e qualquer usuário pode alterar ou não ter.",
-        "Correto. Política da organização, não sobrescrevível pelo usuário."
+        "The data would already be in context; an instruction doesn't stop the model from seeing it.",
+        "Correct. Normalizes/masks the result before it reaches the model.",
+        "Solves privacy by killing the functionality; the goal is to use the medical records without exposing PII.",
+        "Local is personal, and any user can change it or simply not have it.",
+        "Correct. Organization policy, which the user can't override."
       ]
     },
     {
-      "pergunta": "Num repositório, um desenvolvedor propõe um hook `PostToolUse` no `Bash` que detecta `rm -rf` no comando executado e devolve um erro ao Claude, para \"impedir apagamentos acidentais\". Qual a avaliação correta?",
+      "pergunta": "In a repository, a developer proposes a `PostToolUse` hook on `Bash` that detects `rm -rf` in the executed command and returns an error to Claude, to \"prevent accidental deletions\". What is the correct assessment?",
       "opcoes": [
-        "Adequado, pois o Claude lerá o erro e não repetirá o comando",
-        "Inadequado: `PostToolUse` roda depois da execução; para impedir, use `PreToolUse` com bloqueio (exit 2 ou `permissionDecision: \"deny\"`)",
-        "Adequado, desde que o hook seja do tipo `agent`",
-        "Inadequado: hooks não podem inspecionar comandos de `Bash`"
+        "Appropriate, since Claude will read the error and won't repeat the command",
+        "Inappropriate: `PostToolUse` runs after execution; to prevent it, use `PreToolUse` with blocking (exit 2 or `permissionDecision: \"deny\"`)",
+        "Appropriate, as long as the hook is of type `agent`",
+        "Inappropriate: hooks can't inspect `Bash` commands"
       ],
       "correta": 1,
-      "explicacao": "Bloquear = Pre; tratar resultado = Post. Quando o `PostToolUse` roda, os arquivos já foram apagados.",
+      "explicacao": "Block = Pre; process the result = Post. By the time `PostToolUse` runs, the files have already been deleted.",
       "feedbacks": [
-        "O estrago já aconteceu; evitar a repetição não é impedir.",
-        "Correto. Prevenção acontece antes da execução.",
-        "O tipo do hook não muda o momento em que o evento dispara.",
-        "Falso: o evento traz `tool_input`, inclusive o comando do `Bash`."
+        "The damage has already been done; avoiding a repeat isn't prevention.",
+        "Correct. Prevention happens before execution.",
+        "The hook type doesn't change when the event fires.",
+        "False: the event includes `tool_input`, including the `Bash` command."
       ]
     },
     {
-      "pergunta": "Um engenheiro escreveu um hook `command` no `PreToolUse` para bloquear `git push --force`. O script imprime o motivo e termina com `exit 1`, mas o push continua acontecendo. Qual o problema?",
+      "pergunta": "An engineer wrote a `command` hook on `PreToolUse` to block `git push --force`. The script prints the reason and ends with `exit 1`, but the push still goes through. What is the problem?",
       "opcoes": [
-        "O matcher precisa ser `*` para hooks de Bash",
-        "Hooks `command` não conseguem bloquear; só hooks `http` bloqueiam",
-        "Para bloquear, o script deve terminar com exit 2 (motivo no stderr) ou devolver `permissionDecision: \"deny\"` com exit 0",
-        "O bloqueio só funciona em `PostToolUse`"
+        "The matcher needs to be `*` for Bash hooks",
+        "`command` hooks can't block; only `http` hooks can",
+        "To block, the script must end with exit 2 (reason on stderr) or return `permissionDecision: \"deny\"` with exit 0",
+        "Blocking only works in `PostToolUse`"
       ],
       "correta": 2,
-      "explicacao": "Exit 0 passa, exit 2 bloqueia (stderr volta ao Claude). Outros códigos são erro não bloqueante: a ação segue.",
+      "explicacao": "Exit 0 passes, exit 2 blocks (stderr goes back to Claude). Other codes are non-blocking errors: the action proceeds.",
       "feedbacks": [
-        "O matcher pode ser específico (ex.: `Bash`); o problema é o código de saída.",
-        "Falso: o hook `command` é exatamente o tipo determinístico que bloqueia com exit 2.",
-        "Correto. Exit 1 é erro não bloqueante.",
-        "Invertido: bloqueio é papel do `PreToolUse`."
+        "The matcher can be specific (e.g., `Bash`); the problem is the exit code.",
+        "False: the `command` hook is exactly the deterministic type that blocks with exit 2.",
+        "Correct. Exit 1 is a non-blocking error.",
+        "Backwards: blocking is the job of `PreToolUse`."
       ]
     },
     {
-      "pergunta": "Uma empresa vai construir um agente de suporte que precisa de subagents especializados, hooks de compliance, sessões retomáveis e acesso a arquivos de políticas no disco. Qual forma de construção faz mais sentido?",
+      "pergunta": "A company is going to build a support agent that needs specialized subagents, compliance hooks, resumable sessions, and access to policy files on disk. Which way of building it makes the most sense?",
       "opcoes": [
-        "Claude Agent SDK, que traz o harness do Claude Code (tools nativas, subagents, hooks, sessões) como biblioteca",
-        "Loop manual na Messages API, implementando subagents, hooks e sessões do zero",
-        "Tool Runner do SDK, que roda o loop de tools",
-        "Uma única chamada à API com todas as políticas no prompt"
+        "Claude Agent SDK, which provides the Claude Code harness (built-in tools, subagents, hooks, sessions) as a library",
+        "A manual loop on the Messages API, implementing subagents, hooks, and sessions from scratch",
+        "The SDK's Tool Runner, which runs the tool loop",
+        "A single API call with all the policies in the prompt"
       ],
       "correta": 0,
-      "explicacao": "Quando os requisitos incluem subagents, hooks, sessões e tools de arquivo, o Agent SDK é a forma mais simples que atende (o resto seria reimplementar o harness).",
+      "explicacao": "When the requirements include subagents, hooks, sessions, and file tools, the Agent SDK is the simplest option that meets them (anything else would mean reimplementing the harness).",
       "feedbacks": [
-        "Correto. Os requisitos coincidem com o que o SDK já traz.",
-        "Possível, mas é reinventar o harness: mais código, mais risco.",
-        "O Tool Runner resolve o loop de tools, mas não traz subagents, hooks e sessões.",
-        "Não é um agente: não há loop, tools nem enforcement."
+        "Correct. The requirements match what the SDK already provides.",
+        "Possible, but it means reinventing the harness: more code, more risk.",
+        "Tool Runner handles the tool loop, but it doesn't provide subagents, hooks, or sessions.",
+        "It isn't an agent: there's no loop, no tools, and no enforcement."
       ]
     },
     {
-      "pergunta": "Um time precisa de um extrator que recebe um e-mail de pedido, chama uma tool de consulta de catálogo e uma de cálculo de frete, e devolve um JSON. Não há arquivos, subagents nem sessões. A proposta inicial é usar Managed Agents com um coordenador e dois subagents. Qual a melhor recomendação?",
+      "pergunta": "A team needs an extractor that receives an order email, calls a catalog lookup tool and a shipping calculation tool, and returns JSON. There are no files, subagents, or sessions. The initial proposal is to use Managed Agents with a coordinator and two subagents. What is the best recommendation?",
       "opcoes": [
-        "Manter a proposta, pois subagents tornam o sistema mais escalável",
-        "Usar o Agent SDK com um subagent por tool",
-        "Usar Managed Agents sem subagents, para evitar operar infraestrutura",
-        "Um loop manual ou o Tool Runner com as duas tools, que é a forma mais simples que atende"
+        "Keep the proposal, since subagents make the system more scalable",
+        "Use the Agent SDK with one subagent per tool",
+        "Use Managed Agents without subagents, to avoid operating infrastructure",
+        "A manual loop or Tool Runner with the two tools, which is the simplest option that works"
       ],
       "correta": 3,
-      "explicacao": "Escolha a forma mais simples que resolve. Duas tools e saída JSON não justificam orquestração multiagente nem infraestrutura hospedada.",
+      "explicacao": "Choose the simplest option that solves the problem. Two tools and JSON output justify neither multi-agent orchestration nor hosted infrastructure.",
       "feedbacks": [
-        "Escalabilidade hipotética não justifica complexidade presente; viola \"comece simples\".",
-        "Subagent por tool é decomposição desnecessária e mais cara.",
-        "Mais simples que a proposta, mas o enunciado não pede sandbox nem execução hospedada; ainda é mais do que o necessário.",
-        "Correto. Loop direto com duas tools."
+        "Hypothetical scalability doesn't justify present complexity; it violates \"start simple\".",
+        "One subagent per tool is unnecessary decomposition, and more expensive.",
+        "Simpler than the proposal, but the question doesn't call for a sandbox or hosted execution; it's still more than necessary.",
+        "Correct. A direct loop with two tools."
       ]
     },
     {
-      "pergunta": "Um sistema de pesquisa às vezes consome muito mais tokens do que o previsto. Para limitar o custo, alguém reduziu o `max_tokens` de 8.000 para 1.500. Agora os relatórios chegam cortados no meio e o custo total quase não caiu. Qual seria a abordagem adequada?",
+      "pergunta": "A research system sometimes consumes far more tokens than expected. To limit cost, someone reduced `max_tokens` from 8,000 to 1,500. Now the reports arrive cut off in the middle, and the total cost has barely dropped. What would be the appropriate approach?",
       "opcoes": [
-        "Reduzir ainda mais o `max_tokens` e pedir respostas curtas no prompt",
-        "Dar ao agente um orçamento visível da tarefa (task budget), para ele priorizar e entregar algo completo dentro do limite, mantendo um backstop",
-        "Remover tools de busca para reduzir as chamadas",
-        "Encerrar o loop quando o texto acumulado passar de N caracteres"
+        "Reduce `max_tokens` even further and ask for short responses in the prompt",
+        "Give the agent a visible task budget, so it can prioritize and deliver something complete within the limit, while keeping a backstop",
+        "Remove search tools to reduce the number of calls",
+        "End the loop when the accumulated text exceeds N characters"
       ],
       "correta": 1,
-      "explicacao": "`max_tokens` é invisível e por resposta: corta sem reduzir o número de voltas. Um orçamento visível deixa o modelo se organizar para caber.",
+      "explicacao": "`max_tokens` is invisible and per response: it cuts off output without reducing the number of rounds. A visible budget lets the model organize itself to fit.",
       "feedbacks": [
-        "Aprofunda o problema: mais cortes, mesmo número de voltas.",
-        "Correto. Visível → o modelo planeja; backstop protege contra excesso.",
-        "Mutila a capacidade do sistema em vez de controlar o gasto.",
-        "Critério de parada arbitrário por texto, ainda produzindo relatórios cortados."
+        "Deepens the problem: more cutoffs, same number of rounds.",
+        "Correct. Visible → the model plans; the backstop protects against overruns.",
+        "Cripples the system's capability instead of controlling spend.",
+        "An arbitrary text-based stopping criterion, still producing cut-off reports."
       ]
     },
     {
-      "pergunta": "Sobre o tratamento de `stop_reason` num loop agêntico, quais afirmações estão corretas? (Escolha DUAS.)",
+      "pergunta": "Regarding `stop_reason` handling in an agentic loop, which statements are correct? (Choose TWO.)",
       "opcoes": [
-        "`pause_turn` indica que um loop de tool server-side pausou; reenviar a resposta permite continuar",
-        "`refusal` chega com HTTP 200, por isso o código precisa checar o `stop_reason` antes de ler o conteúdo",
-        "`max_tokens` indica que o modelo concluiu usando todo o orçamento disponível",
-        "`model_context_window_exceeded` significa que o request foi rejeitado e nada foi gerado",
-        "`end_turn` só é confiável se o texto final contiver uma confirmação explícita"
+        "`pause_turn` indicates that a server-side tool loop has paused; resending the response lets it continue",
+        "`refusal` arrives with HTTP 200, so the code needs to check `stop_reason` before reading the content",
+        "`max_tokens` indicates that the model finished after using the entire available budget",
+        "`model_context_window_exceeded` means the request was rejected and nothing was generated",
+        "`end_turn` is reliable only if the final text contains an explicit confirmation"
       ],
-      "corretas": [0, 1],
-      "explicacao": "`pause_turn` → reenviar; `refusal` → HTTP 200. `max_tokens` é corte (não conclusão); janela excedida gera saída válida porém truncada; `end_turn` dispensa ler o texto.",
+      "corretas": [
+        0,
+        1
+      ],
+      "explicacao": "`pause_turn` → resend; `refusal` → HTTP 200. `max_tokens` is a cutoff (not completion); an exceeded window produces valid but truncated output; `end_turn` makes reading the text unnecessary.",
       "feedbacks": [
-        "Correto.",
-        "Correto.",
-        "Tentadora pelo nome, mas significa corte no meio: a resposta está incompleta.",
-        "Há saída gerada, válida porém truncada, não uma rejeição.",
-        "`end_turn` já é o sinal estruturado de fim; exigir confirmação textual reintroduz o anti-padrão."
+        "Correct.",
+        "Correct.",
+        "Tempting because of the name, but it means a cutoff midway: the response is incomplete.",
+        "There is generated output, valid but truncated, not a rejection.",
+        "`end_turn` is already the structured end signal; requiring a textual confirmation reintroduces the anti-pattern."
       ]
     },
     {
-      "pergunta": "A política de uma companhia aérea diz que reembolsos acima de US$ 500 exigem aprovação de um supervisor. Hoje isso está no system prompt, e o agente às vezes aprova US$ 620 sozinho. Qual desenho é o melhor?",
+      "pergunta": "An airline's policy says that refunds above $500 require a supervisor's approval. Today this is in the system prompt, and the agent sometimes approves $620 on its own. Which design is best?",
       "opcoes": [
-        "Pedir ao modelo para declarar sua confiança e escalar quando ela for menor que 80%",
-        "Escalar todo reembolso, independentemente do valor",
-        "Impor o limite em código (a tool de reembolso ou um hook recusa acima de US$ 500 com erro estruturado) e o agente escala via handoff estruturado",
-        "Repetir o limite com exemplos de valores no prompt"
+        "Ask the model to state its confidence and escalate when it is below 80%",
+        "Escalate every refund, regardless of the amount",
+        "Enforce the limit in code (the refund tool or a hook rejects anything above $500 with a structured error), and the agent escalates via a structured handoff",
+        "Repeat the limit with example amounts in the prompt"
       ],
       "correta": 2,
-      "explicacao": "Limite financeiro é regra crítica: código determinístico. Acima do limite, o agente escala com resumo estruturado para o supervisor.",
+      "explicacao": "A financial limit is a critical rule: deterministic code. Above the limit, the agent escalates to the supervisor with a structured summary.",
       "feedbacks": [
-        "Confiança autodeclarada é mal calibrada; o critério aqui é objetivo (valor).",
-        "Exagero: sobrecarrega humanos com casos que o agente pode resolver.",
-        "Correto. Determinístico no limite, handoff útil acima dele.",
-        "Continua probabilístico, como está hoje."
+        "Self-reported confidence is poorly calibrated; the criterion here is objective (the amount).",
+        "Overkill: it overloads humans with cases the agent can resolve.",
+        "Correct. Deterministic at the limit, a useful handoff above it.",
+        "Still probabilistic, just as it is today."
       ]
     },
     {
-      "pergunta": "Num fluxo de geração de código com Claude Code, o time percebe que o Claude às vezes encerra dizendo \"implementação concluída\" com testes ainda falhando. Querem impedir que ele encerre o turno enquanto a suíte não passar, sem depender da disciplina do modelo. Qual o mecanismo adequado?",
+      "pergunta": "In a code generation workflow with Claude Code, the team notices that Claude sometimes finishes by saying \"implementation complete\" while tests are still failing. They want to prevent it from ending the turn while the suite isn't passing, without relying on the model's discipline. What is the appropriate mechanism?",
       "opcoes": [
-        "Adicionar ao CLAUDE.md: \"só diga concluído quando todos os testes passarem\"",
-        "Um hook `PostToolUse` no `Edit` que roda os testes depois de cada edição",
-        "Um hook `SessionEnd` que roda os testes e registra o resultado",
-        "Um hook `Stop` que roda a suíte e, se falhar, bloqueia o encerramento devolvendo o motivo ao Claude"
+        "Add to CLAUDE.md: \"only say complete when all tests pass\"",
+        "A `PostToolUse` hook on `Edit` that runs the tests after each edit",
+        "A `SessionEnd` hook that runs the tests and logs the result",
+        "A `Stop` hook that runs the suite and, if it fails, blocks the stop by returning the reason to Claude"
       ],
       "correta": 3,
-      "explicacao": "O evento `Stop` dispara quando o agente vai encerrar o turno; bloquear ali força o Claude a continuar com o motivo (testes falhando) em mãos.",
+      "explicacao": "The `Stop` event fires when the agent is about to end its turn; blocking there forces Claude to continue, with the reason (failing tests) in hand.",
       "feedbacks": [
-        "Instrução é probabilística; é exatamente a disciplina do modelo que se quer dispensar.",
-        "Dá feedback útil, mas não impede o encerramento com testes falhando.",
-        "`SessionEnd` dispara no fim da sessão: tarde demais para fazer o Claude continuar.",
-        "Correto. Gate determinístico no momento de encerrar."
+        "An instruction is probabilistic; it's exactly the model's discipline that you want to stop relying on.",
+        "Gives useful feedback, but doesn't prevent ending the turn with failing tests.",
+        "`SessionEnd` fires at the end of the session: too late to make Claude continue.",
+        "Correct. A deterministic gate at the moment of stopping."
       ]
     }
   ]

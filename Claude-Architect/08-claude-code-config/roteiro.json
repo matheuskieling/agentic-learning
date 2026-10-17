@@ -139,6 +139,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação do Módulo 08 (15 questões)",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas: hierarquia do CLAUDE.md, rules, skills, settings/permissões, modos, subagents, tools nativas",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora",
         "Meta: 70%"
@@ -152,8 +153,9 @@
       "fase": "prova",
       "titulo": "Prova do Módulo 08 (20 questões em estilo de cenário)",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "20 questões no estilo do exame (cenários 2, 4 e 5), com feedback por alternativa",
-        "Algumas são de múltipla resposta ('Escolha DUAS'): responda com letras separadas por vírgula",
+        "Algumas são de múltipla resposta ('Choose TWO'): responda com letras separadas por vírgula",
         "Aprovação: 70%"
       ],
       "checkpoint": "Analise os erros por tópico; se ficou abaixo de 70%, revise a cola de véspera e refaça",

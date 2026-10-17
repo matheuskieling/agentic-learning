@@ -142,6 +142,7 @@
       "fase": "quiz",
       "titulo": "Quiz de fixação — Módulo 06",
       "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
         "15 questões curtas: stop_reason, tool_result, paralelo, backstop, task budget, 4 formas, enforcement, handoff, hooks",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
       ],
@@ -154,7 +155,8 @@
       "fase": "prova",
       "titulo": "Prova do Módulo 06 (estilo cenário)",
       "pontos": [
-        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Escolha DUAS)",
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Choose TWO)",
         "Aprovação 70%; abaixo disso, revise a 'Cola de véspera' e os tópicos errados e refaça"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-06/questions.json --id prova",

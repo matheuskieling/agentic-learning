@@ -1,360 +1,360 @@
 {
-  "titulo": "Módulo 10 — Prova: gestão de contexto e prompt caching",
+  "titulo": "Module 10 — Exam: context management and prompt caching",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Uma varejista roda um agente de suporte no Agent SDK. A tool get_order devolve o objeto completo do pedido (cerca de 40 campos, incluindo histórico logístico) e o agente só usa status, valor, data e itens. Em conversas longas, o agente começa a confundir valores e o custo por atendimento subiu muito. Qual a MELHOR primeira ação?",
+      "pergunta": "A retailer runs a support agent on the Agent SDK. The get_order tool returns the complete order object (about 40 fields, including logistics history), and the agent only uses status, amount, date, and items. In long conversations, the agent starts mixing up values, and the cost per support interaction has risen sharply. What is the BEST first action?",
       "opcoes": [
-        "Migrar para um modelo com janela de contexto maior",
-        "Adicionar ao system prompt a instrução 'ignore os campos irrelevantes do pedido'",
-        "Fazer a tool (ou um PostToolUse hook) devolver só os campos relevantes para o atendimento",
-        "Ativar compaction com limiar baixo para resumir os resultados de get_order assim que eles deixarem de ser necessários"
+        "Migrate to a model with a larger context window",
+        "Add to the system prompt the instruction \"ignore the irrelevant order fields\"",
+        "Make the tool (or a PostToolUse hook) return only the fields relevant to the support interaction",
+        "Enable compaction with a low threshold to summarize the get_order results as soon as they are no longer needed"
       ],
       "correta": 2,
-      "explicacao": "Saída de tool é o maior consumidor silencioso de contexto. Cortar na origem reduz custo por turno e ruído de atenção, e é a correção mais simples que resolve.",
+      "explicacao": "Tool output is the biggest silent consumer of context. Cutting it at the source reduces cost per turn and attention noise, and it is the simplest fix that solves the problem.",
       "feedbacks": [
-        "Tentadora por parecer 'dar mais espaço', mas encarece cada turno e não reduz o ruído; ataca o sintoma.",
-        "Os tokens continuam entrando e sendo pagos; pedir para ignorar é probabilístico e não reduz custo.",
-        "Correto. Devolva só o que o agente usa.",
-        "Compaction resumiria valores que precisam ser exatos (risco de perder números) e é mais complexa que simplesmente não trazer o lixo."
+        "Tempting because it seems to \"give more room\", but it makes each turn more expensive and doesn't reduce the noise; it attacks the symptom.",
+        "The tokens still come in and are still paid for; asking the model to ignore them is probabilistic and doesn't reduce cost.",
+        "Correct. Return only what the agent uses.",
+        "Compaction would summarize values that need to be exact (risk of losing numbers) and is more complex than simply not bringing in the junk."
       ]
     },
     {
-      "pergunta": "Num agente de suporte, após cerca de 40 turnos o histórico é resumido automaticamente. A equipe observou que, depois do resumo, o agente às vezes chama process_refund com valor arredondado ou com o order_id de outro pedido citado na conversa. Qual o desenho correto?",
+      "pergunta": "In a support agent, after about 40 turns the history is summarized automatically. The team noticed that, after the summary, the agent sometimes calls process_refund with a rounded amount or with the order_id of another order mentioned in the conversation. What is the correct design?",
       "opcoes": [
-        "Manter um bloco de case facts (IDs, valores, datas) fora do resumo, reinjetado a cada turno",
-        "Reescrever o prompt de sumarização pedindo que preserve números e IDs com exatidão",
-        "Aumentar o número de turnos antes do resumo para 80",
-        "Adicionar um segundo modelo que compara o resumo com o histórico original e corrige números e IDs divergentes"
+        "Keep a case facts block (IDs, amounts, dates) outside the summary, reinjected on every turn",
+        "Rewrite the summarization prompt asking it to preserve numbers and IDs exactly",
+        "Increase the number of turns before the summary to 80",
+        "Add a second model that compares the summary with the original history and corrects divergent numbers and IDs"
       ],
       "correta": 0,
-      "explicacao": "Resumo perde valores exatos e IDs. O que vira argumento de tool não pode ser parafraseado: vai num bloco de case facts que nunca é resumido.",
+      "explicacao": "Summaries lose exact values and IDs. Whatever becomes a tool argument can't be paraphrased: it goes in a case facts block that is never summarized.",
       "feedbacks": [
-        "Correto. Fatos transacionais ficam fora do alcance do resumo.",
-        "Tentadora, mas sumarização continua probabilística; ainda vai perder ou arredondar às vezes.",
-        "Só adia o problema e aumenta custo e lost in the middle.",
-        "Solução mais complexa que o necessário (outro modelo checando o primeiro) e ainda probabilística."
+        "Correct. Transactional facts stay out of the summary's reach.",
+        "Tempting, but summarization remains probabilistic; it will still lose or round values sometimes.",
+        "Only postpones the problem and increases cost and lost in the middle.",
+        "A more complex solution than necessary (another model checking the first) and still probabilistic."
       ]
     },
     {
-      "pergunta": "Um sistema de pesquisa multiagente junta os relatórios de 6 subagents num único contexto de 120 mil tokens antes de pedir ao sintetizador as conclusões. Os achados do subagent de regulação, que ficam no meio da concatenação, são frequentemente omitidos da síntese. Qual ajuste é mais adequado?",
+      "pergunta": "A multi-agent research system combines the reports of 6 subagents into a single 120,000-token context before asking the synthesizer for conclusions. The findings of the regulatory subagent, which sit in the middle of the concatenation, are frequently omitted from the synthesis. Which adjustment is most appropriate?",
       "opcoes": [
-        "Aumentar o max_tokens do sintetizador",
-        "Pedir resumos estruturados aos subagents e pôr os achados-chave no início, com cabeçalhos por fonte",
-        "Trocar a ordem dos relatórios aleatoriamente a cada execução",
-        "Usar um modelo com janela de 1M tokens para que os 120 mil tokens ocupem uma fração pequena do contexto"
+        "Increase the synthesizer's max_tokens",
+        "Ask the subagents for structured summaries and put the key findings at the beginning, with per-source headers",
+        "Shuffle the order of the reports randomly on each run",
+        "Use a model with a 1M-token window so the 120,000 tokens take up a small fraction of the context"
       ],
       "correta": 1,
-      "explicacao": "Lost in the middle: o meio de contextos longos recebe menos atenção. Achados-chave no começo, com cabeçalhos de seção, e menos volume bruto.",
+      "explicacao": "Lost in the middle: the middle of long contexts receives less attention. Key findings at the beginning, with section headers, and less raw volume.",
       "feedbacks": [
-        "max_tokens limita a saída; o problema é atenção ao input.",
-        "Correto. Reduz volume, posiciona o crítico e estrutura com cabeçalhos.",
-        "Aleatorizar só muda quem é ignorado; não resolve.",
-        "Mais espaço não melhora a atenção ao meio; tende a piorar."
+        "max_tokens limits the output; the problem is attention to the input.",
+        "Correct. Reduces volume, positions the critical content, and structures it with headers.",
+        "Randomizing only changes what gets ignored; it doesn't solve the problem.",
+        "More room doesn't improve attention to the middle; it tends to make it worse."
       ]
     },
     {
-      "pergunta": "Um desenvolvedor usa o Claude Code numa sessão longa de refatoração. No início ele explicou que 'os testes de integração precisam da variável ORDERS_DB_URL apontando para o container de teste'. Depois de um /compact, o Claude passou a rodar os testes contra a configuração padrão. Qual a melhor forma de evitar isso daqui em diante?",
+      "pergunta": "A developer uses Claude Code in a long refactoring session. At the start, they explained that \"the integration tests need the ORDERS_DB_URL variable pointing to the test container\". After a /compact, Claude started running the tests against the default configuration. What is the best way to prevent this from now on?",
       "opcoes": [
-        "Evitar o /compact e deixar a sessão crescer até o limite",
-        "Repetir a instrução a cada 10 mensagens",
-        "Rodar /compact com mais frequência, para que o resumo seja gerado enquanto a instrução ainda está recente na conversa",
-        "Registrar a convenção no CLAUDE.md do projeto, que é recarregado e sobrevive ao /compact"
+        "Avoid /compact and let the session grow to the limit",
+        "Repeat the instruction every 10 messages",
+        "Run /compact more often, so the summary is generated while the instruction is still recent in the conversation",
+        "Record the convention in the project's CLAUDE.md, which is reloaded and survives /compact"
       ],
       "correta": 3,
-      "explicacao": "O que não pode se perder vai para arquivo. CLAUDE.md sobrevive ao /compact; detalhes antigos da conversa podem se perder.",
+      "explicacao": "What must not be lost goes into a file. CLAUDE.md survives /compact; older details from the conversation can be lost.",
       "feedbacks": [
-        "A sessão degrada e uma hora vai compactar ou estourar de qualquer jeito.",
-        "Depende de disciplina manual e polui o contexto; não é desenho.",
-        "Compactar mais vezes perde mais detalhes, não menos.",
-        "Correto. Instrução permanente vai para arquivo carregado em toda sessão."
+        "The session degrades, and sooner or later it will compact or overflow anyway.",
+        "Depends on manual discipline and pollutes the context; it isn't a design.",
+        "Compacting more often loses more details, not fewer.",
+        "Correct. A permanent instruction goes into a file that is loaded in every session."
       ]
     },
     {
-      "pergunta": "Uma equipe usa o Claude Code para entender um monolito .NET de 2 milhões de linhas. Depois de dezenas de greps e leituras, as respostas da sessão principal ficaram genéricas ('o módulo segue padrões típicos de repository') e ela relê arquivos já analisados. Qual mudança de abordagem é mais eficaz?",
+      "pergunta": "A team uses Claude Code to understand a 2-million-line .NET monolith. After dozens of greps and reads, the main session's answers have become generic (\"the module follows typical repository patterns\") and it rereads files it has already analyzed. Which change of approach is most effective?",
       "opcoes": [
-        "Delegar a exploração a subagents (ex.: Explore) que devolvem só um resumo das descobertas",
-        "Pedir ao Claude para ler todos os arquivos do módulo de uma vez no começo, para ter o contexto completo antes de responder",
-        "Aumentar o effort para max",
-        "Reiniciar a sessão do zero sempre que as respostas ficarem vagas, sem salvar nada"
+        "Delegate the exploration to subagents (e.g., Explore) that return only a summary of the findings",
+        "Ask Claude to read all of the module's files at once at the start, to have the complete context before answering",
+        "Increase effort to max",
+        "Restart the session from scratch whenever the answers become vague, without saving anything"
       ],
       "correta": 0,
-      "explicacao": "O ruído da exploração fica no contexto do subagent; a sessão principal recebe só a conclusão. É a mitigação clássica de codebase grande.",
+      "explicacao": "The exploration noise stays in the subagent's context; the main session receives only the conclusion. It's the classic mitigation for a large codebase.",
       "feedbacks": [
-        "Correto. Subagent isola o ruído e devolve resumo.",
-        "Ler tudo de antemão é o anti-padrão que esgota o contexto.",
-        "Esforço maior não devolve atenção a um contexto saturado.",
-        "Perde todas as descobertas; sem estado salvo, recomeça do zero."
+        "Correct. A subagent isolates the noise and returns a summary.",
+        "Reading everything up front is the anti-pattern that exhausts the context.",
+        "More effort doesn't restore attention to a saturated context.",
+        "Loses all the findings; with no saved state, it starts over from scratch."
       ]
     },
     {
-      "pergunta": "Um coordenador de pesquisa delega 8 subtarefas sequenciais que levam horas. Na última execução, o processo caiu após concluir 3 delas e a nova execução refez tudo desde o início. Qual mecanismo resolve?",
+      "pergunta": "A research coordinator delegates 8 sequential subtasks that take hours. In the last run, the process crashed after completing 3 of them, and the new run redid everything from the beginning. Which mechanism solves this?",
       "opcoes": [
-        "Retomar com --resume na sessão anterior e confiar no histórico para saber quais subtarefas já foram concluídas",
-        "Reduzir o número de subtarefas para caber numa única janela",
-        "Manter um manifesto em local conhecido (tarefas, status, resultados parciais) lido ao iniciar",
-        "Aumentar o max_tokens do coordenador"
+        "Resume the previous session with --resume and rely on the history to know which subtasks were already completed",
+        "Reduce the number of subtasks to fit in a single window",
+        "Keep a manifest in a known location (tasks, status, partial results) that is read at startup",
+        "Increase the coordinator's max_tokens"
       ],
       "correta": 2,
-      "explicacao": "Estado salvo em local conhecido + manifesto permite que a nova execução leia o que já foi concluído e retome a partir dali.",
+      "explicacao": "State saved in a known location + a manifest lets the new run read what was already completed and resume from there.",
       "feedbacks": [
-        "Tentadora, mas a sessão pode ter caído no meio de um passo e o histórico não é um registro confiável de estado; o estado precisa estar fora da conversa.",
-        "Muda o problema em vez de resolvê-lo; trabalho longo continua sujeito a falhas.",
-        "Correto. Manifesto é a base para retomar após crash.",
-        "Não tem relação com persistência de estado."
+        "Tempting, but the session may have crashed in the middle of a step, and the history isn't a reliable record of state; the state needs to live outside the conversation.",
+        "Changes the problem instead of solving it; long-running work is still subject to failures.",
+        "Correct. A manifest is the basis for resuming after a crash.",
+        "Has nothing to do with state persistence."
       ]
     },
     {
-      "pergunta": "Numa sessão longa do Claude Code investigando um bug de concorrência, o Claude começou a esquecer hipóteses já descartadas e a propô-las de novo. Quais DUAS medidas atacam diretamente o problema? (Escolha DUAS.)",
+      "pergunta": "In a long Claude Code session investigating a concurrency bug, Claude started forgetting hypotheses that had already been ruled out and proposing them again. Which TWO measures directly address the problem? (Choose TWO.)",
       "opcoes": [
-        "Aumentar o --max-turns",
-        "Pedir que o Claude registre hipóteses, evidências e descartes num arquivo de rascunho (scratchpad) e o consulte",
-        "Trocar o modo de permissão para acceptEdits",
-        "Desabilitar o CLAUDE.md para liberar espaço",
-        "Rodar /compact proativamente, com instrução de foco nas hipóteses descartadas e nas evidências, antes de a sessão degradar mais"
+        "Increase --max-turns",
+        "Ask Claude to record hypotheses, evidence, and ruled-out items in a draft file (scratchpad) and consult it",
+        "Switch the permission mode to acceptEdits",
+        "Disable CLAUDE.md to free up space",
+        "Run /compact proactively, with an instruction to focus on the ruled-out hypotheses and the evidence, before the session degrades further"
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Scratchpad sobrevive à compressão e mantém as descobertas; /compact proativo e focado reduz ruído preservando o essencial.",
+      "explicacao": "A scratchpad survives compression and keeps the findings; a proactive, focused /compact reduces noise while preserving what's essential.",
       "feedbacks": [
-        "Número de turnos não tem relação com memória de descobertas.",
-        "Correto. Arquivo de rascunho persiste fora do scrollback.",
-        "Modo de permissão não afeta contexto.",
-        "O CLAUDE.md é pequeno e útil; removê-lo tira contexto de projeto sem resolver o esquecimento.",
-        "Correto. Compactar antes de degradar, com foco, é mitigação recomendada."
+        "The number of turns has nothing to do with remembering findings.",
+        "Correct. A draft file persists outside the scrollback.",
+        "The permission mode doesn't affect context.",
+        "CLAUDE.md is small and useful; removing it takes away project context without solving the forgetting.",
+        "Correct. Compacting before degradation sets in, with a focus, is a recommended mitigation."
       ]
     },
     {
-      "pergunta": "Um agente de pesquisa faz cerca de 200 chamadas de web search por tarefa, cada resultado com ~3 mil tokens. Os resultados antigos já foram incorporados às notas de síntese do próprio agente, mas continuam ocupando a janela. Qual a MELHOR opção?",
+      "pergunta": "A research agent makes about 200 web search calls per task, each result with ~3,000 tokens. The older results have already been incorporated into the agent's own synthesis notes, but they still take up the window. What is the BEST option?",
       "opcoes": [
-        "Usar a memory tool para mover os resultados antigos para arquivos e reduzir o que fica na janela",
-        "Usar context editing para limpar resultados antigos de tool que já foram consumidos",
-        "Usar um bloco de case facts com os resultados",
-        "Reduzir para 50 buscas por tarefa"
+        "Use the memory tool to move the old results to files and reduce what stays in the window",
+        "Use context editing to clear old tool results that have already been consumed",
+        "Use a case facts block with the results",
+        "Reduce to 50 searches per task"
       ],
       "correta": 1,
-      "explicacao": "Context editing (limpar tool results antigos) foi feito para loops agênticos verbosos cujo conteúdo antigo já foi usado.",
+      "explicacao": "Context editing (clearing old tool results) was built for verbose agentic loops whose old content has already been used.",
       "feedbacks": [
-        "Memory tool é para persistir entre sessões; não é o mecanismo para enxugar a sessão atual.",
-        "Correto.",
-        "Case facts é para valores exatos e poucos; colocar resultados de busca ali aumentaria o contexto.",
-        "Limita a qualidade da pesquisa sem atacar o acúmulo de resultados já consumidos."
+        "The memory tool is for persisting across sessions; it isn't the mechanism for trimming the current session.",
+        "Correct.",
+        "Case facts is for a few exact values; putting search results there would increase the context.",
+        "Limits the quality of the research without addressing the buildup of already-consumed results."
       ]
     },
     {
-      "pergunta": "Uma equipe ativou compaction server-side num agente C# de longa duração. Mesmo assim, as requisições crescem até atingir o limite. O loop faz: historico.Add(new Mensagem(\"assistant\", resposta.Content[0].Text)). O que corrigir?",
+      "pergunta": "A team enabled server-side compaction in a long-running C# agent. Even so, the requests grow until they hit the limit. The loop does: history.Add(new Message(\"assistant\", response.Content[0].Text)). What should be fixed?",
       "opcoes": [
-        "Diminuir o limiar de disparo da compaction",
-        "Adicionar um breakpoint de cache no último bloco",
-        "Trocar compaction por context editing, que não depende do formato da resposta para funcionar",
-        "Anexar o resposta.Content inteiro ao histórico, preservando o bloco de compaction"
+        "Lower the compaction trigger threshold",
+        "Add a cache breakpoint on the last block",
+        "Replace compaction with context editing, which doesn't depend on the response format to work",
+        "Append the entire response.Content to the history, preserving the compaction block"
       ],
       "correta": 3,
-      "explicacao": "A resposta traz um bloco de compaction. Anexar só o texto descarta esse estado em silêncio, e a compaction nunca se aplica.",
+      "explicacao": "The response includes a compaction block. Appending only the text silently discards that state, and the compaction never takes effect.",
       "feedbacks": [
-        "O bloco de compaction continua sendo descartado; o limiar não importa.",
-        "Cache não reduz o tamanho do histórico.",
-        "Troca de mecanismo sem corrigir o bug; e o código ainda perderia blocos tool_use/thinking.",
-        "Correto. Anexe o content inteiro, não só o texto."
+        "The compaction block is still discarded; the threshold doesn't matter.",
+        "Caching doesn't reduce the size of the history.",
+        "Switches mechanisms without fixing the bug; and the code would still lose tool_use/thinking blocks.",
+        "Correct. Append the entire content, not just the text."
       ]
     },
     {
-      "pergunta": "Para atender LGPD, um time decidiu, a cada turno, percorrer o histórico já enviado e substituir CPFs por '***' nas mensagens antigas antes do próximo request. Depois disso surgiram erros 400 em modelos com thinking e o cache parou de ter leituras. Qual a abordagem correta?",
+      "pergunta": "To comply with LGPD, a team decided that, on every turn, it would walk through the history already sent and replace CPFs with \"***\" in older messages before the next request. After that, 400 errors started appearing on models with thinking, and the cache stopped getting reads. What is the correct approach?",
       "opcoes": [
-        "Mascarar o CPF antes de entrar no histórico (PostToolUse ou na tool) e manter o histórico append-only",
-        "Desligar o thinking para poder editar o histórico livremente e manter a substituição dos CPFs a cada turno",
-        "Mover a edição para o system prompt",
-        "Aumentar o TTL do cache para 1 hora"
+        "Mask the CPF before it enters the history (PostToolUse or in the tool) and keep the history append-only",
+        "Turn off thinking so the history can be edited freely, and keep replacing the CPFs on every turn",
+        "Move the editing to the system prompt",
+        "Increase the cache TTL to 1 hour"
       ],
       "correta": 0,
-      "explicacao": "Editar turnos antigos quebra blocos de thinking preservados (400) e invalida o prefixo do cache. O dado sensível deve ser tratado na entrada, mantendo o histórico append-only.",
+      "explicacao": "Editing old turns breaks preserved thinking blocks (400) and invalidates the cache prefix. Sensitive data should be handled at the input, keeping the history append-only.",
       "feedbacks": [
-        "Correto. Limpe na origem; nunca reescreva o passado.",
-        "Ataca o sintoma, sacrifica qualidade e ainda invalida o cache.",
-        "Não resolve: o CPF continua nas mensagens antigas.",
-        "TTL não ajuda quando o prefixo muda."
+        "Correct. Clean it at the source; never rewrite the past.",
+        "Attacks the symptom, sacrifices quality, and still invalidates the cache.",
+        "Doesn't solve it: the CPF remains in the old messages.",
+        "TTL doesn't help when the prefix changes."
       ]
     },
     {
-      "pergunta": "Um agente de suporte atende o mesmo cliente várias vezes por mês. A empresa quer que acordos feitos num atendimento (ex.: 'cliente prefere contato por e-mail; crédito de 20 BRL prometido') estejam disponíveis no próximo, dias depois. Qual mecanismo usar?",
+      "pergunta": "A support agent serves the same customer several times a month. The company wants agreements made in one interaction (e.g., \"customer prefers contact by email; 20 BRL credit promised\") to be available in the next one, days later. Which mechanism should be used?",
       "opcoes": [
-        "Compaction com limiar alto",
-        "Context editing preservando o último atendimento e limpando os anteriores, para manter os acordos recentes na janela",
-        "Memória persistente (memory tool) com os achados por cliente, lida no início do próximo atendimento",
-        "Prompt caching com TTL de 1 hora"
+        "Compaction with a high threshold",
+        "Context editing that preserves the last interaction and clears the earlier ones, to keep the recent agreements in the window",
+        "Persistent memory (memory tool) with per-customer findings, read at the start of the next interaction",
+        "Prompt caching with a 1-hour TTL"
       ],
       "correta": 2,
-      "explicacao": "Achados que precisam valer entre sessões vão para memória persistente fora da conversa.",
+      "explicacao": "Findings that need to hold across sessions go into persistent memory outside the conversation.",
       "feedbacks": [
-        "Compaction atua dentro de uma conversa; não atravessa sessões.",
-        "Context editing apaga conteúdo; não persiste nada.",
-        "Correto. Persistência entre sessões.",
-        "Cache é otimização de custo/latência e expira; não é memória de negócio."
+        "Compaction acts within a single conversation; it doesn't carry across sessions.",
+        "Context editing deletes content; it doesn't persist anything.",
+        "Correct. Persistence across sessions.",
+        "Caching is a cost/latency optimization and it expires; it isn't business memory."
       ]
     },
     {
-      "pergunta": "Um agente de migração de código roda tarefas longas. Com max_tokens baixo para conter custo, ele frequentemente termina com stop_reason max_tokens no meio de um arquivo editado pela metade. A equipe quer limitar o gasto, mas que o agente termine de forma ordenada. O que usar?",
+      "pergunta": "A code migration agent runs long tasks. With a low max_tokens to contain cost, it frequently ends with stop_reason max_tokens in the middle of a half-edited file. The team wants to limit spending but have the agent finish in an orderly way. What should they use?",
       "opcoes": [
-        "Diminuir ainda mais o max_tokens",
-        "Um task budget (teto visível: o modelo planeja e fecha o trabalho), mantendo max_tokens como teto por resposta",
-        "Um limite fixo de 5 iterações no loop como mecanismo principal de parada, combinado com um max_tokens ainda mais baixo por resposta",
-        "Adicionar ao prompt 'seja conciso'"
+        "Lower max_tokens even further",
+        "A task budget (a visible ceiling: the model plans and wraps up the work), keeping max_tokens as a per-response ceiling",
+        "A fixed limit of 5 loop iterations as the main stopping mechanism, combined with an even lower max_tokens per response",
+        "Add \"be concise\" to the prompt"
       ],
       "correta": 1,
-      "explicacao": "max_tokens é invisível e corta no meio. Task budget é visível: o modelo se organiza para caber.",
+      "explicacao": "max_tokens is invisible and cuts off midway. A task budget is visible: the model organizes itself to fit.",
       "feedbacks": [
-        "Trunca ainda mais cedo.",
-        "Correto. Teto visível permite término gracioso.",
-        "Limite de iterações como parada principal é anti-padrão; serve só como backstop.",
-        "Instrução vaga não dá ao modelo noção do teto."
+        "Truncates even earlier.",
+        "Correct. A visible ceiling allows a graceful finish.",
+        "An iteration limit as the main stopping mechanism is an anti-pattern; it only serves as a backstop.",
+        "A vague instruction doesn't give the model any sense of the ceiling."
       ]
     },
     {
-      "pergunta": "Um job de CI chama a Messages API para revisar PRs. O código verifica só se o HTTP é 2xx e então publica content como comentário. Em alguns PRs o job fica verde mas o comentário sai vazio ou com uma frase genérica. O que está faltando?",
+      "pergunta": "A CI job calls the Messages API to review PRs. The code only checks whether the HTTP status is 2xx and then posts content as a comment. On some PRs the job goes green, but the comment comes out empty or with a generic sentence. What is missing?",
       "opcoes": [
-        "Retry com backoff exponencial em erros 5xx e 429, já que respostas vazias costumam indicar instabilidade da API",
-        "Aumentar o timeout do cliente HTTP",
-        "Trocar para a Batch API",
-        "Checar stop_reason antes de ler content e tratar refusal (HTTP 200) e max_tokens"
+        "Retry with exponential backoff on 5xx and 429 errors, since empty responses usually indicate API instability",
+        "Increase the HTTP client timeout",
+        "Switch to the Batch API",
+        "Check stop_reason before reading content and handle refusal (HTTP 200) and max_tokens"
       ],
       "correta": 3,
-      "explicacao": "Recusa chega com HTTP 200 e stop_reason refusal; truncamento com max_tokens. Código que olha só o status trata ambos como sucesso.",
+      "explicacao": "A refusal arrives with HTTP 200 and stop_reason refusal; truncation, with max_tokens. Code that only looks at the status treats both as success.",
       "feedbacks": [
-        "Não há 5xx: a resposta é 200.",
-        "Não há timeout; a resposta chegou.",
-        "Batch não é para passo bloqueante de CI e não resolve a detecção.",
-        "Correto. stop_reason decide."
+        "There is no 5xx: the response is 200.",
+        "There is no timeout; the response arrived.",
+        "Batch isn't for a blocking CI step and doesn't solve the detection.",
+        "Correct. stop_reason decides."
       ]
     },
     {
-      "pergunta": "Um agente de suporte tem um system prompt de 12 mil tokens com políticas fixas e cache_control no fim. Para 'dar contexto temporal', a primeira linha do system é 'Data e hora atuais: <ISO 8601 com segundos>'. O custo de input subiu depois de habilitar o cache. Qual a correção?",
+      "pergunta": "A support agent has a 12,000-token system prompt with fixed policies and cache_control at the end. To \"provide temporal context\", the first line of the system prompt is \"Current date and time: <ISO 8601 with seconds>\". Input cost went up after enabling the cache. What is the fix?",
       "opcoes": [
-        "Mover a data/hora para depois do último breakpoint (ex.: na mensagem do usuário)",
-        "Trocar o TTL do cache para 1 hora, para que a entrada sobreviva entre os requests e seja lida mais vezes",
-        "Adicionar um segundo breakpoint no meio do system",
-        "Desativar o cache, que não funciona para system prompts grandes"
+        "Move the date/time to after the last breakpoint (e.g., into the user message)",
+        "Change the cache TTL to 1 hour, so the entry survives between requests and is read more often",
+        "Add a second breakpoint in the middle of the system prompt",
+        "Disable the cache, which doesn't work for large system prompts"
       ],
       "correta": 0,
-      "explicacao": "Timestamp no prefixo muda a cada request: cada chamada paga a escrita de cache (prêmio) e nunca lê. Volátil vai depois do último breakpoint.",
+      "explicacao": "A timestamp in the prefix changes on every request: each call pays the cache write (premium) and never reads. Volatile content goes after the last breakpoint.",
       "feedbacks": [
-        "Correto. Estável primeiro, volátil depois.",
-        "TTL não ajuda: o prefixo muda a cada request.",
-        "O timestamp está no início; qualquer breakpoint depois dele também é invalidado.",
-        "Cache funciona bem para system grande; o problema é o byte variável."
+        "Correct. Stable first, volatile after.",
+        "TTL doesn't help: the prefix changes on every request.",
+        "The timestamp is at the beginning; any breakpoint after it is invalidated too.",
+        "Caching works well for a large system prompt; the problem is the variable byte."
       ]
     },
     {
-      "pergunta": "Uma plataforma monta a lista de tools de cada request conforme o perfil do usuário (às vezes 6, às vezes 9 tools, em ordens diferentes). O system tem 15 mil tokens e cache_control, mas cache_read_input_tokens fica quase sempre em 0. Qual a causa e a correção?",
+      "pergunta": "A platform builds each request's tool list according to the user's profile (sometimes 6, sometimes 9 tools, in different orders). The system prompt has 15,000 tokens and cache_control, but cache_read_input_tokens is almost always 0. What is the cause and the fix?",
       "opcoes": [
-        "O system de 15 mil tokens é grande demais para um único bloco cacheado; divida-o em 4 breakpoints de tamanho parecido",
-        "O TTL de 5 minutos é curto; use 1 hora",
-        "Tools vêm antes do system no prefixo; fixe o conjunto e a ordem das tools (ou use tool search com defer_loading)",
-        "O modelo não suporta cache com tools"
+        "The 15,000-token system prompt is too large for a single cached block; split it into 4 breakpoints of similar size",
+        "The 5-minute TTL is short; use 1 hour",
+        "Tools come before the system prompt in the prefix; fix the set and order of the tools (or use tool search with defer_loading)",
+        "The model doesn't support caching with tools"
       ],
       "correta": 2,
-      "explicacao": "Ordem do prefixo: tools → system → messages. Lista de tools variável é invalidador silencioso. Tool search existe em parte para não mexer no array de tools.",
+      "explicacao": "Prefix order: tools → system → messages. A variable tool list is a silent invalidator. Tool search exists partly so you don't have to modify the tools array.",
       "feedbacks": [
-        "Breakpoints não consertam um prefixo que muda no início.",
-        "TTL não ajuda quando o prefixo muda.",
-        "Correto.",
-        "Cache funciona com tools; elas fazem parte do prefixo."
+        "Breakpoints don't fix a prefix that changes at the beginning.",
+        "TTL doesn't help when the prefix changes.",
+        "Correct.",
+        "Caching works with tools; they are part of the prefix."
       ]
     },
     {
-      "pergunta": "Depois de reorganizar o prompt para usar cache, como a equipe deve VERIFICAR, em produção, que o cache está sendo aproveitado?",
+      "pergunta": "After reorganizing the prompt to use caching, how should the team VERIFY, in production, that the cache is being used?",
       "opcoes": [
-        "Medir a latência média antes e depois e assumir que o cache está funcionando se ela cair de forma consistente",
-        "Acompanhar usage.cache_read_input_tokens; zero em requests repetidos indica invalidação",
-        "Checar se a API retornou algum aviso de cache no header",
-        "Contar quantos blocos têm cache_control"
+        "Measure average latency before and after and assume the cache is working if it drops consistently",
+        "Monitor usage.cache_read_input_tokens; zero on repeated requests indicates invalidation",
+        "Check whether the API returned a cache warning in the header",
+        "Count how many blocks have cache_control"
       ],
       "correta": 1,
-      "explicacao": "usage.cache_read_input_tokens mostra quanto foi lido do cache; cache_creation_input_tokens mostra quanto foi escrito.",
+      "explicacao": "usage.cache_read_input_tokens shows how much was read from the cache; cache_creation_input_tokens shows how much was written.",
       "feedbacks": [
-        "Latência é indicativa mas ruidosa e não prova leitura de cache.",
-        "Correto.",
-        "Invalidação e prefixo abaixo do mínimo são silenciosos; não há aviso.",
-        "Ter marcadores não significa que o cache está sendo lido."
+        "Latency is indicative but noisy, and it doesn't prove cache reads.",
+        "Correct.",
+        "Invalidation and a prefix below the minimum are silent; there is no warning.",
+        "Having markers doesn't mean the cache is being read."
       ]
     },
     {
-      "pergunta": "Um time de extração estruturada colocou cache_control num system prompt curto (cerca de 250 tokens) que se repete em milhares de requests. Nos logs, cache_creation_input_tokens e cache_read_input_tokens são sempre 0, sem erro. Qual a explicação mais provável?",
+      "pergunta": "A structured extraction team put cache_control on a short system prompt (about 250 tokens) that is repeated across thousands of requests. In the logs, cache_creation_input_tokens and cache_read_input_tokens are always 0, with no error. What is the most likely explanation?",
       "opcoes": [
-        "Há um timestamp escondido no system",
-        "O cache_control foi colocado num bloco que a API não aceita como breakpoint, e o marcador foi ignorado sem erro",
-        "Os requests vão para regiões diferentes",
-        "Prefixo abaixo do mínimo cacheável do modelo; nesse caso não há cache, em silêncio"
+        "There is a hidden timestamp in the system prompt",
+        "The cache_control was placed on a block that the API doesn't accept as a breakpoint, and the marker was ignored without an error",
+        "The requests go to different regions",
+        "The prefix is below the model's minimum cacheable length; in that case there is no caching, silently"
       ],
       "correta": 3,
-      "explicacao": "Abaixo do mínimo cacheável (que depende do modelo), nada é escrito nem lido, e não há erro.",
+      "explicacao": "Below the minimum cacheable length (which depends on the model), nothing is written or read, and there is no error.",
       "feedbacks": [
-        "Timestamp provocaria escrita a cada request (creation > 0), não zero.",
-        "Pouco provável que a API ignore um marcador válido; e o sintoma 'escrita zero' aponta para tamanho.",
-        "Não é a explicação para escrita sempre zero.",
-        "Correto. Creation zero com marcador = prefixo pequeno demais."
+        "A timestamp would cause a write on every request (creation > 0), not zero.",
+        "It's unlikely the API would ignore a valid marker; and the \"zero writes\" symptom points to size.",
+        "That isn't the explanation for writes always being zero.",
+        "Correct. Zero creation with a marker = prefix too small."
       ]
     },
     {
-      "pergunta": "Um assistente de produtividade responde perguntas sobre um manual técnico de 60 mil tokens que muda uma vez por mês. Cada request tem: definições de 4 tools fixas, instruções fixas, o manual, o nome do usuário logado e a pergunta. Qual layout aproveita melhor o cache?",
+      "pergunta": "A productivity assistant answers questions about a 60,000-token technical manual that changes once a month. Each request has: definitions for 4 fixed tools, fixed instructions, the manual, the logged-in user's name, and the question. Which layout makes the best use of the cache?",
       "opcoes": [
-        "tools → instruções → manual (breakpoint aqui) → nome do usuário e pergunta",
-        "tools → nome do usuário → instruções → manual → pergunta (breakpoint no fim)",
-        "pergunta → manual → instruções → tools, com breakpoint no início",
-        "Cachear só a pergunta, que é o que muda"
+        "tools → instructions → manual (breakpoint here) → user name and question",
+        "tools → user name → instructions → manual → question (breakpoint at the end)",
+        "question → manual → instructions → tools, with a breakpoint at the beginning",
+        "Cache only the question, which is what changes"
       ],
       "correta": 0,
-      "explicacao": "Estável primeiro, volátil depois: tudo que se repete entre requests fica antes do breakpoint; dados do usuário e pergunta vêm depois.",
+      "explicacao": "Stable first, volatile after: everything that repeats across requests goes before the breakpoint; user data and the question come after.",
       "feedbacks": [
-        "Correto.",
-        "O nome do usuário no meio do prefixo invalida o manual em cache para cada usuário diferente; breakpoint no fim inclui a pergunta, que sempre muda.",
-        "Ordem do prefixo é tools → system → messages e o volátil no início invalida tudo.",
-        "Cachear o que muda a cada request só paga o prêmio de escrita."
+        "Correct.",
+        "The user's name in the middle of the prefix invalidates the cached manual for each different user; a breakpoint at the end includes the question, which always changes.",
+        "The prefix order is tools → system → messages, and volatile content at the beginning invalidates everything.",
+        "Caching what changes on every request just pays the write premium."
       ]
     },
     {
-      "pergunta": "Um time investiga por que o cache de um agente quase nunca é lido. Quais DUAS práticas encontradas no código são invalidadores silenciosos do prompt caching? (Escolha DUAS.)",
+      "pergunta": "A team is investigating why an agent's cache is almost never read. Which TWO practices found in the code are silent prompt caching invalidators? (Choose TWO.)",
       "opcoes": [
-        "O system é gerado serializando um Dictionary<string, object> sem ordenação estável de chaves",
-        "A pergunta do usuário vem depois do último breakpoint",
-        "O breakpoint está no último bloco do system estável",
-        "O ID da sessão é inserido na primeira linha do system para rastreabilidade",
-        "O TTL usado é o padrão de 5 minutos e há requests a cada 30 segundos"
+        "The system prompt is generated by serializing a Dictionary<string, object> without stable key ordering",
+        "The user's question comes after the last breakpoint",
+        "The breakpoint is on the last block of the stable system prompt",
+        "The session ID is inserted into the first line of the system prompt for traceability",
+        "The TTL used is the default 5 minutes and there are requests every 30 seconds"
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Ordem de chaves não determinística muda bytes do prefixo; ID de sessão no prefixo torna cada sessão um prefixo distinto.",
+      "explicacao": "Nondeterministic key order changes the prefix bytes; a session ID in the prefix makes each session a distinct prefix.",
       "feedbacks": [
-        "Correto. Bytes diferentes no prefixo a cada serialização.",
-        "Esse é o desenho correto (volátil depois do breakpoint).",
-        "Também é o desenho correto.",
-        "Correto. Identificador variável no início do prefixo.",
-        "Com requests a cada 30 s, o cache de 5 min se mantém quente (leitura renova o TTL)."
+        "Correct. Different bytes in the prefix on each serialization.",
+        "That is the correct design (volatile content after the breakpoint).",
+        "That is also the correct design.",
+        "Correct. A variable identifier at the beginning of the prefix.",
+        "With requests every 30 s, the 5-min cache stays warm (a read refreshes the TTL)."
       ]
     },
     {
-      "pergunta": "Um arquiteto revisa a proposta de gestão de contexto de um agente de pesquisa longo. Quais DUAS afirmações da proposta estão corretas? (Escolha DUAS.)",
+      "pergunta": "An architect reviews the context management proposal for a long-running research agent. Which TWO statements in the proposal are correct? (Choose TWO.)",
       "opcoes": [
-        "A memory tool reduz automaticamente o tamanho do contexto da sessão atual",
-        "Compaction é a melhor forma de garantir que valores numéricos exatos sejam preservados",
-        "Compaction é adequada para trabalho longo que precisa preservar a narrativa do que foi tentado e por quê",
-        "Editar mensagens antigas do histórico é uma forma segura de economizar tokens",
-        "Números que serão usados como argumentos de tools devem ficar num bloco de case facts, fora do que é resumido"
+        "The memory tool automatically reduces the context size of the current session",
+        "Compaction is the best way to ensure that exact numeric values are preserved",
+        "Compaction is appropriate for long-running work that needs to preserve the narrative of what was tried and why",
+        "Editing old messages in the history is a safe way to save tokens",
+        "Numbers that will be used as tool arguments should be kept in a case facts block, outside what gets summarized"
       ],
       "corretas": [
         2,
         4
       ],
-      "explicacao": "Compaction preserva narrativa (não precisão); case facts preservam valores exatos. Memory tool persiste entre sessões; editar histórico quebra thinking e cache.",
+      "explicacao": "Compaction preserves narrative (not precision); case facts preserve exact values. The memory tool persists across sessions; editing the history breaks thinking and the cache.",
       "feedbacks": [
-        "A memory tool persiste achados fora da conversa, mas não enxuga o contexto atual sozinha.",
-        "Resumo é justamente onde números se perdem.",
-        "Correto.",
-        "Histórico deve ser append-only; editar quebra thinking preservado e invalida o cache.",
-        "Correto."
+        "The memory tool persists findings outside the conversation, but it doesn't trim the current context on its own.",
+        "Summarization is precisely where numbers get lost.",
+        "Correct.",
+        "History should be append-only; editing it breaks preserved thinking and invalidates the cache.",
+        "Correct."
       ]
     }
   ]

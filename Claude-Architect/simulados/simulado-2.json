@@ -1,1190 +1,1190 @@
 {
-  "titulo": "Simulado 2 — CCAR-F (60 questões · 120 min)",
+  "titulo": "Practice Exam 2 — CCAR-F (60 questions · 120 min)",
   "aprovacao": 72,
   "questoes": [
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Cenário: a Vértice Telecom, operadora de fibra e telefonia móvel com 4 milhões de assinantes, construiu com o Claude Agent SDK um agente de resolução de suporte que atende pelo app e pelo WhatsApp. Via servidores MCP internos, o agente usa as tools get_customer, lookup_invoice, run_line_diagnostics, check_outage, issue_credit e escalate_to_human. Objetivo: resolver no primeiro contato ao menos 70% dos chamados de cobrança e conectividade. Restrições: nenhuma alteração de conta antes de verificar a identidade do titular; créditos acima de R$ 200 exigem aprovação de um analista humano; todo atendimento gera um protocolo exigido pela Anatel, que precisa ser informado corretamente ao cliente.\n\nEm produção, o loop do agente encerra o atendimento sempre que a resposta do modelo contém um bloco de texto. Em vários chamados, a resposta trouxe o texto \"Vou testar sua linha agora\" junto com um bloco tool_use de run_line_diagnostics, e o cliente ficou sem retorno. Qual é a correção adequada?",
+      "pergunta": "Scenario: Vértice Telecom, a fiber and mobile carrier with 4 million subscribers, built a support resolution agent with the Claude Agent SDK that serves customers through its app and WhatsApp. Through internal MCP servers, the agent uses the tools get_customer, lookup_invoice, run_line_diagnostics, check_outage, issue_credit, and escalate_to_human. Goal: resolve at least 70% of billing and connectivity tickets on first contact. Constraints: no account changes before verifying the account holder's identity; credits above R$ 200 require approval from a human analyst; every interaction generates a protocol number required by Anatel, which must be correctly communicated to the customer.\n\nIn production, the agent loop ends the interaction whenever the model's response contains a text block. In several tickets, the response included the text \"I'll test your line now\" along with a tool_use block for run_line_diagnostics, and the customer never got a reply. What is the appropriate fix?",
       "opcoes": [
-        "Instruir no system prompt que o modelo nunca escreva texto na mesma resposta em que chama uma tool, para que a presença de texto volte a indicar o fim do atendimento.",
-        "Detectar no texto frases de intenção como \"vou testar\" ou \"vou verificar\" e, quando aparecerem, manter o loop aberto mesmo havendo texto na resposta.",
-        "Decidir pelo stop_reason: em \"tool_use\", executar as tools e devolver os tool_result; encerrar só em \"end_turn\".",
-        "Encerrar sempre após um número fixo de iterações, como 8."
+        "Instruct the model in the system prompt never to write text in the same response in which it calls a tool, so that the presence of text once again signals the end of the interaction.",
+        "Detect intent phrases in the text such as \"I'll test\" or \"I'll check\" and, when they appear, keep the loop open even if the response contains text.",
+        "Decide based on stop_reason: on \"tool_use\", execute the tools and send back the tool_result blocks; end only on \"end_turn\".",
+        "Always end after a fixed number of iterations, such as 8."
       ],
       "correta": 2,
-      "explicacao": "O loop agêntico é dirigido pelo stop_reason: \"tool_use\" significa executar e continuar; \"end_turn\" significa terminar. O content pode misturar texto e tool_use.",
+      "explicacao": "The agentic loop is driven by stop_reason: \"tool_use\" means execute and continue; \"end_turn\" means finish. The content can mix text and tool_use.",
       "feedbacks": [
-        "Tentadora porque parece atacar a causa, mas depende de um comportamento probabilístico do modelo e mantém o anti-padrão de decidir o fim do loop pelo conteúdo, não pelo stop_reason.",
-        "Anti-padrão clássico: parsear linguagem natural para decidir o fluxo. Frágil (outras redações escapam) e desnecessário, já que o stop_reason informa exatamente isso.",
-        "Correta. O stop_reason é o sinal oficial de continuidade. Texto e tool_use podem vir juntos na mesma resposta; ter texto não significa que o turno terminou.",
-        "Um teto de iterações serve como backstop de segurança, não como mecanismo principal de parada: corta atendimentos legítimos longos e prolonga os curtos."
+        "Tempting because it seems to address the cause, but it depends on probabilistic model behavior and keeps the anti-pattern of deciding loop termination by content rather than by stop_reason.",
+        "Classic anti-pattern: parsing natural language to decide control flow. Fragile (other phrasings slip through) and unnecessary, since stop_reason conveys exactly that.",
+        "Correct. stop_reason is the official continuation signal. Text and tool_use can come together in the same response; having text does not mean the turn is over.",
+        "An iteration cap serves as a safety backstop, not as the primary stopping mechanism: it cuts off legitimately long interactions and prolongs short ones."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Na Vértice Telecom, a regra é verificar a identidade do titular antes de qualquer alteração de conta. Hoje isso está apenas no system prompt, e a auditoria encontrou cerca de 3% de créditos concedidos via issue_credit sem verificação prévia. Qual é a melhor correção?",
+      "pergunta": "At Vértice Telecom, the rule is to verify the account holder's identity before any account change. Today this exists only in the system prompt, and an audit found that about 3% of credits granted via issue_credit had no prior verification. What is the best fix?",
       "opcoes": [
-        "Reescrever a instrução do system prompt em destaque, com exemplos few-shot de atendimentos em que a verificação é feita antes do crédito.",
-        "Criar um hook PreToolUse que nega issue_credit enquanto o estado da sessão não registrar a verificação de identidade.",
-        "Só liberar issue_credit quando o modelo declarar confiança acima de 0,9 na verificação.",
-        "Adicionar um segundo agente que lê a conversa inteira antes de cada crédito e aprova ou rejeita a chamada com base no que foi dito."
+        "Rewrite the system prompt instruction prominently, with few-shot examples of interactions in which verification is done before the credit.",
+        "Create a PreToolUse hook that denies issue_credit as long as the session state does not record identity verification.",
+        "Only allow issue_credit when the model states confidence above 0.9 in the verification.",
+        "Add a second agent that reads the entire conversation before each credit and approves or rejects the call based on what was said."
       ],
       "correta": 1,
-      "explicacao": "Pré-requisito crítico (identidade antes de alteração de conta) vai em código: hook PreToolUse com permissionDecision \"deny\" até o pré-requisito ser satisfeito.",
+      "explicacao": "A critical prerequisite (identity before account changes) belongs in code: a PreToolUse hook with permissionDecision \"deny\" until the prerequisite is satisfied.",
       "feedbacks": [
-        "Tentadora porque costuma reduzir a taxa de erro, mas prompt continua probabilístico. Para regra financeira, \"reduzir\" não basta: a prova espera enforcement em código.",
-        "Correta. Regra com consequência financeira e de segurança exige enforcement determinístico. O hook PreToolUse bloqueia a chamada antes que ela aconteça, com taxa de falha zero.",
-        "Confiança autodeclarada é mal calibrada; o modelo que pulou a verificação tende a declarar confiança alta. Não é um controle determinístico.",
-        "Mais complexo e ainda probabilístico: troca uma checagem determinística barata (uma flag de estado) por outro julgamento de LLM sujeito a erro."
+        "Tempting because it usually reduces the error rate, but the prompt is still probabilistic. For a financial rule, \"reducing\" is not enough: the exam expects enforcement in code.",
+        "Correct. A rule with financial and security consequences requires deterministic enforcement. The PreToolUse hook blocks the call before it happens, with a zero failure rate.",
+        "Self-reported confidence is poorly calibrated; a model that skipped verification tends to report high confidence. It is not a deterministic control.",
+        "More complex and still probabilistic: it trades a cheap deterministic check (a state flag) for another error-prone LLM judgment."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Na Vértice Telecom, créditos acima de R$ 200 exigem aprovação de um analista humano, e os analistas reclamam que, ao receber o caso, precisam refazer todas as perguntas ao cliente. Quais DUAS medidas compõem o desenho correto? (Escolha DUAS.)",
+      "pergunta": "At Vértice Telecom, credits above R$ 200 require approval from a human analyst, and analysts complain that when they receive a case, they have to ask the customer all the questions again. Which TWO measures make up the correct design? (Choose TWO.)",
       "opcoes": [
-        "Colocar no system prompt \"nunca conceda créditos acima de R$ 200\" como barreira única, pois a regra é simples de entender.",
-        "Um hook PreToolUse que inspeciona o campo amount de issue_credit e, acima de R$ 200, nega a chamada com um motivo que orienta o agente a escalar o caso.",
-        "Permitir que o próprio agente conceda acima de R$ 200 quando o cliente demonstrar alta insatisfação, para evitar churn.",
-        "Escalar via escalate_to_human com um resumo estruturado: cliente e linha, problema, diagnósticos já executados, valor solicitado, motivo do bloqueio e ação recomendada.",
-        "Ao escalar, anexar o transcript bruto completo da conversa, sem resumo, para que o analista tenha todo o contexto disponível."
+        "Put \"never grant credits above R$ 200\" in the system prompt as the sole safeguard, since the rule is easy to understand.",
+        "A PreToolUse hook that inspects the amount field of issue_credit and, above R$ 200, denies the call with a reason that directs the agent to escalate the case.",
+        "Allow the agent itself to grant credits above R$ 200 when the customer shows high dissatisfaction, to avoid churn.",
+        "Escalate via escalate_to_human with a structured summary: customer and line, problem, diagnostics already run, amount requested, reason for the block, and recommended action.",
+        "When escalating, attach the complete raw transcript of the conversation, without a summary, so the analyst has all available context."
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "Limite financeiro → hook que bloqueia em código; handoff → resumo estruturado com o que o humano precisa para decidir.",
+      "explicacao": "Financial limit → hook that blocks in code; handoff → structured summary with what the human needs to make a decision.",
       "feedbacks": [
-        "Regra simples não vira determinística por ser simples: prompt tem taxa de falha não nula, inaceitável para limite financeiro.",
-        "Correta. O limite é financeiro e precisa ser imposto em código, inspecionando o input da tool antes da execução.",
-        "Usa sentimento como critério de exceção, e ainda burla um controle financeiro. Sentimento não é critério de alçada.",
-        "Correta. O analista normalmente não lê o transcript; o handoff precisa de um resumo estruturado para ele agir sem refazer o atendimento.",
-        "Tentadora por parecer \"completa\", mas é exatamente o que gera retrabalho: o humano precisa garimpar o transcript. O handoff correto é estruturado."
+        "A simple rule does not become deterministic just because it is simple: a prompt has a non-zero failure rate, which is unacceptable for a financial limit.",
+        "Correct. The limit is financial and must be enforced in code, by inspecting the tool input before execution.",
+        "Uses sentiment as an exception criterion, and also circumvents a financial control. Sentiment is not an approval-authority criterion.",
+        "Correct. The analyst usually does not read the transcript; the handoff needs a structured summary so they can act without redoing the interaction.",
+        "Tempting because it seems \"complete\", but it is exactly what causes rework: the human has to dig through the transcript. The correct handoff is structured."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Na Vértice Telecom, o modelo passou a emitir, numa mesma resposta, dois blocos tool_use: run_line_diagnostics e lookup_invoice. A aplicação executa as duas e envia cada tool_result numa mensagem user separada; desde então, as requisições seguintes falham ou o modelo ignora um dos resultados. O que fazer?",
+      "pergunta": "At Vértice Telecom, the model started emitting two tool_use blocks in a single response: run_line_diagnostics and lookup_invoice. The application executes both and sends each tool_result in a separate user message; since then, subsequent requests fail or the model ignores one of the results. What should be done?",
       "opcoes": [
-        "Devolver os dois tool_result numa única mensagem user, cada um com o tool_use_id do bloco correspondente.",
-        "Definir disable_parallel_tool_use: true permanentemente, para que o modelo só peça uma tool por vez e o código atual volte a funcionar.",
-        "Enviar os resultados na ordem em que terminaram, uma mensagem user por resultado, acrescentando um texto que diga a qual tool cada um se refere.",
-        "Responder apenas ao primeiro tool_use e descartar o segundo; se o modelo ainda precisar da fatura, ele pedirá lookup_invoice de novo no turno seguinte."
+        "Return both tool_result blocks in a single user message, each with the tool_use_id of the corresponding block.",
+        "Set disable_parallel_tool_use: true permanently, so that the model requests only one tool at a time and the current code works again.",
+        "Send the results in the order they finished, one user message per result, adding text that says which tool each one refers to.",
+        "Respond only to the first tool_use and discard the second; if the model still needs the invoice, it will request lookup_invoice again on the next turn."
       ],
       "correta": 0,
-      "explicacao": "Vários tool_use numa resposta → execute todos e devolva todos os tool_result numa única mensagem user, casados por tool_use_id.",
+      "explicacao": "Multiple tool_use blocks in one response → execute all of them and return all the tool_result blocks in a single user message, matched by tool_use_id.",
       "feedbacks": [
-        "Correta. Em tool use paralelo, todos os resultados voltam juntos numa única mensagem user, cada um ligado ao seu tool_use_id; um resultado com falha também vai, com is_error: true.",
-        "Funciona como contorno, mas sacrifica a latência do paralelismo para esconder um bug do cliente. A correção é montar a mensagem do jeito que a API espera.",
-        "Mantém o erro estrutural: a correlação é feita pelo tool_use_id, não por texto explicativo, e os resultados de uma mesma resposta vão numa só mensagem.",
-        "Todo tool_use precisa de um tool_result correspondente; deixar um sem resposta gera erro e desperdiça uma chamada que o modelo já decidiu fazer."
+        "Correct. In parallel tool use, all results go back together in a single user message, each linked to its tool_use_id; a failed result is sent too, with is_error: true.",
+        "Works as a workaround, but sacrifices the latency gains of parallelism to hide a client-side bug. The fix is to build the message the way the API expects.",
+        "Keeps the structural error: correlation is done by tool_use_id, not by explanatory text, and the results from a single response go in one message.",
+        "Every tool_use needs a corresponding tool_result; leaving one unanswered causes an error and wastes a call the model has already decided to make."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Na Vértice Telecom, chegam dois chamados ao mesmo tempo. Cliente 1, muito irritado, xinga o atendimento por uma cobrança duplicada de R$ 9,90 de um serviço adicional, caso em que a política prevê estorno automático. Cliente 2, calmo e educado, pede isenção da multa de fidelidade porque mudou para um endereço sem cobertura de fibra, situação que a política não prevê. Como o agente deve agir?",
+      "pergunta": "At Vértice Telecom, two tickets arrive at the same time. Customer 1, very angry, is cursing at support over a duplicate R$ 9.90 charge for an add-on service, a case in which the policy provides for an automatic refund. Customer 2, calm and polite, asks for a waiver of the early termination fee because they moved to an address without fiber coverage, a situation the policy does not cover. How should the agent act?",
       "opcoes": [
-        "Escalar o chamado do cliente 1 por causa do sentimento muito negativo e resolver o do cliente 2 aplicando a multa conforme o contrato.",
-        "Escalar os dois: sentimento negativo e pedido de exceção são ambos gatilhos.",
-        "Pedir ao modelo uma nota de confiança de 0 a 10 em cada caso e escalar automaticamente sempre que a nota for menor que 7.",
-        "Resolver o do cliente 1 com o estorno da política e escalar o do cliente 2, que pede exceção não prevista."
+        "Escalate customer 1's ticket because of the very negative sentiment and resolve customer 2's by charging the fee as the contract stipulates.",
+        "Escalate both: negative sentiment and an exception request are both triggers.",
+        "Ask the model for a 0-to-10 confidence score on each case and escalate automatically whenever the score is below 7.",
+        "Resolve customer 1's ticket with the policy refund and escalate customer 2's, which requests an exception the policy does not cover."
       ],
       "correta": 3,
-      "explicacao": "Escale por pedido explícito de humano, lacuna/exceção de política ou falta de progresso; não por sentimento nem por confiança autodeclarada.",
+      "explicacao": "Escalate on an explicit request for a human, a policy gap/exception, or lack of progress; not on sentiment or self-reported confidence.",
       "feedbacks": [
-        "Inverte os critérios: escala por sentimento (anti-padrão) e resolve sozinho uma exceção que a política não cobre.",
-        "Sentimento alto não é gatilho de escalonamento. Escalar o caso trivial desperdiça analistas e contraria a meta de resolução no primeiro contato.",
-        "Confiança autodeclarada é mal calibrada e não captura o critério real (lacuna de política, pedido explícito por humano, falta de progresso).",
-        "Correta. Sentimento não é complexidade: o caso irritado é simples e coberto pela política; o caso calmo envolve lacuna de política, gatilho legítimo de escalonamento."
+        "Inverts the criteria: it escalates based on sentiment (anti-pattern) and handles on its own an exception the policy does not cover.",
+        "Strong sentiment is not an escalation trigger. Escalating the trivial case wastes analysts and works against the first-contact resolution goal.",
+        "Self-reported confidence is poorly calibrated and does not capture the real criterion (policy gap, explicit request for a human, lack of progress).",
+        "Correct. Sentiment is not complexity: the angry case is simple and covered by the policy; the calm case involves a policy gap, a legitimate escalation trigger."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Na Vértice Telecom, em atendimentos longos (40+ turnos), o histórico é resumido automaticamente. Após o resumo, o agente passou a informar números de protocolo da Anatel com dígitos trocados e valores de fatura arredondados. Qual é a melhor correção?",
+      "pergunta": "At Vértice Telecom, in long interactions (40+ turns), the history is summarized automatically. After summarization, the agent started giving out Anatel protocol numbers with transposed digits and rounded invoice amounts. What is the best fix?",
       "opcoes": [
-        "Migrar para um modelo com janela de contexto maior para que o resumo deixe de ser necessário na maioria dos atendimentos.",
-        "Resumir o histórico com mais frequência, a cada 10 turnos, para que cada resumo cubra menos informação e perca menos detalhes.",
-        "Acrescentar ao system prompt a instrução \"preste atenção especial a números e protocolos ao resumir a conversa\".",
-        "Manter um bloco persistente de \"case facts\" (protocolo, linha, valores, datas) que nunca é resumido."
+        "Migrate to a model with a larger context window so that summarization becomes unnecessary in most interactions.",
+        "Summarize the history more often, every 10 turns, so that each summary covers less information and loses fewer details.",
+        "Add the instruction \"pay special attention to numbers and protocol numbers when summarizing the conversation\" to the system prompt.",
+        "Keep a persistent \"case facts\" block (protocol number, line, amounts, dates) that is never summarized."
       ],
       "correta": 3,
-      "explicacao": "Resumo perde valores exatos, IDs e datas. Correção: bloco de case facts persistente, fora do resumo.",
+      "explicacao": "Summarization loses exact values, IDs, and dates. Fix: a persistent case facts block, kept outside the summary.",
       "feedbacks": [
-        "Ataca o sintoma: janela maior custa mais por turno, piora o lost in the middle e não garante que os valores exatos sobrevivam quando o resumo ocorrer.",
-        "Mais resumos significam mais oportunidades de paráfrase; o problema é estrutural (resumo não preserva valores exatos), não de frequência.",
-        "Instrução vaga e probabilística; não garante preservação literal. O padrão esperado é separar os fatos críticos do texto resumível.",
-        "Correta. Resumos perdem justamente valores exatos, IDs e datas; um bloco de case facts preserva o que não pode ser parafraseado."
+        "Treats the symptom: a larger window costs more per turn, worsens lost in the middle, and does not guarantee that exact values survive when summarization does happen.",
+        "More summaries mean more opportunities for paraphrasing; the problem is structural (summaries don't preserve exact values), not a matter of frequency.",
+        "A vague, probabilistic instruction; it does not guarantee verbatim preservation. The expected pattern is to separate critical facts from summarizable text.",
+        "Correct. Summaries lose precisely the exact values, IDs, and dates; a case facts block preserves what cannot be paraphrased."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Na Vértice Telecom, um cliente se identifica apenas como \"Maria Souza\" e pede segunda via da fatura. get_customer retorna três titulares com esse nome, e hoje o agente simplesmente segue com o primeiro resultado. O que o agente deve fazer?",
+      "pergunta": "At Vértice Telecom, a customer identifies themselves only as \"Maria Souza\" and asks for a copy of their bill. get_customer returns three account holders with that name, and currently the agent simply proceeds with the first result. What should the agent do?",
       "opcoes": [
-        "Escolher o registro com atividade mais recente, que estatisticamente tem maior probabilidade de ser quem está entrando em contato.",
-        "Escalar o atendimento a um humano, já que a ambiguidade de identidade indica que o agente não consegue resolver o caso.",
-        "Pedir ao cliente um identificador adicional (CPF ou número da linha) para desambiguar antes de acessar qualquer dado de fatura.",
-        "Mostrar ao cliente os três registros encontrados, com endereço e linha, para que ele indique qual é o seu."
+        "Choose the record with the most recent activity, which is statistically the most likely to be the person making contact.",
+        "Escalate the interaction to a human, since the identity ambiguity indicates that the agent cannot resolve the case.",
+        "Ask the customer for an additional identifier (CPF or line number) to disambiguate before accessing any billing data.",
+        "Show the customer the three records found, with address and line, so they can indicate which one is theirs."
       ],
       "correta": 2,
-      "explicacao": "Vários clientes na busca → peça um identificador para desambiguar; não chute e não exponha dados de terceiros.",
+      "explicacao": "Multiple customers in the search → ask for an identifier to disambiguate; don't guess and don't expose third-party data.",
       "feedbacks": [
-        "Chutar com heurística arrisca expor dados de outro titular (problema de privacidade) e agir na conta errada.",
-        "Escalonamento desnecessário: o agente resolve a ambiguidade com uma simples pergunta. Não é lacuna de política nem falta de progresso.",
-        "Correta. Com vários resultados possíveis, o agente deve pedir um identificador que desambigue, nunca escolher um registro por heurística.",
-        "Resolve a ambiguidade, mas vaza dados pessoais de outros dois titulares para um usuário não verificado (LGPD)."
+        "Guessing with a heuristic risks exposing another account holder's data (a privacy problem) and acting on the wrong account.",
+        "Unnecessary escalation: the agent resolves the ambiguity with a simple question. It is neither a policy gap nor a lack of progress.",
+        "Correct. With several possible matches, the agent should ask for an identifier that disambiguates, never pick a record by heuristic.",
+        "Resolves the ambiguity, but leaks personal data of the other two account holders to an unverified user (LGPD)."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Na Vértice Telecom, quando o sistema de faturamento fica fora do ar, lookup_invoice captura o timeout e devolve uma lista vazia com status de sucesso. O agente então afirma ao cliente que \"não há faturas em aberto\". Como a tool deveria se comportar?",
+      "pergunta": "At Vértice Telecom, when the billing system is down, lookup_invoice catches the timeout and returns an empty list with a success status. The agent then tells the customer that \"there are no outstanding invoices\". How should the tool behave?",
       "opcoes": [
-        "Manter a lista vazia, mas instruir o agente no system prompt a nunca afirmar ausência de faturas e sempre sugerir que o cliente confira no app.",
-        "Devolver a string \"Operation failed\" para que o modelo perceba que algo deu errado e peça desculpas ao cliente.",
-        "Devolver erro estruturado (categoria transitória, isRetryable: true, ação tentada), distinguindo falha de \"nada encontrado\".",
-        "Fazer a tool repetir a chamada indefinidamente até o faturamento voltar, para nunca devolver resultado incompleto ao agente."
+        "Keep the empty list, but instruct the agent in the system prompt never to claim there are no invoices and to always suggest the customer check the app.",
+        "Return the string \"Operation failed\" so that the model realizes something went wrong and apologizes to the customer.",
+        "Return a structured error (transient category, isRetryable: true, attempted action), distinguishing failure from \"nothing found\".",
+        "Make the tool retry the call indefinitely until billing is back up, so it never returns an incomplete result to the agent."
       ],
       "correta": 2,
-      "explicacao": "Erro não pode ser silenciado como sucesso vazio. Timeout = erro transitório estruturado e retentável; vazio = informação.",
+      "explicacao": "An error must not be silenced as an empty success. Timeout = structured, retryable transient error; empty = information.",
       "feedbacks": [
-        "Supressão silenciosa continua: o agente não sabe quando houve falha real e passa a duvidar até das respostas vazias legítimas.",
-        "Melhor que mentir, mas é o anti-padrão do erro genérico: sem categoria nem indicação de retentabilidade, o agente não sabe se deve tentar de novo, esperar ou escalar.",
-        "Correta. Vazio ≠ falha: lista vazia com sucesso significa \"a busca rodou e não achou nada\". Timeout significa que a busca não rodou e deve chegar como erro estruturado e retentável.",
-        "Retry sem limite trava o atendimento e esconde a falha. Transitório pede retry com backoff e limite, depois erro estruturado."
+        "The silent suppression continues: the agent doesn't know when a real failure occurred and starts doubting even legitimate empty responses.",
+        "Better than lying, but it's the generic-error anti-pattern: with no category and no indication of retryability, the agent doesn't know whether to retry, wait, or escalate.",
+        "Correct. Empty ≠ failure: an empty list with success means \"the search ran and found nothing\". A timeout means the search did not run and should arrive as a structured, retryable error.",
+        "Unbounded retries stall the interaction and hide the failure. A transient error calls for retries with backoff and a limit, followed by a structured error."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Na Vértice Telecom, o agente frequentemente chama run_line_diagnostics quando há uma queda regional (deveria usar check_outage) e vice-versa. As duas tools têm a mesma descrição: \"Verifica problemas de conexão do cliente\". Qual é a primeira correção a fazer?",
+      "pergunta": "At Vértice Telecom, the agent frequently calls run_line_diagnostics when there is a regional outage (it should use check_outage), and vice versa. Both tools have the same description: \"Checks the customer's connection problems\". What is the first fix to make?",
       "opcoes": [
-        "Reescrever as duas descrições, explicando o propósito de cada uma, quando usar e como ela difere da outra.",
-        "Treinar um classificador de intenção que decide, antes do agente, qual das duas tools deve ser chamada em cada mensagem.",
-        "Forçar via tool_choice check_outage como primeira chamada de todo chamado de conectividade.",
-        "Remover check_outage e fazer run_line_diagnostics consultar também as quedas regionais internamente, mantendo a descrição atual."
+        "Rewrite both descriptions, explaining each one's purpose, when to use it, and how it differs from the other.",
+        "Train an intent classifier that decides, ahead of the agent, which of the two tools should be called for each message.",
+        "Use tool_choice to force check_outage as the first call in every connectivity ticket.",
+        "Remove check_outage and have run_line_diagnostics also query regional outages internally, keeping the current description."
       ],
       "correta": 0,
-      "explicacao": "Tools sobrepostas com descrições quase iguais → reescreva as descrições diferenciando propósito e uso (ou renomeie/funda com descrição clara).",
+      "explicacao": "Overlapping tools with nearly identical descriptions → rewrite the descriptions to differentiate purpose and usage (or rename/merge them with a clear description).",
       "feedbacks": [
-        "Correta. A descrição é o critério de seleção da tool; descrições quase iguais causam roteamento errado. É a correção mais simples que resolve.",
-        "Solução mais complexa que o necessário: a causa é a descrição ambígua. Classificador de roteamento vem depois de esgotar a correção simples.",
-        "Codifica uma árvore de decisão por fora do modelo e gasta chamadas desnecessárias; não corrige a ambiguidade das descrições.",
-        "Fundir tools pode ser válido, mas mantendo uma descrição vaga o problema de seleção apenas muda de lugar; a correção primária é a descrição."
+        "Correct. The description is the tool selection criterion; nearly identical descriptions cause misrouting. It is the simplest fix that solves the problem.",
+        "A more complex solution than necessary: the cause is the ambiguous description. A routing classifier comes after the simple fix has been exhausted.",
+        "Encodes a decision tree outside the model and wastes calls unnecessarily; it does not fix the ambiguity of the descriptions.",
+        "Merging tools can be valid, but if the description stays vague, the selection problem just moves elsewhere; the primary fix is the description."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Na Vértice Telecom, issue_credit recusa um crédito porque o cliente atingiu o limite mensal de créditos da política, e devolve apenas o texto \"Erro ao processar\". O agente tenta a mesma chamada mais quatro vezes antes de desistir. Qual resposta de erro resolveria o problema?",
+      "pergunta": "At Vértice Telecom, issue_credit rejects a credit because the customer has reached the policy's monthly credit limit, and returns only the text \"Error while processing\". The agent tries the same call four more times before giving up. Which error response would solve the problem?",
       "opcoes": [
-        "{\"isError\": true, \"errorCategory\": \"transient\", \"isRetryable\": true, \"retry_after_seconds\": 30, \"message\": \"Falha ao processar crédito\"}",
-        "{\"isError\": true, \"message\": \"Erro ao processar. Tente novamente mais tarde.\"}",
-        "{\"isError\": true, \"errorCategory\": \"business\", \"isRetryable\": false, \"message\": \"Limite mensal de créditos atingido\"}",
-        "{\"success\": true, \"credited\": 0, \"message\": \"Nenhum crédito aplicado\"}"
+        "{\"isError\": true, \"errorCategory\": \"transient\", \"isRetryable\": true, \"retry_after_seconds\": 30, \"message\": \"Failed to process credit\"}",
+        "{\"isError\": true, \"message\": \"Error while processing. Please try again later.\"}",
+        "{\"isError\": true, \"errorCategory\": \"business\", \"isRetryable\": false, \"message\": \"Monthly credit limit reached\"}",
+        "{\"success\": true, \"credited\": 0, \"message\": \"No credit applied\"}"
       ],
       "correta": 2,
-      "explicacao": "Erro de negócio → errorCategory \"business\", isRetryable false, mensagem clara: o agente explica a política ou escala, sem retry.",
+      "explicacao": "Business error → errorCategory \"business\", isRetryable false, a clear message: the agent explains the policy or escalates, without retrying.",
       "feedbacks": [
-        "Categoria errada: classificar regra de política como transitória incentiva exatamente os retries inúteis que se quer eliminar.",
-        "Continua genérico e ainda sugere retry; sem categoria e sem isRetryable, o agente não distingue política de instabilidade.",
-        "Correta. Erro de negócio não é retentável; a categoria e o isRetryable: false dizem ao agente para parar de tentar e explicar a política ou escalar.",
-        "Mascara a recusa como sucesso, levando o agente a dizer ao cliente que \"está tudo certo\". É supressão silenciosa."
+        "Wrong category: classifying a policy rule as transient encourages exactly the useless retries you want to eliminate.",
+        "Still generic and even suggests a retry; without a category and isRetryable, the agent cannot distinguish a policy rule from instability.",
+        "Correct. A business error is not retryable; the category and isRetryable: false tell the agent to stop trying and to explain the policy or escalate.",
+        "Masks the rejection as success, leading the agent to tell the customer that \"everything is fine\". This is silent suppression."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D4",
-      "pergunta": "Na Vértice Telecom, o system prompt diz \"escale para um humano quando for apropriado\". A análise de 500 atendimentos mostra escalonamento inconsistente: casos idênticos ora são escalados, ora não. Qual mudança no prompt traz mais consistência?",
+      "pergunta": "At Vértice Telecom, the system prompt says \"escalate to a human when appropriate\". An analysis of 500 interactions shows inconsistent escalation: identical cases are sometimes escalated and sometimes not. Which change to the prompt brings the most consistency?",
       "opcoes": [
-        "Trocar por critérios explícitos: o que conta como gatilho, o que não conta e exemplos de casos-fronteira.",
-        "Acrescentar \"seja conservador e, na dúvida, escale\", para reduzir o risco de o agente resolver sozinho o que não deveria.",
-        "Reduzir a temperatura para tornar o escalonamento mais determinístico.",
-        "Pedir que o modelo explique, antes de responder, se considera o caso complexo, e escalar quando ele julgar que sim."
+        "Replace it with explicit criteria: what counts as a trigger, what does not, and examples of borderline cases.",
+        "Add \"be conservative and, when in doubt, escalate\", to reduce the risk of the agent resolving on its own what it shouldn't.",
+        "Lower the temperature to make escalation more deterministic.",
+        "Ask the model to explain, before responding, whether it considers the case complex, and escalate when it judges that it is."
       ],
       "correta": 0,
-      "explicacao": "Critérios explícitos (o que conta, o que não conta, exemplos de fronteira) batem instruções vagas como \"quando apropriado\".",
+      "explicacao": "Explicit criteria (what counts, what doesn't, borderline examples) beat vague instructions like \"when appropriate\".",
       "feedbacks": [
-        "Correta. Instruções vagas como \"quando apropriado\" geram inconsistência; critérios explícitos com o que conta, o que não conta e exemplos de fronteira tornam o julgamento reprodutível.",
-        "Continua vago (\"na dúvida\") e empurra o comportamento para escalonamento excessivo, sem resolver a inconsistência.",
-        "Ataca o sintoma errado: a inconsistência vem da falta de critério, não da amostragem. Além disso, em modelos recentes, parâmetros de amostragem podem nem ser aceitos.",
-        "Mantém o julgamento sem critério definido; \"complexo\" é tão vago quanto \"apropriado\"."
+        "Correct. Vague instructions like \"when appropriate\" produce inconsistency; explicit criteria covering what counts, what doesn't, and borderline examples make the judgment reproducible.",
+        "Still vague (\"when in doubt\") and pushes behavior toward over-escalation, without resolving the inconsistency.",
+        "Targets the wrong symptom: the inconsistency comes from the lack of criteria, not from sampling. Moreover, on recent models, sampling parameters may not even be accepted.",
+        "Keeps the judgment without defined criteria; \"complex\" is as vague as \"appropriate\"."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D4",
-      "pergunta": "Na Vértice Telecom, o agente classifica a intenção inicial do cliente em \"cancelamento\", \"portabilidade\" ou \"downgrade de plano\", e erra com frequência em mensagens ambíguas como \"quero pagar menos, senão vou pra outra operadora\". Quais DUAS mudanças melhoram a classificação? (Escolha DUAS.)",
+      "pergunta": "At Vértice Telecom, the agent classifies the customer's initial intent as \"cancellation\", \"number portability\", or \"plan downgrade\", and frequently gets it wrong on ambiguous messages like \"I want to pay less, or I'm switching to another carrier\". Which TWO changes improve the classification? (Choose TWO.)",
       "opcoes": [
-        "Incluir 40 exemplos do caso mais comum (\"quero cancelar\") para que o modelo tenha bastante evidência do formato esperado.",
-        "Adicionar \"use seu bom senso para classificar corretamente as mensagens ambíguas\" ao final do prompt.",
-        "Incluir 3 ou 4 exemplos few-shot variados, focados em casos ambíguos como esse, cada um com a mensagem, a classificação e o raciocínio que levou a ela.",
-        "Pedir ao modelo que devolva também sua confiança na classificação e descartar as classificações abaixo de 0,8.",
-        "Definir explicitamente cada categoria, dizendo o que conta e o que não conta (ex.: pedir plano mais barato sem mencionar saída = downgrade)."
+        "Include 40 examples of the most common case (\"I want to cancel\") so that the model has plenty of evidence of the expected format.",
+        "Add \"use good judgment to correctly classify ambiguous messages\" to the end of the prompt.",
+        "Include 3 or 4 varied few-shot examples, focused on ambiguous cases like this one, each with the message, the classification, and the reasoning that led to it.",
+        "Ask the model to also return its confidence in the classification and discard classifications below 0.8.",
+        "Explicitly define each category, stating what counts and what does not (e.g., asking for a cheaper plan without mentioning leaving = downgrade)."
       ],
       "corretas": [
         2,
         4
       ],
-      "explicacao": "Few-shot com 2 a 4 exemplos variados e com raciocínio + critérios explícitos por categoria são as alavancas para casos ambíguos.",
+      "explicacao": "Few-shot with 2 to 4 varied examples that include reasoning + explicit criteria per category are the levers for ambiguous cases.",
       "feedbacks": [
-        "Muitos exemplos do caso fácil não ensinam a fronteira e incentivam a decorar; few-shot eficaz é poucos exemplos variados que cobrem bordas.",
-        "\"Use seu bom senso\" é exatamente a instrução vaga que produz inconsistência.",
-        "Correta. Few-shot direcionado a casos-fronteira, com o raciocínio explícito, ensina o padrão de decisão e generaliza melhor.",
-        "Confiança autodeclarada não é calibrada; descartar não corrige o erro de classificação nos casos ambíguos.",
-        "Correta. Critérios explícitos por categoria eliminam a interpretação livre que gera erro nos casos ambíguos."
+        "Many examples of the easy case don't teach the boundary and encourage memorization; effective few-shot means a few varied examples that cover the edges.",
+        "\"Use good judgment\" is exactly the kind of vague instruction that produces inconsistency.",
+        "Correct. Few-shot targeted at borderline cases, with explicit reasoning, teaches the decision pattern and generalizes better.",
+        "Self-reported confidence is not calibrated; discarding does not fix the misclassification in ambiguous cases.",
+        "Correct. Explicit criteria per category eliminate the free interpretation that causes errors in ambiguous cases."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Na Vértice Telecom, um engenheiro propõe codificar no orquestrador a sequência fixa \"diagnóstico → fatura → crédito\" para todo chamado, forçando a tool de cada passo via tool_choice, porque \"o agente às vezes escolhe uma ordem diferente\". Os atendimentos variam muito (alguns são só de fatura, outros só de conectividade). Qual é a melhor avaliação?",
+      "pergunta": "At Vértice Telecom, an engineer proposes hard-coding the fixed sequence \"diagnostics → invoice → credit\" in the orchestrator for every ticket, forcing each step's tool via tool_choice, because \"the agent sometimes picks a different order\". Interactions vary widely (some are billing-only, others connectivity-only). What is the best assessment?",
       "opcoes": [
-        "Aprovar a sequência fixa, porque fluxos determinísticos são sempre mais confiáveis do que deixar o modelo decidir a ordem das tools.",
-        "Rejeitar: deixar o modelo escolher as tools no loop e impor em código só os pré-requisitos críticos.",
-        "Aprovar a sequência, mas só para chamados de conectividade, e deixar os de cobrança com o modelo escolhendo livremente.",
-        "Manter o loop livre e listar no prompt a ordem preferida das tools."
+        "Approve the fixed sequence, because deterministic flows are always more reliable than letting the model decide the order of the tools.",
+        "Reject it: let the model choose the tools in the loop and enforce in code only the critical prerequisites.",
+        "Approve the sequence, but only for connectivity tickets, and leave billing tickets to the model choosing freely.",
+        "Keep the loop free and list the preferred tool order in the prompt."
       ],
       "correta": 1,
-      "explicacao": "O modelo decide o fluxo dentro do loop; código determinístico (hooks/pré-requisitos) só para regras críticas.",
+      "explicacao": "The model decides the flow within the loop; deterministic code (hooks/prerequisites) only for critical rules.",
       "feedbacks": [
-        "Confunde enforcement de regra crítica com roteirização completa. Forçar diagnóstico num chamado só de fatura desperdiça chamadas e piora a experiência.",
-        "Correta. No loop agêntico, o modelo decide qual tool usar e quando parar; o código impõe só as regras críticas. Árvore de decisão externa engessa casos variáveis.",
-        "Ainda codifica uma árvore de decisão por fora e exige classificar o chamado antes, sem atacar a real preocupação (pré-requisitos críticos).",
-        "Se a ordem não é crítica, não precisa ser imposta; se algum passo é crítico (identidade), prompt não basta. Fica no meio do caminho."
+        "Confuses enforcing a critical rule with scripting the entire flow. Forcing diagnostics on a billing-only ticket wastes calls and worsens the experience.",
+        "Correct. In the agentic loop, the model decides which tool to use and when to stop; code enforces only the critical rules. An external decision tree straitjackets variable cases.",
+        "Still encodes a decision tree outside the model and requires classifying the ticket beforehand, without addressing the real concern (critical prerequisites).",
+        "If the order isn't critical, it doesn't need to be enforced; if some step is critical (identity), a prompt isn't enough. It's a halfway solution."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Na Vértice Telecom, ocasionalmente uma resposta chega com HTTP 200, stop_reason \"refusal\" e content sem o texto esperado. O código lê content[0].text, recebe vazio e envia ao cliente uma mensagem em branco, registrando o atendimento como bem-sucedido. Qual é a correção?",
+      "pergunta": "At Vértice Telecom, a response occasionally arrives with HTTP 200, stop_reason \"refusal\", and content without the expected text. The code reads content[0].text, gets an empty value, and sends the customer a blank message, logging the interaction as successful. What is the fix?",
       "opcoes": [
-        "Tratar como erro apenas respostas com status HTTP diferente de 200 e aplicar retry automático nesses casos.",
-        "Verificar se content[0].text está vazio e, nesse caso, reenviar a mesma requisição até obter um texto.",
-        "Checar o stop_reason antes de ler o content e tratar \"refusal\" como desfecho próprio, com fallback.",
-        "Aumentar max_tokens, pois content vazio costuma indicar que a resposta foi cortada antes de o texto ser gerado."
+        "Treat as errors only responses with an HTTP status other than 200 and apply automatic retries in those cases.",
+        "Check whether content[0].text is empty and, if so, resend the same request until text comes back.",
+        "Check stop_reason before reading the content and treat \"refusal\" as a distinct outcome, with a fallback.",
+        "Increase max_tokens, since empty content usually indicates that the response was cut off before the text was generated."
       ],
       "correta": 2,
-      "explicacao": "stop_reason \"refusal\" vem com HTTP 200; cheque o stop_reason antes de consumir o content.",
+      "explicacao": "stop_reason \"refusal\" comes with HTTP 200; check stop_reason before consuming the content.",
       "feedbacks": [
-        "Não pega o problema: a recusa vem com HTTP 200. Verificar apenas status HTTP é exatamente o bug descrito.",
-        "Heurística frágil que ignora a causa sinalizada (stop_reason) e pode repetir indefinidamente uma requisição que será recusada de novo.",
-        "Correta. Recusa chega com HTTP 200; só o stop_reason a distingue de sucesso. Código que ignora o stop_reason trata recusa como sucesso vazio.",
-        "Corte por limite de saída aparece como stop_reason \"max_tokens\", não \"refusal\"; aumentar o limite não muda nada aqui."
+        "Doesn't catch the problem: the refusal comes with HTTP 200. Checking only the HTTP status is exactly the bug described.",
+        "A fragile heuristic that ignores the signaled cause (stop_reason) and may endlessly repeat a request that will be refused again.",
+        "Correct. A refusal arrives with HTTP 200; only stop_reason distinguishes it from success. Code that ignores stop_reason treats a refusal as an empty success.",
+        "Truncation due to the output limit shows up as stop_reason \"max_tokens\", not \"refusal\"; raising the limit changes nothing here."
       ]
     },
     {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Na Vértice Telecom, o resultado de get_customer traz CPF completo e os dados do cartão cadastrado, que acabam no contexto do modelo e nos logs de conversa, contrariando a política de LGPD. O agente só precisa dos 3 últimos dígitos do CPF para confirmar identidade. Qual é a solução mais adequada?",
+      "pergunta": "At Vértice Telecom, the get_customer result includes the full CPF and the card details on file, which end up in the model's context and in the conversation logs, violating the LGPD policy. The agent only needs the last 3 digits of the CPF to confirm identity. What is the most appropriate solution?",
       "opcoes": [
-        "Um hook PostToolUse que mascara CPF e cartão no resultado de get_customer.",
-        "Instruir o modelo no system prompt a nunca repetir CPF ou dados de cartão nas respostas ao cliente.",
-        "Um hook PreToolUse que bloqueia get_customer sempre que a conversa mencionar dados de pagamento.",
-        "Pedir ao modelo que, depois de cada get_customer, resuma o resultado descartando os campos sensíveis."
+        "A PostToolUse hook that masks the CPF and card data in the get_customer result.",
+        "Instruct the model in the system prompt never to repeat the CPF or card data in its replies to the customer.",
+        "A PreToolUse hook that blocks get_customer whenever the conversation mentions payment data.",
+        "Ask the model, after each get_customer call, to summarize the result while discarding the sensitive fields."
       ],
       "correta": 0,
-      "explicacao": "PostToolUse é o ponto para normalizar/mascarar resultados de tool (ex.: PII) antes de chegarem ao modelo.",
+      "explicacao": "PostToolUse is the place to normalize/mask tool results (e.g., PII) before they reach the model.",
       "feedbacks": [
-        "Correta. PostToolUse normaliza e limpa resultados de tool de forma determinística, antes que o modelo (e os logs da conversa) os vejam.",
-        "O dado já entrou no contexto e nos logs; a instrução protege no máximo a resposta, e de forma probabilística.",
-        "Bloqueia a tool errada no momento errado: o problema está no conteúdo do resultado, não na decisão de chamar a tool.",
-        "O modelo já leu os dados sensíveis, e o resumo é probabilístico. A limpeza precisa acontecer antes, em código."
+        "Correct. PostToolUse deterministically normalizes and sanitizes tool results before the model (and the conversation logs) see them.",
+        "The data has already entered the context and the logs; at most, the instruction protects the reply, and only probabilistically.",
+        "Blocks the wrong tool at the wrong time: the problem lies in the content of the result, not in the decision to call the tool.",
+        "The model has already read the sensitive data, and the summary is probabilistic. The sanitization needs to happen earlier, in code."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Cenário: a Lumen Saúde, healthtech que apoia comissões de farmácia de hospitais, opera um sistema multiagente que produz dossiês de evidências sobre terapias (por exemplo, \"eficácia de agonistas de GLP-1 em adolescentes com obesidade\"). Um agente coordenador, construído com o Claude Agent SDK, delega a subagents especializados: busca de literatura científica (via servidor MCP de uma base bibliográfica), busca web, análise de registros de ensaios clínicos e síntese/redação. Objetivo: entregar em poucas horas um dossiê que um médico consiga auditar. Restrições: toda afirmação precisa de fonte rastreável, divergências entre estudos devem ficar visíveis e o sistema não pode preencher lacunas com conhecimento não citado.\n\nO coordenador delega ao subagent de literatura com o prompt \"Pesquise os estudos relevantes para a pergunta do usuário\". O subagent devolve estudos genéricos sobre obesidade em adultos. Qual é a causa mais provável e a correção?",
+      "pergunta": "Scenario: Lumen Saúde, a healthtech company that supports hospital pharmacy committees, operates a multi-agent system that produces evidence dossiers on therapies (for example, \"efficacy of GLP-1 agonists in adolescents with obesity\"). A coordinator agent, built with the Claude Agent SDK, delegates to specialized subagents: scientific literature search (via an MCP server for a bibliographic database), web search, clinical trial registry analysis, and synthesis/writing. Goal: deliver, within a few hours, a dossier that a physician can audit. Constraints: every claim needs a traceable source, disagreements between studies must remain visible, and the system must not fill gaps with uncited knowledge.\n\nThe coordinator delegates to the literature subagent with the prompt \"Research the studies relevant to the user's question\". The subagent returns generic studies on obesity in adults. What is the most likely cause, and the fix?",
       "opcoes": [
-        "O subagent tem tools demais disponíveis; basta reduzir o conjunto de tools para que ele foque na pergunta certa e pare de devolver resultados genéricos.",
-        "O subagent tem contexto isolado e não vê a pergunta original; o coordenador deve passar explicitamente no prompt a pergunta, a população, o período, os critérios de inclusão e o formato de saída esperado.",
-        "O subagent deveria ser criado com acesso ao histórico completo do coordenador; configure-o para herdar a conversa por padrão.",
-        "O modelo do subagent é fraco demais para a tarefa; trocar por um modelo maior resolve a interpretação da pergunta."
+        "The subagent has too many tools available; simply reducing the tool set will make it focus on the right question and stop returning generic results.",
+        "The subagent has an isolated context and does not see the original question; the coordinator must explicitly pass in the prompt the question, population, time period, inclusion criteria, and expected output format.",
+        "The subagent should be created with access to the coordinator's full history; configure it to inherit the conversation by default.",
+        "The subagent's model is too weak for the task; switching to a larger model will fix the interpretation of the question."
       ],
       "correta": 1,
-      "explicacao": "Contexto do subagent é isolado: a delegação precisa carregar explicitamente a pergunta, as restrições e o formato de saída.",
+      "explicacao": "The subagent's context is isolated: the delegation must explicitly carry the question, the constraints, and the output format.",
       "feedbacks": [
-        "Reduzir tools melhora a seleção de tools, mas não dá ao subagent a informação que ele não recebeu: a pergunta.",
-        "Correta. Subagents não herdam o histórico do coordenador: tudo o que precisam vai explícito no prompt de delegação.",
-        "Tentadora (forks herdam contexto), mas para uma tarefa delimitada o certo é um prompt explícito e bem especificado; herdar tudo gasta contexto e não substitui especificar o que se quer.",
-        "Nenhum modelo adivinha uma pergunta que não está no seu contexto; trocar de modelo ataca o sintoma errado."
+        "Reducing tools improves tool selection, but doesn't give the subagent the information it never received: the question.",
+        "Correct. Subagents do not inherit the coordinator's history: everything they need goes explicitly in the delegation prompt.",
+        "Tempting (forks do inherit context), but for a well-scoped task the right approach is an explicit, well-specified prompt; inheriting everything consumes context and is no substitute for specifying what you want.",
+        "No model can guess a question that isn't in its context; switching models targets the wrong symptom."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Na Lumen Saúde, os subagents de literatura, web e ensaios clínicos são independentes entre si, mas o log mostra o coordenador emitindo uma chamada da tool Agent por turno, esperando cada resultado antes da próxima. O dossiê leva o triplo do tempo esperado. O que muda?",
+      "pergunta": "At Lumen Saúde, the literature, web, and clinical trial subagents are independent of one another, but the log shows the coordinator issuing one Agent tool call per turn, waiting for each result before the next. The dossier takes three times as long as expected. What should change?",
       "opcoes": [
-        "O coordenador deve emitir as três chamadas da tool Agent na mesma resposta, para que os subagents rodem em paralelo.",
-        "Juntar os três subagents num único subagent com todas as tools, eliminando a necessidade de várias delegações.",
-        "Configurar os subagents para que um chame o outro diretamente ao terminar, formando uma cadeia sem passar pelo coordenador.",
-        "Reduzir o max_tokens dos subagents para que cada um termine mais rápido e o tempo total caia."
+        "The coordinator should issue the three Agent tool calls in the same response, so that the subagents run in parallel.",
+        "Merge the three subagents into a single subagent with all the tools, eliminating the need for multiple delegations.",
+        "Configure the subagents so that each one calls the next directly when it finishes, forming a chain that bypasses the coordinator.",
+        "Reduce the subagents' max_tokens so that each one finishes faster and the total time drops."
       ],
       "correta": 0,
-      "explicacao": "Para paralelizar, o coordenador emite várias chamadas Agent na mesma resposta.",
+      "explicacao": "To parallelize, the coordinator issues multiple Agent calls in the same response.",
       "feedbacks": [
-        "Correta. Paralelismo de subagents acontece quando várias chamadas Agent saem na mesma resposta; turnos separados significam execução sequencial.",
-        "Elimina a especialização e infla o número de tools do agente (pior seleção), sem ganhar paralelismo.",
-        "Continua sequencial e ainda quebra o hub-and-spoke: subagents não devem se comunicar diretamente.",
-        "Corta respostas no meio (truncamento) e não resolve a causa: a execução sequencial."
+        "Correct. Subagent parallelism happens when multiple Agent calls go out in the same response; separate turns mean sequential execution.",
+        "Eliminates specialization and inflates the agent's tool count (worse selection), without gaining any parallelism.",
+        "Still sequential, and it also breaks hub-and-spoke: subagents should not communicate directly.",
+        "Cuts responses off midway (truncation) and does not address the cause: sequential execution."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Na Lumen Saúde, para a pergunta \"intervenções não farmacológicas para insônia em idosos\", o dossiê cobriu apenas terapia cognitivo-comportamental; exercício físico, higiene do sono e mindfulness ficaram de fora, embora os subagents tenham funcionado sem erro. Qual é a melhor correção?",
+      "pergunta": "At Lumen Saúde, for the question \"non-pharmacological interventions for insomnia in older adults\", the dossier covered only cognitive behavioral therapy; physical exercise, sleep hygiene, and mindfulness were left out, even though the subagents ran without errors. What is the best fix?",
       "opcoes": [
-        "Aumentar o número de artigos que o subagent de literatura retorna por busca, de 20 para 100, para que subáreas menos citadas também apareçam.",
-        "Pedir ao subagent de síntese que complete as subáreas faltantes com o conhecimento geral do modelo.",
-        "Adicionar um subagent de revisão ao final que reprove dossiês curtos demais.",
-        "Decompor de forma mais ampla, checar a cobertura das subáreas e fazer uma segunda rodada direcionada às lacunas."
+        "Increase the number of articles the literature subagent returns per search from 20 to 100, so that less-cited subareas also show up.",
+        "Ask the synthesis subagent to fill in the missing subareas with the model's general knowledge.",
+        "Add a review subagent at the end that rejects dossiers that are too short.",
+        "Decompose more broadly, check coverage of the subareas, and run a second round targeted at the gaps."
       ],
       "correta": 3,
-      "explicacao": "Decomposição estreita é anti-padrão do D1: decomponha amplamente, verifique cobertura e faça uma rodada direcionada às lacunas.",
+      "explicacao": "Overly narrow decomposition is a D1 anti-pattern: decompose broadly, verify coverage, and run a round targeted at the gaps.",
       "feedbacks": [
-        "Mais resultados da mesma busca estreita trazem mais do mesmo; a lacuna está na decomposição, não no volume.",
-        "Viola a restrição de não preencher lacunas sem fonte e aumenta o risco de alucinação num contexto clínico.",
-        "Detecta o sintoma (dossiê pobre) tarde e sem dizer o que falta; não corrige a decomposição nem orienta a nova busca.",
-        "Correta. É o anti-padrão de decomposição estreita demais; a correção é decompor de forma ampla, checar cobertura e fazer refinamento iterativo."
+        "More results from the same narrow search bring more of the same; the gap lies in the decomposition, not in the volume.",
+        "Violates the constraint against filling gaps without a source and increases the risk of hallucination in a clinical context.",
+        "Detects the symptom (a thin dossier) late and without saying what is missing; it neither fixes the decomposition nor guides the new search.",
+        "Correct. This is the overly narrow decomposition anti-pattern; the fix is to decompose broadly, check coverage, and refine iteratively."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Na Lumen Saúde, para reduzir latência, um engenheiro propõe que o subagent de busca web envie seus achados diretamente ao subagent de síntese, sem passar pelo coordenador. Qual é a melhor avaliação dessa proposta?",
+      "pergunta": "At Lumen Saúde, to reduce latency, an engineer proposes that the web search subagent send its findings directly to the synthesis subagent, bypassing the coordinator. What is the best assessment of this proposal?",
       "opcoes": [
-        "Aprovar: comunicação direta entre subagents é a forma recomendada de reduzir latência em pipelines multiagente.",
-        "Aprovar, desde que o subagent de síntese registre em log tudo o que recebeu diretamente da busca web.",
-        "Rejeitar e, no lugar, fundir os subagents de busca web e de síntese num só, eliminando a passagem de dados entre eles.",
-        "Rejeitar: no hub-and-spoke, o coordenador roteia toda a comunicação, avalia lacunas e trata erros antes da síntese."
+        "Approve it: direct communication between subagents is the recommended way to reduce latency in multi-agent pipelines.",
+        "Approve it, provided that the synthesis subagent logs everything it received directly from the web search.",
+        "Reject it and, instead, merge the web search and synthesis subagents into one, eliminating the data handoff between them.",
+        "Reject it: in hub-and-spoke, the coordinator routes all communication, evaluates gaps, and handles errors before synthesis."
       ],
       "correta": 3,
-      "explicacao": "Hub-and-spoke: o coordenador decompõe, delega, roteia toda a comunicação, agrega e trata erros.",
+      "explicacao": "Hub-and-spoke: the coordinator decomposes, delegates, routes all communication, aggregates, and handles errors.",
       "feedbacks": [
-        "Ganha pouca latência e perde o ponto de controle central (erros, lacunas, redelegação).",
-        "Log ajuda a auditar depois, mas não devolve ao coordenador o controle em tempo de execução sobre lacunas e erros.",
-        "Elimina a passagem de dados, mas mistura responsabilidades distintas, perde a especialização e o coordenador continua sem avaliar os achados antes da síntese.",
-        "Correta. Subagents conversando diretamente é anti-padrão: o coordenador perde a visão do todo e a capacidade de verificar cobertura e tratar falhas."
+        "Gains little latency and loses the central point of control (errors, gaps, re-delegation).",
+        "Logging helps with auditing after the fact, but does not give the coordinator back runtime control over gaps and errors.",
+        "Eliminates the data handoff, but mixes distinct responsibilities, loses specialization, and the coordinator still doesn't evaluate the findings before synthesis.",
+        "Correct. Subagents talking directly to each other is an anti-pattern: the coordinator loses the big picture and the ability to verify coverage and handle failures."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Na Lumen Saúde, o coordenador aciona os quatro subagents (literatura, web, ensaios clínicos e síntese) para toda consulta, inclusive para perguntas simples como \"qual é a dose máxima diária aprovada em bula para o medicamento X?\". Custo e tempo dispararam. O que fazer?",
+      "pergunta": "At Lumen Saúde, the coordinator invokes all four subagents (literature, web, clinical trials, and synthesis) for every query, including simple questions such as \"what is the maximum daily dose approved on the label for drug X?\". Cost and time have skyrocketed. What should be done?",
       "opcoes": [
-        "Manter o pipeline completo, mas trocar os subagents por modelos menores e mais baratos.",
-        "Orientar o coordenador a acionar apenas os subagents de que cada consulta precisa, com critérios claros de quando usar cada um.",
-        "Criar um sistema separado, fora do coordenador, só para perguntas simples, com um classificador decidindo para qual sistema mandar.",
-        "Colocar todas as respostas em cache e reutilizá-las quando uma consulta parecida aparecer."
+        "Keep the full pipeline, but switch the subagents to smaller, cheaper models.",
+        "Instruct the coordinator to invoke only the subagents each query needs, with clear criteria for when to use each one.",
+        "Create a separate system, outside the coordinator, just for simple questions, with a classifier deciding which system to send each one to.",
+        "Cache all the responses and reuse them whenever a similar query comes up."
       ],
       "correta": 1,
-      "explicacao": "Acione só os subagents que a consulta precisa.",
+      "explicacao": "Invoke only the subagents the query needs.",
       "feedbacks": [
-        "Reduz o custo unitário, mas mantém o desperdício estrutural de chamar subagents que a pergunta não exige.",
-        "Correta. O coordenador deve acionar só os subagents necessários; passar tudo pelo pipeline inteiro é desperdício.",
-        "Mais complexo que o necessário: decidir quais subagents acionar já é papel do coordenador.",
-        "Pode ajudar em repetições exatas, mas não resolve o desenho que aciona todos os subagents para toda nova pergunta."
+        "Reduces the unit cost, but keeps the structural waste of calling subagents the question doesn't require.",
+        "Correct. The coordinator should invoke only the necessary subagents; running everything through the entire pipeline is wasteful.",
+        "More complex than necessary: deciding which subagents to invoke is already the coordinator's job.",
+        "May help with exact repeats, but doesn't fix the design that invokes every subagent for every new question."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Na Lumen Saúde, depois de uma refatoração, o coordenador passou a responder tudo sozinho e nunca mais delega; os logs não mostram nenhuma tentativa de chamar subagents. Quais DUAS verificações de configuração são as mais pertinentes? (Escolha DUAS.)",
+      "pergunta": "At Lumen Saúde, after a refactoring, the coordinator started answering everything on its own and no longer delegates; the logs show no attempt to call subagents. Which TWO configuration checks are the most relevant? (Choose TWO.)",
       "opcoes": [
-        "Confirmar que a tool Agent (antes chamada Task) está em allowedTools do coordenador.",
-        "Confirmar que cada subagent tem acesso ao histórico completo da conversa do coordenador.",
-        "Confirmar que o max_tokens do coordenador é alto o suficiente para caber as respostas dos subagents.",
-        "Confirmar que os subagents estão definidos (ex.: via AgentDefinition) com descrições que deixem claro quando cada um deve ser usado.",
-        "Confirmar que os subagents usam o mesmo modelo do coordenador, já que modelos diferentes impedem a delegação."
+        "Confirm that the Agent tool (formerly called Task) is in the coordinator's allowedTools.",
+        "Confirm that each subagent has access to the coordinator's full conversation history.",
+        "Confirm that the coordinator's max_tokens is high enough to fit the subagents' responses.",
+        "Confirm that the subagents are defined (e.g., via AgentDefinition) with descriptions that make clear when each one should be used.",
+        "Confirm that the subagents use the same model as the coordinator, since different models prevent delegation."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Delegação exige a tool Agent em allowedTools e subagents bem definidos, com descrições que digam quando usá-los.",
+      "explicacao": "Delegation requires the Agent tool in allowedTools and well-defined subagents, with descriptions that say when to use them.",
       "feedbacks": [
-        "Correta. Sem a tool Agent liberada, o coordenador não tem como criar subagents.",
-        "Subagents têm contexto isolado por desenho; isso não impediria a delegação.",
-        "Afeta o tamanho da resposta, não a capacidade de decidir delegar; o sintoma seria truncamento, não ausência total de delegação.",
-        "Correta. A descrição do subagent orienta a decisão de delegar, como a descrição de uma tool orienta a seleção.",
-        "Subagents podem usar modelos diferentes; isso não bloqueia a chamada."
+        "Correct. Without the Agent tool enabled, the coordinator has no way to create subagents.",
+        "Subagents have an isolated context by design; that would not prevent delegation.",
+        "Affects the size of the response, not the ability to decide to delegate; the symptom would be truncation, not a complete absence of delegation.",
+        "Correct. A subagent's description guides the decision to delegate, just as a tool's description guides tool selection.",
+        "Subagents can use different models; that does not block the call."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Na Lumen Saúde, a base bibliográfica (MCP) passou a devolver 429 (rate limit) em picos. Hoje o subagent de literatura repassa o erro bruto ao coordenador, que aborta o dossiê inteiro. Qual é o tratamento adequado?",
+      "pergunta": "At Lumen Saúde, the bibliographic database (MCP) started returning 429 (rate limit) during peaks. Today the literature subagent passes the raw error on to the coordinator, which aborts the entire dossier. What is the appropriate handling?",
       "opcoes": [
-        "Retry local com backoff no subagent; persistindo, erro estruturado com resultado parcial ao coordenador, que segue anotando a lacuna.",
-        "O coordenador deve abortar o dossiê sempre que qualquer subagent falhar, para não entregar a um médico um documento incompleto ou potencialmente enviesado.",
-        "O subagent deve devolver lista vazia quando receber 429, para que o coordenador continue sem interrupção.",
-        "O coordenador deve refazer imediatamente a delegação inteira ao subagent sempre que receber o 429, até dar certo."
+        "Local retry with backoff in the subagent; if it persists, a structured error with partial results to the coordinator, which carries on and notes the gap.",
+        "The coordinator should abort the dossier whenever any subagent fails, so as not to deliver an incomplete or potentially biased document to a physician.",
+        "The subagent should return an empty list when it receives a 429, so that the coordinator continues without interruption.",
+        "The coordinator should immediately redo the entire delegation to the subagent whenever it receives the 429, until it succeeds."
       ],
       "correta": 0,
-      "explicacao": "Subagent recupera transitórios localmente com backoff e propaga só o que não resolveu, com erro estruturado; o coordenador continua com o parcial.",
+      "explicacao": "The subagent recovers from transient errors locally with backoff and propagates only what it could not resolve, as a structured error; the coordinator continues with the partial results.",
       "feedbacks": [
-        "Correta. Transitórios se recuperam localmente; só o que não se resolveu é propagado, com contexto. Não se aborta o workflow inteiro por uma etapa.",
-        "Abortar tudo por uma etapa é anti-padrão; um dossiê com a lacuna anotada é mais útil e honesto do que nada.",
-        "Supressão silenciosa: o dossiê passaria a afirmar que não há estudos, quando a busca nem rodou.",
-        "Retry sem backoff nem limite piora o rate limit e atrasa tudo; a recuperação de transitório pertence ao subagent, com backoff."
+        "Correct. Transient errors are recovered locally; only what could not be resolved is propagated, with context. You don't abort the whole workflow over one step.",
+        "Aborting everything over one step is an anti-pattern; a dossier with the gap noted is more useful and more honest than nothing.",
+        "Silent suppression: the dossier would then claim there are no studies, when the search never even ran.",
+        "Retrying without backoff or a limit worsens the rate limiting and delays everything; recovery from transient errors belongs in the subagent, with backoff."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Na Lumen Saúde, o subagent de busca web acumulou 16 tools (busca, fetch, parser de PDF, estatística, formatação de citações, tradução, deduplicação etc.) e passou a escolher tools erradas com frequência, mesmo após melhorias nas descrições. Qual é a melhor correção?",
+      "pergunta": "At Lumen Saúde, the web search subagent has accumulated 16 tools (search, fetch, PDF parser, statistics, citation formatting, translation, deduplication, etc.) and has started choosing the wrong tools frequently, even after the descriptions were improved. What is the best fix?",
       "opcoes": [
-        "Reescrever as descrições mais uma vez, agora com exemplos de entrada para cada uma das 16 tools.",
-        "Forçar via tool_choice a tool correta em cada etapa do subagent.",
-        "Dividir em subagents especializados, cada um com 4 ou 5 tools.",
-        "Aumentar o effort do modelo do subagent."
+        "Rewrite the descriptions once more, this time with input examples for each of the 16 tools.",
+        "Use tool_choice to force the correct tool at each step of the subagent.",
+        "Split it into specialized subagents, each with 4 or 5 tools.",
+        "Increase the effort of the subagent's model."
       ],
       "correta": 2,
-      "explicacao": "Tools demais num agente degradam a seleção; divida em subagents especializados com 4 a 5 tools cada.",
+      "explicacao": "Too many tools in one agent degrade selection; split into specialized subagents with 4 to 5 tools each.",
       "feedbacks": [
-        "Descrições já foram melhoradas sem sucesso; com tools demais num agente só, melhorar descrições sozinho não basta.",
-        "Exige que alguém de fora saiba a etapa e a tool certas: é uma árvore de decisão externa, que tira do modelo a escolha.",
-        "Correta. Com muitas tools num só agente a seleção degrada; a diretriz é poucas tools visíveis por agente, com especialização.",
-        "Pode ajudar marginalmente, mas não ataca a causa estrutural (excesso de tools num agente)."
+        "The descriptions have already been improved without success; with too many tools in a single agent, improving the descriptions alone is not enough.",
+        "Requires someone on the outside to know the right step and tool: it is an external decision tree that takes the choice away from the model.",
+        "Correct. With many tools in a single agent, selection degrades; the guideline is a few visible tools per agent, with specialization.",
+        "May help marginally, but does not address the structural cause (too many tools in one agent)."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Na Lumen Saúde, o servidor MCP de ensaios clínicos expõe apenas tools. Antes de cada análise, o subagent faz dezenas de chamadas exploratórias (\"listar bases\", \"listar tabelas\", \"descrever tabela\") para descobrir o que existe. Qual mudança no servidor reduz melhor essas chamadas?",
+      "pergunta": "At Lumen Saúde, the clinical trials MCP server exposes only tools. Before each analysis, the subagent makes dozens of exploratory calls (\"list databases\", \"list tables\", \"describe table\") to discover what exists. Which change to the server best reduces these calls?",
       "opcoes": [
-        "Expor o catálogo de bases e tabelas como resources MCP.",
-        "Expor o catálogo como um prompt MCP.",
-        "Usar sampling para que o servidor peça ao modelo que descreva as tabelas existentes.",
-        "Juntar as três tools exploratórias numa única tool explore_everything que devolve todo o esquema de uma vez."
+        "Expose the catalog of databases and tables as MCP resources.",
+        "Expose the catalog as an MCP prompt.",
+        "Use sampling so that the server asks the model to describe the existing tables.",
+        "Combine the three exploratory tools into a single explore_everything tool that returns the entire schema at once."
       ],
       "correta": 0,
-      "explicacao": "Primitivas do servidor MCP: tools (ações), resources (conteúdo de leitura/catálogos), prompts (templates).",
+      "explicacao": "MCP server primitives: tools (actions), resources (read-only content/catalogs), prompts (templates).",
       "feedbacks": [
-        "Correta. Resources são a primitiva para conteúdo de leitura e catálogos navegáveis, evitando chamadas exploratórias às cegas.",
-        "Prompts MCP são templates de interação, não a primitiva para expor dados de leitura.",
-        "Sampling é o servidor pedindo uma completion ao client; não expõe dados e o modelo não conhece as tabelas do servidor.",
-        "Reduz chamadas, mas despeja um resultado enorme no contexto a cada uso; resource é o mecanismo projetado para isso."
+        "Correct. Resources are the primitive for read-only content and browsable catalogs, avoiding blind exploratory calls.",
+        "MCP prompts are interaction templates, not the primitive for exposing read-only data.",
+        "Sampling is the server requesting a completion from the client; it does not expose data, and the model does not know the server's tables.",
+        "Reduces calls, but dumps a huge result into the context on every use; a resource is the mechanism designed for this."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Na Lumen Saúde, duas meta-análises de qualidade semelhante relatam redução de 12% e de 8% num desfecho. O subagent de síntese escreveu \"a terapia reduz o desfecho em cerca de 10%\". Como o dossiê deveria apresentar isso?",
+      "pergunta": "At Lumen Saúde, two meta-analyses of similar quality report reductions of 12% and 8% in an outcome. The synthesis subagent wrote \"the therapy reduces the outcome by about 10%\". How should the dossier present this?",
       "opcoes": [
-        "Manter a média de 10%, mas citar as duas meta-análises como fontes, já que ela representa bem o conjunto da evidência.",
-        "Escolher a meta-análise mais recente e reportar apenas o valor dela, já que estudos novos tendem a ser mais confiáveis.",
-        "Omitir o desfecho, por não ser conclusivo.",
-        "Apresentar os dois valores com suas respectivas fontes e marcar o achado como contestado."
+        "Keep the 10% average, but cite both meta-analyses as sources, since it represents the body of evidence well.",
+        "Choose the most recent meta-analysis and report only its value, since newer studies tend to be more reliable.",
+        "Omit the outcome, as it is not conclusive.",
+        "Present both values with their respective sources and flag the finding as contested."
       ],
       "correta": 3,
-      "explicacao": "Conflito entre fontes: mostre os valores com suas fontes e rotule como contestado. Nada de média nem escolha silenciosa.",
+      "explicacao": "Conflict between sources: show the values with their sources and label the finding as contested. No averaging and no silent picking.",
       "feedbacks": [
-        "A média é um número que nenhuma fonte reportou; citar as duas não torna a conta legítima.",
-        "Escolher um valor em silêncio esconde a divergência que o médico precisa ver.",
-        "Omitir apaga evidência relevante; o correto é mostrar o conflito rotulado.",
-        "Correta. Em conflito entre fontes, anote os valores divergentes com suas fontes; não escolha um em silêncio nem tire média."
+        "The average is a number that no source reported; citing both does not make the calculation legitimate.",
+        "Silently picking one value hides the disagreement the physician needs to see.",
+        "Omitting it erases relevant evidence; the correct approach is to show the conflict, labeled.",
+        "Correct. When sources conflict, record the diverging values with their sources; don't silently pick one or average them."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Na Lumen Saúde, os dossiês saem com várias afirmações sem fonte identificável. Investigando, a equipe descobre que os subagents devolvem ao coordenador resumos em prosa corrida. Qual mudança preserva melhor a proveniência até o dossiê final?",
+      "pergunta": "At Lumen Saúde, the dossiers come out with several claims that lack an identifiable source. Investigating, the team discovers that the subagents return free-flowing prose summaries to the coordinator. Which change best preserves provenance all the way to the final dossier?",
       "opcoes": [
-        "Pedir ao subagent de síntese que, ao final, busque na web uma fonte para cada afirmação que ficou sem citação.",
-        "Subagents devolvem saída estruturada: cada afirmação com evidência, fonte (DOI/URL) e data.",
-        "Instruir os subagents a incluírem no texto corrido a expressão \"segundo a literatura\" antes de cada afirmação.",
-        "Enviar ao subagent de síntese os textos completos de todos os artigos lidos, para que ele cite diretamente."
+        "Ask the synthesis subagent, at the end, to search the web for a source for each claim that was left without a citation.",
+        "Subagents return structured output: each claim with its evidence, source (DOI/URL), and date.",
+        "Instruct the subagents to include the phrase \"according to the literature\" in their prose before each claim.",
+        "Send the synthesis subagent the full texts of all the articles read, so that it can cite them directly."
       ],
       "correta": 1,
-      "explicacao": "Proveniência: mapa afirmação → fonte com metadados estruturados, passado entre os agentes.",
+      "explicacao": "Provenance: a claim → source map with structured metadata, passed between the agents.",
       "feedbacks": [
-        "Inverte a lógica: encontrar uma fonte depois de escrever a afirmação é racionalizar, não rastrear a origem.",
-        "Correta. Separar conteúdo de metadados (afirmação, evidência, fonte, data) faz a atribuição sobreviver às etapas de agregação e síntese.",
-        "Não identifica a fonte específica; um médico não consegue auditar \"segundo a literatura\".",
-        "Explode o contexto (lost in the middle e custo) e não garante o mapeamento afirmação → fonte."
+        "Inverts the logic: finding a source after writing the claim is rationalization, not tracing its origin.",
+        "Correct. Separating content from metadata (claim, evidence, source, date) lets the attribution survive the aggregation and synthesis steps.",
+        "Does not identify the specific source; a physician cannot audit \"according to the literature\".",
+        "Blows up the context (lost in the middle and cost) and does not guarantee the claim → source mapping."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Na Lumen Saúde, um estudo com dados de 2018 aponta prevalência de 8%, e um levantamento com dados de 2024 aponta 11% na mesma população. O sistema marcou os dois números como \"contradição entre fontes\". Qual é o tratamento correto?",
+      "pergunta": "At Lumen Saúde, a study with 2018 data reports a prevalence of 8%, and a survey with 2024 data reports 11% in the same population. The system flagged the two numbers as a \"contradiction between sources\". What is the correct treatment?",
       "opcoes": [
-        "Manter a marcação de contradição, pois quaisquer valores divergentes para a mesma métrica devem ser sinalizados como contestados.",
-        "Registrar o período de referência de cada dado e apresentá-los como medidas de momentos diferentes.",
-        "Descartar o estudo de 2018 por estar desatualizado e reportar apenas 11%.",
-        "Calcular a média de 9,5% e reportá-la como a prevalência estimada do período."
+        "Keep the contradiction flag, since any diverging values for the same metric should be flagged as contested.",
+        "Record the reference period of each data point and present them as measurements taken at different points in time.",
+        "Discard the 2018 study as outdated and report only 11%.",
+        "Compute the 9.5% average and report it as the estimated prevalence for the period."
       ],
       "correta": 1,
-      "explicacao": "Dados temporais: registre o período de referência; valores de períodos diferentes não são contradição.",
+      "explicacao": "Temporal data: record the reference period; values from different periods are not a contradiction.",
       "feedbacks": [
-        "Aplica a regra de conflito de forma mecânica, ignorando a dimensão temporal; confunde o médico.",
-        "Correta. Números de períodos diferentes não são contradição; registrar \"dados de\", publicação e coleta permite apresentá-los como evolução.",
-        "Perde informação de tendência e descarta evidência válida sem necessidade.",
-        "Mistura períodos diferentes num número que nenhuma fonte reportou."
+        "Applies the conflict rule mechanically, ignoring the temporal dimension; it confuses the physician.",
+        "Correct. Numbers from different periods are not a contradiction; recording the \"data as of\", publication, and collection dates allows them to be presented as a trend.",
+        "Loses trend information and discards valid evidence unnecessarily.",
+        "Mixes different periods into a number that no source reported."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D4",
-      "pergunta": "Na Lumen Saúde, o subagent de síntese preenche um JSON com o campo nivel_evidencia (enum: \"alto\", \"moderado\", \"baixo\"). Quando o estudo não informa o desenho metodológico, o modelo escolhe \"moderado\" mesmo assim. Qual ajuste no schema é o mais adequado?",
+      "pergunta": "At Lumen Saúde, the synthesis subagent fills in a JSON with the field evidence_level (enum: \"high\", \"moderate\", \"low\"). When the study does not report its methodological design, the model chooses \"moderate\" anyway. Which schema adjustment is the most appropriate?",
       "opcoes": [
-        "Ativar strict: true no schema da tool para garantir que o campo traga sempre um dos três valores válidos do enum.",
-        "Remover o campo do schema e pedir que o nível de evidência seja descrito em texto livre no resumo.",
-        "Instruir o modelo a escolher \"baixo\" sempre que tiver dúvida, por ser a opção mais conservadora.",
-        "Incluir no enum um valor \"indeterminado\" (ou tornar o campo nullable) para quando a fonte não informar."
+        "Enable strict: true on the tool schema to guarantee that the field always contains one of the three valid enum values.",
+        "Remove the field from the schema and ask for the level of evidence to be described in free text in the summary.",
+        "Instruct the model to choose \"low\" whenever it is in doubt, since it is the most conservative option.",
+        "Add an \"undetermined\" value to the enum (or make the field nullable) for when the source does not report it."
       ],
       "correta": 3,
-      "explicacao": "Schema com enum sem saída força chute; use \"unclear\"/\"other\" ou campo nullable para dado ausente.",
+      "explicacao": "A schema whose enum has no way out forces a guess; use \"undetermined\"/\"other\" or a nullable field for missing data.",
       "feedbacks": [
-        "strict garante conformidade com o schema, que já está sendo respeitado. Conformidade não é correção semântica: o chute continua válido no schema.",
-        "Perde a estrutura que permite filtrar e validar; texto livre volta a gerar formatos inconsistentes.",
-        "Troca um chute por outro: \"baixo\" também afirma algo que a fonte não sustenta.",
-        "Correta. Quando o enum não tem saída para \"não sei\", o modelo é empurrado a chutar; um valor \"unclear\"/nullable dá a ele uma opção honesta."
+        "strict guarantees conformance with the schema, which is already being respected. Conformance is not semantic correctness: the guess is still valid under the schema.",
+        "Loses the structure that enables filtering and validation; free text brings back inconsistent formats.",
+        "Swaps one guess for another: \"low\" also asserts something the source does not support.",
+        "Correct. When the enum has no way out for \"I don't know\", the model is pushed to guess; an \"undetermined\" value or a nullable field gives it an honest option."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D4",
-      "pergunta": "Na Lumen Saúde, depois de redigir o dossiê, o próprio subagent de síntese recebe, na mesma sessão, o pedido \"revise o dossiê e aponte problemas\". Ele quase sempre aprova o texto, mas os médicos encontram afirmações exageradas. Qual é a melhor mudança?",
+      "pergunta": "At Lumen Saúde, after drafting the dossier, the synthesis subagent itself receives, in the same session, the request \"review the dossier and point out problems\". It almost always approves the text, but physicians find overstated claims. What is the best change?",
       "opcoes": [
-        "Revisar com uma instância independente, em contexto novo, com critérios explícitos de revisão.",
-        "Pedir ao mesmo subagent que revise o dossiê três vezes seguidas na mesma sessão, para aumentar a chance de pegar erros.",
-        "Instruir o subagent de síntese a \"ser mais crítico\" na revisão.",
-        "Eliminar a revisão automática e encaminhar todos os dossiês para revisão integral por um médico antes do envio."
+        "Review with an independent instance, in a fresh context, with explicit review criteria.",
+        "Ask the same subagent to review the dossier three times in a row in the same session, to increase the chance of catching errors.",
+        "Instruct the synthesis subagent to \"be more critical\" in the review.",
+        "Eliminate the automated review and route every dossier to a full review by a physician before it is sent."
       ],
       "correta": 0,
-      "explicacao": "Auto-revisão na mesma sessão é anti-padrão; use uma instância independente com critérios explícitos.",
+      "explicacao": "Self-review in the same session is an anti-pattern; use an independent instance with explicit criteria.",
       "feedbacks": [
-        "Correta. Quem gerou o conteúdo carrega o viés do próprio raciocínio; revisão em sessão independente e com critérios explícitos encontra o que o autor não questiona.",
-        "Repetir a auto-revisão repete o viés; a mesma sessão continua defendendo as próprias decisões.",
-        "Instrução vaga não remove o viés do contexto de raciocínio.",
-        "Remove a camada automatizada barata; revisão humana é valiosa, mas a prova espera primeiro corrigir o desenho da revisão automática."
+        "Correct. Whoever generated the content carries the bias of its own reasoning; a review in an independent session with explicit criteria finds what the author does not question.",
+        "Repeating the self-review repeats the bias; the same session keeps defending its own decisions.",
+        "A vague instruction does not remove the bias from the reasoning context.",
+        "Removes the cheap automated layer; human review is valuable, but the exam expects you to first fix the design of the automated review."
       ]
     },
     {
       "cenario": 3,
       "dominio": "D4",
-      "pergunta": "Na Lumen Saúde, o subagent de literatura recebe a instrução \"inclua apenas estudos de alta qualidade\" e aplica o filtro de forma inconsistente: inclui preprints em uma rodada e exclui ensaios randomizados pequenos em outra. Quais DUAS mudanças tornam a triagem mais consistente? (Escolha DUAS.)",
+      "pergunta": "At Lumen Saúde, the literature subagent receives the instruction \"include only high-quality studies\" and applies the filter inconsistently: it includes preprints in one round and excludes small randomized trials in another. Which TWO changes make the screening more consistent? (Choose TWO.)",
       "opcoes": [
-        "Pedir que o subagent atribua uma nota de qualidade de 0 a 10 a cada estudo e incluir os de nota acima de 7.",
-        "Substituir \"alta qualidade\" por critérios explícitos: o que entra (ex.: ensaio randomizado ou revisão sistemática com revisão por pares) e o que não entra (ex.: preprints, relatos de caso).",
-        "Acrescentar \"seja rigoroso e conservador na seleção\" à instrução atual.",
-        "Rodar a triagem três vezes e incluir apenas os estudos aprovados em todas as rodadas.",
-        "Incluir 2 ou 3 exemplos de casos-fronteira (ex.: ensaio randomizado com n = 40), cada um com a decisão e o raciocínio."
+        "Ask the subagent to assign each study a quality score from 0 to 10 and include those scoring above 7.",
+        "Replace \"high quality\" with explicit criteria: what is included (e.g., a peer-reviewed randomized trial or systematic review) and what is not (e.g., preprints, case reports).",
+        "Add \"be rigorous and conservative in the selection\" to the current instruction.",
+        "Run the screening three times and include only the studies approved in every round.",
+        "Include 2 or 3 examples of borderline cases (e.g., a randomized trial with n = 40), each with the decision and the reasoning."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Critérios explícitos + few-shot de fronteira com raciocínio = julgamento consistente.",
+      "explicacao": "Explicit criteria + borderline few-shot with reasoning = consistent judgment.",
       "feedbacks": [
-        "Troca um julgamento vago por outro numérico igualmente sem critério; a nota não é calibrada.",
-        "Correta. Critério explícito sobre o que conta e o que não conta elimina a interpretação livre de \"alta qualidade\".",
-        "Mais um adjetivo vago; mantém a inconsistência.",
-        "Custa o triplo e consolida a mesma falta de critério; estudos de fronteira continuam caindo de forma aleatória.",
-        "Correta. Few-shot direcionado aos casos ambíguos, com raciocínio, ensina onde fica a fronteira."
+        "Swaps one vague judgment for an equally criterion-free numeric one; the score is not calibrated.",
+        "Correct. Explicit criteria about what counts and what doesn't eliminate the free interpretation of \"high quality\".",
+        "Yet another vague adjective; the inconsistency remains.",
+        "Costs three times as much and entrenches the same lack of criteria; borderline studies still fall randomly on either side.",
+        "Correct. Few-shot targeted at the ambiguous cases, with reasoning, teaches where the boundary lies."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Cenário: a Atlas Seguros mantém um monorepo .NET com cerca de 2 milhões de linhas (cotação, emissão de apólices, sinistros e cálculo atuarial) e está adotando o Claude Code para seus 80 desenvolvedores. O time de plataforma conectou servidores MCP internos (Jira, base de conhecimento e um banco de staging somente leitura) e quer acelerar o onboarding e as tarefas do dia a dia. Restrições: nenhum segredo pode ir para o repositório, dados de produção são inacessíveis (LGPD) e as convenções do time precisam valer para todos sem atrapalhar as preferências pessoais de cada dev.\n\nUma desenvolvedora recém-contratada pede ao Claude Code: \"explique como o prêmio de uma apólice de automóvel é calculado\". Qual estratégia de exploração do codebase é a mais adequada?",
+      "pergunta": "Scenario: Atlas Seguros maintains a .NET monorepo of about 2 million lines (quoting, policy issuance, claims, and actuarial calculation) and is adopting Claude Code for its 80 developers. The platform team has connected internal MCP servers (Jira, a knowledge base, and a read-only staging database) and wants to speed up onboarding and day-to-day tasks. Constraints: no secrets may go into the repository, production data is inaccessible (LGPD), and the team's conventions must apply to everyone without interfering with each developer's personal preferences.\n\nA newly hired developer asks Claude Code: \"explain how the premium for an auto insurance policy is calculated\". Which codebase exploration strategy is the most appropriate?",
       "opcoes": [
-        "Ler com Read todos os arquivos dos projetos de cotação e cálculo atuarial antes de responder, para ter a visão completa do fluxo e não deixar nenhuma regra de fora.",
-        "Usar Glob para listar todos os arquivos .cs do repositório e decidir pelos nomes quais são relevantes.",
-        "Pedir à base de conhecimento via MCP a documentação do cálculo e responder só com base nela, sem olhar o código.",
-        "Grep pelos pontos de entrada (ex.: CalcularPremio), ler esses arquivos e seguir as referências com Grep, lendo só o necessário."
+        "Use Read on every file in the quoting and actuarial calculation projects before answering, to get a complete view of the flow and not leave out any rule.",
+        "Use Glob to list all the .cs files in the repository and decide from their names which ones are relevant.",
+        "Ask the knowledge base via MCP for the calculation documentation and answer based on it alone, without looking at the code.",
+        "Grep for the entry points (e.g., CalculatePremium), read those files, and follow the references with Grep, reading only what is necessary."
       ],
       "correta": 3,
-      "explicacao": "Exploração de codebase: grep pelos pontos de entrada, leia, siga referências com grep, leia. Não leia tudo de antemão.",
+      "explicacao": "Codebase exploration: grep for the entry points, read, follow references with grep, read. Don't read everything up front.",
       "feedbacks": [
-        "Anti-padrão de ler tudo de antemão: estoura o contexto num monorepo desse tamanho e degrada a qualidade da resposta.",
-        "Glob ajuda a achar arquivos por padrão de nome, mas sozinho não mostra onde a lógica está; nomes enganam e a lista é enorme.",
-        "Documentação pode estar desatualizada; para explicar o comportamento real, a fonte de verdade é o código.",
-        "Correta. Exploração incremental: grep pelos pontos de entrada → lê → segue imports → lê. Gasta contexto só com o que importa."
+        "The read-everything-up-front anti-pattern: it blows through the context in a monorepo this size and degrades the quality of the answer.",
+        "Glob helps find files by name pattern, but on its own it doesn't show where the logic lives; names are misleading and the list is huge.",
+        "Documentation may be outdated; to explain the actual behavior, the source of truth is the code.",
+        "Correct. Incremental exploration: grep for the entry points → read → follow the imports → read. It spends context only on what matters."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Na Atlas Seguros, um dev precisa (1) encontrar todos os arquivos cujo nome termina em \"Calculator.cs\" e (2) encontrar todas as chamadas ao método AplicarDescontoFidelidade. Quais DUAS escolhas de tool nativa estão corretas? (Escolha DUAS.)",
+      "pergunta": "At Atlas Seguros, a developer needs to (1) find all files whose name ends in \"Calculator.cs\" and (2) find all calls to the ApplyLoyaltyDiscount method. Which TWO built-in tool choices are correct? (Choose TWO.)",
       "opcoes": [
-        "Glob com o padrão **/*Calculator.cs para a tarefa 1.",
-        "Grep pelo texto \"Calculator.cs\" para a tarefa 1.",
-        "Grep pelo texto AplicarDescontoFidelidade para a tarefa 2.",
-        "Glob com o padrão **/*AplicarDescontoFidelidade* para a tarefa 2.",
-        "Read em todos os arquivos .cs do projeto de cotação para a tarefa 2."
+        "Glob with the pattern **/*Calculator.cs for task 1.",
+        "Grep for the text \"Calculator.cs\" for task 1.",
+        "Grep for the text ApplyLoyaltyDiscount for task 2.",
+        "Glob with the pattern **/*ApplyLoyaltyDiscount* for task 2.",
+        "Read on every .cs file in the quoting project for task 2."
       ],
       "corretas": [
         0,
         2
       ],
-      "explicacao": "Glob = arquivos por padrão de nome; Grep = conteúdo dentro dos arquivos.",
+      "explicacao": "Glob = files by name pattern; Grep = content inside files.",
       "feedbacks": [
-        "Correta. Glob encontra arquivos por padrão de nome/caminho.",
-        "Grep busca dentro do conteúdo dos arquivos; acharia menções ao nome (ex.: em .csproj), não os arquivos em si.",
-        "Correta. Grep busca conteúdo dentro dos arquivos, que é o que se quer para localizar chamadas a um método.",
-        "Glob olha nomes de arquivo, não o conteúdo; um método não aparece no nome do arquivo que o chama.",
-        "Ler arquivo por arquivo é caro e lento; Grep resolve diretamente."
+        "Correct. Glob finds files by name/path pattern.",
+        "Grep searches within file contents; it would find mentions of the name (e.g., in a .csproj), not the files themselves.",
+        "Correct. Grep searches the content inside files, which is what you want in order to locate calls to a method.",
+        "Glob looks at file names, not content; a method does not appear in the name of the file that calls it.",
+        "Reading file by file is expensive and slow; Grep solves it directly."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Na Atlas Seguros, o Claude Code tenta usar Edit para alterar a linha \"return total;\" no final do método CalcularFranquia, mas a tool falha porque esse trecho aparece seis vezes no arquivo. Qual é a forma correta de prosseguir?",
+      "pergunta": "At Atlas Seguros, Claude Code tries to use Edit to change the line \"return total;\" at the end of the CalculateDeductible method, but the tool fails because that snippet appears six times in the file. What is the correct way to proceed?",
       "opcoes": [
-        "Usar replace_all para substituir as seis ocorrências de \"return total;\" pela nova linha.",
-        "Ampliar o old_string com linhas vizinhas (ex.: a assinatura do método) até o trecho ficar único.",
-        "Usar Bash com sed para trocar a primeira ocorrência de \"return total;\" no arquivo.",
-        "Recriar o arquivo do zero com Write, digitando o conteúdo a partir do que o modelo lembra dele."
+        "Use replace_all to replace all six occurrences of \"return total;\" with the new line.",
+        "Expand old_string with neighboring lines (e.g., the method signature) until the snippet is unique.",
+        "Use Bash with sed to replace the first occurrence of \"return total;\" in the file.",
+        "Recreate the file from scratch with Write, typing the content based on what the model remembers of it."
       ],
       "correta": 1,
-      "explicacao": "Edit exige trecho único: amplie o contexto do trecho, ou leia o arquivo inteiro e reescreva.",
+      "explicacao": "Edit requires a unique snippet: expand the snippet's context, or read the entire file and rewrite it.",
       "feedbacks": [
-        "Altera os outros cinco métodos também, introduzindo bugs onde ninguém pediu mudança.",
-        "Correta. Edit troca um trecho exato e único; ampliando o contexto, o alvo fica inequívoco (alternativamente, ler o arquivo e reescrevê-lo).",
-        "A primeira ocorrência provavelmente não é a de CalcularFranquia; é edição às cegas, sem garantia de acerto.",
-        "Reescrever de memória, sem ter lido o arquivo inteiro, arrisca perder código; reescrever só é seguro depois de ler o arquivo completo."
+        "Also changes the other five methods, introducing bugs where nobody asked for a change.",
+        "Correct. Edit replaces an exact, unique snippet; by expanding the context, the target becomes unambiguous (alternatively, read the file and rewrite it).",
+        "The first occurrence is probably not the one in CalculateDeductible; it is a blind edit, with no guarantee of hitting the right spot.",
+        "Rewriting from memory, without having read the entire file, risks losing code; rewriting is only safe after reading the complete file."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Na Atlas Seguros, o time adicionou o servidor MCP remoto do Jira ao .mcp.json assim: {\"mcpServers\": {\"jira\": {\"url\": \"https://mcp.atlas.internal/jira\"}}}. O Claude Code não consegue conectar e o erro sugere que tentou iniciar um processo local. Qual é a causa provável?",
+      "pergunta": "At Atlas Seguros, the team added the remote Jira MCP server to .mcp.json like this: {\"mcpServers\": {\"jira\": {\"url\": \"https://mcp.atlas.internal/jira\"}}}. Claude Code cannot connect, and the error suggests that it tried to start a local process. What is the likely cause?",
       "opcoes": [
-        "O .mcp.json só aceita servidores locais; servidores remotos precisam ser adicionados no escopo user.",
-        "Falta o campo command apontando para um executável que faça a ponte HTTP com o servidor remoto.",
-        "Servidores remotos precisam usar SSE; basta trocar a URL para o endpoint /sse.",
-        "Falta \"type\": \"http\"; sem type, a entrada é tratada como servidor stdio."
+        "The .mcp.json file accepts only local servers; remote servers must be added in the user scope.",
+        "The command field is missing, pointing to an executable that bridges HTTP to the remote server.",
+        "Remote servers must use SSE; simply change the URL to the /sse endpoint.",
+        "\"type\": \"http\" is missing; without type, the entry is treated as a stdio server."
       ],
       "correta": 3,
-      "explicacao": "Em .mcp.json, servidor remoto precisa de \"type\": \"http\"; sem type, a entrada é tratada como stdio.",
+      "explicacao": "In .mcp.json, a remote server needs \"type\": \"http\"; without type, the entry is treated as stdio.",
       "feedbacks": [
-        "Falso: o escopo project (.mcp.json) aceita servidores remotos normalmente.",
-        "command é para servidores stdio; para um remoto o correto é declarar o transporte HTTP, não criar uma ponte local.",
-        "SSE é legado; o transporte remoto recomendado é Streamable HTTP. A causa é o type ausente, não o transporte em si.",
-        "Correta. Pegadinha clássica: entrada remota com url mas sem type é interpretada como stdio. Declare sempre o type no servidor remoto."
+        "False: the project scope (.mcp.json) accepts remote servers normally.",
+        "command is for stdio servers; for a remote server, the correct approach is to declare the HTTP transport, not to create a local bridge.",
+        "SSE is legacy; the recommended remote transport is Streamable HTTP. The cause is the missing type, not the transport itself.",
+        "Correct. A classic trap: a remote entry with url but no type is interpreted as stdio. Always declare the type on a remote server."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Na Atlas Seguros, um dev colocou o token de API do Jira em texto literal no campo headers do .mcp.json, que é versionado. O time de segurança pediu a correção. Quais DUAS abordagens são adequadas? (Escolha DUAS.)",
+      "pergunta": "At Atlas Seguros, a developer put the Jira API token as a literal value in the headers field of .mcp.json, which is version-controlled. The security team requested a fix. Which TWO approaches are appropriate? (Choose TWO.)",
       "opcoes": [
-        "Manter o token no .mcp.json e adicionar o arquivo ao .gitignore.",
-        "Referenciar uma variável de ambiente no arquivo, como \"Authorization\": \"Bearer ${JIRA_TOKEN}\", definida na máquina de cada dev.",
-        "Usar um headersHelper que obtém, em tempo de execução, uma credencial de curta duração do cofre de segredos.",
-        "Codificar o token em Base64 no .mcp.json para que ele não fique legível.",
-        "Mover o token para o CLAUDE.md do projeto, de onde o Claude Code o lê ao iniciar a sessão."
+        "Keep the token in .mcp.json and add the file to .gitignore.",
+        "Reference an environment variable in the file, such as \"Authorization\": \"Bearer ${JIRA_TOKEN}\", defined on each developer's machine.",
+        "Use a headersHelper that fetches a short-lived credential from the secrets vault at runtime.",
+        "Encode the token in Base64 in .mcp.json so that it is not readable.",
+        "Move the token to the project's CLAUDE.md, from which Claude Code reads it when the session starts."
       ],
       "corretas": [
         1,
         2
       ],
-      "explicacao": "Segredos em .mcp.json: ${VAR} (com default opcional) ou headersHelper para credencial de curta duração; nunca literais.",
+      "explicacao": "Secrets in .mcp.json: ${VAR} (with an optional default) or headersHelper for a short-lived credential; never literals.",
       "feedbacks": [
-        "Ignorar o .mcp.json quebra o compartilhamento da configuração com o time, que é a razão de existir do escopo project; e o token já vazou no histórico.",
-        "Correta. Expansão de ${VAR} mantém o segredo fora do arquivo versionado.",
-        "Correta. headersHelper gera headers dinamicamente (ex.: token de curta duração), sem segredo no repositório.",
-        "Base64 não é criptografia; o segredo continua no repositório.",
-        "CLAUDE.md é versionado e entra no contexto do modelo; é um lugar ainda pior para segredos."
+        "Ignoring .mcp.json breaks the sharing of the configuration with the team, which is the reason the project scope exists; and the token has already leaked into the history.",
+        "Correct. ${VAR} expansion keeps the secret out of the version-controlled file.",
+        "Correct. headersHelper generates headers dynamically (e.g., a short-lived token), with no secret in the repository.",
+        "Base64 is not encryption; the secret is still in the repository.",
+        "CLAUDE.md is version-controlled and enters the model's context; it is an even worse place for secrets."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, os testes ficam espalhados (Cotacao/Tests, Sinistros/Tests, Emissao/Tests e outros que serão criados) e todos devem seguir as mesmas convenções (xUnit, padrão AAA, builders de apólice). Hoje há uma cópia dessas regras no CLAUDE.md de cada pasta, e elas já divergiram. Qual é a melhor solução?",
+      "pergunta": "At Atlas Seguros, the tests are scattered (Quoting/Tests, Claims/Tests, Issuance/Tests, and others yet to be created), and they must all follow the same conventions (xUnit, the AAA pattern, policy builders). Today there is a copy of these rules in each folder's CLAUDE.md, and the copies have already diverged. What is the best solution?",
       "opcoes": [
-        "Mover as convenções para o CLAUDE.md da raiz.",
-        "Manter os CLAUDE.md por pasta e criar um script de CI que verifica se as cópias estão idênticas.",
-        "Um arquivo em .claude/rules/ com paths: **/Tests/**/*.cs contendo as convenções.",
-        "Criar uma skill /convencoes-teste e pedir que os devs a invoquem sempre que forem escrever testes."
+        "Move the conventions to the root CLAUDE.md.",
+        "Keep the per-folder CLAUDE.md files and create a CI script that checks whether the copies are identical.",
+        "A file in .claude/rules/ with paths: **/Tests/**/*.cs containing the conventions.",
+        "Create a /test-conventions skill and ask the developers to invoke it whenever they are going to write tests."
       ],
       "correta": 2,
-      "explicacao": "Convenção que atravessa diretórios → um arquivo em .claude/rules/ com paths: (glob).",
+      "explicacao": "A convention that cuts across directories → a file in .claude/rules/ with paths: (glob).",
       "feedbacks": [
-        "Funciona, mas ocupa contexto em toda sessão, mesmo quando ninguém mexe em testes; a regra por caminho é mais precisa.",
-        "Trata o sintoma (divergência) e mantém a duplicação; novas pastas continuam exigindo cópia manual.",
-        "Correta. Regra por caminho cobre todos os diretórios de testes (inclusive futuros) a partir de um único arquivo, carregando só quando arquivos que batem com o glob são tocados.",
-        "Depende de lembrar de invocar; convenção que deve valer sempre não deveria ser opcional."
+        "It works, but it takes up context in every session, even when no one is touching tests; the path-scoped rule is more precise.",
+        "Treats the symptom (divergence) and keeps the duplication; new folders still require manual copying.",
+        "Correct. A path-scoped rule covers all the test directories (including future ones) from a single file, loading only when files matching the glob are touched.",
+        "Depends on remembering to invoke it; a convention that should always apply should not be optional."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, um dev adicionou ao CLAUDE.md do projeto: \"responda sempre em inglês\" e \"use a minha sandbox em https://sbx-rafael.atlas.internal\". Os colegas passaram a receber respostas em inglês e testes apontando para a sandbox dele. Onde cada preferência deveria ficar? (Escolha DUAS.)",
+      "pergunta": "At Atlas Seguros, a developer added to the project's CLAUDE.md: \"always respond in Spanish\" and \"use my sandbox at https://sbx-rafael.atlas.internal\". His colleagues started getting responses in Spanish and tests pointing to his sandbox. Where should each preference go? (Choose TWO.)",
       "opcoes": [
-        "As duas no CLAUDE.md do projeto, com o comentário \"apenas para o Rafael\".",
-        "As duas na managed policy da organização, para garantir que sejam sempre aplicadas.",
-        "A preferência de idioma, que vale para todos os projetos dele, em ~/.claude/CLAUDE.md (memória de usuário).",
-        "A URL da sandbox, que é pessoal e específica deste projeto, em CLAUDE.local.md na raiz do projeto (fora do controle de versão).",
-        "A URL da sandbox em .claude/rules/sandbox.md sem frontmatter, para carregar só quando necessário."
+        "Both in the project's CLAUDE.md, with the comment \"for Rafael only\".",
+        "Both in the organization's managed policy, to ensure they are always applied.",
+        "The language preference, which applies to all of his projects, in ~/.claude/CLAUDE.md (user memory).",
+        "The sandbox URL, which is personal and specific to this project, in CLAUDE.local.md at the project root (outside version control).",
+        "The sandbox URL in .claude/rules/sandbox.md without frontmatter, so that it loads only when needed."
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Hierarquia: usuário (~/.claude/CLAUDE.md) para preferências pessoais globais; CLAUDE.local.md para preferências pessoais do projeto; CLAUDE.md do projeto para o time.",
+      "explicacao": "Hierarchy: user (~/.claude/CLAUDE.md) for global personal preferences; CLAUDE.local.md for personal preferences within a project; the project's CLAUDE.md for the team.",
       "feedbacks": [
-        "O arquivo é carregado para todos; o modelo não tem como aplicar instruções só para uma pessoa com base num comentário.",
-        "Managed policy é para regras da organização, não preferências individuais; afetaria os 80 devs.",
-        "Correta. Preferência pessoal que vale em qualquer projeto vai no CLAUDE.md do usuário, que não é versionado.",
-        "Correta. CLAUDE.local.md é o lugar para preferências pessoais de um projeto, sem afetar o time.",
-        "Regra sem paths: carrega no início de toda sessão e está em .claude/, que é versionado; afetaria o time inteiro."
+        "The file is loaded for everyone; the model has no way to apply instructions to just one person based on a comment.",
+        "Managed policy is for organization-wide rules, not individual preferences; it would affect all 80 developers.",
+        "Correct. A personal preference that applies in any project goes in the user's CLAUDE.md, which is not version-controlled.",
+        "Correct. CLAUDE.local.md is the place for personal preferences within a project, without affecting the team.",
+        "A rule without paths: loads at the start of every session and lives in .claude/, which is version-controlled; it would affect the whole team."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, o time precisa migrar a serialização de Newtonsoft.Json para System.Text.Json em cerca de 60 arquivos, com conversores customizados e mais de uma estratégia possível para tratar datas e enums. Como conduzir no Claude Code?",
+      "pergunta": "At Atlas Seguros, the team needs to migrate serialization from Newtonsoft.Json to System.Text.Json across about 60 files, with custom converters and more than one possible strategy for handling dates and enums. How should this be carried out in Claude Code?",
       "opcoes": [
-        "Usar plan mode: explorar, propor a abordagem e só editar depois que o time aprovar o plano.",
-        "Executar diretamente em modo acceptEdits, para que as edições nos 60 arquivos sejam aplicadas sem interrupção.",
-        "Pedir ao Claude que migre um arquivo por vez em execução direta, revisando cada diff, sem planejamento prévio.",
-        "Rodar em bypassPermissions numa branch separada, já que tudo pode ser descartado depois se der errado."
+        "Use plan mode: explore, propose the approach, and edit only after the team approves the plan.",
+        "Run it directly in acceptEdits mode, so that the edits to the 60 files are applied without interruption.",
+        "Ask Claude to migrate one file at a time with direct execution, reviewing each diff, with no prior planning.",
+        "Run it in bypassPermissions on a separate branch, since everything can be discarded later if it goes wrong."
       ],
       "correta": 0,
-      "explicacao": "Plan mode para mudança grande, multiarquivo, com decisões arquiteturais; execução direta para fixes pequenos e óbvios.",
+      "explicacao": "Plan mode for large, multi-file changes involving architectural decisions; direct execution for small, obvious fixes.",
       "feedbacks": [
-        "Correta. Mudança multiarquivo, com decisão arquitetural e várias abordagens válidas, é o caso clássico de plan mode.",
-        "Edita antes de alinhar a abordagem; com várias estratégias válidas, o risco de retrabalho em 60 arquivos é alto.",
-        "Revisar cada diff ajuda, mas sem decidir a estratégia antes, arquivos diferentes tendem a receber soluções inconsistentes.",
-        "bypassPermissions não é rotina para tarefa longa e não contida, e não resolve a falta de alinhamento sobre a abordagem."
+        "Correct. A multi-file change involving an architectural decision and several valid approaches is the classic case for plan mode.",
+        "Edits before aligning on the approach; with several valid strategies, the risk of rework across 60 files is high.",
+        "Reviewing each diff helps, but without deciding on the strategy first, different files tend to receive inconsistent solutions.",
+        "bypassPermissions is not routine for a long, non-contained task, and it does not solve the lack of alignment on the approach."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, o time criou a skill .claude/skills/novo-endpoint/SKILL.md, que gera controller, DTOs, validações e testes. Os devs reclamam que, quando apenas conversam sobre um endpoint existente, o Claude carrega a skill sozinho e começa a criar arquivos. A skill deve rodar só quando alguém digitar /novo-endpoint. Qual ajuste resolve?",
+      "pergunta": "At Atlas Seguros, the team created the skill .claude/skills/new-endpoint/SKILL.md, which generates the controller, DTOs, validations, and tests. Developers complain that when they are merely discussing an existing endpoint, Claude loads the skill on its own and starts creating files. The skill should run only when someone types /new-endpoint. Which adjustment solves this?",
       "opcoes": [
-        "Remover o campo description do frontmatter para que o modelo não saiba quando a skill se aplica.",
-        "Definir user-invocable: false no frontmatter da skill.",
-        "Mover a skill para .claude/commands/novo-endpoint.md, já que comandos não são carregados automaticamente.",
-        "Adicionar disable-model-invocation: true ao frontmatter da skill."
+        "Remove the description field from the frontmatter so that the model doesn't know when the skill applies.",
+        "Set user-invocable: false in the skill's frontmatter.",
+        "Move the skill to .claude/commands/new-endpoint.md, since commands are not loaded automatically.",
+        "Add disable-model-invocation: true to the skill's frontmatter."
       ],
       "correta": 3,
-      "explicacao": "No frontmatter da skill, disable-model-invocation: true impede o auto-carregamento e deixa a skill só manual.",
+      "explicacao": "In the skill's frontmatter, disable-model-invocation: true prevents auto-loading and makes the skill manual-only.",
       "feedbacks": [
-        "Gambiarra: description é o que dirige o auto-carregamento e também documenta a skill; sem ela, a skill fica sem documentação e o controle continua implícito.",
-        "Faz o oposto: tira a skill do menu do usuário e deixa apenas o modelo invocá-la.",
-        "Comandos foram fundidos em skills; o controle de invocação é feito pelo frontmatter, não pelo diretório.",
-        "Correta. disable-model-invocation impede o auto-carregamento pelo modelo; o usuário continua podendo invocar a skill pelo comando."
+        "A hack: description is what drives auto-loading and also documents the skill; without it, the skill goes undocumented and the control remains implicit.",
+        "Does the opposite: it removes the skill from the user's menu and lets only the model invoke it.",
+        "Commands have been merged into skills; invocation control is done through the frontmatter, not the directory.",
+        "Correct. disable-model-invocation prevents the model from auto-loading the skill; the user can still invoke it via the command."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, o time quer um subagent de revisão de segurança que analise código em busca de exposição de dados pessoais, mas que nunca possa editar arquivos nem executar comandos, e que seja compartilhado com todos os devs. Qual é a melhor forma de configurar?",
+      "pergunta": "At Atlas Seguros, the team wants a security review subagent that analyzes code for personal data exposure, but that can never edit files or run commands, and that is shared with all developers. What is the best way to configure it?",
       "opcoes": [
-        "Adicionar ao CLAUDE.md do projeto: \"quando atuar como revisor de segurança, não edite arquivos nem rode comandos\".",
-        "Usar o subagent nativo general-purpose com um prompt de revisão colado por cada dev quando precisar.",
-        "Criar .claude/agents/revisor-lgpd.md, versionado, com tools: Read, Grep, Glob no frontmatter.",
-        "Criar o subagent em ~/.claude/agents/ de cada dev, com as mesmas restrições de tools."
+        "Add to the project's CLAUDE.md: \"when acting as a security reviewer, do not edit files or run commands\".",
+        "Use the built-in general-purpose subagent with a review prompt pasted in by each developer when needed.",
+        "Create .claude/agents/lgpd-reviewer.md, version-controlled, with tools: Read, Grep, Glob in the frontmatter.",
+        "Create the subagent in each developer's ~/.claude/agents/, with the same tool restrictions."
       ],
       "correta": 2,
-      "explicacao": "Subagents customizados em .claude/agents/ (versionados), com tools restritas no frontmatter.",
+      "explicacao": "Custom subagents in .claude/agents/ (version-controlled), with restricted tools in the frontmatter.",
       "feedbacks": [
-        "Restrição por prompt é probabilística; a restrição de tools no subagent é determinística.",
-        "general-purpose tem acesso amplo a tools e o prompt não fica padronizado entre os devs.",
-        "Correta. Subagents customizados ficam em .claude/agents/ (compartilhados via git), com tools restritas no frontmatter, de forma determinística.",
-        "Funciona individualmente, mas não é compartilhado nem versionado; cópias divergem com o tempo."
+        "A prompt-based restriction is probabilistic; restricting the subagent's tools is deterministic.",
+        "general-purpose has broad tool access, and the prompt is not standardized across developers.",
+        "Correct. Custom subagents live in .claude/agents/ (shared via git), with tools deterministically restricted in the frontmatter.",
+        "Works individually, but is neither shared nor version-controlled; copies diverge over time."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D3",
-      "pergunta": "Na Atlas Seguros, parte do time usa outro agente de código que lê AGENTS.md, e o arquivo já contém todas as convenções do projeto. O time quer que o Claude Code use as mesmas instruções sem manter duas cópias. Qual é a solução mais simples?",
+      "pergunta": "At Atlas Seguros, part of the team uses another coding agent that reads AGENTS.md, and that file already contains all the project conventions. The team wants Claude Code to use the same instructions without maintaining two copies. What is the simplest solution?",
       "opcoes": [
-        "Criar um CLAUDE.md que importe @AGENTS.md e acrescente só o que for específico do Claude Code.",
-        "Copiar o conteúdo de AGENTS.md para CLAUDE.md e criar um job de CI que alerta quando os dois divergirem.",
-        "Renomear AGENTS.md para CLAUDE.md, já que o Claude Code ignora AGENTS.md em qualquer situação.",
-        "Manter os dois arquivos com conteúdo diferente; quando ambos existem, o Claude Code mescla os dois automaticamente."
+        "Create a CLAUDE.md that imports @AGENTS.md and adds only what is specific to Claude Code.",
+        "Copy the contents of AGENTS.md into CLAUDE.md and create a CI job that alerts when the two diverge.",
+        "Rename AGENTS.md to CLAUDE.md, since Claude Code ignores AGENTS.md in every situation.",
+        "Keep both files with different content; when both exist, Claude Code merges them automatically."
       ],
       "correta": 0,
-      "explicacao": "CLAUDE.md pode importar AGENTS.md com @AGENTS.md; com ambos presentes, o CLAUDE.md vence.",
+      "explicacao": "CLAUDE.md can import AGENTS.md with @AGENTS.md; when both are present, CLAUDE.md wins.",
       "feedbacks": [
-        "Correta. @import reaproveita o AGENTS.md como fonte única; o CLAUDE.md fica como um ponteiro com eventuais extras.",
-        "Mantém duas cópias e trata a divergência depois que ela acontece.",
-        "Quebraria o outro agente, e a premissa está errada: o Claude Code lê AGENTS.md quando não há CLAUDE.md.",
-        "Quando ambos existem, o CLAUDE.md vence; não há mescla automática. O caminho limpo é importar."
+        "Correct. The @import reuses AGENTS.md as the single source; CLAUDE.md serves as a pointer plus any extras.",
+        "Keeps two copies and deals with divergence after it has already happened.",
+        "Would break the other agent, and the premise is wrong: Claude Code reads AGENTS.md when there is no CLAUDE.md.",
+        "When both exist, CLAUDE.md wins; there is no automatic merging. The clean path is to import."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D1",
-      "pergunta": "Na Atlas Seguros, um dev investigou um bug de arredondamento na sexta-feira numa sessão longa do Claude Code. Na segunda, depois de um merge grande que alterou vários arquivos do módulo de sinistros, ele quer continuar a investigação. Qual é a melhor abordagem?",
+      "pergunta": "At Atlas Seguros, a developer investigated a rounding bug on Friday in a long Claude Code session. On Monday, after a large merge that changed several files in the claims module, he wants to continue the investigation. What is the best approach?",
       "opcoes": [
-        "Usar --resume e continuar de onde parou, já que o histórico da sessão guarda tudo o que foi investigado, incluindo os arquivos lidos.",
-        "Sessão nova com um resumo estruturado das descobertas (ou --resume informando explicitamente o que o merge mudou).",
-        "Usar --fork-session da sessão de sexta, para que a nova linha de investigação não contamine a original.",
-        "Começar uma sessão nova sem nenhum contexto e repetir toda a investigação do zero, para não arriscar viés."
+        "Use --resume and continue where he left off, since the session history keeps everything that was investigated, including the files read.",
+        "A new session with a structured summary of the findings (or --resume while explicitly stating what the merge changed).",
+        "Use --fork-session from Friday's session, so that the new line of investigation does not contaminate the original.",
+        "Start a new session with no context at all and redo the entire investigation from scratch, so as not to risk bias."
       ],
       "correta": 1,
-      "explicacao": "--resume serve quando os resultados de tool ainda valem; se arquivos mudaram, comece do zero com resumo estruturado (ou diga explicitamente o que mudou).",
+      "explicacao": "--resume works when the tool results are still valid; if files have changed, start fresh with a structured summary (or state explicitly what changed).",
       "feedbacks": [
-        "--resume é bom quando os resultados de tool ainda valem; aqui os arquivos mudaram e o histórico contém versões antigas.",
-        "Correta. Os resultados de tool da sessão antiga (conteúdo dos arquivos) estão desatualizados; um recomeço com resumo, ou a retomada avisando o que mudou, evita raciocinar sobre código velho.",
-        "O fork herda o mesmo histórico desatualizado; separar ramos não resolve a defasagem.",
-        "Desperdiça as descobertas válidas; o recomendado é recomeçar com um resumo estruturado, não com nada."
+        "--resume is good when the tool results are still valid; here, the files have changed and the history contains old versions.",
+        "Correct. The tool results from the old session (file contents) are stale; a fresh start with a summary, or resuming while flagging what changed, avoids reasoning about old code.",
+        "The fork inherits the same stale history; splitting into branches does not fix the staleness.",
+        "Wastes the valid findings; the recommended approach is to start fresh with a structured summary, not with nothing."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D1",
-      "pergunta": "Na Atlas Seguros, depois de mapear o módulo de cotação numa sessão, um dev quer testar duas abordagens alternativas de refatoração (estratégia vs. tabela de regras), aproveitando o mesmo entendimento já construído e sem que uma tentativa contamine a outra. O que fazer?",
+      "pergunta": "At Atlas Seguros, after mapping the quoting module in a session, a developer wants to try two alternative refactoring approaches (strategy vs. rules table), building on the understanding already established and without one attempt contaminating the other. What should he do?",
       "opcoes": [
-        "Continuar na mesma sessão, testar a primeira abordagem, desfazer as edições e depois testar a segunda.",
-        "Abrir duas sessões novas do zero e repetir o mapeamento em cada uma.",
-        "Criar dois ramos com --fork-session a partir da sessão de mapeamento.",
-        "Usar --resume duas vezes na mesma sessão, em dois terminais, uma para cada abordagem."
+        "Continue in the same session, try the first approach, undo the edits, and then try the second.",
+        "Open two new sessions from scratch and repeat the mapping in each one.",
+        "Create two branches with --fork-session from the mapping session.",
+        "Use --resume twice on the same session, in two terminals, one for each approach."
       ],
       "correta": 2,
-      "explicacao": "--fork-session cria ramos independentes a partir de uma base comum.",
+      "explicacao": "--fork-session creates independent branches from a common base.",
       "feedbacks": [
-        "O histórico da primeira tentativa continua no contexto e influencia a segunda: os ramos se contaminam.",
-        "Evita a contaminação, mas desperdiça o entendimento já construído.",
-        "Correta. --fork-session cria um novo ID a partir de uma base comum: os dois ramos aproveitam o mapeamento e não se contaminam.",
-        "Retomar o mesmo ID em paralelo mistura as duas linhas no mesmo histórico; para ramos independentes, use fork."
+        "The history of the first attempt remains in the context and influences the second: the branches contaminate each other.",
+        "Avoids contamination, but wastes the understanding already built.",
+        "Correct. --fork-session creates a new ID from a common base: both branches build on the mapping and do not contaminate each other.",
+        "Resuming the same ID in parallel mixes the two lines of work in the same history; for independent branches, use fork."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D4",
-      "pergunta": "Na Atlas Seguros, uma ferramenta interna chama a API do Claude enviando, em todo request, as definições de tools e um guia de estilo de 30 mil tokens no system prompt, com cache_control no final do system. Mesmo assim, usage.cache_read_input_tokens fica sempre em zero. O system começa com \"Data e hora atuais: 2026-10-11T14:32:07\". Qual é a correção?",
+      "pergunta": "At Atlas Seguros, an internal tool calls the Claude API, sending in every request the tool definitions and a 30,000-token style guide in the system prompt, with cache_control at the end of the system. Even so, usage.cache_read_input_tokens is always zero. The system begins with \"Current date and time: 2026-10-11T14:32:07\". What is the fix?",
       "opcoes": [
-        "Mover a data/hora para depois do último breakpoint, deixando o prefixo estável.",
-        "Adicionar mais breakpoints de cache_control ao longo do guia de estilo para aumentar a chance de acerto.",
-        "Trocar o TTL do cache de 5 minutos para 1 hora.",
-        "Mover o guia de estilo do system para a primeira mensagem do usuário, já que mensagens são cacheadas com prioridade."
+        "Move the date/time to after the last breakpoint, leaving the prefix stable.",
+        "Add more cache_control breakpoints throughout the style guide to increase the chance of a hit.",
+        "Change the cache TTL from 5 minutes to 1 hour.",
+        "Move the style guide from the system to the first user message, since messages are cached with priority."
       ],
       "correta": 0,
-      "explicacao": "Cache = prefixo exato na ordem tools → system → messages. Conteúdo volátil (timestamp, IDs) vai depois do último breakpoint.",
+      "explicacao": "Cache = exact prefix in the order tools → system → messages. Volatile content (timestamps, IDs) goes after the last breakpoint.",
       "feedbacks": [
-        "Correta. O cache casa prefixo exato; um timestamp no início do system muda a cada request e invalida tudo o que vem depois dele.",
-        "Todos os breakpoints ficam depois do timestamp, que já mudou; nenhum deles vai casar.",
-        "TTL maior não ajuda quando o prefixo muda a cada request; ainda paga o prêmio de escrita maior.",
-        "Não existe essa prioridade; o problema continua sendo o conteúdo volátil antes do trecho estável."
+        "Correct. The cache matches an exact prefix; a timestamp at the start of the system changes with every request and invalidates everything that comes after it.",
+        "All the breakpoints sit after the timestamp, which has already changed; none of them will match.",
+        "A longer TTL does not help when the prefix changes with every request; you still pay the higher write premium.",
+        "There is no such priority; the problem is still the volatile content placed before the stable portion."
       ]
     },
     {
       "cenario": 4,
       "dominio": "D5",
-      "pergunta": "Na Atlas Seguros, após três horas explorando o módulo de sinistros numa única sessão, o Claude Code passou a responder com generalidades (\"normalmente esse tipo de sistema usa padrões típicos...\") e a esquecer descobertas feitas no início. A investigação ainda vai longe. Qual combinação de práticas é a mais indicada?",
+      "pergunta": "At Atlas Seguros, after three hours exploring the claims module in a single session, Claude Code started responding with generalities (\"this kind of system usually uses typical patterns...\") and forgetting discoveries made early on. The investigation still has a long way to go. Which combination of practices is the most advisable?",
       "opcoes": [
-        "Continuar na mesma sessão e pedir ao Claude que \"seja mais específico, cite o código e não esqueça o que já foi descoberto\".",
-        "Salvar achados num arquivo de rascunho, delegar buscas a um subagent Explore e usar /compact proativamente.",
-        "Abrir uma sessão nova sem nenhum resumo e recomeçar a exploração do módulo do zero.",
-        "Pedir ao Claude que leia novamente todos os arquivos do módulo para refrescar a memória."
+        "Continue in the same session and ask Claude to \"be more specific, cite the code, and don't forget what has already been discovered\".",
+        "Save findings to a scratchpad file, delegate searches to an Explore subagent, and use /compact proactively.",
+        "Open a new session with no summary and restart the exploration of the module from scratch.",
+        "Ask Claude to read all of the module's files again to refresh its memory."
       ],
       "correta": 1,
-      "explicacao": "Degradação de contexto: scratchpad persistente, subagents que exploram e resumem, /compact proativo com resumo estruturado.",
+      "explicacao": "Context degradation: a persistent scratchpad, subagents that explore and summarize, proactive /compact with a structured summary.",
       "feedbacks": [
-        "Não reduz o contexto acumulado que causa a degradação; a instrução não devolve o que já se perdeu.",
-        "Correta. Respostas vagas e esquecimento são sinais de degradação de contexto; scratchpad, subagents de exploração e compact proativo são as mitigações.",
-        "Perde todo o trabalho feito; o recomeço deve vir com um resumo estruturado ou arquivo de achados.",
-        "Enche ainda mais o contexto, agravando a degradação."
+        "Does not reduce the accumulated context that causes the degradation; the instruction does not bring back what has already been lost.",
+        "Correct. Vague answers and forgetfulness are signs of context degradation; a scratchpad, exploration subagents, and proactive compaction are the mitigations.",
+        "Loses all the work done; a fresh start should come with a structured summary or a findings file.",
+        "Fills the context even more, worsening the degradation."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Cenário: a Kora Pagamentos, fintech de PIX e cartões, quer usar o Claude Code no pipeline de CI do GitHub do seu monorepo. Planos: (1) review automático de todo pull request, cujo resultado bloqueia o merge e precisa sair em até 10 minutos; (2) uma análise noturna dos logs de cerca de 3.000 execuções de testes instáveis (flaky); (3) geração das notas de release. Restrições: ambiente sujeito a PCI-DSS (o agente não pode alterar nada sob infra/pci/ nem rodar comandos arbitrários), custo controlado e saídas que outras ferramentas do pipeline consigam ler automaticamente.\n\nO primeiro protótipo do job de review roda claude \"revise as mudanças deste PR\" num step do GitHub Actions. O step nunca termina e só é encerrado pelo timeout do runner. Qual é a causa mais provável?",
+      "pergunta": "Scenario: Kora Pagamentos, a PIX and card payments fintech, wants to use Claude Code in the GitHub CI pipeline for its monorepo. Plans: (1) automated review of every pull request, whose result blocks the merge and must be delivered within 10 minutes; (2) a nightly analysis of the logs from about 3,000 runs of unstable (flaky) tests; (3) generation of release notes. Constraints: an environment subject to PCI-DSS (the agent may not change anything under infra/pci/ or run arbitrary commands), controlled cost, and outputs that other tools in the pipeline can read automatically.\n\nThe first prototype of the review job runs claude \"review the changes in this PR\" in a GitHub Actions step. The step never finishes and is only terminated by the runner's timeout. What is the most likely cause?",
       "opcoes": [
-        "Falta --max-turns; o agente entrou em loop infinito.",
-        "Falta a flag -p (--print); sem ela, a sessão interativa espera input.",
-        "Falta --output-format json, e o runner não consegue ler a saída em texto.",
-        "O runner precisa de um terminal TTY alocado para que o Claude Code consiga ler o repositório."
+        "--max-turns is missing; the agent went into an infinite loop.",
+        "The -p (--print) flag is missing; without it, the interactive session waits for input.",
+        "--output-format json is missing, and the runner cannot read the text output.",
+        "The runner needs an allocated TTY terminal so that Claude Code can read the repository."
       ],
       "correta": 1,
-      "explicacao": "Em CI, use -p/--print; sem ele o processo espera input interativo.",
+      "explicacao": "In CI, use -p/--print; without it, the process waits for interactive input.",
       "feedbacks": [
-        "--max-turns é um backstop útil, mas o sintoma de travar sem atividade é típico de sessão interativa esperando input.",
-        "Correta. -p é o modo não interativo; sem ele, o processo trava aguardando o usuário.",
-        "Formato de saída afeta o parse do resultado, não faz o processo travar.",
-        "A solução de CI não é simular um terminal interativo; é usar o modo não interativo (-p)."
+        "--max-turns is a useful backstop, but the symptom of hanging with no activity is typical of an interactive session waiting for input.",
+        "Correct. -p is the non-interactive mode; without it, the process hangs waiting for the user.",
+        "The output format affects parsing of the result; it does not make the process hang.",
+        "The CI solution is not to simulate an interactive terminal; it is to use the non-interactive mode (-p)."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Kora Pagamentos, um script do pipeline precisa ler os achados do review (arquivo, linha, severidade, mensagem) para publicar comentários no PR. Hoje o parse da saída em texto livre quebra com frequência. Qual é a abordagem recomendada?",
+      "pergunta": "At Kora Pagamentos, a pipeline script needs to read the review findings (file, line, severity, message) to post comments on the PR. Today, parsing the free-text output breaks frequently. What is the recommended approach?",
       "opcoes": [
-        "Pedir no prompt \"responda apenas em JSON válido\" e fazer o parse da saída em texto.",
-        "Usar --output-format stream-json e montar os achados juntando os pedaços de texto do stream.",
-        "Manter o texto livre e usar uma segunda chamada ao Claude para converter a saída em JSON.",
-        "Usar -p com --output-format json e --json-schema com a estrutura dos achados."
+        "Ask in the prompt to \"respond only with valid JSON\" and parse the text output.",
+        "Use --output-format stream-json and assemble the findings by joining the text chunks from the stream.",
+        "Keep the free text and use a second call to Claude to convert the output into JSON.",
+        "Use -p with --output-format json and --json-schema with the structure of the findings."
       ],
       "correta": 3,
-      "explicacao": "Para consumo automático em CI: -p + --output-format json + --json-schema.",
+      "explicacao": "For automated consumption in CI: -p + --output-format json + --json-schema.",
       "feedbacks": [
-        "Melhora a taxa de sucesso, mas não garante conformidade com o schema; o parse continua quebrando às vezes.",
-        "stream-json serve para acompanhar eventos em tempo real; continua sendo texto livre a parsear, não estrutura garantida.",
-        "Dobra custo e latência e mantém a conversão probabilística; a saída estruturada direta é mais simples.",
-        "Correta. --output-format json com --json-schema produz saída estruturada e validável, consumível pelo pipeline."
+        "Improves the success rate, but does not guarantee schema conformance; parsing still breaks occasionally.",
+        "stream-json is for following events in real time; it is still free text to parse, not a guaranteed structure.",
+        "Doubles cost and latency and keeps the conversion probabilistic; direct structured output is simpler.",
+        "Correct. --output-format json with --json-schema produces structured, validatable output that the pipeline can consume."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Kora Pagamentos, o job de review precisa ler o código, mas não pode alterar arquivos, executar comandos arbitrários nem rodar indefinidamente. Quais DUAS configurações da invocação atendem a esse requisito? (Escolha DUAS.)",
+      "pergunta": "At Kora Pagamentos, the review job needs to read the code, but must not change files, run arbitrary commands, or run indefinitely. Which TWO invocation settings meet this requirement? (Choose TWO.)",
       "opcoes": [
-        "--allowedTools restrito a tools de leitura (por exemplo, Read, Grep e Glob).",
-        "--max-turns com um limite razoável, como backstop contra execuções descontroladas.",
-        "--permission-mode bypassPermissions, para que o job não fique bloqueado esperando aprovações.",
-        "Instrução no prompt \"não edite arquivos nem rode comandos\" como única restrição.",
-        "Rodar sem -p para que um operador aprove manualmente cada ação do agente durante o job."
+        "--allowedTools restricted to read-only tools (for example, Read, Grep, and Glob).",
+        "--max-turns with a reasonable limit, as a backstop against runaway executions.",
+        "--permission-mode bypassPermissions, so that the job does not get stuck waiting for approvals.",
+        "The prompt instruction \"do not edit files or run commands\" as the only restriction.",
+        "Run without -p so that an operator manually approves each of the agent's actions during the job."
       ],
       "corretas": [
         0,
         1
       ],
-      "explicacao": "Restrinja tools com --allowedTools/--disallowedTools e use --max-turns como backstop.",
+      "explicacao": "Restrict tools with --allowedTools/--disallowedTools and use --max-turns as a backstop.",
       "feedbacks": [
-        "Correta. Restringe deterministicamente o que o agente pode fazer, sem edição nem Bash.",
-        "Correta. Como teto de segurança (não como mecanismo principal de parada), limita o tempo e o custo do job.",
-        "Libera tudo sem perguntar: exatamente o oposto de restringir num ambiente PCI-DSS.",
-        "Prompt é probabilístico; num ambiente regulado, a restrição precisa ser de configuração.",
-        "O job travaria esperando input; aprovação humana a cada ação não cabe num pipeline automatizado."
+        "Correct. Deterministically restricts what the agent can do, with no editing and no Bash.",
+        "Correct. As a safety ceiling (not as the primary stopping mechanism), it limits the job's time and cost.",
+        "Allows everything without asking: exactly the opposite of restricting in a PCI-DSS environment.",
+        "A prompt is probabilistic; in a regulated environment, the restriction must be in configuration.",
+        "The job would hang waiting for input; human approval of every action does not fit in an automated pipeline."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, para cortar custos, alguém propõe enviar o review de todos os PRs pela Message Batches API, que custa 50% menos. O review bloqueia o merge e precisa sair em até 10 minutos. Qual é a melhor avaliação?",
+      "pergunta": "At Kora Pagamentos, to cut costs, someone proposes sending the review of every PR through the Message Batches API, which costs 50% less. The review blocks the merge and must be delivered within 10 minutes. What is the best assessment?",
       "opcoes": [
-        "Manter o pré-merge síncrono (Batch não tem SLA, até 24h) e usar Batch na análise noturna.",
-        "Adotar a Batch API para os reviews, já que na prática a maioria dos lotes termina em poucos minutos.",
-        "Adotar a Batch API e, se um resultado não chegar em 10 minutos, liberar o merge sem review.",
-        "Adotar a Batch API e usar o loop de tools do agente dentro de cada request do lote."
+        "Keep the pre-merge review synchronous (Batch has no SLA, up to 24h) and use Batch for the nightly analysis.",
+        "Adopt the Batch API for the reviews, since in practice most batches finish within a few minutes.",
+        "Adopt the Batch API and, if a result does not arrive within 10 minutes, allow the merge without review.",
+        "Adopt the Batch API and use the agent's tool loop inside each request in the batch."
       ],
       "correta": 0,
-      "explicacao": "Batch API: 50% mais barata, até 24h, sem SLA, sem multi-turn. Nunca para passo bloqueante de CI.",
+      "explicacao": "Batch API: 50% cheaper, up to 24h, no SLA, no multi-turn. Never for a blocking CI step.",
       "feedbacks": [
-        "Correta. Batch é para trabalho não bloqueante (relatórios noturnos, processamento em massa); passo bloqueante de CI precisa de latência previsível.",
-        "\"Na maioria das vezes\" não é garantia: sem SLA, alguns reviews atrasariam merges por horas.",
-        "Transforma o controle bloqueante num controle opcional, justamente no caminho de código de pagamentos.",
-        "A Batch API não suporta loop multi-turn de tools dentro de um request; e o problema de latência continua."
+        "Correct. Batch is for non-blocking work (nightly reports, bulk processing); a blocking CI step needs predictable latency.",
+        "\"Most of the time\" is not a guarantee: with no SLA, some reviews would delay merges by hours.",
+        "Turns a blocking control into an optional one, precisely on the payments code path.",
+        "The Batch API does not support a multi-turn tool loop within a request; and the latency problem remains."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, a análise noturna envia 3.000 logs de testes flaky como um lote na Batch API. Na manhã seguinte, o lote termina com 2.940 requests succeeded, 45 errored e 15 expired. Quais DUAS práticas estão corretas? (Escolha DUAS.)",
+      "pergunta": "At Kora Pagamentos, the nightly analysis sends 3,000 flaky test logs as a batch to the Batch API. The next morning, the batch finishes with 2,940 requests succeeded, 45 errored, and 15 expired. Which TWO practices are correct? (Choose TWO.)",
       "opcoes": [
-        "Associar os resultados aos testes pela posição no arquivo de resultados, que segue a ordem de envio.",
-        "Reenviar o lote inteiro de 3.000 requests para garantir um conjunto de resultados consistente.",
-        "Considerar o lote como falho e cair para chamadas síncronas, já que houve erros.",
-        "Casar cada resultado com o teste de origem pelo custom_id, já que os resultados podem vir fora da ordem de envio.",
-        "Reenviar num novo lote apenas os 60 requests com status errored ou expired, identificados pelo custom_id."
+        "Match the results to the tests by their position in the results file, which follows the submission order.",
+        "Resubmit the entire batch of 3,000 requests to guarantee a consistent set of results.",
+        "Consider the batch failed and fall back to synchronous calls, since there were errors.",
+        "Match each result to its source test by custom_id, since results may come back out of submission order.",
+        "Resubmit in a new batch only the 60 requests with errored or expired status, identified by custom_id."
       ],
       "corretas": [
         3,
         4
       ],
-      "explicacao": "Batch: correlacione por custom_id (resultados fora de ordem) e reenvie só os que falharam.",
+      "explicacao": "Batch: correlate by custom_id (results out of order) and resubmit only the ones that failed.",
       "feedbacks": [
-        "Premissa falsa: os resultados podem vir em qualquer ordem.",
-        "Paga de novo por 2.940 resultados já bons, sem ganho.",
-        "Um lote com 98% de sucesso não é falha; basta reprocessar o que não deu certo.",
-        "Correta. Resultados de batch não seguem a ordem de envio; o custom_id é a chave de correlação.",
-        "Correta. Reenvie só o que falhou; refazer tudo desperdiça custo e tempo."
+        "False premise: results can come back in any order.",
+        "Pays again for 2,940 results that are already good, with no gain.",
+        "A batch with 98% success is not a failure; just reprocess what did not work.",
+        "Correct. Batch results do not follow submission order; custom_id is the correlation key.",
+        "Correct. Resubmit only what failed; redoing everything wastes cost and time."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, um PR de 40 arquivos que mexia no fluxo de estorno foi revisado num único prompt. O review apontou problemas superficiais em alguns arquivos, ignorou outros e não percebeu que um campo renomeado no DTO quebrava o consumidor em outro módulo. Qual estrutura de review resolve melhor?",
+      "pergunta": "At Kora Pagamentos, a 40-file PR that touched the refund flow was reviewed in a single prompt. The review flagged superficial issues in some files, ignored others, and failed to notice that a renamed field in the DTO broke the consumer in another module. Which review structure solves this best?",
       "opcoes": [
-        "Um passo por arquivo com prompt consistente e um passo de integração que recebe os achados e analisa contratos entre módulos.",
-        "Manter um único prompt, mas com um modelo de janela maior, para que todos os 40 arquivos caibam com folga.",
-        "Revisar cada arquivo isoladamente, com o mesmo prompt para todos, e publicar a soma dos achados por arquivo, sem nenhuma etapa adicional.",
-        "Rodar o mesmo review em prompt único três vezes e publicar a união dos achados."
+        "One pass per file with a consistent prompt, plus an integration pass that receives the findings and analyzes cross-module contracts.",
+        "Keep a single prompt, but with a larger-window model, so that all 40 files fit comfortably.",
+        "Review each file in isolation, with the same prompt for all of them, and publish the combined per-file findings, with no additional step.",
+        "Run the same single-prompt review three times and publish the union of the findings."
       ],
       "correta": 0,
-      "explicacao": "PR grande: passo 1 por arquivo (prompt consistente) + passo 2 de integração entre arquivos.",
+      "explicacao": "Large PR: pass 1 per file (consistent prompt) + pass 2 for cross-file integration.",
       "feedbacks": [
-        "Correta. O passo por arquivo evita a diluição de atenção e a inconsistência; o passo de integração pega bugs entre arquivos, como o contrato do DTO.",
-        "Caber não é o mesmo que receber atenção: o problema é diluição de atenção, não falta de espaço.",
-        "Resolve a diluição, mas perde o bug entre arquivos (DTO → consumidor), que só aparece na visão de integração.",
-        "Triplica o custo e repete o mesmo ponto cego estrutural."
+        "Correct. The per-file pass avoids attention dilution and inconsistency; the integration pass catches cross-file bugs, such as the DTO contract.",
+        "Fitting is not the same as getting attention: the problem is attention dilution, not lack of space.",
+        "Solves the dilution, but misses the cross-file bug (DTO → consumer), which only shows up in the integration view.",
+        "Triples the cost and repeats the same structural blind spot."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, o review automático tem as categorias segurança, bugs, performance e estilo. A categoria estilo gera muitos falsos positivos, e os devs passaram a ignorar todos os comentários do bot, inclusive os de segurança. Qual é a ação mais adequada?",
+      "pergunta": "At Kora Pagamentos, the automated review has the categories security, bugs, performance, and style. The style category generates many false positives, and developers have started ignoring all of the bot's comments, including the security ones. What is the most appropriate action?",
       "opcoes": [
-        "Manter todas as categorias e adicionar ao prompt \"reporte apenas problemas de estilo realmente importantes\".",
-        "Rebaixar os comentários de estilo para a severidade mínima, mantendo-os publicados no PR.",
-        "Desativar a categoria estilo, refinar os critérios com exemplos e reativá-la quando a precisão melhorar.",
-        "Exigir que os devs respondam a cada comentário do bot antes do merge, para que nenhum seja ignorado."
+        "Keep all the categories and add \"report only truly important style issues\" to the prompt.",
+        "Downgrade style comments to the lowest severity, while keeping them posted on the PR.",
+        "Disable the style category, refine its criteria with examples, and re-enable it when precision improves.",
+        "Require developers to respond to every bot comment before merging, so that none are ignored."
       ],
       "correta": 2,
-      "explicacao": "Categoria com muitos falsos positivos corrói a confiança nas demais: desligue, refine os critérios, religue.",
+      "explicacao": "A category with many false positives erodes trust in the others: turn it off, refine the criteria, turn it back on.",
       "feedbacks": [
-        "\"Realmente importantes\" é tão vago quanto antes; o ruído e a perda de confiança continuam.",
-        "Os comentários ruidosos continuam aparecendo e corroendo a confiança, apenas com outra etiqueta.",
-        "Correta. Uma categoria ruidosa corrói a confiança nas boas; desligue, refine com critério explícito e religue.",
-        "Aumenta o atrito com comentários ruins e não melhora a precisão."
+        "\"Truly important\" is as vague as before; the noise and the loss of trust continue.",
+        "The noisy comments keep appearing and eroding trust, just under a different label.",
+        "Correct. A noisy category erodes trust in the good ones; turn it off, refine it with explicit criteria, and turn it back on.",
+        "Increases friction over bad comments and does not improve precision."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, os achados do review saem num JSON que sempre valida contra o schema, mas cerca de 8% citam números de linha que não existem no diff ou arquivos que o PR não alterou. Qual é a melhor correção?",
+      "pergunta": "At Kora Pagamentos, the review findings come out as JSON that always validates against the schema, but about 8% cite line numbers that do not exist in the diff or files that the PR did not change. What is the best fix?",
       "opcoes": [
-        "Ativar strict: true no schema para que números de linha inválidos sejam rejeitados.",
-        "Validar em código (linha no diff, arquivo no PR) e fazer retry com os erros específicos, com limite.",
-        "Descartar silenciosamente os achados com referência inválida e publicar o restante.",
-        "Reenviar o mesmo prompt quando houver referência inválida, sem informar o que estava errado."
+        "Enable strict: true on the schema so that invalid line numbers are rejected.",
+        "Validate in code (line in the diff, file in the PR) and retry with the specific errors, with a limit.",
+        "Silently discard findings with invalid references and publish the rest.",
+        "Resend the same prompt when there is an invalid reference, without stating what was wrong."
       ],
       "correta": 1,
-      "explicacao": "Schema válido ≠ semanticamente correto. Valide em código e faça retry com os erros específicos.",
+      "explicacao": "Valid schema ≠ semantically correct. Validate in code and retry with the specific errors.",
       "feedbacks": [
-        "strict garante tipos e campos, não que o número da linha exista no diff; essa regra precisa ser imposta em código.",
-        "Correta. Conformidade com schema não garante correção semântica; o loop validação → erros específicos → retry com limite resolve.",
-        "Pode jogar fora achados reais com só a linha errada, e esconde a taxa de erro em vez de corrigi-la.",
-        "Retry cego tende a repetir o erro; o retry eficaz devolve os erros específicos."
+        "strict guarantees types and fields, not that the line number exists in the diff; that rule must be enforced in code.",
+        "Correct. Schema conformance does not guarantee semantic correctness; the validation → specific errors → bounded retry loop solves it.",
+        "May throw away real findings that merely have the wrong line, and hides the error rate instead of fixing it.",
+        "A blind retry tends to repeat the error; an effective retry feeds back the specific errors."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Na Kora Pagamentos, o time quer saber quais tipos de problema o review aponta que os devs costumam descartar como irrelevantes, para ajustar o prompt com base em dados. Qual mudança na saída estruturada do review ajuda mais?",
+      "pergunta": "At Kora Pagamentos, the team wants to know which types of issues flagged by the review the developers tend to dismiss as irrelevant, in order to tune the prompt based on data. Which change to the review's structured output helps the most?",
       "opcoes": [
-        "Incluir em cada achado a confiança do modelo de 0 a 1 e remover os achados abaixo de 0,6.",
-        "Acompanhar apenas a taxa geral de achados aceitos pelos devs, semana a semana.",
-        "Incluir em cada achado um campo detected_pattern para medir aceite e descarte por padrão.",
-        "Pedir ao modelo que escreva, ao final do review, um parágrafo sobre quais achados ele acha que os devs vão ignorar."
+        "Include in each finding the model's confidence from 0 to 1 and remove findings below 0.6.",
+        "Track only the overall rate of findings accepted by developers, week by week.",
+        "Include in each finding a detected_pattern field to measure acceptance and dismissal by pattern.",
+        "Ask the model to write, at the end of the review, a paragraph about which findings it thinks the developers will ignore."
       ],
       "correta": 2,
-      "explicacao": "Campo detected_pattern na saída permite medir, por padrão, o que é aceito e o que é descartado.",
+      "explicacao": "A detected_pattern field in the output makes it possible to measure, per pattern, what is accepted and what is dismissed.",
       "feedbacks": [
-        "Confiança autodeclarada não é calibrada e não diz quais padrões são ruidosos.",
-        "Métrica agregada esconde quais padrões específicos causam o descarte.",
-        "Correta. Um campo que identifica o padrão detectado permite medir, por tipo, a taxa de descarte e direcionar o refinamento.",
-        "Especulação do modelo não substitui medir o comportamento real dos devs."
+        "Self-reported confidence is not calibrated and does not say which patterns are noisy.",
+        "An aggregate metric hides which specific patterns cause the dismissals.",
+        "Correct. A field that identifies the detected pattern makes it possible to measure the dismissal rate by type and to target the refinement.",
+        "The model's speculation is no substitute for measuring the developers' actual behavior."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Kora Pagamentos, um job do pipeline usa o Claude Code para gerar a correção de um bug e, em seguida, roda o review com --resume na mesma sessão que gerou a correção, \"para aproveitar o contexto\". Os reviews dessas correções quase nunca encontram problemas. O que mudar?",
+      "pergunta": "At Kora Pagamentos, a pipeline job uses Claude Code to generate a bug fix and then runs the review with --resume in the same session that generated the fix, \"to take advantage of the context\". The reviews of these fixes almost never find problems. What should change?",
       "opcoes": [
-        "Manter o --resume e acrescentar ao prompt \"revise com olhar crítico, como se não tivesse escrito este código\".",
-        "Usar --fork-session a partir da sessão de geração para fazer o review num ramo separado.",
-        "Aumentar o --max-turns do review para que ele tenha mais tempo de encontrar problemas.",
-        "Rodar o review numa sessão nova, só com o diff e os critérios, sem o histórico de geração."
+        "Keep --resume and add to the prompt \"review with a critical eye, as if you had not written this code\".",
+        "Use --fork-session from the generation session to do the review in a separate branch.",
+        "Increase the review's --max-turns so that it has more time to find problems.",
+        "Run the review in a new session, with only the diff and the criteria, without the generation history."
       ],
       "correta": 3,
-      "explicacao": "Review deve rodar em sessão independente, nunca na sessão que gerou o código.",
+      "explicacao": "The review should run in an independent session, never in the session that generated the code.",
       "feedbacks": [
-        "Instruções não removem o viés de ter o raciocínio da geração no contexto.",
-        "O fork herda todo o histórico da geração; o viés vem junto.",
-        "Mais turnos não corrigem o viés de contexto; o review continua tendendo a aprovar.",
-        "Correta. A sessão que escreveu o código não deve revisá-lo: o contexto de raciocínio a leva a confirmar as próprias decisões."
+        "Instructions do not remove the bias of having the generation reasoning in the context.",
+        "The fork inherits the entire generation history; the bias comes along with it.",
+        "More turns do not fix the context bias; the review still tends to approve.",
+        "Correct. The session that wrote the code should not review it: its reasoning context leads it to confirm its own decisions."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Kora Pagamentos, os critérios de review (ex.: \"todo log que possa conter número de cartão deve usar o mascarador\") precisam valer tanto no job de CI quanto quando os devs usam o Claude Code localmente, sem duplicar texto. Onde colocar esses critérios?",
+      "pergunta": "At Kora Pagamentos, the review criteria (e.g., \"every log that may contain a card number must use the masker\") need to apply both in the CI job and when developers use Claude Code locally, without duplicating text. Where should these criteria go?",
       "opcoes": [
-        "Em --append-system-prompt no YAML do workflow, e pedir que os devs colem o mesmo texto ao usar localmente.",
-        "No CLAUDE.md do projeto (ou em .claude/rules/), versionado e carregado localmente e no CI.",
-        "No ~/.claude/CLAUDE.md de cada dev e na imagem do runner de CI.",
-        "Numa skill /review que os devs invocam localmente e que o job de CI também chama explicitamente."
+        "In --append-system-prompt in the workflow YAML, and ask the developers to paste the same text when using it locally.",
+        "In the project's CLAUDE.md (or in .claude/rules/), version-controlled and loaded both locally and in CI.",
+        "In each developer's ~/.claude/CLAUDE.md and in the CI runner image.",
+        "In a /review skill that developers invoke locally and that the CI job also calls explicitly."
       ],
       "correta": 1,
-      "explicacao": "Configuração de projeto versionada (CLAUDE.md, .claude/rules/) vale igual no uso local e no CI com -p.",
+      "explicacao": "Version-controlled project configuration (CLAUDE.md, .claude/rules/) applies equally in local use and in CI with -p.",
       "feedbacks": [
-        "Duplica os critérios em dois lugares que vão divergir; --append-system-prompt é bom para instruções específicas do job.",
-        "Correta. A configuração de projeto versionada vale em todas as superfícies, inclusive no modo não interativo.",
-        "Memória de usuário não é compartilhada pelo repositório; são várias cópias para manter.",
-        "Pode servir para o procedimento de review, mas critérios que devem valer sempre (inclusive ao escrever código) pertencem à configuração do projeto."
+        "Duplicates the criteria in two places that will diverge; --append-system-prompt is good for job-specific instructions.",
+        "Correct. Version-controlled project configuration applies across all surfaces, including non-interactive mode.",
+        "User memory is not shared through the repository; it means multiple copies to maintain.",
+        "May work for the review procedure, but criteria that should always apply (including when writing code) belong in the project configuration."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Na Kora Pagamentos, um job do CI pede ao Claude Code que corrija um teste de integração de conciliação que falha de forma intermitente. A descrição em prosa do comportamento esperado gerou três tentativas de correção diferentes, todas reprovadas. Qual é a melhor forma de refinar a tarefa?",
+      "pergunta": "At Kora Pagamentos, a CI job asks Claude Code to fix a reconciliation integration test that fails intermittently. The prose description of the expected behavior produced three different fix attempts, all of them rejected. What is the best way to refine the task?",
       "opcoes": [
-        "Reescrever a descrição em prosa com mais detalhes e adjetivos sobre o comportamento esperado.",
-        "Dar ao Claude a saída concreta do teste que falha e iterar rodando os testes até passarem.",
-        "Trocar para um modelo maior e repetir o mesmo prompt.",
-        "Marcar o teste como ignorado no pipeline até que alguém tenha tempo de investigar manualmente."
+        "Rewrite the prose description with more details and adjectives about the expected behavior.",
+        "Give Claude the concrete output of the failing test and iterate by running the tests until they pass.",
+        "Switch to a larger model and repeat the same prompt.",
+        "Mark the test as skipped in the pipeline until someone has time to investigate manually."
       ],
       "correta": 1,
-      "explicacao": "Refinamento iterativo: testes que falham + iteração até passar batem instruções em prosa.",
+      "explicacao": "Iterative refinement: failing tests + iterating until they pass beat prose instructions.",
       "feedbacks": [
-        "Prosa continua ambígua; exemplos concretos e testes batem descrição.",
-        "Correta. Refinamento iterativo com testes (TDD): falhas concretas e verificáveis guiam melhor do que prosa.",
-        "Não acrescenta a informação concreta que falta para a tarefa.",
-        "Esconde o problema em vez de resolvê-lo."
+        "Prose remains ambiguous; concrete examples and tests beat descriptions.",
+        "Correct. Iterative refinement with tests (TDD): concrete, verifiable failures provide better guidance than prose.",
+        "Does not add the concrete information the task is missing.",
+        "Hides the problem instead of solving it."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "Na Kora Pagamentos, o agente do CI pode editar código para aplicar correções automáticas de lint, mas nunca pode alterar arquivos sob infra/pci/. Hoje isso está no prompt, e numa execução o agente alterou um arquivo de configuração nessa pasta. Qual é a correção adequada?",
+      "pergunta": "At Kora Pagamentos, the CI agent may edit code to apply automatic lint fixes, but may never change files under infra/pci/. Today this is stated in the prompt, and in one run the agent changed a configuration file in that folder. What is the appropriate fix?",
       "opcoes": [
-        "Reforçar a instrução no prompt com letras maiúsculas e a explicação do impacto em PCI-DSS.",
-        "Adicionar um passo no final do job que reverte qualquer alteração em infra/pci/ antes do commit.",
-        "Um hook PreToolUse em Edit/Write que bloqueia caminhos sob infra/pci/ (exit 2 ou deny).",
-        "Pedir que o agente confirme antes de cada edição que o arquivo não está em infra/pci/."
+        "Reinforce the instruction in the prompt with capital letters and an explanation of the PCI-DSS impact.",
+        "Add a step at the end of the job that reverts any change in infra/pci/ before the commit.",
+        "A PreToolUse hook on Edit/Write that blocks paths under infra/pci/ (exit 2 or deny).",
+        "Ask the agent to confirm before each edit that the file is not in infra/pci/."
       ],
       "correta": 2,
-      "explicacao": "Regra de compliance → hook PreToolUse que bloqueia em código (exit 2 / deny).",
+      "explicacao": "Compliance rule → PreToolUse hook that blocks in code (exit 2 / deny).",
       "feedbacks": [
-        "Prompt é probabilístico; já falhou uma vez e pode falhar de novo.",
-        "Corrige depois do fato e pode falhar silenciosamente; o bloqueio na origem é mais simples e seguro.",
-        "Correta. Regra de compliance precisa de enforcement determinístico; o hook bloqueia a ação antes da execução.",
-        "Autoverificação pelo modelo continua probabilística."
+        "A prompt is probabilistic; it has already failed once and may fail again.",
+        "Fixes things after the fact and may fail silently; blocking at the source is simpler and safer.",
+        "Correct. A compliance rule needs deterministic enforcement; the hook blocks the action before it executes.",
+        "Self-verification by the model is still probabilistic."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "Na Kora Pagamentos, a geração das notas de release sempre segue os mesmos passos: coletar os commits da tag anterior até a atual, classificá-los (feature, correção, breaking change), redigir as notas e formatá-las no template. Já a investigação de incidentes de produção começa sem saber onde está o problema. Qual estratégia de decomposição combina com cada caso?",
+      "pergunta": "At Kora Pagamentos, release notes generation always follows the same steps: collect the commits from the previous tag to the current one, classify them (feature, fix, breaking change), draft the notes, and format them using the template. Investigating production incidents, on the other hand, starts without knowing where the problem is. Which decomposition strategy fits each case?",
       "opcoes": [
-        "Decomposição dinâmica para os dois casos, já que ela é mais flexível e cobre também os fluxos fixos.",
-        "Prompt chaining para os dois casos, definindo de antemão os passos da investigação de incidentes.",
-        "Prompt chaining para as notas de release; decomposição dinâmica para a investigação de incidentes.",
-        "Um único prompt para cada caso, sem decomposição, para reduzir latência."
+        "Dynamic decomposition for both cases, since it is more flexible and also covers fixed flows.",
+        "Prompt chaining for both cases, defining the incident investigation steps in advance.",
+        "Prompt chaining for the release notes; dynamic decomposition for the incident investigation.",
+        "A single prompt for each case, with no decomposition, to reduce latency."
       ],
       "correta": 2,
-      "explicacao": "Prompt chaining para passos fixos conhecidos; decomposição dinâmica para investigação aberta.",
+      "explicacao": "Prompt chaining for known, fixed steps; dynamic decomposition for open-ended investigation.",
       "feedbacks": [
-        "Flexibilidade sem necessidade adiciona custo e imprevisibilidade a um fluxo que já é conhecido.",
-        "Passos fixos não se adaptam ao que a investigação descobre; incidentes exigem subtarefas emergentes.",
-        "Correta. Passos conhecidos de antemão → chaining; investigação aberta → decomposição adaptativa.",
-        "Junta etapas distintas num prompt só, perdendo controle e qualidade; ignora o padrão adequado a cada caso."
+        "Unnecessary flexibility adds cost and unpredictability to a flow that is already known.",
+        "Fixed steps do not adapt to what the investigation uncovers; incidents require emergent subtasks.",
+        "Correct. Steps known in advance → chaining; open-ended investigation → adaptive decomposition.",
+        "Lumps distinct steps into a single prompt, losing control and quality; it ignores the pattern suited to each case."
       ]
     },
     {
       "cenario": 5,
       "dominio": "D2",
-      "pergunta": "Na Kora Pagamentos, o agente de análise de incidentes do CI foi conectado a três servidores MCP (observabilidade, Jira e repositório de runbooks) que somam cerca de 70 tools e mais de 25 mil tokens de definições. A seleção de tools piorou e cada request ficou mais caro. Qual é a melhor abordagem?",
+      "pergunta": "At Kora Pagamentos, the CI incident analysis agent was connected to three MCP servers (observability, Jira, and a runbook repository) that together expose about 70 tools and more than 25,000 tokens of definitions. Tool selection got worse and each request became more expensive. What is the best approach?",
       "opcoes": [
-        "Variar a lista de tools enviada a cada request conforme palavras-chave do incidente, para mandar só as relevantes.",
-        "Juntar as 70 tools em uma única tool genérica execute_action com um parâmetro action em texto livre.",
-        "Manter as 70 tools e subir o effort do modelo.",
-        "Tool search com defer_loading, mantendo não deferidas as 3 a 5 tools mais usadas."
+        "Vary the list of tools sent with each request based on the incident's keywords, so that only the relevant ones are sent.",
+        "Combine the 70 tools into a single generic execute_action tool with a free-text action parameter.",
+        "Keep the 70 tools and increase the model's effort.",
+        "Tool search with defer_loading, keeping the 3 to 5 most-used tools non-deferred."
       ],
       "correta": 3,
-      "explicacao": "Catálogo grande / vários servidores MCP → tool search com defer_loading, mantendo 3 a 5 tools frequentes não deferidas.",
+      "explicacao": "Large catalog / multiple MCP servers → tool search with defer_loading, keeping 3 to 5 frequently used tools non-deferred.",
       "feedbacks": [
-        "Trocar o array de tools a cada request invalida o prompt caching e cria um roteador por palavra-chave frágil.",
-        "Esconde a escolha numa string sem schema: piora a validação, as descrições e a seleção.",
-        "Não ataca a causa (tools demais visíveis na decisão) e encarece ainda mais.",
-        "Correta. Com catálogo grande e vários servidores MCP, tool search mantém poucas tools visíveis na decisão, reduz tokens e preserva o cache."
+        "Swapping the tools array on every request invalidates prompt caching and creates a fragile keyword router.",
+        "Hides the choice in a schema-less string: it worsens validation, descriptions, and selection.",
+        "Does not address the cause (too many tools visible at decision time) and makes it even more expensive.",
+        "Correct. With a large catalog and multiple MCP servers, tool search keeps few tools visible at decision time, reduces tokens, and preserves the cache."
       ]
     }
   ]

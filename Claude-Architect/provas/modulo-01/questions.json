@@ -1,360 +1,360 @@
 {
-  "titulo": "Módulo 01 — Prova: o exame, a Messages API e a superfície de request",
+  "titulo": "Module 01 — Exam: the certification exam, the Messages API, and the request surface",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Uma fintech tem um agente de suporte (Agent SDK) que pode chamar process_refund. A política diz que reembolsos acima de US$ 500 exigem aprovação humana. Em auditoria, 3% dos reembolsos acima do limite foram processados sem aprovação, apesar de uma instrução em MAIÚSCULAS no system prompt. Qual a MELHOR correção?",
+      "pergunta": "A fintech has a support agent (Agent SDK) that can call process_refund. The policy says refunds above $500 require human approval. In an audit, 3% of the refunds above the limit were processed without approval, despite an ALL-CAPS instruction in the system prompt. What is the BEST fix?",
       "opcoes": [
-        "Reescrever a instrução com exemplos few-shot de reembolsos negados",
-        "Adicionar um segundo modelo que revisa cada reembolso e veta os que violarem a política antes da execução",
-        "Bloquear process_refund acima de US$ 500 com um hook em código",
-        "Reduzir o número de tools do agente para ele prestar mais atenção à regra"
+        "Rewrite the instruction with few-shot examples of denied refunds",
+        "Add a second model that reviews each refund and vetoes those that violate the policy before execution",
+        "Block process_refund above $500 with a hook in code",
+        "Reduce the agent's number of tools so it pays more attention to the rule"
       ],
       "correta": 2,
-      "explicacao": "Regra com consequência financeira exige enforcement determinístico. Prompt (mesmo com few-shot) tem taxa de falha não nula.",
+      "explicacao": "A rule with financial consequences requires deterministic enforcement. A prompt (even with few-shot) has a nonzero failure rate.",
       "feedbacks": [
-        "Tentadora porque few-shot melhora aderência, mas continua probabilístico: reduz, não zera, os 3%.",
-        "Tentadora por parecer 'dupla checagem', mas é mais complexa e também probabilística; o desempate favorece código determinístico.",
-        "Correta: hook/validação garante a regra em 100% dos casos.",
-        "Tools demais é um anti-padrão real, mas não é a causa aqui; a regra crítica está só no prompt."
+        "Tempting because few-shot improves adherence, but it is still probabilistic: it reduces the 3%, it doesn't eliminate it.",
+        "Tempting because it looks like a 'double check', but it is more complex and also probabilistic; the tiebreaker favors deterministic code.",
+        "Correct: a hook/validation enforces the rule in 100% of cases.",
+        "Too many tools is a real anti-pattern, but it isn't the cause here; the critical rule lives only in the prompt."
       ]
     },
     {
-      "pergunta": "Num loop manual de tools, o time encerra a iteração quando a resposta contém algum bloco text. Usuários relatam que o agente às vezes diz 'Vou consultar seu pedido' e para sem consultar nada. Qual a correção?",
+      "pergunta": "In a manual tool loop, the team ends the iteration when the response contains any text block. Users report that the agent sometimes says 'Let me look up your order' and stops without looking anything up. What is the fix?",
       "opcoes": [
-        "Decidir pelo stop_reason: seguir em tool_use, encerrar em end_turn",
-        "Encerrar apenas quando o texto contiver a palavra 'concluído'",
-        "Instruir no system prompt para nunca escrever texto antes de chamar tools",
-        "Limitar o loop a 5 iterações e encerrar ao atingir o limite"
+        "Decide based on stop_reason: continue on tool_use, stop on end_turn",
+        "Stop only when the text contains the word 'done'",
+        "Instruct the model in the system prompt never to write text before calling tools",
+        "Cap the loop at 5 iterations and stop when the cap is reached"
       ],
       "correta": 0,
-      "explicacao": "content pode misturar text e tool_use; o fim é sinalizado por stop_reason, não pela presença de texto.",
+      "explicacao": "content can mix text and tool_use; the end is signaled by stop_reason, not by the presence of text.",
       "feedbacks": [
-        "Correta: stop_reason é o sinal de controle do loop.",
-        "Anti-padrão #1: parsear linguagem natural para decidir o fim; frágil e sujeito a falso positivo.",
-        "Ataca o sintoma pelo lado errado: texto antes de tool_use é válido; o bug está no critério de parada.",
-        "Anti-padrão #2: limite de iterações como mecanismo principal; serve só como backstop."
+        "Correct: stop_reason is the loop's control signal.",
+        "Anti-pattern #1: parsing natural language to decide when to stop; fragile and prone to false positives.",
+        "Attacks the symptom from the wrong side: text before tool_use is valid; the bug is in the stopping criterion.",
+        "Anti-pattern #2: an iteration cap as the primary mechanism; it only serves as a backstop."
       ]
     },
     {
-      "pergunta": "Um agente de pesquisa recebe respostas com 3 blocos tool_use paralelos. O código executa cada tool e envia cada tool_result numa mensagem user separada, seguida de nova chamada à API. O time percebe erros de validação e que o modelo parou de pedir tools em paralelo. O que fazer?",
+      "pergunta": "A research agent receives responses with 3 parallel tool_use blocks. The code executes each tool and sends each tool_result in a separate user message, each followed by a new API call. The team notices validation errors and that the model has stopped requesting tools in parallel. What should they do?",
       "opcoes": [
-        "Desativar o uso paralelo com disable_parallel_tool_use, para receber uma tool por vez e evitar o erro",
-        "Executar as tools em sequência e chamar a API após cada uma",
-        "Concatenar os três resultados num único bloco text",
-        "Um único user com os três tool_result, cada um com seu tool_use_id"
+        "Disable parallel use with disable_parallel_tool_use, to receive one tool at a time and avoid the error",
+        "Execute the tools sequentially and call the API after each one",
+        "Concatenate the three results into a single text block",
+        "A single user message with the three tool_result blocks, each with its tool_use_id"
       ],
       "correta": 3,
-      "explicacao": "Todos os tool_result de uma resposta vão juntos numa única mensagem user, cada um referenciando o tool_use_id exato.",
+      "explicacao": "All the tool_result blocks for a response go together in a single user message, each referencing the exact tool_use_id.",
       "feedbacks": [
-        "Esconde o problema e perde o ganho do paralelismo; o protocolo de resposta é que está errado.",
-        "Mesmo erro de protocolo, só mais lento: há tool_use pendentes sem resultado.",
-        "Perde a ligação por tool_use_id; texto solto não fecha os tool_use pendentes.",
-        "Correta: uma mensagem user com todos os resultados."
+        "Hides the problem and loses the benefit of parallelism; it's the response protocol that is wrong.",
+        "Same protocol error, just slower: there are pending tool_use blocks without results.",
+        "Loses the tool_use_id linkage; loose text doesn't close the pending tool_use blocks.",
+        "Correct: one user message with all the results."
       ]
     },
     {
-      "pergunta": "Num sistema de extração, a tool fetch_document às vezes dá timeout. Nesses casos, o código simplesmente não devolve tool_result e reenvia a conversa. O modelo passa a 'inventar' o conteúdo do documento. Qual a MELHOR correção?",
+      "pergunta": "In an extraction system, the fetch_document tool sometimes times out. In those cases, the code simply doesn't return a tool_result and resends the conversation. The model starts 'making up' the document's content. What is the BEST fix?",
       "opcoes": [
-        "Devolver um tool_result vazio, sem indicar erro, para não confundir o modelo",
-        "Devolver o tool_result com is_error: true e a causa do erro (timeout, retentável)",
-        "Instruir o modelo a nunca inventar conteúdo",
-        "Remover a tool fetch_document e enviar os documentos no system prompt"
+        "Return an empty tool_result, without indicating an error, so as not to confuse the model",
+        "Return the tool_result with is_error: true and the cause of the error (timeout, retryable)",
+        "Instruct the model never to make up content",
+        "Remove the fetch_document tool and send the documents in the system prompt"
       ],
       "correta": 1,
-      "explicacao": "Falha de tool deve voltar como tool_result com is_error: true e contexto, para o modelo raciocinar sobre recuperação.",
+      "explicacao": "A tool failure should come back as a tool_result with is_error: true and context, so the model can reason about recovery.",
       "feedbacks": [
-        "Anti-padrão #7: vazio como sucesso esconde que a busca nem rodou.",
-        "Correta: erro explícito e informativo.",
-        "Instrução não resolve a falta de informação; o modelo nem sabe que houve falha.",
-        "Mudança arquitetural desproporcional; o problema é só o tratamento de erro."
+        "Anti-pattern #7: empty-as-success hides the fact that the lookup never even ran.",
+        "Correct: an explicit, informative error.",
+        "An instruction doesn't fix the missing information; the model doesn't even know there was a failure.",
+        "A disproportionate architectural change; the problem is only the error handling."
       ]
     },
     {
-      "pergunta": "Cenário Structured Data Extraction: em contratos de 80+ páginas, o JSON de saída chega cortado no meio de um campo. Em contratos curtos tudo funciona. O que verificar PRIMEIRO?",
+      "pergunta": "Structured Data Extraction scenario: on contracts of 80+ pages, the output JSON arrives cut off in the middle of a field. On short contracts everything works. What should you check FIRST?",
       "opcoes": [
-        "Se stop_reason é max_tokens e o limite de saída é insuficiente",
-        "Se o modelo é capaz de gerar JSON válido",
-        "Se a temperatura está alta demais",
-        "Se o system prompt pede o JSON com clareza"
+        "Whether stop_reason is max_tokens and the output limit is insufficient",
+        "Whether the model is capable of generating valid JSON",
+        "Whether the temperature is too high",
+        "Whether the system prompt asks for the JSON clearly"
       ],
       "correta": 0,
-      "explicacao": "Corte no fim só nos documentos longos aponta para truncamento por max_tokens.",
+      "explicacao": "Output cut off at the end, only on long documents, points to truncation by max_tokens.",
       "feedbacks": [
-        "Correta: o padrão 'só nos longos, cortado no fim' é max_tokens.",
-        "Funciona nos curtos, então a capacidade não é o problema.",
-        "Temperatura não causa truncamento (e é rejeitada nos modelos novos).",
-        "Funciona nos curtos com o mesmo prompt; não é clareza."
+        "Correct: the pattern 'only on long ones, cut off at the end' is max_tokens.",
+        "It works on the short ones, so capability isn't the problem.",
+        "Temperature doesn't cause truncation (and it is rejected on the newer models).",
+        "It works on the short ones with the same prompt; it isn't a clarity issue."
       ]
     },
     {
-      "pergunta": "Um pipeline de moderação processa textos de usuários. Em alguns casos a API retorna HTTP 200, mas o content não traz a classificação esperada e o pipeline grava 'sem violação'. Qual a causa provável e a correção?",
+      "pergunta": "A moderation pipeline processes user-submitted texts. In some cases the API returns HTTP 200, but content doesn't contain the expected classification and the pipeline records 'no violation'. What is the likely cause and the fix?",
       "opcoes": [
-        "Timeout de rede intermitente; adicionar retry com backoff exponencial e jitter",
-        "Prompt ambíguo; adicionar few-shot",
-        "Recusa: checar stop_reason == refusal antes de ler content",
-        "max_tokens baixo; aumentar o limite"
+        "Intermittent network timeout; add retry with exponential backoff and jitter",
+        "Ambiguous prompt; add few-shot",
+        "Refusal: check stop_reason == refusal before reading content",
+        "Low max_tokens; raise the limit"
       ],
       "correta": 2,
-      "explicacao": "Recusa chega com HTTP 200 e stop_reason refusal; código que ignora stop_reason trata como sucesso vazio.",
+      "explicacao": "A refusal arrives with HTTP 200 and stop_reason refusal; code that ignores stop_reason treats it as an empty success.",
       "feedbacks": [
-        "Timeout não volta como HTTP 200.",
-        "Few-shot não muda o fato de o pipeline gravar resultado sem checar o motivo da parada.",
-        "Correta: cheque stop_reason antes de consumir content.",
-        "Truncamento deixaria saída parcial, não ausente; e o sintoma 'HTTP 200 sem conteúdo útil' aponta para refusal."
+        "A timeout doesn't come back as HTTP 200.",
+        "Few-shot doesn't change the fact that the pipeline records a result without checking why generation stopped.",
+        "Correct: check stop_reason before consuming content.",
+        "Truncation would leave partial output, not missing output; and the symptom 'HTTP 200 with no useful content' points to refusal."
       ]
     },
     {
-      "pergunta": "Um chatbot interno chama a Messages API enviando a cada turno só a última mensagem do usuário, mais o system prompt. Usuários reclamam que o bot 'esquece' o que foi dito dois turnos antes. Qual a explicação?",
+      "pergunta": "An internal chatbot calls the Messages API sending, on each turn, only the user's latest message plus the system prompt. Users complain that the bot 'forgets' what was said two turns earlier. What is the explanation?",
       "opcoes": [
-        "A janela de contexto do modelo é pequena demais",
-        "O prompt caching está invalidando o histórico",
-        "O system prompt deveria instruir o modelo a lembrar e resumir a conversa a cada turno",
-        "API stateless: o histórico precisa ser reenviado a cada chamada"
+        "The model's context window is too small",
+        "Prompt caching is invalidating the history",
+        "The system prompt should instruct the model to remember and summarize the conversation every turn",
+        "Stateless API: the history must be resent on every call"
       ],
       "correta": 3,
-      "explicacao": "A Messages API não guarda estado; o cliente reenvia o histórico em messages a cada chamada.",
+      "explicacao": "The Messages API doesn't keep state; the client resends the history in messages on every call.",
       "feedbacks": [
-        "Dois turnos cabem folgado em qualquer janela; o problema é não enviar.",
-        "Caching não guarda nem apaga histórico; ele só reaproveita prefixos enviados.",
-        "Instrução não traz de volta o que não foi enviado.",
-        "Correta: stateless."
+        "Two turns fit easily in any window; the problem is not sending them.",
+        "Caching neither stores nor deletes history; it only reuses prefixes that were sent.",
+        "An instruction doesn't bring back what wasn't sent.",
+        "Correct: stateless."
       ]
     },
     {
-      "pergunta": "Num agente de suporte, o time observa em usage que input_tokens cresce a cada turno da mesma conversa, mesmo quando o usuário manda mensagens curtas. O que isso indica?",
+      "pergunta": "In a support agent, the team sees in usage that input_tokens grows with every turn of the same conversation, even when the user sends short messages. What does this indicate?",
       "opcoes": [
-        "Um bug no SDK que duplica mensagens",
-        "Comportamento esperado: o histórico inteiro é reenviado e cobrado a cada turno",
-        "O modelo está gerando thinking oculto que é contado como entrada",
-        "O system prompt está sendo recompilado a cada turno"
+        "A bug in the SDK that duplicates messages",
+        "Expected behavior: the entire history is resent and billed every turn",
+        "The model is generating hidden thinking that is counted as input",
+        "The system prompt is being recompiled every turn"
       ],
       "correta": 1,
-      "explicacao": "Como a API é stateless, cada turno reenvia (e cobra) o histórico acumulado; caching e gestão de contexto (Módulo 10) mitigam.",
+      "explicacao": "Because the API is stateless, each turn resends (and bills) the accumulated history; caching and context management (Module 10) mitigate this.",
       "feedbacks": [
-        "Não é bug; é consequência do modelo stateless.",
-        "Correta: histórico reenviado = entrada crescente.",
-        "Thinking é saída, não entrada daquele turno.",
-        "Não há 'recompilação'; o system é só parte da entrada reenviada."
+        "It isn't a bug; it's a consequence of the stateless model.",
+        "Correct: resent history = growing input.",
+        "Thinking is output, not input for that turn.",
+        "There is no 'recompilation'; the system prompt is just part of the resent input."
       ]
     },
     {
-      "pergunta": "Uma seguradora precisa extrair 6 campos de cada formulário de sinistro (um documento por vez, sem ferramentas externas). Um arquiteto propõe um agente com Agent SDK e subagents. Qual a MELHOR abordagem?",
+      "pergunta": "An insurance company needs to extract 6 fields from each claim form (one document at a time, no external tools). An architect proposes an agent built with the Agent SDK and subagents. What is the BEST approach?",
       "opcoes": [
-        "Managed Agents, para não ter de hospedar nada e ganhar sandbox por sessão",
-        "Agent SDK com um subagent por campo",
-        "Uma chamada por documento, com saída estruturada",
-        "Tool Runner com uma tool por campo"
+        "Managed Agents, so nothing has to be hosted and each session gets a sandbox",
+        "Agent SDK with one subagent per field",
+        "One call per document, with structured output",
+        "Tool Runner with one tool per field"
       ],
       "correta": 2,
-      "explicacao": "Extração de um documento é tarefa de uma chamada. Agente é para trabalho multi-etapa e aberto; vence a solução mais simples.",
+      "explicacao": "Extracting from a single document is a one-call task. Agents are for multi-step, open-ended work; the simplest solution wins.",
       "feedbacks": [
-        "Infra gerenciada não justifica um agente onde basta uma chamada.",
-        "Complexidade desproporcional (e tools/subagents demais) para uma extração.",
-        "Correta: uma chamada + schema.",
-        "Loop de tools sem necessidade; não há ação externa a executar."
+        "Managed infrastructure doesn't justify an agent where a single call is enough.",
+        "Disproportionate complexity (and too many tools/subagents) for an extraction.",
+        "Correct: one call + schema.",
+        "An unnecessary tool loop; there is no external action to perform."
       ]
     },
     {
-      "pergunta": "Um time de plataforma quer um agente que navegue pelo repositório (ler, editar, rodar comandos), com hooks de auditoria e subagents, rodando na própria infraestrutura de CI. Qual forma de construir atende com menos código próprio?",
+      "pergunta": "A platform team wants an agent that navigates the repository (reading, editing, running commands), with audit hooks and subagents, running on the team's own CI infrastructure. Which way of building it requires the least custom code?",
       "opcoes": [
         "Claude Agent SDK",
-        "Loop manual na Messages API reimplementando Read/Edit/Bash",
-        "Tool Runner com tools customizadas de arquivo",
-        "Uma chamada única com o repositório inteiro no prompt"
+        "A manual loop on the Messages API reimplementing Read/Edit/Bash",
+        "Tool Runner with custom file tools",
+        "A single call with the entire repository in the prompt"
       ],
       "correta": 0,
-      "explicacao": "O Agent SDK é o harness do Claude Code como biblioteca: tools nativas, hooks, subagents e permissões, hospedado por você.",
+      "explicacao": "The Agent SDK is the Claude Code harness as a library: built-in tools, hooks, subagents, and permissions, hosted by you.",
       "feedbacks": [
-        "Correta: baterias inclusas na sua infra.",
-        "Possível, mas reimplementa o que o Agent SDK já traz; mais código, mais risco.",
-        "Tool Runner não tem tools nativas, hooks nem subagents; você escreveria tudo.",
-        "Não cabe/gasta contexto e não permite editar nem rodar comandos."
+        "Correct: batteries included, on your infrastructure.",
+        "Possible, but it reimplements what the Agent SDK already provides; more code, more risk.",
+        "Tool Runner has no built-in tools, hooks, or subagents; you would write all of it.",
+        "It doesn't fit/wastes context, and it can't edit files or run commands."
       ]
     },
     {
-      "pergunta": "Uma startup sem time de infraestrutura quer agentes de longa duração, cada sessão com seu próprio ambiente isolado para rodar código e manipular arquivos, com configurações de agente versionadas. Qual opção?",
+      "pergunta": "A startup with no infrastructure team wants long-running agents, each session with its own isolated environment for running code and manipulating files, and versioned agent configurations. Which option?",
       "opcoes": [
-        "Tool Runner hospedado num servidor próprio",
+        "Tool Runner hosted on its own server",
         "Managed Agents",
-        "Loop manual com containers Docker gerenciados pelo time",
+        "A manual loop with Docker containers managed by the team",
         "Batch API"
       ],
       "correta": 1,
-      "explicacao": "Managed Agents é a única opção em que a Anthropic roda o loop E hospeda o sandbox por sessão.",
+      "explicacao": "Managed Agents is the only option in which Anthropic runs the loop AND hosts the per-session sandbox.",
       "feedbacks": [
-        "Tool Runner é só o loop; hospedagem e sandbox ficam com a startup.",
-        "Correta: loop + sandbox hospedados, configs versionadas.",
-        "Exige justamente a infra que a startup não tem.",
-        "Batch é processamento assíncrono em lote, sem loop multi-turn de tools."
+        "Tool Runner is just the loop; hosting and the sandbox stay with the startup.",
+        "Correct: hosted loop + sandbox, versioned configs.",
+        "It requires exactly the infrastructure the startup doesn't have.",
+        "Batch is asynchronous bulk processing, with no multi-turn tool loop."
       ]
     },
     {
-      "pergunta": "Um serviço .NET expõe 3 funções internas (consultar estoque, reservar item, cancelar reserva) e quer que o Claude as use em loop até concluir o pedido. O time não quer escrever o loop nem precisa de tools nativas ou sandbox. Qual opção?",
+      "pergunta": "A .NET service exposes 3 internal functions (check inventory, reserve item, cancel reservation) and wants Claude to use them in a loop until the order is complete. The team doesn't want to write the loop and doesn't need built-in tools or a sandbox. Which option?",
       "opcoes": [
         "Claude Agent SDK",
         "Managed Agents",
-        "Uma chamada única com tool_choice forçado",
-        "Tool Runner do SDK da API"
+        "A single call with a forced tool_choice",
+        "The API SDK's Tool Runner"
       ],
       "correta": 3,
-      "explicacao": "Tool Runner roda o loop request → executar → repetir para as suas tools, na sua infra.",
+      "explicacao": "Tool Runner runs the request → execute → repeat loop for your tools, on your infrastructure.",
       "feedbacks": [
-        "Traz harness completo (tools nativas, permissões) que o time não precisa.",
-        "Adiciona hospedagem/sandbox que o caso não pede.",
-        "Uma chamada não cobre o loop multi-etapa; e forçar tool dá 400 em modelos novos.",
-        "Correta: o mais simples que atende."
+        "Brings a full harness (built-in tools, permissions) the team doesn't need.",
+        "Adds hosting/sandbox the case doesn't call for.",
+        "A single call doesn't cover the multi-step loop; and forcing a tool returns 400 on newer models.",
+        "Correct: the simplest option that does the job."
       ]
     },
     {
-      "pergunta": "Cenário CI: após migrar um job de revisão para um modelo mais novo, todas as chamadas passaram a retornar 400. O request usa thinking: {type: enabled, budget_tokens: 12000}. Qual a correção?",
+      "pergunta": "CI scenario: after migrating a review job to a newer model, every call started returning 400. The request uses thinking: {type: enabled, budget_tokens: 12000}. What is the fix?",
       "opcoes": [
         "thinking: {type: adaptive} + output_config.effort",
-        "Reduzir budget_tokens para abaixo de max_tokens",
-        "Voltar ao modelo antigo permanentemente",
-        "Mover budget_tokens para dentro de output_config, onde ficam os parâmetros novos"
+        "Lower budget_tokens to below max_tokens",
+        "Revert to the old model permanently",
+        "Move budget_tokens into output_config, where the new parameters live"
       ],
       "correta": 0,
-      "explicacao": "Nos modelos novos, budget_tokens é rejeitado; adaptive thinking + effort é a superfície atual.",
+      "explicacao": "On the newer models, budget_tokens is rejected; adaptive thinking + effort is the current surface.",
       "feedbacks": [
-        "Correta.",
-        "Era a regra antiga; nos modelos novos o parâmetro em si é rejeitado.",
-        "Evita o problema sem resolvê-lo; a migração é viável ajustando o request.",
-        "Não existe budget_tokens em output_config; quem fica lá é effort."
+        "Correct.",
+        "That was the old rule; on the newer models the parameter itself is rejected.",
+        "Avoids the problem without solving it; the migration is feasible by adjusting the request.",
+        "There is no budget_tokens in output_config; what lives there is effort."
       ]
     },
     {
-      "pergunta": "Cenário Structured Data Extraction: o pipeline terminava messages com uma mensagem assistant contendo '{' para forçar JSON. Após a migração de modelo, as chamadas falham com 400. Qual a MELHOR substituição?",
+      "pergunta": "Structured Data Extraction scenario: the pipeline ended messages with an assistant message containing '{' to force JSON. After the model migration, the calls fail with 400. What is the BEST replacement?",
       "opcoes": [
-        "Trocar o prefill por '```json'",
-        "Remover o prefill e pedir 'responda só JSON' no último turno do usuário, sem outras mudanças",
-        "Usar structured outputs (output_config.format com JSON schema)",
-        "Forçar uma tool via tool_choice: {type: any}"
+        "Change the prefill to '```json'",
+        "Remove the prefill and ask to 'respond only with JSON' in the last user turn, with no other changes",
+        "Use structured outputs (output_config.format with a JSON schema)",
+        "Force a tool via tool_choice: {type: any}"
       ],
       "correta": 2,
-      "explicacao": "Prefill é rejeitado nos modelos novos; structured outputs garante conformidade com o schema.",
+      "explicacao": "Prefill is rejected on the newer models; structured outputs guarantees conformance to the schema.",
       "feedbacks": [
-        "Continua sendo prefill: mesmo 400.",
-        "Instrução ajuda, mas não garante schema num pipeline de extração; há opção melhor.",
-        "Correta: garantia estrutural.",
-        "Forçar tool com any também retorna 400 em modelos novos."
+        "It's still a prefill: same 400.",
+        "An instruction helps, but it doesn't guarantee the schema in an extraction pipeline; there is a better option.",
+        "Correct: a structural guarantee.",
+        "Forcing a tool with any also returns 400 on newer models."
       ]
     },
     {
-      "pergunta": "Um classificador de tickets dá rótulos inconsistentes para casos parecidos. Um dev propõe fixar temperature: 0 e top_p baixo no modelo novo. Qual a avaliação correta?",
+      "pergunta": "A ticket classifier assigns inconsistent labels to similar cases. A developer proposes setting temperature: 0 and a low top_p on the new model. What is the correct assessment?",
       "opcoes": [
-        "Correta: temperatura zero torna o modelo determinístico",
-        "Correta, desde que se use também top_k: 1",
-        "Parcialmente correta: funciona se for combinada com prefill de um rótulo inicial na resposta",
-        "Inadequada: são rejeitados nos modelos novos; falta critério explícito"
+        "Correct: zero temperature makes the model deterministic",
+        "Correct, as long as top_k: 1 is also used",
+        "Partially correct: it works if combined with a prefill of an initial label in the response",
+        "Inadequate: they are rejected on newer models; explicit criteria are missing"
       ],
       "correta": 3,
-      "explicacao": "Sampling é rejeitado nos modelos mais novos e ataca o sintoma errado; a inconsistência vem de critério vago.",
+      "explicacao": "Sampling parameters are rejected on the newer models and attack the wrong symptom; the inconsistency comes from vague criteria.",
       "feedbacks": [
-        "Mito comum; além disso, o parâmetro dá 400 nos modelos novos.",
-        "top_k também é rejeitado nos modelos novos.",
-        "Prefill também é rejeitado; soma dois parâmetros inválidos.",
-        "Correta."
+        "A common myth; besides, the parameter returns 400 on newer models.",
+        "top_k is also rejected on newer models.",
+        "Prefill is also rejected; it stacks two invalid parameters.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Uma empresa roda 2 milhões de classificações simples por dia num modelo topo de linha com effort alto. O custo explodiu, e o time quer trocar por um modelo menor. O que fazer ANTES?",
+      "pergunta": "A company runs 2 million simple classifications per day on a top-tier model with high effort. Costs have exploded, and the team wants to switch to a smaller model. What should they do BEFORE that?",
       "opcoes": [
-        "Trocar direto para o modelo menor, já que a tarefa é simples",
-        "Medir o mesmo modelo com effort menor numa amostra real",
-        "Adicionar um classificador de roteamento que manda casos fáceis ao modelo menor e difíceis ao maior",
-        "Aumentar max_tokens para reduzir retries"
+        "Switch straight to the smaller model, since the task is simple",
+        "Measure the same model with lower effort on a real sample",
+        "Add a routing classifier that sends easy cases to the smaller model and hard ones to the larger one",
+        "Increase max_tokens to reduce retries"
       ],
       "correta": 1,
-      "explicacao": "effort é o primeiro botão de custo × qualidade; medir antes de mexer é regra de desempate da prova.",
+      "explicacao": "effort is the first cost × quality knob; measuring before changing anything is one of the exam's tiebreaker rules.",
       "feedbacks": [
-        "Pode até funcionar, mas pula a medição e o botão mais simples.",
-        "Correta: meça o botão mais simples primeiro.",
-        "Mais complexo que o necessário antes de testar effort.",
-        "Não reduz custo; classificação simples nem chega perto do limite."
+        "It might even work, but it skips measurement and the simplest knob.",
+        "Correct: measure the simplest knob first.",
+        "More complex than necessary before testing effort.",
+        "It doesn't reduce cost; a simple classification doesn't come anywhere near the limit."
       ]
     },
     {
-      "pergunta": "Após migrar um assistente de análise de código para um modelo mais novo, sem mudar o request, o time percebe respostas mais superficiais em tarefas difíceis. Não há erros. Qual a causa mais provável e a ação?",
+      "pergunta": "After migrating a code-analysis assistant to a newer model without changing the request, the team notices shallower responses on hard tasks. There are no errors. What is the most likely cause, and the action?",
       "opcoes": [
-        "Default de effort mudou; defini-lo explicitamente e re-calibrar",
-        "O modelo novo é menos capaz; voltar ao antigo",
-        "A janela de contexto do modelo novo encolheu; dividir os arquivos em partes menores",
-        "Faltou temperature alta para 'criatividade'"
+        "The effort default changed; set it explicitly and recalibrate",
+        "The new model is less capable; revert to the old one",
+        "The new model's context window shrank; split the files into smaller parts",
+        "A high temperature was missing for 'creativity'"
       ],
       "correta": 0,
-      "explicacao": "Defaults (como o de effort) podem mudar por modelo; ao migrar, defina explicitamente e re-calibre.",
+      "explicacao": "Defaults (such as the effort default) can change from model to model; when migrating, set them explicitly and recalibrate.",
       "feedbacks": [
-        "Correta.",
-        "Conclusão precipitada sem checar a configuração.",
-        "Nada indica problema de janela; respostas vêm completas, só rasas.",
-        "Sampling é rejeitado nos modelos novos e não controla profundidade."
+        "Correct.",
+        "A hasty conclusion without checking the configuration.",
+        "Nothing points to a context window problem; responses come back complete, just shallow.",
+        "Sampling parameters are rejected on newer models and don't control depth."
       ]
     },
     {
-      "pergunta": "Você revisa o loop manual de um agente. Quais DUAS práticas estão corretas? (Escolha DUAS.)",
+      "pergunta": "You are reviewing an agent's manual loop. Which TWO practices are correct? (Choose TWO.)",
       "opcoes": [
-        "Encerrar o loop quando a resposta tiver mais texto que blocos tool_use",
-        "Encerrar o loop quando stop_reason for end_turn",
-        "Usar o limite de iterações como critério principal de término",
-        "Quando vierem vários tool_use, executar todos e devolver todos os tool_result numa única mensagem user",
-        "Descartar tool_use cujo resultado falhou, para não poluir o contexto"
+        "End the loop when the response has more text than tool_use blocks",
+        "End the loop when stop_reason is end_turn",
+        "Use the iteration cap as the primary termination criterion",
+        "When several tool_use blocks arrive, execute all of them and return all the tool_result blocks in a single user message",
+        "Discard tool_use blocks whose result failed, so as not to pollute the context"
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "stop_reason decide o fim; resultados paralelos voltam juntos, inclusive as falhas (com is_error: true).",
+      "explicacao": "stop_reason decides when to stop; parallel results come back together, including failures (with is_error: true).",
       "feedbacks": [
-        "Contar texto é variação do anti-padrão #1.",
-        "Correta.",
-        "Anti-padrão #2: limite só como backstop.",
-        "Correta.",
-        "Anti-padrão #7: falha deve voltar com is_error: true."
+        "Counting text is a variant of anti-pattern #1.",
+        "Correct.",
+        "Anti-pattern #2: a cap only as a backstop.",
+        "Correct.",
+        "Anti-pattern #7: a failure should come back with is_error: true."
       ]
     },
     {
-      "pergunta": "Um time vai migrar seu pipeline de extração para um modelo novo. Quais DUAS ações são as mais adequadas? (Escolha DUAS.)",
+      "pergunta": "A team is about to migrate its extraction pipeline to a new model. Which TWO actions are the most appropriate? (Choose TWO.)",
       "opcoes": [
-        "Rodar um conjunto de requests reais contra o modelo novo para validar a forma do request antes do deploy",
-        "Manter temperature: 0 para preservar a consistência",
-        "Trocar o model ID em produção numa sexta e monitorar o fim de semana",
-        "Aumentar budget_tokens para compensar mudanças de raciocínio",
-        "Revisar parâmetros que o modelo novo rejeita (prefill, sampling, budget_tokens) e re-calibrar effort"
+        "Run a set of real requests against the new model to validate the request shape before deploying",
+        "Keep temperature: 0 to preserve consistency",
+        "Swap the model ID in production on a Friday and monitor over the weekend",
+        "Increase budget_tokens to compensate for reasoning changes",
+        "Review parameters the new model rejects (prefill, sampling, budget_tokens) and recalibrate effort"
       ],
       "corretas": [
         0,
         4
       ],
-      "explicacao": "Parâmetros aceitos mudam por modelo; teste a forma do request e re-calibre effort.",
+      "explicacao": "Accepted parameters change from model to model; test the request shape and recalibrate effort.",
       "feedbacks": [
-        "Correta.",
-        "temperature é rejeitada nos modelos novos.",
-        "Descobrir 400 em produção é o que se quer evitar.",
-        "budget_tokens é rejeitado nos modelos novos.",
-        "Correta."
+        "Correct.",
+        "temperature is rejected on newer models.",
+        "Discovering a 400 in production is exactly what you want to avoid.",
+        "budget_tokens is rejected on newer models.",
+        "Correct."
       ]
     },
     {
-      "pergunta": "Um arquiteto propõe estas regras para o agente de suporte escalar para humano. Quais DUAS são anti-padrões clássicos da prova? (Escolha DUAS.)",
+      "pergunta": "An architect proposes these rules for when the support agent should escalate to a human. Which TWO are classic exam anti-patterns? (Choose TWO.)",
       "opcoes": [
-        "Escalar quando o cliente pede explicitamente um humano",
-        "Escalar quando o pedido cai numa exceção de política não coberta",
-        "Escalar quando o modelo declarar confiança abaixo de 70%",
-        "Escalar quando o sentimento do cliente for muito negativo",
-        "Escalar quando não houver progresso após tentativas razoáveis"
+        "Escalate when the customer explicitly asks for a human",
+        "Escalate when the request falls into a policy exception that isn't covered",
+        "Escalate when the model reports confidence below 70%",
+        "Escalate when the customer's sentiment is very negative",
+        "Escalate when there is no progress after reasonable attempts"
       ],
       "corretas": [
         2,
         3
       ],
-      "explicacao": "Confiança autodeclarada é mal calibrada (anti-padrão #4) e sentimento ≠ complexidade (anti-padrão #5). As demais são gatilhos legítimos (Módulo 11).",
+      "explicacao": "Self-reported confidence is poorly calibrated (anti-pattern #4), and sentiment ≠ complexity (anti-pattern #5). The others are legitimate triggers (Module 11).",
       "feedbacks": [
-        "Gatilho legítimo: pedido explícito de humano.",
-        "Gatilho legítimo: lacuna/exceção de política.",
-        "Anti-padrão #4: confiança autodeclarada.",
-        "Anti-padrão #5: cliente bravo com problema simples deve ser resolvido.",
-        "Gatilho legítimo: sem progresso após tentativas razoáveis."
+        "Legitimate trigger: an explicit request for a human.",
+        "Legitimate trigger: a policy gap/exception.",
+        "Anti-pattern #4: self-reported confidence.",
+        "Anti-pattern #5: an angry customer with a simple problem should have it resolved.",
+        "Legitimate trigger: no progress after reasonable attempts."
       ]
     }
   ]

@@ -1,145 +1,145 @@
 {
-  "titulo": "Módulo 01 — Quiz: o exame, a Messages API e a superfície de request",
+  "titulo": "Module 01 — Quiz: the exam, the Messages API, and the request surface",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Quantos cenários aparecem numa aplicação da prova CCAR-F?",
+      "pergunta": "How many scenarios appear in a single sitting of the CCAR-F exam?",
       "opcoes": [
-        "Os 6 cenários do banco, sempre",
-        "4 cenários sorteados de um banco de 6",
-        "2 cenários fixos e 2 sorteados",
-        "Um cenário por domínio do exame, ou seja, 5 cenários no total"
+        "All 6 scenarios in the bank, always",
+        "4 scenarios randomly drawn from a bank of 6",
+        "2 fixed scenarios and 2 randomly drawn ones",
+        "One scenario per exam domain, i.e., 5 scenarios in total"
       ],
       "correta": 1,
-      "explicacao": "A prova sorteia 4 dos 6 cenários do banco, e as questões se penduram neles.",
+      "explicacao": "The exam randomly draws 4 of the 6 scenarios in the bank, and the questions hang off them.",
       "feedbacks": [
-        "Errado: são 6 no banco, mas só 4 entram em cada aplicação.",
-        "Correto: 4 de 6, sorteados.",
-        "Errado: não há cenários fixos; todos vêm do sorteio.",
-        "Errado: cenários não correspondem 1:1 a domínios; um cenário mistura vários domínios."
+        "Incorrect: there are 6 in the bank, but only 4 make it into each sitting.",
+        "Correct: 4 of 6, randomly drawn.",
+        "Incorrect: there are no fixed scenarios; all of them come from the random draw.",
+        "Incorrect: scenarios don't map 1:1 to domains; a single scenario mixes several domains."
       ]
     },
     {
-      "pergunta": "Qual domínio tem o MAIOR peso na prova?",
+      "pergunta": "Which domain carries the HIGHEST weight on the exam?",
       "opcoes": [
-        "D4 — Prompt engineering & saída estruturada",
-        "D3 — Configuração & workflows do Claude Code",
-        "D2 — Design de tools & integração MCP",
-        "D1 — Arquitetura agêntica & orquestração"
+        "D4 — Prompt engineering & structured output",
+        "D3 — Claude Code configuration & workflows",
+        "D2 — Tool design & MCP integration",
+        "D1 — Agentic architecture & orchestration"
       ],
       "correta": 3,
-      "explicacao": "D1 pesa 27%; D3 e D4 pesam 20% cada, D2 18% e D5 15%.",
+      "explicacao": "D1 weighs 27%; D3 and D4 weigh 20% each, D2 18%, and D5 15%.",
       "feedbacks": [
-        "Errado: D4 pesa 20%.",
-        "Errado: D3 pesa 20%.",
-        "Errado: D2 pesa 18%.",
-        "Correto: D1 = 27%, mais de um quarto da prova."
+        "Incorrect: D4 weighs 20%.",
+        "Incorrect: D3 weighs 20%.",
+        "Incorrect: D2 weighs 18%.",
+        "Correct: D1 = 27%, more than a quarter of the exam."
       ]
     },
     {
-      "pergunta": "Você está com 3 minutos restantes e 4 questões sem resposta. Qual a melhor conduta?",
+      "pergunta": "You have 3 minutes left and 4 unanswered questions. What is the best course of action?",
       "opcoes": [
-        "Marcar uma alternativa em todas, já que não há penalidade por chute",
-        "Deixar em branco as que não sabe, para não perder pontos",
-        "Responder só as de resposta única e deixar as 'Escolha DUAS' em branco",
-        "Revisar as já respondidas em vez de responder as novas"
+        "Mark an option on all of them, since there is no penalty for guessing",
+        "Leave the ones you don't know blank, so you don't lose points",
+        "Answer only the single-answer ones and leave the 'Choose TWO' ones blank",
+        "Review the ones already answered instead of answering the new ones"
       ],
       "correta": 0,
-      "explicacao": "Sem penalidade por chute, resposta em branco é ponto perdido com certeza; chutar só pode ajudar.",
+      "explicacao": "With no penalty for guessing, a blank answer is a guaranteed lost point; guessing can only help.",
       "feedbacks": [
-        "Correto: sem penalidade, sempre marque.",
-        "Errado: não há desconto por erro; branco vale zero de qualquer forma.",
-        "Errado: mesmo nas de múltipla resposta, chutar tem chance de acerto; branco não tem.",
-        "Errado: revisar não compensa deixar questões sem resposta."
+        "Correct: no penalty, so always mark an answer.",
+        "Incorrect: there is no deduction for wrong answers; a blank is worth zero either way.",
+        "Incorrect: even on multiple-response questions, guessing has a chance of being right; a blank has none.",
+        "Incorrect: reviewing doesn't make up for leaving questions unanswered."
       ]
     },
     {
-      "pergunta": "Uma alternativa propõe impor o limite de reembolso de US$ 500 apenas com uma instrução enfática no system prompt. Que princípio da prova ela viola?",
+      "pergunta": "One option proposes enforcing the US$500 refund limit solely through an emphatic instruction in the system prompt. Which exam principle does it violate?",
       "opcoes": [
-        "Medir antes de mexer",
-        "Usar few-shot para casos de borda",
-        "Regra crítica (financeira) vai em código determinístico, não em prompt",
-        "Preferir sempre o modelo mais capaz"
+        "Measure before changing anything",
+        "Use few-shot examples for edge cases",
+        "A critical (financial) rule belongs in deterministic code, not in the prompt",
+        "Always prefer the most capable model"
       ],
       "correta": 2,
-      "explicacao": "Prompt é probabilístico, com taxa de falha não nula. Limite financeiro exige enforcement determinístico (hook/validação).",
+      "explicacao": "A prompt is probabilistic, with a nonzero failure rate. A financial limit requires deterministic enforcement (hook/validation).",
       "feedbacks": [
-        "Errado: medir é importante, mas o problema aqui é onde a regra é imposta.",
-        "Errado: few-shot continua sendo prompt; não dá garantia.",
-        "Correto: consequência financeira → hook ou validação em código.",
-        "Errado: nenhum modelo transforma prompt em garantia."
+        "Incorrect: measuring matters, but the problem here is where the rule is enforced.",
+        "Incorrect: few-shot is still prompting; it provides no guarantee.",
+        "Correct: financial consequence → hook or validation in code.",
+        "Incorrect: no model turns a prompt into a guarantee."
       ]
     },
     {
-      "pergunta": "Qual destas é a forma CORRETA de o loop decidir se o agente terminou?",
+      "pergunta": "Which of these is the CORRECT way for the loop to decide whether the agent has finished?",
       "opcoes": [
-        "Procurar a palavra 'FINAL' no texto da resposta",
-        "Checar o stop_reason da resposta",
-        "Parar quando a resposta não tiver nenhum bloco de texto",
-        "Parar após 10 iterações"
+        "Look for the word 'FINAL' in the response text",
+        "Check the response's stop_reason",
+        "Stop when the response has no text block",
+        "Stop after 10 iterations"
       ],
       "correta": 1,
-      "explicacao": "stop_reason é o sinal de controle do loop: tool_use continua, end_turn termina.",
+      "explicacao": "stop_reason is the loop's control signal: tool_use continues, end_turn ends.",
       "feedbacks": [
-        "Errado: anti-padrão #1, ler linguagem natural para decidir o fim.",
-        "Correto: stop_reason decide.",
-        "Errado: presença ou ausência de texto não indica fim; texto e tool_use podem coexistir.",
-        "Errado: anti-padrão #2, limite arbitrário como mecanismo principal (só serve de backstop)."
+        "Incorrect: anti-pattern #1, parsing natural language to decide when it's done.",
+        "Correct: stop_reason decides.",
+        "Incorrect: the presence or absence of text doesn't indicate completion; text and tool_use can coexist.",
+        "Incorrect: anti-pattern #2, an arbitrary limit as the primary mechanism (it only serves as a backstop)."
       ]
     },
     {
-      "pergunta": "A resposta do modelo contém um bloco text ('Vou verificar o pedido') e um bloco tool_use. O que isso significa?",
+      "pergunta": "The model's response contains a text block ('Let me check the order') and a tool_use block. What does this mean?",
       "opcoes": [
-        "Ainda não terminou: execute a tool e devolva o resultado",
-        "O modelo terminou; o tool_use é só informativo",
-        "A resposta está malformada e deve ser descartada",
-        "Você deve escolher entre exibir o texto ou executar a tool"
+        "It hasn't finished yet: execute the tool and return the result",
+        "The model has finished; the tool_use is merely informational",
+        "The response is malformed and should be discarded",
+        "You must choose between displaying the text or executing the tool"
       ],
       "correta": 0,
-      "explicacao": "content pode misturar text e tool_use. Com stop_reason tool_use, execute a tool e continue o loop.",
+      "explicacao": "content can mix text and tool_use. With stop_reason tool_use, execute the tool and continue the loop.",
       "feedbacks": [
-        "Correto: ter texto não significa que terminou.",
-        "Errado: tool_use é um pedido de execução, não um comentário.",
-        "Errado: misturar blocos é normal e válido.",
-        "Errado: não há escolha; o texto é preâmbulo e a tool precisa rodar."
+        "Correct: having text doesn't mean it has finished.",
+        "Incorrect: tool_use is a request for execution, not a comment.",
+        "Incorrect: mixing blocks is normal and valid.",
+        "Incorrect: there's no choice to make; the text is a preamble and the tool needs to run."
       ]
     },
     {
-      "pergunta": "O modelo pediu 3 tools na mesma resposta e uma delas falhou. Como devolver os resultados?",
+      "pergunta": "The model requested 3 tools in the same response and one of them failed. How should you return the results?",
       "opcoes": [
-        "Três mensagens user separadas, uma por tool_result",
-        "Só os dois resultados de sucesso, omitindo o que falhou",
-        "Uma mensagem user com o primeiro resultado e reenviar o restante depois",
-        "Uma mensagem user com os três tool_result (falha com is_error: true)"
+        "Three separate user messages, one per tool_result",
+        "Only the two successful results, omitting the one that failed",
+        "One user message with the first result, then send the rest later",
+        "One user message with all three tool_result blocks (the failure with is_error: true)"
       ],
       "correta": 3,
-      "explicacao": "Todos os tool_result vão numa única mensagem user, cada um com seu tool_use_id; a falha recebe is_error: true para o modelo raciocinar sobre a recuperação.",
+      "explicacao": "All tool_result blocks go in a single user message, each with its tool_use_id; the failure gets is_error: true so the model can reason about recovery.",
       "feedbacks": [
-        "Errado: espalhar resultados em várias mensagens quebra o protocolo e desestimula chamadas paralelas.",
-        "Errado: omitir a falha é suprimir erro (anti-padrão #7) e deixa um tool_use sem resultado.",
-        "Errado: todos os resultados pendentes devem ir juntos.",
-        "Correto: uma mensagem, três resultados, falha sinalizada."
+        "Incorrect: spreading results across several messages breaks the protocol and discourages parallel calls.",
+        "Incorrect: omitting the failure is error suppression (anti-pattern #7) and leaves a tool_use without a result.",
+        "Incorrect: all pending results must go together.",
+        "Correct: one message, three results, failure flagged."
       ]
     },
     {
-      "pergunta": "O que liga um tool_result ao pedido de tool que o originou?",
+      "pergunta": "What links a tool_result to the tool request that originated it?",
       "opcoes": [
-        "O nome da tool",
-        "A ordem dos blocos na mensagem",
-        "O tool_use_id igual ao id do bloco tool_use",
-        "O índice da mensagem no histórico"
+        "The tool name",
+        "The order of the blocks in the message",
+        "A tool_use_id equal to the id of the tool_use block",
+        "The message's index in the history"
       ],
       "correta": 2,
-      "explicacao": "Cada tool_result referencia o id exato do tool_use correspondente em tool_use_id.",
+      "explicacao": "Each tool_result references the exact id of the corresponding tool_use in tool_use_id.",
       "feedbacks": [
-        "Errado: a mesma tool pode ser chamada várias vezes; o nome não identifica a chamada.",
-        "Errado: a ligação é por id, não por posição.",
-        "Correto: tool_use_id exato.",
-        "Errado: índice de mensagem não é usado para isso."
+        "Incorrect: the same tool can be called several times; the name doesn't identify the call.",
+        "Incorrect: the link is by id, not by position.",
+        "Correct: the exact tool_use_id.",
+        "Incorrect: the message index isn't used for this."
       ]
     },
     {
-      "pergunta": "Uma extração passou a devolver JSON cortado no final em documentos longos. Qual stop_reason você espera ver?",
+      "pergunta": "An extraction has started returning JSON that is cut off at the end on long documents. Which stop_reason do you expect to see?",
       "opcoes": [
         "max_tokens",
         "stop_sequence",
@@ -147,119 +147,119 @@
         "pause_turn"
       ],
       "correta": 0,
-      "explicacao": "Saída truncada no teto de saída gera stop_reason max_tokens; aumente o limite ou continue.",
+      "explicacao": "Output truncated at the output ceiling yields stop_reason max_tokens; raise the limit or continue.",
       "feedbacks": [
-        "Correto: bateu no teto de saída.",
-        "Errado: stop_sequence indica que o modelo bateu numa sequência de parada configurada, não truncamento.",
-        "Errado: refusal é recusa por segurança.",
-        "Errado: pause_turn é do loop de tools server-side."
+        "Correct: it hit the output ceiling.",
+        "Incorrect: stop_sequence indicates the model hit a configured stop sequence, not truncation.",
+        "Incorrect: refusal is a safety refusal.",
+        "Incorrect: pause_turn belongs to the server-side tool loop."
       ]
     },
     {
-      "pergunta": "Por que uma recusa do modelo pode passar despercebida em código que só verifica o status HTTP?",
+      "pergunta": "Why can a model refusal go unnoticed in code that only checks the HTTP status?",
       "opcoes": [
-        "Porque a recusa vem com HTTP 500",
-        "Porque a recusa chega com HTTP 200 e stop_reason refusal",
-        "Porque a recusa só aparece nos logs do servidor",
-        "Porque a recusa vem como exceção de timeout"
+        "Because the refusal comes with HTTP 500",
+        "Because the refusal arrives with HTTP 200 and stop_reason refusal",
+        "Because the refusal only shows up in the server logs",
+        "Because the refusal comes as a timeout exception"
       ],
       "correta": 1,
-      "explicacao": "Recusa é uma resposta bem-sucedida do ponto de vista HTTP; o sinal está em stop_reason: refusal.",
+      "explicacao": "From an HTTP standpoint, a refusal is a successful response; the signal is in stop_reason: refusal.",
       "feedbacks": [
-        "Errado: não é erro de servidor.",
-        "Correto: HTTP 200 + stop_reason refusal.",
-        "Errado: ela vem na própria resposta.",
-        "Errado: não é timeout."
+        "Incorrect: it's not a server error.",
+        "Correct: HTTP 200 + stop_reason refusal.",
+        "Incorrect: it comes in the response itself.",
+        "Incorrect: it's not a timeout."
       ]
     },
     {
-      "pergunta": "Qual afirmação sobre o Tool Runner está correta?",
+      "pergunta": "Which statement about the Tool Runner is correct?",
       "opcoes": [
-        "É o mesmo produto que o Claude Agent SDK",
-        "Hospeda o loop e um sandbox por sessão na infraestrutura da Anthropic, com configs versionadas",
-        "Traz tools nativas como Read, Edit e Bash",
-        "Um helper do SDK da API que roda o loop das suas tools, na sua infra"
+        "It is the same product as the Claude Agent SDK",
+        "It hosts the loop and a per-session sandbox on Anthropic's infrastructure, with versioned configs",
+        "It ships with built-in tools such as Read, Edit, and Bash",
+        "A helper in the API SDK that runs the loop over your tools, on your infrastructure"
       ],
       "correta": 3,
-      "explicacao": "O Tool Runner automatiza request → executar → repetir só para as suas tools. Tools nativas são do Agent SDK; hospedagem é do Managed Agents.",
+      "explicacao": "The Tool Runner automates request → execute → repeat for your own tools only. Built-in tools belong to the Agent SDK; hosting belongs to Managed Agents.",
       "feedbacks": [
-        "Errado: Tool Runner ≠ Agent SDK (pegadinha clássica).",
-        "Errado: isso descreve o Managed Agents.",
-        "Errado: tools nativas vêm com o Agent SDK.",
-        "Correto: só o loop, só as suas tools, na sua infra."
+        "Incorrect: Tool Runner ≠ Agent SDK (a classic trap).",
+        "Incorrect: that describes Managed Agents.",
+        "Incorrect: built-in tools come with the Agent SDK.",
+        "Correct: just the loop, just your tools, on your infrastructure."
       ]
     },
     {
-      "pergunta": "Em modelos recentes, como se pede ao modelo que decida sozinho quanto pensar?",
+      "pergunta": "On recent models, how do you ask the model to decide on its own how much to think?",
       "opcoes": [
         "thinking: {type: enabled, budget_tokens: 8000}",
         "temperature: 0",
         "thinking: {type: adaptive}",
-        "Um prefill do assistant começando com '<thinking>'"
+        "An assistant prefill starting with '<thinking>'"
       ],
       "correta": 2,
-      "explicacao": "Adaptive thinking substitui budget_tokens; nos modelos novos budget_tokens retorna 400.",
+      "explicacao": "Adaptive thinking replaces budget_tokens; on newer models, budget_tokens returns a 400.",
       "feedbacks": [
-        "Errado: budget_tokens é o formato antigo e retorna 400 nos modelos novos.",
-        "Errado: temperatura não controla raciocínio e é rejeitada nos modelos novos.",
-        "Correto: adaptive.",
-        "Errado: prefill retorna 400 nos modelos novos."
+        "Incorrect: budget_tokens is the old format and returns a 400 on newer models.",
+        "Incorrect: temperature doesn't control reasoning and is rejected on newer models.",
+        "Correct: adaptive.",
+        "Incorrect: prefill returns a 400 on newer models."
       ]
     },
     {
-      "pergunta": "Onde o parâmetro effort é colocado no request?",
+      "pergunta": "Where does the effort parameter go in the request?",
       "opcoes": [
-        "No topo do request, ao lado de model",
-        "Dentro de output_config",
-        "Dentro do bloco thinking",
-        "No system prompt, como texto"
+        "At the top level of the request, alongside model",
+        "Inside output_config",
+        "Inside the thinking block",
+        "In the system prompt, as text"
       ],
       "correta": 1,
-      "explicacao": "effort fica em output_config (low/medium/high/xhigh/max).",
+      "explicacao": "effort lives in output_config (low/medium/high/xhigh/max).",
       "feedbacks": [
-        "Errado: não é parâmetro de topo.",
-        "Correto: output_config.effort.",
-        "Errado: thinking só define o modo (adaptive).",
-        "Errado: effort é parâmetro da API, não instrução textual."
+        "Incorrect: it's not a top-level parameter.",
+        "Correct: output_config.effort.",
+        "Incorrect: thinking only sets the mode (adaptive).",
+        "Incorrect: effort is an API parameter, not a text instruction."
       ]
     },
     {
-      "pergunta": "Um time vai migrar para um modelo mais novo. Qual é o passo que o exame espera?",
+      "pergunta": "A team is about to migrate to a newer model. Which step does the exam expect?",
       "opcoes": [
-        "Trocar o model ID direto em produção e monitorar a taxa de erros 400 nas primeiras horas",
-        "Copiar os mesmos parâmetros, já que a API é a mesma",
-        "Aumentar max_tokens para compensar mudanças",
-        "Testar a forma do request no modelo novo e re-calibrar effort"
+        "Swap the model ID directly in production and monitor the rate of 400 errors over the first few hours",
+        "Copy the same parameters, since the API is the same",
+        "Increase max_tokens to compensate for the changes",
+        "Test the request shape on the new model and recalibrate effort"
       ],
       "correta": 3,
-      "explicacao": "Parâmetros aceitos mudam por modelo (budget_tokens, sampling, prefill, tool_choice forçado podem dar 400); teste e re-calibre antes.",
+      "explicacao": "Accepted parameters change from model to model (budget_tokens, sampling, prefill, and forced tool_choice can return a 400); test and recalibrate beforehand.",
       "feedbacks": [
-        "Errado: descobrir 400 em produção é exatamente o que se quer evitar.",
-        "Errado: o endpoint é o mesmo, mas a superfície aceita muda por modelo.",
-        "Errado: não ataca o problema de parâmetros rejeitados.",
-        "Correto: teste a forma do request e re-calibre."
+        "Incorrect: discovering 400s in production is exactly what you want to avoid.",
+        "Incorrect: the endpoint is the same, but the accepted surface changes per model.",
+        "Incorrect: it doesn't address the problem of rejected parameters.",
+        "Correct: test the request shape and recalibrate."
       ]
     },
     {
-      "pergunta": "Um dev quer garantir JSON consistente num modelo novo. Quais DUAS abordagens são válidas? (Escolha DUAS.)",
+      "pergunta": "A developer wants to guarantee consistent JSON on a newer model. Which TWO approaches are valid? (Choose TWO.)",
       "opcoes": [
-        "Prefill do assistant começando com '{'",
-        "temperature: 0 e top_p: 0.1",
-        "Structured outputs via output_config.format com um JSON schema",
-        "Aumentar budget_tokens para o modelo pensar mais no formato",
-        "Instrução clara de formato no system prompt"
+        "An assistant prefill starting with '{'",
+        "temperature: 0 and top_p: 0.1",
+        "Structured outputs via output_config.format with a JSON schema",
+        "Increase budget_tokens so the model thinks more about the format",
+        "A clear format instruction in the system prompt"
       ],
       "corretas": [
         2,
         4
       ],
-      "explicacao": "Prefill, sampling e budget_tokens são rejeitados nos modelos novos. Structured outputs dá garantia de schema; instrução no system é o substituto textual.",
+      "explicacao": "Prefill, sampling, and budget_tokens are rejected on newer models. Structured outputs provide a schema guarantee; an instruction in the system prompt is the textual substitute.",
       "feedbacks": [
-        "Errado: prefill retorna 400 nos modelos novos.",
-        "Errado: parâmetros de sampling são rejeitados nos modelos novos e não garantem formato.",
-        "Correto: garantia estrutural.",
-        "Errado: budget_tokens retorna 400 nos modelos novos e não garante formato.",
-        "Correto: substituto recomendado para prefill quando não se usa structured outputs."
+        "Incorrect: prefill returns a 400 on newer models.",
+        "Incorrect: sampling parameters are rejected on newer models and don't guarantee format.",
+        "Correct: structural guarantee.",
+        "Incorrect: budget_tokens returns a 400 on newer models and doesn't guarantee format.",
+        "Correct: the recommended substitute for prefill when structured outputs aren't used."
       ]
     }
   ]

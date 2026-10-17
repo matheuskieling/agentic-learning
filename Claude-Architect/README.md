@@ -6,6 +6,8 @@ enganar), seguida de **muitas questões e simulados no formato real**.
 
 - **Não precisa de API key** nem de prática de laboratório: tudo roda aqui no chat, com a sua
   assinatura do Claude.
+- **Aulas em português; quizzes, provas e simulados em inglês**, como na prova real (que é toda em
+  inglês). Assim você treina a leitura das questões desde o primeiro módulo.
 - Exemplos de código em **C#** (você pode pedir outra linguagem no começo; a escolha fica salva).
 - ~**800 questões** originais: quiz e prova por módulo, 6 bancos por cenário e 5 simulados completos.
 
