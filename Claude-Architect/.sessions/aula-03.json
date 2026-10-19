@@ -155,7 +155,7 @@
     ]
   },
   "pos": 11,
-  "marco_sessao": 2,
+  "marco_sessao": 11,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -232,6 +232,11 @@
       "beat": "prova",
       "ts": "2026-10-17T14:34:47+00:00",
       "text": "Prova M03: 20/20 (100%). Acertou de primeira a parente da revisão que errou de manhã (Q5: create_ticket em loop → strict, não structured outputs). Todas as 'Escolha DUAS' certas. Dica passada: formato 'conclusão certa, motivo errado' (Q14-D)."
+    },
+    {
+      "beat": "fim",
+      "ts": "2026-10-19T18:24:52+00:00",
+      "text": "Revisão M03 (3 q, 19/10): 2.5/3. Q1 strict+400 (B) ok; Q2 Batch CI (B,D) ok; Q3 (a) strict+additionalProperties ok, (b) output_config.format ok — strict×structured outputs FIXADO; (c) disse 'unclear OU other' — de novo a confusão other×unclear (já vista no quiz Q6). Reforçado: desfecho claro fora da lista = other + detail; unclear = fonte não permite decidir."
     }
   ],
   "iniciado_em": "2026-10-16T18:11:47+00:00"
