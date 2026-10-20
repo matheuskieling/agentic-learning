@@ -1,286 +1,281 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-03/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/apps/modulo-04/questions.json",
   "bank": {
-    "titulo": "Módulo 03 — Quiz: saída estruturada, validação com retry e Batch API",
+    "titulo": "Module 04 — Quiz: Tool design",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Qual parâmetro atual da Messages API faz a RESPOSTA seguir um JSON schema?",
+        "pergunta": "For the model, what is the main role of a tool's `description` field?",
         "opcoes": [
-          "output_format no topo do request, ao lado de model",
-          "response_format",
-          "tool_choice: {type: json}",
-          "output_config.format com json_schema"
-        ],
-        "correta": 3,
-        "explicacao": "Structured outputs usa output_config.format; o output_format de topo está depreciado.",
-        "feedbacks": [
-          "Errado: depreciado.",
-          "Errado: não é o nome do parâmetro na Messages API.",
-          "Errado: não existe esse tipo de tool_choice.",
-          "Correto."
-        ]
-      },
-      {
-        "pergunta": "Qual exigência o schema precisa cumprir para usar strict: true?",
-        "opcoes": [
-          "Ter pelo menos um campo do tipo string",
-          "additionalProperties: false em todo objeto",
-          "Usar só tipos numéricos",
-          "Declarar minimum e maximum em todos os campos numéricos do schema"
+          "Documentation for the developers who maintain the tool; the model uses only the `name`",
+          "It's the criterion the model uses to decide whether and when to call that tool",
+          "It serves only to validate the arguments before execution",
+          "It's optional when the `input_schema` already has well-named `properties`"
         ],
         "correta": 1,
-        "explicacao": "Strict exige objetos fechados (additionalProperties: false). Opcionais são permitidas, mas contam para um limite; a recomendação é required + nullable.",
+        "explicacao": "The model reads the description when choosing a tool: purpose, when to use it, input, output, edge cases, and how it differs from its neighbors.",
         "feedbacks": [
-          "Errado: não há exigência de tipo.",
-          "Correto.",
-          "Errado: qualquer tipo básico é suportado.",
-          "Errado: faixas numéricas nem são garantidas pelo strict."
+          "Tempting because in code a 'description' is usually a comment; but the model reads the description to decide.",
+          "Correct: the description is the selection criterion, not decoration.",
+          "Argument validation is done by the schema (and `strict`), not by the description.",
+          "Property names help, but they don't say when to use the tool or how it differs from the others."
         ]
       },
       {
-        "pergunta": "Na extração via tool use, o que é o JSON extraído?",
+        "pergunta": "What requirement does `strict: true` impose on a tool's `input_schema`, and what is the recommendation for fields that may be missing?",
         "opcoes": [
-          "O input do bloco tool_use que o modelo gera",
-          "O conteúdo do tool_result que você devolve",
-          "O texto livre após o tool_use",
-          "O campo usage da resposta"
-        ],
-        "correta": 0,
-        "explicacao": "A tool existe só como schema: o input do tool_use é o dado estruturado.",
-        "feedbacks": [
-          "Correto.",
-          "Errado: tool_result é o que você devolveria após executar uma tool.",
-          "Errado: o texto livre não tem garantia de formato.",
-          "Errado: usage é contagem de tokens."
-        ]
-      },
-      {
-        "pergunta": "Num modelo novo, tool_choice: {type: tool, name: extrair} retorna 400. Qual alternativa é recomendada se a tool existia só para obter JSON?",
-        "opcoes": [
-          "tool_choice: {type: any}",
-          "Prefill do assistant com '{'",
-          "Structured outputs via output_config.format",
-          "Remover o schema e pedir JSON no texto"
-        ],
-        "correta": 2,
-        "explicacao": "Nos modelos novos, any/tool forçados dão 400; structured outputs é o substituto quando o objetivo era só JSON.",
-        "feedbacks": [
-          "Errado: any também é forçado e também dá 400.",
-          "Errado: prefill também dá 400 nos modelos novos.",
-          "Correto.",
-          "Errado: perde a garantia de formato."
-        ]
-      },
-      {
-        "pergunta": "O schema strict valida todas as saídas, mas a soma dos itens não bate com o total em 3% das faturas. O que isso mostra?",
-        "opcoes": [
-          "Que o strict está desligado",
-          "Que é preciso aumentar max_tokens",
-          "Schema ≠ semântica: valide a soma no código",
-          "Que o modelo precisa de temperatura menor para somar com precisão"
-        ],
-        "correta": 2,
-        "explicacao": "Schema garante tipo e formato; regras de negócio (somas, datas) são validadas no seu código.",
-        "feedbacks": [
-          "Errado: o formato está correto; o problema é semântico.",
-          "Errado: não há truncamento.",
-          "Correto.",
-          "Errado: temperatura não é o problema (e é rejeitada nos modelos novos)."
-        ]
-      },
-      {
-        "pergunta": "O documento às vezes não tem data de vencimento, e o modelo inventa uma. Qual ajuste de schema ajuda?",
-        "opcoes": [
-          "Tornar o campo vencimento nullable",
-          "Remover vencimento de required sem strict",
-          "Adicionar format: date",
-          "Adicionar um enum com datas possíveis"
-        ],
-        "correta": 0,
-        "explicacao": "Campo nullable dá ao modelo a saída honesta (null) em vez de forçá-lo a inventar.",
-        "feedbacks": [
-          "Correto.",
-          "Errado: sem strict perde-se a garantia de formato; e campo opcional não impede a invenção. Prefira required + nullable.",
-          "Errado: format garante o formato, não impede invenção.",
-          "Errado: não faz sentido para datas."
-        ]
-      },
-      {
-        "pergunta": "Uma classificação de despesas tem enum fechado [viagem, alimentação, software]. Despesas de locação estão sendo classificadas como 'software'. Qual padrão de schema resolve?",
-        "opcoes": [
-          "Tornar o campo categoria do tipo string livre",
-          "Adicionar 'unclear' ao enum",
-          "Remover o enum e usar few-shot",
-          "Adicionar 'other' ao enum mais um campo de detalhe"
+          "Every property must have an `enum` listing its possible values",
+          "The schema must use `oneOf` for each possible type of each property",
+          "Only that the `name` follow snake_case",
+          "`additionalProperties: false` on every object; optional properties are allowed (they count toward a limit), but the recommendation is `required` + nullable"
         ],
         "correta": 3,
-        "explicacao": "Enum com 'other' + detalhe evita forçar uma categoria errada e preserva a informação.",
+        "explicacao": "Strict requires `additionalProperties: false` on every object. Optional properties are allowed but count toward a total per-request limit [volatile]; in practice, prefer putting everything in `required`, with a nullable type for whatever may be missing. It also accepts only a subset of JSON Schema.",
         "feedbacks": [
-          "Errado: perde a padronização das categorias conhecidas.",
-          "Errado: 'unclear' é para fonte ambígua; aqui a categoria é clara, só não está na lista.",
-          "Errado: perde a garantia estrutural.",
-          "Correto."
+          "Enum is advisable, but strict doesn't require it.",
+          "`oneOf` isn't a requirement (and it isn't even among the constructs documented as supported; `anyOf` has limitations).",
+          "Naming conventions have nothing to do with strict.",
+          "Correct: a closed object is the requirement; `required` + nullable is the practical recommendation."
         ]
       },
       {
-        "pergunta": "Quando usar o valor 'unclear' num enum?",
+        "pergunta": "An agent confuses `get_customer` and `lookup_client`, whose descriptions are nearly identical. What is the first recommended fix?",
         "opcoes": [
-          "Quando a categoria existe mas não está na lista",
-          "Quando a fonte é ambígua ou ilegível",
-          "Quando o campo é numérico",
-          "Sempre, como valor padrão"
+          "Rewrite the descriptions to separate the purposes (or merge the two tools)",
+          "Train a classifier that picks the tool before the model receives the question",
+          "Switch to a larger model",
+          "Force `tool_choice` to the most-used tool"
+        ],
+        "correta": 0,
+        "explicacao": "Overlapping tools cause misrouting; the simplest fix is to separate the purposes in the description/name, or to merge them.",
+        "feedbacks": [
+          "Correct: tackling the ambiguity at the interface is the simplest fix that works.",
+          "More complex than necessary; the ambiguity remains in the definition.",
+          "A larger model still reads two identical descriptions.",
+          "Forcing one tool breaks the cases where the other one is right."
+        ]
+      },
+      {
+        "pergunta": "The order lookup tool ran normally and found no orders for the customer. How should the result come back?",
+        "opcoes": [
+          "`is_error: true` with a transient category",
+          "`is_error: true` with a validation category",
+          "Success with an empty result (e.g., an empty list or `found=false`)",
+          "Don't return a `tool_result`, so the model notices the emptiness and tries another tool"
+        ],
+        "correta": 2,
+        "explicacao": "Empty ≠ failure: the lookup ran, and 'nothing found' is valid information.",
+        "feedbacks": [
+          "Transient is when the lookup did NOT run (timeout, 503).",
+          "The input was valid; there's nothing to correct.",
+          "Correct: an empty result is a success.",
+          "Every `tool_use` needs a matching `tool_result`."
+        ]
+      },
+      {
+        "pergunta": "An error saying 'above the refund limit allowed by the policy' should be classified as:",
+        "opcoes": [
+          "Transient, retryable with backoff",
+          "Business, not retryable: explain the policy or escalate",
+          "Validation: fix the amount's format and try again",
+          "Permission: renew the token and try again"
         ],
         "correta": 1,
-        "explicacao": "'unclear' evita chute quando a fonte não permite decidir.",
+        "explicacao": "A policy violation is a business error: trying again will never succeed.",
         "feedbacks": [
-          "Errado: esse caso é 'other' + detalhe.",
-          "Correto.",
-          "Errado: enum de categorias, não números.",
-          "Errado: virar padrão esconderia casos decidíveis."
+          "Waiting doesn't change the policy; retrying here is wasteful.",
+          "Correct.",
+          "The format was correct; the problem is the business rule.",
+          "It's not a missing credential; it's a policy limit."
         ]
       },
       {
-        "pergunta": "Qual destas restrições o modo strict NÃO suporta, devendo ser validada no seu código?",
+        "pergunta": "The search backend went down and the tool returned `[]` as if it were a success. Which anti-pattern is this?",
         "opcoes": [
-          "minimum: 0 num campo numérico",
-          "enum de valores permitidos",
-          "additionalProperties: false",
-          "Tipo string vs. number"
+          "Silent error suppression",
+          "Generic error",
+          "Overlapping tool",
+          "Too many tools on the same agent, confusing selection"
         ],
         "correta": 0,
-        "explicacao": "Faixas numéricas (e tamanho de string, arrays além de minItems 0/1, recursão) não são suportadas: num schema cru dão 400; os helpers do SDK movem para a descrição e validam localmente.",
+        "explicacao": "Returning empty when the search didn't run hides the failure: the model concludes something false ('it doesn't exist').",
         "feedbacks": [
-          "Correto.",
-          "Errado: enum é suportado.",
-          "Errado: é exigido e suportado.",
-          "Errado: tipos básicos são garantidos."
+          "Correct.",
+          "A generic error is 'Operation failed'; here no error is even signaled.",
+          "It has nothing to do with two similar tools.",
+          "It has nothing to do with the number of tools."
         ]
       },
       {
-        "pergunta": "Qual mensagem de retry é a mais eficaz num loop de validação?",
+        "pergunta": "What is the guideline for the number of tools visible to an agent at decision time?",
         "opcoes": [
-          "'O JSON está inválido. Tente novamente.'",
-          "'Revise sua resposta com mais cuidado e confira todos os campos antes de responder.'",
-          "'Erro 422.'",
-          "'total 1250.00 ≠ soma dos itens 1205.00 (item 3?)'"
+          "Up to 50, as long as the descriptions are good",
+          "Exactly one, to avoid ambiguity",
+          "As many as fit in the context window",
+          "About 4–5"
         ],
         "correta": 3,
-        "explicacao": "Erros específicos (o quê e onde) dão ao modelo o que corrigir.",
+        "explicacao": "4–5 tools per agent; with many more than that, selection degrades, and the fix is to distribute them across specialized subagents (or use tool search).",
         "feedbacks": [
-          "Errado: genérico; tende a produzir a mesma resposta.",
-          "Errado: vago.",
-          "Errado: código sem contexto (anti-padrão de erro genérico).",
-          "Correto."
+          "Good descriptions don't make up for volume.",
+          "One tool per agent creates coordination overhead with no gain.",
+          "Fitting in the window doesn't mean selecting well.",
+          "Correct."
         ]
       },
       {
-        "pergunta": "O campo CNPJ do tomador vem errado após 3 retries, e o documento não contém o CNPJ. O que fazer?",
+        "pergunta": "When is tool search with `defer_loading` appropriate?",
         "opcoes": [
-          "Aumentar o limite para 10 retries",
-          "Mudar o prompt para 'encontre o CNPJ a qualquer custo'",
-          "null no campo + revisão humana, se o negócio exigir",
-          "Preencher com o CNPJ do prestador"
+          "Whenever more than one tool is declared, to save tokens on any request",
+          "Only when the model doesn't support `tool_choice`",
+          "With a large catalog: 10+ tools, >10k tokens of definitions, or several MCP servers",
+          "When you want to prevent the model from calling tools without removing them from the request"
         ],
         "correta": 2,
-        "explicacao": "Retry não recupera informação ausente da fonte; insistir só gera invenção.",
+        "explicacao": "Tool search loads definitions on demand when the catalog is large; keep 3–5 frequently used tools non-deferred.",
         "feedbacks": [
-          "Errado: mais tentativas, mesma ausência de dado.",
-          "Errado: induz alucinação.",
-          "Correto.",
-          "Errado: dado inventado/errado."
+          "With few tools, the search overhead isn't worth it.",
+          "It has nothing to do with `tool_choice`.",
+          "Correct.",
+          "To prevent calls, you use `tool_choice: none`."
         ]
       },
       {
-        "pergunta": "Por que extrair tanto o total declarado quanto a soma calculada dos itens?",
+        "pergunta": "Which `tool_choice` makes the model respond only in text while keeping the tools declared in the request?",
         "opcoes": [
-          "Para economizar tokens",
-          "Para detectar discrepâncias em vez de escondê-las",
-          "Porque o strict exige campos duplicados para validar números",
-          "Para o Batch API casar os resultados"
-        ],
-        "correta": 1,
-        "explicacao": "Declarado + calculado expõe inconsistência do documento ou da extração.",
-        "feedbacks": [
-          "Errado: custa um pouco mais, não menos.",
-          "Correto.",
-          "Errado: não há tal exigência.",
-          "Errado: o batch casa por custom_id."
-        ]
-      },
-      {
-        "pergunta": "Qual afirmação sobre a Batch API está correta?",
-        "opcoes": [
-          "Garante resposta em até 1 hora",
-          "Devolve os resultados na mesma ordem dos requests",
-          "Suporta loop multi-turn de tools dentro de um request",
-          "~50% mais barata, até 24h, sem SLA"
-        ],
-        "correta": 3,
-        "explicacao": "50% de desconto, até 24h, sem SLA; resultados fora de ordem; sem multi-turn de tools.",
-        "feedbacks": [
-          "Errado: não há SLA; pode levar até 24h.",
-          "Errado: fora de ordem → case por custom_id.",
-          "Errado: cada request é uma chamada única.",
-          "Correto."
-        ]
-      },
-      {
-        "pergunta": "Qual uso da Batch API é ADEQUADO?",
-        "opcoes": [
-          "Análise noturna de 200 mil tickets do dia",
-          "Checagem obrigatória antes do merge de um PR",
-          "Resposta ao cliente no chat de suporte",
-          "Depuração interativa de um prompt"
+          "`{\"type\": \"none\"}`",
+          "`{\"type\": \"auto\"}`",
+          "`{\"type\": \"any\"}`",
+          "Remove the `tools` array"
         ],
         "correta": 0,
-        "explicacao": "Batch serve para volume sem ninguém esperando.",
+        "explicacao": "`none` = text only; the tools remain declared (and the cache prefix doesn't change).",
         "feedbacks": [
-          "Correto.",
-          "Errado: passo bloqueante; o PR pode esperar até 24h.",
-          "Errado: tempo real.",
-          "Errado: interativo exige resposta rápida."
+          "Correct.",
+          "`auto` lets the model decide, so it may call tools.",
+          "`any` forces it to call some tool.",
+          "Removing `tools` changes the prefix and invalidates the cache; it's not the same as `none`."
         ]
       },
       {
-        "pergunta": "Um batch de 10 mil requests terminou: 9.700 succeeded, 250 errored e 50 expired. Quais DUAS ações são corretas? (Escolha DUAS.)",
+        "pergunta": "What does `disable_parallel_tool_use: true` do?",
         "opcoes": [
-          "Reenviar o lote inteiro para garantir consistência",
-          "Casar cada resultado ao documento de origem pelo custom_id",
-          "Reenviar apenas os custom_id com errored ou expired",
-          "Casar os resultados pela ordem das linhas do arquivo de entrada",
-          "Descartar os que falharam, já que 97% é uma boa taxa"
+          "Turns off tool use in the request",
+          "Limits it to at most one tool call per response",
+          "Makes the client execute the tools sequentially, but the model still emits several",
+          "Forces the model to call exactly two tools"
         ],
-        "corretas": [
-          1,
-          2
-        ],
-        "explicacao": "Resultados vêm fora de ordem (case por custom_id) e só os que falharam são reenviados.",
+        "correta": 1,
+        "explicacao": "It limits the model to one call per response (with `any`/`tool`, exactly one).",
         "feedbacks": [
-          "Errado: desperdiça custo reprocessando 9.700 sucessos.",
-          "Correto.",
-          "Correto.",
-          "Errado: resultados chegam fora de ordem.",
-          "Errado: descartar em silêncio é perder dado (supressão de erro)."
+          "To turn off tools, you use `none`.",
+          "Correct.",
+          "The restriction is on what the model emits, not on how the client executes.",
+          "No such behavior exists."
+        ]
+      },
+      {
+        "pergunta": "[volatile] On newer models, a forced `tool_choice` of `any` or `tool` returns a 400. If the goal was just to get JSON in the right format, what is the alternative?",
+        "opcoes": [
+          "Use an assistant prefill with `{`",
+          "Repeat the request until it no longer returns a 400",
+          "Structured outputs (`output_config.format` with `json_schema`)",
+          "Use `tool_choice: none` and ask in the prompt for the response to be valid JSON"
+        ],
+        "correta": 2,
+        "explicacao": "Structured outputs solve 'always JSON matching the schema'; another option is `auto` + an instruction naming the tool + `strict`.",
+        "feedbacks": [
+          "Prefill also returns a 400 on newer models.",
+          "A 400 is an invalid-request error; repeating it doesn't help.",
+          "Correct.",
+          "Asking for JSON in prose doesn't guarantee the format."
+        ]
+      },
+      {
+        "pergunta": "How are Anthropic-defined tools (e.g., web search) declared?",
+        "opcoes": [
+          "With complete `name`, `description`, and `input_schema`",
+          "Only via an MCP server",
+          "With `strict: true` required",
+          "By `type` + `name`, without `input_schema`"
+        ],
+        "correta": 3,
+        "explicacao": "Anthropic-defined tools use a versioned `type` + `name`; the model already knows the schema.",
+        "feedbacks": [
+          "That's the format for a custom client-side tool.",
+          "They don't depend on MCP.",
+          "Strict is for custom tools.",
+          "Correct."
+        ]
+      },
+      {
+        "pergunta": "A server-side web search tool failed. How does this show up for your code?",
+        "opcoes": [
+          "HTTP 200, with an error object inside the result block",
+          "HTTP 500 with the tool's error message in the response body",
+          "Always HTTP 429",
+          "The response comes back empty, with no `content`"
+        ],
+        "correta": 0,
+        "explicacao": "Server-side tool errors come with HTTP 200 and the error inside the result (e.g., `max_uses_exceeded`). Checking only the HTTP status won't catch them.",
+        "feedbacks": [
+          "Correct.",
+          "Tempting because that's how APIs usually fail, but that's not the case here.",
+          "Rate limiting is something else and isn't the tool's error mechanism.",
+          "The response comes back normally, with the error inside the block."
+        ]
+      },
+      {
+        "pergunta": "The model emitted three `tool_use` blocks in one response and one of them failed. How should you return them?",
+        "opcoes": [
+          "Three separate `user` messages, one per result, in the order each tool finished",
+          "One `user` message with only the two that succeeded",
+          "One `user` message with all three `tool_result` blocks; the failed one with `is_error: true`",
+          "Resend the request without the tool that failed, so the model doesn't keep trying it"
+        ],
+        "correta": 2,
+        "explicacao": "All `tool_result` blocks go in a single `user` message, each with its `tool_use_id`, including the one that failed.",
+        "feedbacks": [
+          "Splitting into several messages breaks the return pattern.",
+          "Every `tool_use` needs its `tool_result`.",
+          "Correct.",
+          "Changing the tools invalidates the cache and hides the failure from the model."
+        ]
+      },
+      {
+        "pergunta": "The response came back with `stop_reason: \"pause_turn\"`. What should you do?",
+        "opcoes": [
+          "Treat it as the end and show the text to the user",
+          "Resend the conversation with this assistant response so the model can continue",
+          "Increase `max_tokens` and repeat the request from scratch, since the response was cut off",
+          "Escalate to a human"
+        ],
+        "correta": 1,
+        "explicacao": "`pause_turn` = the server-side loop hit its iteration cap; the response is partial and must be sent back to continue.",
+        "feedbacks": [
+          "The response is partial; treating it as the end delivers an incomplete result.",
+          "Correct.",
+          "That would be the response to `max_tokens`, not to `pause_turn`.",
+          "Nothing here requires a human; it's a technical continuation."
         ]
       }
     ]
   },
   "order": [
-    5,
-    12,
-    1,
-    7,
-    3,
-    6,
-    10,
-    2,
-    13,
-    8,
-    0,
-    14,
     9,
+    12,
+    6,
+    1,
+    14,
+    5,
+    8,
     4,
+    10,
+    3,
+    0,
+    13,
+    2,
+    7,
     11
   ],
   "pos": 15,
@@ -288,84 +283,83 @@
     {
       "pos": 0,
       "escolha": [
-        0
+        2
       ],
-      "acertou": true
+      "acertou": false
     },
     {
       "pos": 1,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 4,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 5,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 6,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 8,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 9,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        1,
         2
       ],
       "acertou": true
@@ -373,7 +367,7 @@
     {
       "pos": 12,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
@@ -387,7 +381,7 @@
     {
       "pos": 14,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     }
