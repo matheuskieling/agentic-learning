@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 2 — Code Generation with Claude Code",
-  "aprovacao": 72,
+  "titulo": "Cenário 2 — Code Generation with Claude Code (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe tech lead wrote the team's conventions (naming, layering pattern, use of Result<T> instead of exceptions) in his own ~/.claude/CLAUDE.md. In his Claude Code everything comes out right, but the other developers get code that doesn't follow the standard. What is the fix?",
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A backend developer who had never worked on caching asked Claude Code, in one paragraph, to \"add caching to the restaurant menu API to cut latency,\" and Claude implemented a cache with a 30-minute expiry. Two days after release, restaurants report that price changes take up to 30 minutes to appear, and an expired promotion kept showing on 400 menus. What is the most likely root cause?",
       "opcoes": [
-        "Ask each developer to copy the content into their own ~/.claude/CLAUDE.md.",
-        "Move the conventions to the project CLAUDE.md (./CLAUDE.md or ./.claude/CLAUDE.md), versioned in the repository.",
-        "Put the conventions in the CLAUDE.local.md at the repository root.",
-        "Create a /conventions skill that developers must invoke at the start of each session."
-      ],
-      "correta": 1,
-      "explicacao": "Hierarchy: user level (~/.claude/CLAUDE.md) is personal; project level (./CLAUDE.md) belongs to the team and is versioned; CLAUDE.local.md is personal and gitignored.",
-      "feedbacks": [
-        "It works at first, but it creates divergent, unversioned copies; any change has to be replicated by hand on 30 machines.",
-        "Correct. ~/.claude/CLAUDE.md is personal and applies only on his machine. Team conventions go in the project CLAUDE.md, shared through git.",
-        "CLAUDE.local.md is personal and stays out of git (gitignored); the other developers would still be without the rules.",
-        "It depends on each developer remembering to invoke it; a convention that should always apply belongs in the project CLAUDE.md, which is loaded automatically."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nTwo requests reached the person responsible for the configuration: (1) a developer wants Claude Code to use the URL of her personal sandbox in integration tests, without affecting anyone else; (2) part of the team uses another agent that reads AGENTS.md, and the general rules are already in that file. Which TWO actions fulfill the requests? (Choose TWO.)",
-      "opcoes": [
-        "Put the sandbox URL in her CLAUDE.local.md, which is personal and doesn't go to git.",
-        "Put the sandbox URL in the project CLAUDE.md, in an \"Ana's configuration\" section.",
-        "Copy all the content of AGENTS.md into CLAUDE.md, so Claude Code doesn't depend on the other file.",
-        "In the project CLAUDE.md, import the rules with @AGENTS.md, keeping a single source.",
-        "Delete CLAUDE.md, since Claude Code reads AGENTS.md and there's no point in keeping both."
-      ],
-      "corretas": [
-        0,
-        3
-      ],
-      "explicacao": "CLAUDE.local.md is the project's personal, gitignored layer. AGENTS.md can be imported into CLAUDE.md with @AGENTS.md, keeping a single source.",
-      "feedbacks": [
-        "Correct. A personal project preference goes in CLAUDE.local.md (gitignored).",
-        "It mixes personal configuration with team rules and affects every developer (and leaks into the repository).",
-        "Duplication that diverges over time; the @import solves this with a single source of truth.",
-        "Correct. The @import avoids duplication: both agents read the same rules. With both present, Claude Code uses CLAUDE.md, which pulls in AGENTS.md.",
-        "It loses Claude Code's own layer and doesn't address request 1; the recommended pattern is CLAUDE.md importing AGENTS.md."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe test projects are scattered: services/*/tests/, libs/*/Tests/, and a few new tests/ directories appear every month. The team wants Claude Code to follow the testing conventions (xUnit, AAA pattern, Method_Scenario_Result names) only when it is working on tests. What is the BEST approach?",
-      "opcoes": [
-        "Create a CLAUDE.md inside each test directory with the same conventions, since a subdirectory CLAUDE.md loads on demand when those files are read.",
-        "Put the testing conventions in the root CLAUDE.md.",
-        "Create a /tests skill that developers invoke when they are going to write tests.",
-        "Create .claude/rules/tests.md with paths: containing globs of the test files."
+        "The task ran in direct execution instead of plan mode; plan mode would have produced the invalidation logic as part of its design.",
+        "The project CLAUDE.md has no caching standard, so Claude fell back on a default 30-minute expiration without any team guidance.",
+        "The prompt was too short; a longer specification of the cache layout, key structure, and expiry would have prevented stale menus.",
+        "In a domain new to them, the developer skipped having Claude ask clarifying questions first, so invalidation needs never came up."
       ],
       "correta": 3,
-      "explicacao": "Path-scoped rules (.claude/rules/ with a paths: glob) load only when matching files are touched, and they cover future directories.",
+      "explicacao": "The missing requirement (when cached menus must be invalidated) was something the developer had not anticipated, so no prompt or plan written by them would contain it. The interview pattern has Claude ask questions that surface such considerations, like cache invalidation strategies and failure modes, before implementing in an unfamiliar domain.",
       "feedbacks": [
-        "Duplication that diverges over time and doesn't automatically cover new directories.",
-        "It works, but it loads the testing rules in every session, even when nobody is touching tests, wasting context for nothing.",
-        "It depends on remembering to invoke it; a rule that is conditional on files is exactly the use case for rules with paths:.",
-        "Correct. A convention that spans directories goes in a file in .claude/rules/ with paths:. It covers future directories without duplicating anything."
-      ]
-    },
-    {
+        "Plan mode helps explore the codebase and design changes, but the gap was a requirement the developer had not anticipated; nothing ensures a plan would raise it.",
+        "A caching standard could help later work, but the failure came from a requirement nobody stated, which a standard written beforehand would not cover either.",
+        "The developer could not specify what they had not thought of; a longer prompt about layout and keys would still omit invalidation.",
+        "Correct. Having Claude interview the developer before implementing surfaces considerations such as cache invalidation that the developer did not anticipate."
+      ],
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer is going to migrate serialization from Newtonsoft.Json to System.Text.Json across 60 files in 8 services, with custom converters and some known behavioral incompatibilities. How should the developer carry out the work in Claude Code?",
+      "ts": "3.5",
+      "bullet": "3.5-K3"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team's /fix-bug command always enters plan mode, has Claude explore the related modules, write a design note, and wait for approval before editing. A developer used it for a TypeError whose stack trace points to line 42 of delivery_fee.py, where a missing None check on the tip amount is obvious; the fix took 25 minutes. What is the flaw in this workflow?",
       "opcoes": [
-        "Start in plan mode and approve the proposed approach before any edits.",
-        "Request the migration directly with acceptEdits mode on, so they don't have to approve 60 edits one by one, and review the full diff at the end.",
-        "Use bypassPermissions so the task runs uninterrupted until the end.",
-        "Go file by file with direct execution, one session per file."
+        "It forces planning on every bug, while a single-file fix with a clear stack trace is a well-scoped change suited to direct execution.",
+        "It runs a separate exploration step before planning, although plan mode already explores the codebase, so the discovery work is done twice.",
+        "It waits for a human to approve the plan; letting Claude approve its own plan would remove the delay and keep the design note.",
+        "It does not reproduce the bug with a failing test first; adding a test-writing step before the plan would justify the time the workflow spends."
       ],
       "correta": 0,
-      "explicacao": "Plan mode for multi-file changes, architectural decisions, multiple valid approaches, and large scope. Direct execution for a targeted, clear fix.",
+      "explicacao": "Plan mode is designed for complex, multi-file or architectural work. A single-file bug with a clear stack trace is a well-understood change with clear scope, which direct execution handles efficiently. Forcing every bug through planning adds overhead where there is nothing to design.",
       "feedbacks": [
-        "Correct. A multi-file change with decisions about the approach and behavioral risk: the typical case for plan mode, which explores and asks for approval before editing.",
-        "It skips the design step in a migration with multiple valid approaches; the volume of automatic edits without an approved plan increases the risk.",
-        "bypassPermissions is not routine for a long, uncontained task, and it doesn't address the lack of planning.",
-        "It loses the big picture (shared converters, migration order) and multiplies inconsistent decisions across files."
-      ]
-    },
-    {
+        "Correct. Direct execution fits well-understood changes with clear scope, such as a single-file fix with a clear stack trace.",
+        "Even with no duplicated discovery, planning a one-line, single-file fix is unnecessary overhead.",
+        "Self-approval keeps the cost of a plan nobody needs and removes the human check where it might matter.",
+        "Test-first is valuable, but adding steps makes the flow heavier still; the flaw is using planning for a change that needs none."
+      ],
       "cenario": 2,
       "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThere are several items in the sprint's task queue. Which TWO should start in plan mode instead of direct execution? (Choose TWO.)",
+      "ts": "3.4",
+      "bullet": "3.4-S2"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. Yesterday a developer ran a long investigation session named checkout-refactor that analyzed about 30 files of the checkout flow. Overnight, teammates merged changes to cart_service.ts and promo_rules.ts. Today she wants to continue with --resume checkout-refactor. Which TWO actions are most appropriate? Choose TWO.",
       "opcoes": [
-        "Fix a NullReferenceException whose stack trace points to the exact line in PaymentService.cs.",
-        "Add service-to-service authentication, where the team has not yet decided between mTLS and internal JWT tokens.",
-        "Change the value of the MaxRetries constant from 3 to 5.",
-        "Add a log line at the start of a handler's Handle method.",
-        "Reorganize the boundaries between the Billing and Invoicing modules, moving classes between projects."
+        "Resume and continue as before, since Claude Code rereads the files a session used when that session is resumed.",
+        "Share the diff of the two merged changes in the resumed session and ask which earlier findings they affect.",
+        "Start a new session and re-explore the 30 files, since merged changes make the earlier analysis unreliable as a whole.",
+        "Resume the session, tell Claude that cart_service.ts and promo_rules.ts changed, and ask it to re-analyze those two files.",
+        "Resume the session and run /compact first, so the old tool results are condensed before the investigation continues."
       ],
       "corretas": [
         1,
-        4
+        3
       ],
-      "explicacao": "Plan mode: multi-file, architectural, multiple valid approaches, unclear requirement. Direct: single-file fix, obvious scope, clear instruction.",
+      "explicacao": "A resumed session still holds its earlier tool results, so it does not know that two files changed. Telling it which files changed, and what changed, enables targeted re-analysis while keeping the still-valid analysis of the other 28 files.",
       "feedbacks": [
-        "A single-file fix with a clear cause: direct execution solves it; plan mode would only add friction.",
-        "Correct. Multiple valid approaches and an architectural decision: plan mode explores and proposes before editing.",
-        "A trivial, obvious change: direct execution.",
-        "Targeted scope and a clear instruction: direct execution.",
-        "Correct. A broad, multi-file structural change: design and approve the plan first."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe repository has .claude/commands/new-feature.md (old) and, since last week, also .claude/skills/new-feature/SKILL.md (a new version of the same workflow). A developer types /new-feature. What happens?",
-      "opcoes": [
-        "The command from .claude/commands/ runs, because explicit command files take precedence over skills, which are meant for auto-loading.",
-        "Claude Code asks the developer which of the two versions to use.",
-        "The skill runs: commands were merged into skills, and in a name conflict, the skill wins.",
-        "Both files run in sequence, first the command and then the skill."
+        "Resumed sessions keep their earlier tool results; they do not reread files automatically, so the stale analysis would be trusted.",
+        "Correct. Giving the concrete changes lets Claude update only the findings that depend on them.",
+        "Two changed files out of 30 do not make the whole analysis stale; full re-exploration wastes valid prior context.",
+        "Correct. Informing the resumed session about specific file changes enables targeted re-analysis.",
+        "/compact summarizes the history but does not mark which results are stale; outdated conclusions survive the summary."
       ],
-      "correta": 2,
-      "explicacao": "Custom commands were merged into skills: .claude/commands/x.md and .claude/skills/x/SKILL.md both create /x; in a conflict, the skill wins.",
-      "feedbacks": [
-        "It inverts the rule: in a conflict, the skill wins.",
-        "There is no such disambiguation prompt; precedence is deterministic.",
-        "Correct. Both formats create /new-feature; when they collide, the skill takes precedence. It's worth removing the old file to avoid confusion.",
-        "There is no combined execution; only one definition serves the name."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe /map-dependencies skill reads dozens of .csproj files and generates a report. After it runs, the main session is packed with the output of those reads and Claude starts forgetting what it was implementing. Which change to the skill's frontmatter solves this best?",
-      "opcoes": [
-        "Add disable-model-invocation: true.",
-        "Restrict allowed-tools to Read and Grep.",
-        "Keep the skill as it is and run /compact right after each execution, preserving only a summary of what was read in the main session.",
-        "Add context: fork, so the skill runs in an isolated subagent."
-      ],
-      "correta": 3,
-      "explicacao": "context: fork runs the skill in an isolated subagent (CLAUDE.md loads, the history doesn't) and returns only the result: ideal for high-volume work.",
-      "feedbacks": [
-        "This only prevents the model from invoking the skill on its own; when it runs, it pollutes the context just the same.",
-        "It limits the tools, not the volume of output that enters the main session.",
-        "It patches the symptom after the damage is done and may lose details of the main task; isolation avoids the problem.",
-        "Correct. context: fork runs the skill in a subagent with its own context; the noisy work stays there and only the report comes back."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe /deploy-staging skill publishes the service to the staging environment. The team noticed that Claude sometimes invokes it on its own when someone comments \"I think it's ready to test\". They want it to run only when a developer types the command. Which change should they make?",
-      "opcoes": [
-        "Add disable-model-invocation: true to the skill's frontmatter.",
-        "Write in the description: \"do not use this skill automatically\".",
-        "Add user-invocable: false to the frontmatter.",
-        "Move the skill to each developer's ~/.claude/skills/."
-      ],
-      "correta": 0,
-      "explicacao": "disable-model-invocation: true makes the skill run only through explicit invocation by the user. user-invocable: false does the opposite (only the model sees it).",
-      "feedbacks": [
-        "Correct. This field prevents auto-loading by the model; the skill remains available when the user invokes it explicitly.",
-        "A probabilistic instruction in the very field that drives auto-loading; it doesn't guarantee the behavior.",
-        "It does the opposite of what is wanted: it hides the skill from the user and leaves it only to the model.",
-        "It changes the scope (personal), not the invocation mode; the model could still trigger it."
-      ]
-    },
-    {
       "cenario": 2,
       "dominio": "D1",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe CLAUDE.md says \"never edit files in Migrations/ or .env files\". Even so, twice a month Claude has modified a migration already applied in production. What is the appropriate fix?",
-      "opcoes": [
-        "Repeat the rule in bold at the beginning and at the end of CLAUDE.md.",
-        "A PreToolUse hook on Edit|Write that blocks (exit 2 or deny with a reason) targets in Migrations/ or .env.",
-        "Create a reviewer subagent that examines the diffs at the end of each session.",
-        "A PostToolUse hook on Edit|Write that detects changes in Migrations/ or .env and alerts the developer immediately, with the diff of the change made."
-      ],
-      "correta": 1,
-      "explicacao": "A critical rule goes in code: PreToolUse blocks beforehand (exit 2 blocks; exit 0 lets it through). PostToolUse is for normalizing/annotating afterward.",
-      "feedbacks": [
-        "The prompt is still probabilistic; the observed failure will recur less often, but it won't go away.",
-        "Correct. A safety/integrity rule needs deterministic enforcement; the hook always blocks, and the reason steers Claude toward another path.",
-        "It detects after the fact and adds complexity; the block has to happen before the edit.",
-        "PostToolUse runs after the edit has already happened: it alerts, but it doesn't prevent."
-      ]
+      "ts": "1.7",
+      "bullet": "1.7-S4"
     },
     {
-      "cenario": 2,
-      "dominio": "D1",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team wants every .cs file edited by Claude to go through dotnet format automatically, without depending on someone remembering to ask. Where and how should this be configured?",
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A developer asked Claude Code to review a 22-file refactor of the courier-dispatch module in one pass. The feedback was detailed for the first files and nearly empty for the last eight, and it missed that renaming eta_minutes to eta_seconds in dispatch_model.py broke three consumers in other files. Which TWO changes should the developer make to the review? Choose TWO.",
       "opcoes": [
-        "An instruction in CLAUDE.md: \"always run dotnet format after editing\".",
-        "A PreToolUse hook on Edit|Write that runs dotnet format before the edit.",
-        "A PostToolUse hook (matcher Edit|Write) in .claude/settings.json, running dotnet format.",
-        "A PostToolUse hook with matcher Edit|Write in each developer's .claude/settings.local.json, running dotnet format on the changed file."
-      ],
-      "correta": 2,
-      "explicacao": "PostToolUse normalizes the result after the tool runs; project settings (.claude/settings.json) are shared, settings.local.json is personal.",
-      "feedbacks": [
-        "Probabilistic: Claude will forget sometimes. The request is precisely not to depend on someone remembering.",
-        "Wrong event: before the edit, the file doesn't yet have the change to format.",
-        "Correct. PostToolUse runs after every edit, deterministically; in the project settings, it applies to the whole team via git.",
-        "Right event, wrong scope: settings.local.json is personal and gitignored, so it doesn't apply to the team."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nDevelopers complain that Claude asks for permission every time it is about to run dotnet build and dotnet test. At the same time, security wants to guarantee that commands like git push --force never run. Which configuration meets both demands?",
-      "opcoes": [
-        "permissions.allow for build/test and permissions.deny for git push --force, in .claude/settings.json.",
-        "Run Claude Code in bypassPermissions to eliminate the prompts, and state prominently in CLAUDE.md that force pushes are prohibited in any situation.",
-        "Use acceptEdits mode for all developers.",
-        "Ask each developer to approve the commands with \"always allow\" the first time."
-      ],
-      "correta": 0,
-      "explicacao": "allow/deny permissions in the project settings: allow what is safe and repetitive, deny what is dangerous. bypassPermissions is not for routine use.",
-      "feedbacks": [
-        "Correct. allow removes the friction from what is safe and repetitive; deny blocks what is dangerous; in the project settings, it applies to everyone.",
-        "It removes all controls and leaves the prohibition only in the prompt; bypassPermissions is not for routine use.",
-        "acceptEdits accepts file edits automatically, but it is not a rule for specific commands and doesn't block the force push.",
-        "It stays personal and inconsistent across developers, and it doesn't provide the block that security requires."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D1",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team is going to create a security-reviewer subagent to analyze changes for vulnerabilities, without the ability to modify anything. Which TWO statements about this design are correct? (Choose TWO.)",
-      "opcoes": [
-        "The subagent automatically inherits the entire history of the main session, so it's enough to ask \"review what we did\".",
-        "The subagent's frontmatter can set bypassPermissions so it works without interruptions, even if the main session is in default mode.",
-        "It should be defined in .claude/agents/security-reviewer.md, with frontmatter restricting the tools to read-only ones (for example, Read, Grep, and Glob).",
-        "Since the subagent's context is isolated, the delegation request must explicitly state what to review (files, goal, criteria).",
-        "To be recognized, the subagent must be listed in the project CLAUDE.md."
+        "Run the full 22-file review three times and keep only the findings that appear in at least two of the runs.",
+        "Load the 22 files plus the rest of the repository into one larger-context request so nothing is out of view.",
+        "Add a separate integration pass over the per-file findings and the interfaces between files, focused on data flow.",
+        "Ask the session that produced the refactor to review it again with the instruction \"be thorough with every file\".",
+        "Review each changed file in its own focused pass for local issues such as logic errors and missing checks."
       ],
       "corretas": [
         2,
-        3
+        4
       ],
-      "explicacao": "Custom subagents live in .claude/agents/ with frontmatter (tools, model...). An isolated context requires an explicit prompt, and the parent's permission mode cannot be overridden.",
+      "explicacao": "Reviewing many files at once dilutes attention, which explains the uneven depth. Per-file passes give each file the same focus for local issues, and a separate integration pass examines cross-file data flow, which is where the renamed field broke its consumers.",
       "feedbacks": [
-        "False: a new subagent has its own context. 'Review what we did' fails for lack of context.",
-        "The parent's permission mode carries down to the subagent and cannot be overridden by it.",
-        "Correct. Custom subagents live in .claude/agents/ (markdown + frontmatter with tools, model, permissions...).",
-        "Correct. The subagent doesn't inherit the main conversation's history; everything it needs goes in the prompt.",
-        "Not necessary: Claude Code discovers the subagents in .claude/agents/."
-      ]
-    },
-    {
+        "Requiring agreement across runs suppresses real bugs that are caught intermittently, and every run still suffers the same dilution.",
+        "A larger context does not fix attention quality; more content in one pass makes the dilution worse.",
+        "Correct. A cross-file integration pass catches issues such as a renamed field that breaks other files.",
+        "The same session keeps its generation reasoning and tends not to question it, and an instruction to be thorough does not fix attention dilution.",
+        "Correct. Per-file local passes give every file the same depth and avoid attention dilution."
+      ],
       "cenario": 2,
       "dominio": "D4",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer asked Claude three times, in prose, to write a parser for the date format of bank statements (\"day, month abbreviated in Portuguese, and two-digit year, sometimes with a time\"). Each attempt gets a different case wrong. What is the most effective way to get unstuck?",
-      "opcoes": [
-        "Rewrite the prose description with more detail about each variation of the format and explicitly ask Claude to pay attention to the cases with a time.",
-        "Switch to plan mode and ask for a plan before rewriting the parser.",
-        "Ask another subagent to rewrite the parser from scratch, without the history of the attempts.",
-        "Provide 2–3 concrete pairs of input and expected output, including the edge cases."
-      ],
-      "correta": 3,
-      "explicacao": "Iterative refinement: 2–3 concrete input/output examples beat prose instructions, especially for formats with edge cases.",
-      "feedbacks": [
-        "It stays on the path that has already failed three times; longer prose doesn't eliminate the ambiguity.",
-        "Plan mode isn't what's missing here: the scope is small and clear; what's missing is specifying the format with examples.",
-        "It changes who writes the code, but not the specification, which is the cause of the errors.",
-        "Correct. Concrete input/output examples communicate the format better than a prose description, and they cover the edge cases that cause the errors."
-      ]
+      "ts": "4.6",
+      "bullet": "4.6-K3"
     },
     {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nThe team is going to implement the pro rata interest calculation for a contract, with several rounding rules defined by the legal department. Previous attempts with Claude produced \"almost right\" code that only failed in production. Which workflow is most appropriate?",
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. For a migration of nine services to a new logging library, the main session delegates one subagent per service, and each run takes about 20 minutes. Dev containers are recycled at night, so session history does not survive; when the migration was interrupted at service six, the next attempt started over from service one. What is the most effective fix?",
       "opcoes": [
-        "Request the complete implementation and then ask Claude to write unit tests covering all paths of the generated code.",
-        "Write the tests with the legal department's cases first, share the failures, and iterate until they pass.",
-        "Request the implementation and manually review the code line by line before the merge.",
-        "Describe the rules in detail in the project CLAUDE.md for all sessions."
-      ],
-      "correta": 1,
-      "explicacao": "TDD as iterative refinement: failing tests first, share the failures, iterate until they pass.",
-      "feedbacks": [
-        "Tests written from the code itself tend to confirm the same errors, without the external criteria from the legal department.",
-        "Correct. TDD gives Claude a verifiable, objective success criterion; the concrete failures guide each iteration.",
-        "Manual review helps, but it is the approach that has already let subtle rounding errors through.",
-        "Task-specific rules don't belong in CLAUDE.md, and prose doesn't verify anything."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D4",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA PO asked for \"a reconciliation screen that works like the finance team's spreadsheet\". The developer doesn't know the spreadsheet in depth, and the requirement has many gaps (tolerances, currencies, what to do with discrepancies). How should the developer start with Claude Code?",
-      "opcoes": [
-        "Request the implementation immediately and fix whatever is wrong during reviews.",
-        "Ask Claude to implement the rules \"most common in reconciliation systems\".",
-        "Ask Claude to interview them with clarifying questions before implementing.",
-        "Paste the finance team's entire spreadsheet into the prompt, with the formulas visible, and ask Claude to replicate its behavior exactly on the screen."
-      ],
-      "correta": 2,
-      "explicacao": "Iterative refinement: with an ambiguous requirement, ask Claude to interview you before implementing.",
-      "feedbacks": [
-        "It generates code on top of unvalidated assumptions; the rework tends to cost more than asking.",
-        "It delegates a vague criterion to the model; the result will be generic and probably different from the spreadsheet.",
-        "Correct. With an ambiguous requirement, the interview technique surfaces the gaps before the code, avoiding an implementation based on assumptions.",
-        "It may help as input, but it doesn't settle the decisions that aren't in the spreadsheet (tolerance, handling of discrepancies)."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D3",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer has three bugs to fix: a time zone error in the invoice report, a typo in a validation message, and a connection leak in the HTTP client. All three are in different parts of the code and don't interact. How should the developer ask Claude?",
-      "opcoes": [
-        "One bug at a time, in sequence, reviewing each fix before moving on to the next.",
-        "All three in a single message, so Claude has the full context.",
-        "All three in plan mode, since there are several changes.",
-        "Launch three subagents in parallel, each fixing one bug without supervision."
+        "Have each subagent write its state to a known file, and keep a manifest that the main session loads on restart and injects into new subagents' prompts.",
+        "Resume the interrupted session with --resume the next morning, so the conversation and the subagent results pick up where they stopped.",
+        "Run the whole migration in a single session without subagents, so that only one context has to be recovered after an interruption.",
+        "Ask Claude to post a short progress summary every hour, and paste the most recent one into a new session after any interruption."
       ],
       "correta": 0,
-      "explicacao": "Related problems that interact go in one message; independent ones go in sequence, to keep the changes reviewable.",
+      "explicacao": "When sessions cannot survive, recovery must rely on state that lives outside them. Each agent exports its state to a known location and the coordinator keeps a manifest that it loads on resume and injects into the prompts of the agents it re-spawns, so completed services are skipped.",
       "feedbacks": [
-        "Correct. Independent problems go in sequence: each change stays small and reviewable.",
-        "Combining problems only makes sense when they interact; here it produces a mixed diff that is harder to review.",
-        "Each bug is targeted; the number of tasks doesn't turn simple fixes into an architectural decision.",
-        "More complex than necessary for three small fixes, and it loses the incremental review."
-      ]
-    },
-    {
-      "cenario": 2,
-      "dominio": "D4",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA developer generated a reconciliation module with Claude over a long session and, at the end, asked in the same session: \"review everything you wrote and point out bugs\". The review came back clean, but QA found two logic errors. How can the review be improved?",
-      "opcoes": [
-        "Ask in the same session for a second, \"more rigorous\" review.",
-        "Increase the effort of the same session before asking for the review.",
-        "Ask Claude to assign a confidence score to each generated function and focus human review on the functions that receive a low score.",
-        "Review in an independent session (or a new subagent), with the code and explicit review criteria."
+        "Correct. Structured state exports plus a manifest loaded on resume let the main session recover completed work and brief new subagents.",
+        "Resumption needs the session history, which the recycled containers destroy; the constraint rules it out.",
+        "Dropping subagents puts all verbose migration output in one context and still loses everything when the session dies.",
+        "Free-text summaries depend on someone pasting them and omit per-service detail; a manifest is structured and loaded on restart."
       ],
-      "correta": 3,
-      "explicacao": "The session that wrote the code should not review it: use an independent session/subagent with explicit criteria.",
-      "feedbacks": [
-        "It stays in the same biased context; insisting doesn't change the point of view.",
-        "More effort in the same context doesn't remove the bias of whoever justified each decision while writing.",
-        "Self-reported confidence is poorly calibrated; the bugs were precisely where the model thought it was right.",
-        "Correct. Whoever generated the code tends not to question their own decisions (reasoning-context bias). An independent review sees what the original session rationalized."
-      ]
-    },
-    {
       "cenario": 2,
       "dominio": "D5",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nAfter hours in a session exploring the payment service, Claude started giving answers like \"this follows typical repository patterns\" instead of citing the actual classes, and it repeats questions that were already answered at the start. What should be done?",
-      "opcoes": [
-        "Continue in the same session and repeat the lost information whenever Claude forgets.",
-        "Open a new session, without any context from the previous one, and redo the exploration of the payment service from scratch, now with more focus and fewer detours.",
-        "Save the findings to a notes file, run /compact proactively, and delegate high-volume exploration to subagents.",
-        "Ask Claude to read all of the service's files again to recover the context."
-      ],
-      "correta": 2,
-      "explicacao": "Signs of degradation: vague answers, inconsistency, forgetting findings. Mitigate with scratchpad files, proactive /compact, and subagents that explore and return only the summary.",
-      "feedbacks": [
-        "It aggravates the problem: more tokens in the same already-degraded context.",
-        "It avoids the degradation, but it throws away hours of findings; the right move is to persist them first.",
-        "Correct. These are signs of context degradation. Scratchpad files survive compression, a proactive /compact frees up space, and subagents keep the noise out of the main session.",
-        "Filling the context with bulk reads is the cause of the problem, not the solution."
-      ]
+      "ts": "5.4",
+      "bullet": "5.4-S4"
     },
     {
-      "cenario": 2,
-      "dominio": "D2",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nA new developer asks Claude: \"figure out how the tax invoice (nota fiscal) issuance flow works\". The service has more than 900 files. Which exploration strategy is most appropriate?",
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A production log shows \"ERR_PROMO_STACKING: promo code cannot be combined with free delivery\", and a developer asks Claude Code to find where this error is raised in a monorepo of about 4,000 files. Claude starts by matching file names that contain \"promo\" and reading the 37 files it finds, one by one. Which first step would have been most effective?",
       "opcoes": [
-        "Read all of the service's files first, to get the complete picture before answering.",
-        "Grep for the entry points, read them, follow imports and calls with new searches, and read only what is necessary.",
-        "Use Glob to list all of the service's .cs files and first read the 50 largest, which usually contain the core business logic.",
-        "Ask the developer to paste into the prompt the files they think are important."
+        "Use Glob with **/*promo*.* and **/*error*.* to widen the file-name search, then Read every candidate to look for the code.",
+        "Use Grep to search file contents for the literal string ERR_PROMO_STACKING, then Read only the files that contain it.",
+        "Read the top-level modules first and follow their imports until the code that raises promotion errors is reached.",
+        "Use Bash to start the service locally and reproduce the error with debug logging on to capture the full stack trace."
       ],
       "correta": 1,
-      "explicacao": "Codebase exploration: grep for the entry points, read, follow imports with grep, read. For high-volume sweeps, an Explore subagent returns only the conclusion.",
+      "explicacao": "Searching file contents for a known string is a job for Grep, which finds the exact files that raise the error. Glob matches paths, not contents, so it depends on the error living in a file whose name happens to fit the pattern.",
       "feedbacks": [
-        "Anti-pattern: reading everything up front uses up the context and worsens attention precisely on what matters.",
-        "Correct. Incremental exploration: grep for the entry points → read → follow the dependencies. It builds understanding without wasting context.",
-        "Size doesn't indicate relevance to the flow; it is still undirected bulk reading.",
-        "The developer is new and doesn't know which files those are; Claude has the tools to discover this on its own."
-      ]
+        "Glob matches file paths, not contents; the error code may live in a file whose name has nothing to do with promotions or errors.",
+        "Correct. Grep is the tool for content search, such as locating an error message across a codebase.",
+        "Reading modules upfront is slow; start with Grep to find the entry point, then follow imports from there.",
+        "Reproducing may help later, but it is heavy and slow when a content search can locate the code in seconds."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-K1"
     },
     {
-      "cenario": 2,
-      "dominio": "D1",
-      "pergunta": "Scenario: FinStack, a team of 30 .NET developers, has adopted Claude Code to generate, refactor, and test code in a microservices monorepo. The Claude Code configuration (CLAUDE.md, rules, skills, hooks, settings) is shared through git.\n\nAfter a long session analyzing the billing module, a developer wants to try two different refactoring strategies (Strategy pattern and a rules table), starting from the same analysis, without one attempt contaminating the other. What should the developer use?",
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A senior developer's sessions always wrap API errors in the team's standard error envelope, but the two new hires get handlers that return raw exceptions. The convention exists only in the senior's ~/.claude/CLAUDE.md; the repository's CLAUDE.md covers build and test commands. Two fixes are proposed: (1) every developer copies the senior's ~/.claude/CLAUDE.md into their own home directory; (2) the convention moves into the project CLAUDE.md. Which choice is best?",
       "opcoes": [
-        "--fork-session when resuming the analysis session, creating a branch with a new ID for each strategy.",
-        "--resume on the same session for both strategies, one after the other.",
-        "Two new sessions from scratch, redoing the analysis in each one.",
-        "Ask Claude, in the same session, to \"forget\" the first strategy before trying the second."
+        "Proposal 1, because user-level files take precedence over project files, so copying them keeps everyone's output identical to the senior's.",
+        "Neither; ask the new hires to paste the error-envelope convention into the first prompt of each session, so no configuration changes.",
+        "Proposal 2, because ~/.claude/CLAUDE.md applies only to its own user and is not shared through version control, unlike the project file.",
+        "Neither; put the convention in a personal skill under ~/.claude/skills/ that each developer invokes when writing an API handler."
+      ],
+      "correta": 2,
+      "explicacao": "The new hires are missing the instruction because it lives at user level, which applies only to that user and is not shared through version control. Moving the convention into the project-level CLAUDE.md makes it reach everyone who clones or pulls the repository.",
+      "feedbacks": [
+        "Copying user files spreads an unversioned convention by hand; copies drift as soon as anyone edits theirs, and precedence does not solve sharing.",
+        "Pasting rules by hand pushes the burden onto people and fails whenever someone forgets.",
+        "Correct. Team conventions belong in project-level configuration, which version control shares with everyone.",
+        "Skills are invoked on demand and personal skills are not shared; a universal convention belongs in always-loaded project configuration."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.1",
+      "bullet": "3.1-S1"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A developer asked Claude to write a function that converts restaurant opening hours from free text (\"Mon-Fri 11-22h\", \"Daily 10am-2am\", \"Sat 18:00 to Sun 01:30\") into a weekly JSON schedule, with a paragraph of prose rules. In three attempts, each version handled ranges that cross midnight differently, and one dropped the Sunday entry. The developer needs a version that applies the rules consistently. What should change?",
+      "opcoes": [
+        "Rewrite the prose rules in more detail, adding a paragraph that defines how ranges past midnight and day abbreviations are handled.",
+        "Give Claude two or three concrete input strings with the exact JSON expected for each, including one range that crosses midnight.",
+        "Switch to plan mode so that Claude designs the parser before writing code, then approve the plan and let it implement the design.",
+        "Ask Claude for five versions of the function and keep the one that passes the most existing schedule tests in the repository."
+      ],
+      "correta": 1,
+      "explicacao": "When prose descriptions are interpreted inconsistently, concrete input/output examples are the most effective way to communicate the expected transformation. Two or three examples, including the midnight case, pin down exactly the behavior the prose left ambiguous.",
+      "feedbacks": [
+        "More prose is what already failed: prose descriptions get interpreted inconsistently, which is exactly the symptom.",
+        "Correct. Concrete input/output examples remove the ambiguity that the prose rules left open.",
+        "Planning does not resolve an ambiguous specification; the design would inherit the same unclear rules.",
+        "Choosing among variants hides the ambiguity instead of resolving it, and existing tests may not cover the midnight cases."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.5",
+      "bullet": "3.5-K1"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. A developer started in plan mode to \"add a check in validate_tip() that rejects tips above $200.\" Claude explored about 60 files and proposed a four-phase plan with a shared validation framework, which the developer accepted. The resulting PR touched 11 files, and reviewers rejected it as scope creep. What is the most likely root cause?",
+      "opcoes": [
+        "The project CLAUDE.md does not set a maximum PR size, so Claude had no signal that the change was expected to stay small.",
+        "The task was one well-scoped check in a single function, which suits direct execution; plan mode invited design it did not need.",
+        "The Explore subagent was not used, so discovery output filled the main context and pushed the plan toward a broader redesign.",
+        "The prompt did not include the path to validate_tip(), so Claude had to search the codebase first and widened the scope along the way."
+      ],
+      "correta": 1,
+      "explicacao": "Direct execution is appropriate for simple, well-scoped changes such as adding a single validation check to one function. Starting in plan mode treated a one-function change as an architectural exercise, which invited broad exploration and an oversized design.",
+      "feedbacks": [
+        "A size limit might trim the result, but it does not explain why a one-function change was treated as a design exercise.",
+        "Correct. A single validation check in one function is the textbook case for direct execution.",
+        "The Explore subagent protects context during verbose discovery; it would not stop a planning-heavy approach to a trivial change.",
+        "Locating one function is a quick search; the broad exploration and four-phase plan came from choosing plan mode for a simple task."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.4",
+      "bullet": "3.4-K2"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team created .claude/skills/audit-menu/SKILL.md to audit every menu schema file of a restaurant without editing anything:\n\n---\ndescription: Audits menu schema files for one restaurant\nallowed-tools: Read, Grep, Glob\nargument-hint: [restaurant-id]\n---\nAnalyze every menu file for the given restaurant and report problems per file.\n\nAfter each run, the main conversation holds hundreds of lines of per-file analysis, and later requests in the session lose track of the developer's original task. What is the flaw?",
+      "opcoes": [
+        "The skill belongs in .claude/commands/, because frontmatter fields such as allowed-tools are honored only in command files.",
+        "allowed-tools must also include Write, because a skill cannot hand its results back to the main session without writing a file.",
+        "argument-hint makes the skill run once per argument, which multiplies the output when developers pass several restaurant IDs.",
+        "The frontmatter has no context: fork, so the skill runs in the main conversation and its verbose output stays there."
+      ],
+      "correta": 3,
+      "explicacao": "Skills in .claude/skills/ support frontmatter such as context: fork, allowed-tools, and argument-hint. Without context: fork, the skill runs in the main conversation, so its verbose per-file output pollutes the main context; context: fork runs it in an isolated sub-agent context and returns only the result.",
+      "feedbacks": [
+        "Skills in .claude/skills/ support frontmatter such as context: fork, allowed-tools, and argument-hint; moving the file would not isolate the output.",
+        "A forked skill returns its result to the main session; adding Write would only widen tool access the team deliberately restricted.",
+        "argument-hint only prompts for the expected parameter; it does not repeat the skill per argument.",
+        "Correct. context: fork isolates verbose skill output in a sub-agent context so it does not pollute the main conversation."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.2",
+      "bullet": "3.2-K2"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team skill /release-notes, stored in .claude/skills/release-notes/SKILL.md, needs a version tag to know which commits to include. Developers often invoke it without arguments, and in about 1 of 5 such runs Claude guesses a tag and drafts notes for the wrong commit range. The frontmatter has only description and allowed-tools. Which statement about this behavior is correct?",
+      "opcoes": [
+        "This is expected: skills cannot receive parameters, so the tag has to be read from a file that developers update before invoking the skill.",
+        "The skill picks up the last tag mentioned in the main conversation; adding context: fork would remove that influence and the wrong ranges.",
+        "Adding argument-hint, such as argument-hint: [version-tag], would show developers the required parameter when they invoke the skill.",
+        "Moving the skill to ~/.claude/skills/ would let each developer configure a default tag for their own runs, which removes the guesswork."
+      ],
+      "correta": 2,
+      "explicacao": "argument-hint in the skill's frontmatter prompts developers for required parameters when they invoke the skill without arguments. With the hint in place, developers see that a version tag is expected instead of leaving Claude to guess one.",
+      "feedbacks": [
+        "Skills do take arguments; the problem is that nothing prompts developers to supply the one this skill requires.",
+        "context: fork isolates the skill's output from the main session; it does not supply the missing tag, so Claude would still guess.",
+        "Correct. argument-hint tells developers which parameter the skill needs when they invoke it.",
+        "A personal copy would split the team skill per developer and still not prompt for the tag."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.2",
+      "bullet": "3.2-S4"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. GraphQL schema files (*.graphql) live in 12 service directories across the monorepo and must all follow the same naming and deprecation conventions. A tech lead proposes adding a CLAUDE.md with those conventions to each of the 12 service directories. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: directory-level CLAUDE.md files are the mechanism Claude Code provides for conventions that depend on where a file is located.",
+        "Adopt it, and also add the conventions to the root CLAUDE.md, so they apply when Claude edits a schema file from any directory.",
+        "Prefer one .claude/rules/graphql.md with paths: [\"**/*.graphql\"], which covers schema files in any directory without 12 copies.",
+        "Prefer a graphql-conventions skill that developers invoke before editing schema files, so the conventions load only when needed."
+      ],
+      "correta": 2,
+      "explicacao": "Conventions tied to a file type that is spread across many directories are best expressed as a glob-scoped rule in .claude/rules/. One rule with paths: [\"**/*.graphql\"] applies wherever schema files live, while directory-level CLAUDE.md files would need 12 copies kept in sync.",
+      "feedbacks": [
+        "Directory files suit conventions tied to one subtree; for one file type spread across 12 directories they mean 12 copies that drift.",
+        "Adding to the root file loads the conventions in every session, including those that never touch GraphQL, and keeps the 12 copies.",
+        "Correct. Glob-pattern rules apply conventions by file type regardless of directory.",
+        "Skills depend on someone invoking them, so the conventions would not apply automatically on every schema edit."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.3",
+      "bullet": "3.3-K3"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. Developers run a team slash command, /pre-pr, before opening pull requests. One prompt asks Claude to check the changed files for style, security, test coverage, and documentation at once. The output skips the documentation check in about 30% of runs and mixes security and style findings together. The fix must remain a single command developers run locally, with no new infrastructure. What is the most effective fix?",
+      "opcoes": [
+        "Turn /pre-pr into a prompt chain: a fixed sequence of focused prompts, one per aspect, then a step that merges their findings into one report.",
+        "Keep the single prompt but add \"Cover every aspect without exception\" and a checklist of the four aspects at the end of the prompt.",
+        "Let the command decide at run time which aspects to check, based on what it discovers in the first changed file that it reads.",
+        "Run the single prompt twice and merge both outputs, so an aspect skipped in one run is likely to be covered by the other one."
       ],
       "correta": 0,
-      "explicacao": "--fork-session creates a new ID from a common base, so the branches don't contaminate each other; --resume continues the same conversation.",
+      "explicacao": "A review with the same four aspects every time is a predictable workflow, which suits prompt chaining: a fixed sequence of focused steps, each handling one concern, with a final step combining the results. That removes the competition for attention that makes one overloaded prompt skip sections, and it still runs as one command.",
       "feedbacks": [
-        "Correct. --fork-session creates a new session from the common base; the branches don't contaminate each other, and the analysis doesn't need to be redone.",
-        "The second attempt would inherit the history and decisions of the first: exactly the contamination you want to avoid.",
-        "It avoids contamination, but it wastes the analysis already done (and may reach different conclusions).",
-        "The history is still in the context; asking it to forget doesn't remove anything."
-      ]
+        "Correct. Prompt chaining breaks a predictable multi-aspect review into sequential focused steps.",
+        "Emphasis added to the same overloaded prompt rarely fixes skipped sections; the structure, not the wording, causes the misses.",
+        "Dynamic decomposition suits open-ended investigation; this review has the same four aspects every time, so a fixed chain fits better.",
+        "Running twice doubles cost and still relies on chance to cover each aspect; it does not make coverage dependable."
+      ],
+      "cenario": 2,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K2"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team must replace an in-house HTTP client wrapper with a standard library across about 70 call sites in 30 files. Two approaches are on the table: an adapter that keeps the old interface, or replacing every call site directly, and each has different retry and timeout implications. What is the most effective way to start?",
+      "opcoes": [
+        "Start in direct execution and let Claude replace call sites file by file, reviewing each diff as it comes, so problems show up early.",
+        "Ask Claude in direct execution to write a migration plan and apply it in the same step, so planning and edits happen together.",
+        "Use plan mode for the whole migration, including the edits, so that each change remains part of the reviewed plan until the end.",
+        "Use plan mode to explore the call sites and choose an approach, then switch to direct execution to apply the approved plan."
+      ],
+      "correta": 3,
+      "explicacao": "A migration across 30 files with two valid approaches is a planning problem first and an implementation problem second. Plan mode explores and settles the approach before anything changes; direct execution then applies the agreed plan efficiently.",
+      "feedbacks": [
+        "Starting with edits commits to an approach before the adapter-versus-replacement trade-off has been explored, risking rework across 30 files.",
+        "Planning and applying in one step removes the checkpoint where the approach is reviewed before 30 files change.",
+        "Plan mode is for exploration and design; carrying out an agreed plan is what direct execution is for.",
+        "Correct. Combine plan mode for investigation with direct execution for implementation."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.4",
+      "bullet": "3.4-S4"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The repository includes .claude/skills/write-migration/SKILL.md, which generates database migrations following team rules. One developer wants a variant that also generates seed data for her local testing, without changing anything for her teammates and while still being able to use the team's version. Which approach should she choose?",
+      "opcoes": [
+        "Add an optional seed-data step to the team's write-migration skill, since teammates who do not need it can simply skip that step.",
+        "Create ~/.claude/skills/write-migration/SKILL.md with the same name, so her version replaces the team skill on her machine only.",
+        "Add the seed-data instructions to her ~/.claude/CLAUDE.md, so they apply automatically every time she works on a migration.",
+        "Create a personal skill under a new name, such as ~/.claude/skills/write-migration-seeds/SKILL.md, leaving the team skill untouched."
+      ],
+      "correta": 3,
+      "explicacao": "Personal variants belong in ~/.claude/skills/ under a different name. That keeps the team skill unchanged for everyone, lets her invoke either version explicitly, and avoids two skills competing for the same name.",
+      "feedbacks": [
+        "Editing the shared skill changes behavior for the whole team; an 'optional' step still ships in everyone's skill.",
+        "A same-named personal copy shadows the team skill for her, so she loses the team version and its updates; a different name avoids the conflict.",
+        "CLAUDE.md is always loaded, so the seed-data rule would leak into all of her work, not only this workflow.",
+        "Correct. A personal skill with a different name customizes her workflow without affecting teammates."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.2",
+      "bullet": "3.2-K4"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team's accessibility conventions for React components (labels, focus order, contrast tokens) live in web/CLAUDE.md. Component files (*.tsx) also live in mobile/, admin/, and shared/ui/, and components edited there come out without the conventions. The team needs the conventions applied to every component file, wherever it lives. What should change?",
+      "opcoes": [
+        "Copy web/CLAUDE.md into mobile/, admin/, and shared/ui/, so that every directory containing components has the same conventions.",
+        "Move the conventions into .claude/rules/react-components.md with paths: [\"**/*.tsx\"], so they load for components anywhere.",
+        "Move the conventions into the root CLAUDE.md, so that they are loaded in every session for every single file in the repository.",
+        "Reference web/CLAUDE.md from mobile/CLAUDE.md and admin/CLAUDE.md with @import, so the text is shared without copying it anywhere."
+      ],
+      "correta": 1,
+      "explicacao": "When a convention applies to a file type spread across the codebase, a path-specific rule with a glob is the right tool. It loads whenever Claude edits a matching file, in any directory, without the copies or gaps that subdirectory CLAUDE.md files create.",
+      "feedbacks": [
+        "Copies work until someone updates one of them, and new component directories are missed; the convention is about file type, not location.",
+        "Correct. A glob-scoped rule applies to component files wherever they live.",
+        "It would apply the conventions, but they would also load when Claude edits SQL or Go files; the path rule loads them only for components.",
+        "@import shares text but still depends on a CLAUDE.md in each directory, and shared/ui/ or any new directory would be missed."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.3",
+      "bullet": "3.3-S3"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. Every developer's sessions write docstrings in the team's format, because the onboarding script appends the format rules to each developer's ~/.claude/CLAUDE.md. A new nightly job runs Claude Code under a service account on a build server to generate API documentation, and its docstrings ignore the format. The repository's root CLAUDE.md contains only build commands. What is the most likely root cause?",
+      "opcoes": [
+        "The rules live only in user-level files, which apply to the user whose home holds them; the service account has none, and the project file lacks them.",
+        "Non-interactive runs skip CLAUDE.md files entirely, so the nightly job has to receive the docstring rules as part of its prompt.",
+        "The root CLAUDE.md takes precedence over user-level files when both exist, so the build-commands file hides the docstring rules.",
+        "Claude Code applies CLAUDE.md conventions only when the prompt mentions them, and the nightly job's prompt never mentions docstrings."
+      ],
+      "correta": 0,
+      "explicacao": "Instructions in ~/.claude/CLAUDE.md apply only to that user and are not shared through version control. The service account has no such file, and the project CLAUDE.md, which every run in the repository loads, does not carry the rules; moving them there fixes the job and every new developer.",
+      "feedbacks": [
+        "Correct. User-level files are per-user; team conventions belong in the project CLAUDE.md.",
+        "CLAUDE.md is the mechanism for giving project context to non-interactive and CI runs; the issue is that the rules are not in the project file.",
+        "Memory files at different levels are loaded together; a build-commands file would not hide a docstring rule, and the service account has no user file at all.",
+        "Loaded CLAUDE.md content applies without being mentioned in the prompt; the rules were simply never loaded for this account."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.1",
+      "bullet": "3.1-K2"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The team connected an internal MCP server, code-intel, through the project .mcp.json. Its find_references tool uses a semantic index that resolves calls across services, including handlers registered dynamically through the dispatch registry; its description is \"Finds references.\" When asked where calculate_delivery_fee is used, Claude keeps using Grep and misses the 9 call sites wired through the registry. What is the flaw?",
+      "opcoes": [
+        "find_references' description does not say that it resolves cross-service and registry calls or what it returns, so Grep looks equally good.",
+        "The server is configured in .mcp.json rather than ~/.claude.json, so its tools load after the built-in tools and therefore receive lower priority.",
+        "Grep stays enabled while MCP tools are connected, and Claude prefers built-in tools over MCP tools whenever both of them could answer a request.",
+        "The index should be exposed as an MCP resource instead of a tool, because Claude consults resources before deciding which tool to call."
+      ],
+      "correta": 0,
+      "explicacao": "The model chooses tools from their descriptions. A one-line description gives no reason to prefer the MCP tool over the familiar built-in Grep. Describing its capabilities (cross-service and registry-aware resolution) and its outputs in detail lets Claude pick the more capable tool.",
+      "feedbacks": [
+        "Correct. Detailed MCP tool descriptions keep the agent from defaulting to built-in tools like Grep.",
+        "Scope decides who shares the server, not tool priority; tools from all configured servers are discovered at connection and available together.",
+        "There is no fixed preference for built-in tools; Claude chooses from descriptions, and this one gives no reason to pick the MCP tool.",
+        "Resources expose content catalogs to cut exploratory calls; a parameterized reference search is an action and fits a tool."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S3"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The repository has a root CLAUDE.md, some directory-level CLAUDE.md files, and several @import references. A developer reports that Claude follows the team's naming conventions when working in services/orders/ but not in services/couriers/, even in fresh sessions. Which TWO steps best diagnose the cause? Choose TWO.",
+      "opcoes": [
+        "Compare with /memory in services/orders/ to find a directory-level CLAUDE.md or import that only one subtree loads.",
+        "Run /compact in the couriers session, in case earlier conversation content is overriding the naming conventions.",
+        "Paste the naming conventions into each prompt in services/couriers/ and check whether the inconsistency goes away.",
+        "Ask Claude which instructions it is following and treat its answer as the list of memory files loaded in the session.",
+        "Run /memory in a session working in services/couriers/ to see which memory files are actually loaded there."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Inconsistent behavior between locations usually means different memory files are loaded. /memory shows which files a session has loaded, and comparing the two locations exposes the difference, such as a directory-level CLAUDE.md or an @import present only under orders/.",
+      "feedbacks": [
+        "Correct. Comparing loaded files between the two locations exposes the hierarchy difference.",
+        "The problem appears in fresh sessions, so accumulated context is not the cause, and /compact would not reveal which files load.",
+        "Pasting rules may mask the symptom but does not diagnose which configuration is missing.",
+        "The model's self-description is not a reliable inventory of loaded files; /memory reports it directly.",
+        "Correct. /memory verifies which memory files are loaded in that session."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.1",
+      "bullet": "3.1-S4"
+    },
+    {
+      "pergunta": "Bitefleet, a food-delivery marketplace, has its engineers use Claude Code for code generation, refactoring, debugging, and documentation, with team slash commands and CLAUDE.md files in the repository. The root CLAUDE.md has grown to about 1,400 lines covering Terraform, Android (Kotlin), SQL migrations, and Python services, and a developer who works only on Python services sees every session start with roughly 18k tokens of instructions. A proposal moves the Terraform, Android, and migration sections into .claude/rules/ files with paths globs (infra/**/*.tf, android/**/*.kt, db/migrations/**/*.sql). How should you evaluate it?",
+      "opcoes": [
+        "Reject it: rule files in .claude/rules/ are loaded in full at session start, so moving the sections would not reduce what each session carries.",
+        "Reject it: spreading conventions over several files makes Claude less likely to follow them, so a single CLAUDE.md remains more reliable.",
+        "Adopt it: path-scoped rules load only when Claude works on files matching their globs, so a Python-only session drops the other rules.",
+        "Adopt it, but turn each section into a skill instead, since skills load automatically when Claude opens files in matching directories."
+      ],
+      "correta": 2,
+      "explicacao": "Rules in .claude/rules/ with a paths field load only when Claude edits files that match their globs. Moving technology-specific sections into path-scoped rules removes irrelevant context and tokens from sessions that never touch those files, while keeping the conventions automatic where they apply.",
+      "feedbacks": [
+        "That describes rule files without a paths field; the globs are what make loading conditional.",
+        "Topic-specific rule files are a recommended alternative to a monolithic CLAUDE.md; they keep conventions focused, not weaker.",
+        "Correct. Path-scoped rules reduce irrelevant context and token usage by loading only for matching files.",
+        "Skills are invoked on demand for task workflows; they are not loaded by file path, so conventions would not apply automatically."
+      ],
+      "cenario": 2,
+      "dominio": "D3",
+      "ts": "3.3",
+      "bullet": "3.3-K2"
     }
   ]
 }

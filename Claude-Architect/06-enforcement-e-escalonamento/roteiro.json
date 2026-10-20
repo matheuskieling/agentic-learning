@@ -1,0 +1,170 @@
+{
+  "modulo": "06",
+  "titulo": "Workflows com enforcement, hooks do Agent SDK e escalonamento",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — o cenário 1 em profundidade",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e conduza o código de aplicação na linguagem salva (se não houver, pergunte e grave); os arquivos usam C# como referência-base. Os hooks do Agent SDK aparecem em TypeScript porque o SDK oficial é Python/TypeScript (não existe SDK em C#)",
+        "Task statements: 1.4 (workflows multi-etapa com enforcement e handoff), 1.5 (hooks do Agent SDK para interceptar chamadas e normalizar dados) e 5.2 (escalonamento e ambiguidade). Domínios D1 (27%) e D5 (15%)",
+        "O módulo é o cenário 1 em profundidade: agente de suporte no Agent SDK com get_customer, lookup_order, process_refund e escalate_to_human, meta de 80%+ de first-contact resolution sabendo quando escalar; também cai nos cenários 4 e 3",
+        "Três perguntas que a prova faz: o que tem que ser garantido em código? como o código intercepta tools? quando o agente passa o caso a um humano?",
+        "Mapa: enforcement × prompt → prerequisite gate → hooks do Agent SDK e normalização (PostToolUse) → teto de US$ 500 (PreToolUse) → várias demandas e handoff → gatilhos de escalonamento → proxies ruins, vários clientes e calibração",
+        "Formato: um ponto por vez, pergunta de checagem em inglês no estilo da prova; no fim, quiz (15) e prova (20 em estilo cenário, 70%)"
+      ],
+      "checkpoint": "Pergunte se o aluno lembra do loop do M01 (stop_reason tool_use → executa → tool_result no histórico) e se está pronto para começar",
+      "ref": "06-enforcement-e-escalonamento/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Ponte com o loop e enforcement programático × prompt",
+      "pontos": [
+        "Ponte com o M01: o enforcement mora no harness, entre o pedido de tool e a execução (PreToolUse) e entre a execução e o que o modelo lê (PostToolUse). O modelo continua escolhendo qual tool chamar",
+        "Prompt (system prompt, few-shot) = conformidade probabilística: melhora a média, mas a taxa de falha nunca é zero. Nenhum MANDATORY em maiúsculas zera",
+        "Programático (hook, prerequisite gate, validação na tool) = garantia determinística: roda em toda chamada",
+        "Regra que exige conformidade garantida (identidade antes de operação financeira, teto de valor, compliance, PII) → código. Julgamento e best-effort (tom, formato, quando escalar) → prompt",
+        "Conta que convence: 99,4% de conformidade num reembolso = 6 reembolsos indevidos a cada mil",
+        "Distratores típicos: reforçar o prompt, few-shot como garantia, segundo LLM revisando, routing classifier (resolve disponibilidade de tools, não ordem: é o distrator da questão oficial 1). O inverso também erra: hook para regra de estilo",
+        "Cenário: 1 quase sempre; a pegadinha é a alternativa de prompt bem escrita que parece suficiente"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Your system prompt states that identity verification is mandatory before any refund, and audits show 99.4% compliance. Is that enough? Why or why not?' (esperado: não; prompt é probabilístico, a regra financeira exige enforcement programático)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#1-enforcement-programático--orientação-por-prompt-14-15"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Prerequisite gate: process_refund só depois de get_customer verificado",
+      "pontos": [
+        "Desenho do guia: pré-requisito programático que bloqueia lookup_order e process_refund até get_customer devolver um customer ID verificado",
+        "Quem marca 'verificado' é o RESULTADO da tool, não a afirmação do modelo ('já verifiquei')",
+        "Percorra o TS da teoria: PostToolUse em get_customer grava o ID verificado por sessão; PreToolUse nas tools downstream nega (permissionDecision: deny + permissionDecisionReason) sem ID ou com ID diferente",
+        "Quando o gate nega, o motivo volta ao modelo como resultado da chamada e ele se corrige (chama get_customer). Nada de abortar a conversa",
+        "O gate também pode morar no backend da tool (servidor MCP em C# devolvendo erro estruturado 'permission'); para a prova, o princípio é código, não prompt",
+        "Outra roupa (cenário 4): aplicar mudança de configuração só depois de get_change_request devolver um change ID aprovado",
+        "Distratores: verificação obrigatória no prompt, few-shot, modelo declarar o ID, classificador de tools, mandar todo reembolso para humanos (mata a FCR)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Which result should unlock process_refund: the model saying it verified the customer, or something else?' (esperado: o resultado de get_customer com customer ID verificado, gravado pelo harness)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#2-prerequisite-gate-process_refund-só-depois-de-get_customer-verificado-14"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Hooks do Agent SDK e PostToolUse para normalizar formatos",
+      "pontos": [
+        "Hook no Agent SDK = callback registrado em options.hooks (TS) ou ClaudeAgentOptions(hooks=...) com HookMatcher (Python), por evento e com matcher pelo nome da tool; tools MCP se chamam mcp__<servidor>__<tool>",
+        "PreToolUse = intercepta a chamada de saída (antes de executar): pode negar com motivo ou ajustar o input. PostToolUse = intercepta o resultado (depois de executar, antes de o modelo processar): pode substituir o que o modelo vê. Post NÃO impede a execução",
+        "Caso do guia: get_customer devolve Unix timestamp, lookup_order devolve ISO 8601 com fuso, o servidor MCP da transportadora (de terceiros) devolve status_code 3. Um PostToolUse converte tudo para ISO 8601 UTC e status com nome antes do modelo",
+        "Mostre o JSON bruto × normalizado da teoria e o hook com matcher ^mcp__ (todas as tools MCP)",
+        "Distratores: regras de conversão no system prompt, few-shot de datas, tool convert_date que o modelo precisa lembrar de chamar, pedir ao fornecedor que mude o formato (fora do seu controle)",
+        "Nota volátil: a doc atual tem muitos eventos e o campo updatedToolOutput; na prova basta o padrão Pre intercepta / Post transforma. No Claude Code, o equivalente é shell hook em .claude/settings.json (exit 2 bloqueia), mas o TS 1.5 fala do Agent SDK"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Three MCP tools return dates as Unix epoch, ISO 8601 with offsets, and numeric status codes, and one server is third-party. Where should you normalize them, and why not in the system prompt?' (esperado: PostToolUse antes do modelo; prompt é probabilístico e não alcança o que você não controla)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#3-hooks-do-agent-sdk-a-forma-15"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Interceptar a chamada: teto de US$ 500 e redirecionar para humano",
+      "pontos": [
+        "Política 'reembolso acima de US$ 500 exige humano' = PreToolUse na tool de reembolso: acima do teto nega e redireciona para escalate_to_human; abaixo, o agente resolve sozinho (FCR preservada)",
+        "Percorra o TS da teoria: o permissionDecisionReason diz para não retentar e chamar escalate_to_human com customer_id, root_cause, refund_amount e recommended_action",
+        "A parte garantida é o bloqueio; o redirecionamento chega pelo motivo. Se abrir o caso também precisa ser garantido, o próprio hook cria o ticket",
+        "Hook = garantia determinística; prompt = conformidade probabilística. Regra de negócio que exige garantia → hook",
+        "Pegadinha de causa raiz: o bloqueio foi registrado como PostToolUse (o alerta dispara, mas o dinheiro já saiu)",
+        "Distratores: teto no prompt com exemplos de valores, alerta pós-execução para estornar, escalar todo reembolso, escalar por confiança autodeclarada",
+        "Outra roupa (cenário 4): compensação de voo, crédito ou desconto acima de um teto num agente de automação"
+      ],
+      "checkpoint": "Pergunte em inglês: 'A team blocks refunds above $500 with a PostToolUse hook that alerts a supervisor. What is wrong with this design?' (esperado: Post roda depois da execução; tem que ser PreToolUse, negando e redirecionando)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#5-interceptar-a-chamada-teto-de-us-500-e-redirecionar-para-humano-15"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Várias demandas numa mensagem e handoff estruturado",
+      "pontos": [
+        "Pedido com várias demandas → decompor em itens distintos → investigar cada um em paralelo com contexto compartilhado (cliente verificado uma vez, pedidos e política carregados uma vez) → uma resolução unificada",
+        "'Em paralelo' = vários tool_use no mesmo turno (ou subagents via Task, M07). Um item pode ser escalado e os outros resolvidos; a resposta continua única",
+        "Distratores: resolver só a primeira demanda, uma sessão isolada por item (respostas contraditórias, verificação repetida), série + juntar no fim, escalar tudo, pedir a humanos que quebrem o ticket",
+        "Handoff: o humano NÃO vê o transcript. Campos mínimos do guia: customer ID, causa raiz, valor do reembolso, ação recomendada (+ ações já feitas e motivo do escalonamento)",
+        "Mostre o tool_use de escalate_to_human da teoria: o input é o handoff inteiro e o harness grava como ticket na fila humana",
+        "Distratores: transcript completo, parágrafo em prosa, link para a conversa, sentimento e confiança no lugar de causa raiz e ação, só ID e valor"
+      ],
+      "checkpoint": "Peça ao aluno: 'List the four fields the exam guide expects in a handoff to a human who cannot see the transcript.' (esperado: customer ID, root cause, refund amount, recommended action) e depois: 'A customer raises three issues in one message: what is the workflow?'",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#6-pedido-com-várias-demandas-decompor-investigar-em-paralelo-resolver-uma-vez-14"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Quando escalar: os três gatilhos e a frustração",
+      "pontos": [
+        "Gatilhos certos: (1) cliente pede humano explicitamente; (2) exceção ou lacuna de política (não 'caso complexo'); (3) sem progresso significativo",
+        "Pedido explícito de humano → escalar imediatamente, SEM investigar antes e sem 'tentar resolver primeiro'; mande o que já souber no handoff",
+        "Cliente frustrado, problema simples dentro da alçada, sem pedir humano → reconhecer a frustração e oferecer a resolução; se ele REITERAR que quer humano → escalar",
+        "Política omissa ou ambígua: exemplo do guia, price match com concorrente quando a política só cobre ajuste no próprio site → escalar. Nem regra inventada por analogia, nem silêncio lido como 'não', nem crédito parcial como meio-termo",
+        "Caso longo, com muitos itens, tudo coberto pela política → resolver: complexidade não é gatilho",
+        "Use a tabela 'Frustração × pedido de humano' da teoria como drill rápido"
+      ],
+      "checkpoint": "Faça o drill em inglês com 3 falas e peça 'escalate or resolve?': (a) 'I want to speak to a person.' (b) 'Third time writing!! My charger arrived broken.' (c) 'Another store sells it for $60 less, can you match?' (esperado: escalar já; reconhecer e oferecer troca; escalar por lacuna de política)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#8-quando-escalar-os-três-gatilhos-certos-52"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Proxies ruins, vários clientes e calibrar o escalonamento",
+      "pontos": [
+        "Sentimento mede emoção, não complexidade: furioso com cobrança coberta → resolver; educado pedindo exceção → escalar",
+        "Confiança autodeclarada é mal calibrada como gatilho de escalonamento: o agente costuma estar confiante justamente nos casos difíceis que erra",
+        "As três caras da confiança: filtrar achados por confiança = errado (4.1); escalar atendimento por confiança/sentimento = errado (5.2); confiança por campo/achado calibrada com conjunto rotulado para rotear revisão humana = certo (4.6, 5.5). Não generalize",
+        "Vários clientes encontrados → pedir identificador adicional (nº do pedido, e-mail). Nada de heurística (mais recente, nome mais parecido, o que tem o pedido citado) e nada de listar as contas com dados de terceiros",
+        "Escalonamento mal calibrado (simples escalados, exceções resolvidas sozinho) = fronteira de decisão mal definida → primeiro passo: critérios explícitos com few-shot no system prompt (mostre o exemplo da teoria)",
+        "Prompt aqui é a ferramenta certa porque a decisão é de julgamento; regras objetivas com consequência (US$ 500, identidade) continuam em hook. Distratores: classificador treinado em tickets, limiar de sentimento ou confiança, hook que escala uma categoria inteira"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Escalations are 35% of conversations; most are simple in-policy returns, while some exception requests were handled autonomously. What is the most proportionate first step?' (esperado: critérios explícitos de escalonamento com few-shot no system prompt)",
+      "ref": "06-enforcement-e-escalonamento/teoria.md#10-calibrar-o-escalonamento-critérios-explícitos--few-shot-no-system-prompt-52"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação — Módulo 06",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "15 questões curtas cobrindo 1.4, 1.5 e 5.2: gate, hooks Pre/Post, normalização, teto de US$ 500, várias demandas, handoff, gatilhos de escalonamento, proxies ruins, vários clientes e calibração",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-06/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e revise os tópicos errados antes da prova",
+      "ref": "Claude-Architect/apps/modulo-06/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do Módulo 06 (estilo cenário)",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões no estilo do exame (cenários 1, 3 e 4), com feedback por alternativa; três são de múltipla resposta (Choose TWO)",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora",
+        "Aprovação 70%; abaixo disso, revise a 'Cola de véspera' e os tópicos errados e refaça"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-06/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 07; se não, revise os pontos errados",
+      "ref": "Claude-Architect/provas/modulo-06/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 06",
+      "pontos": [
+        "Recap: prompt é probabilístico, hook/gate é determinístico; regra crítica (identidade, teto de valor) vai em código",
+        "Gate: lookup_order/process_refund bloqueados até get_customer devolver customer ID verificado. PreToolUse intercepta a chamada (teto de US$ 500 → escalate_to_human); PostToolUse normaliza o resultado antes do modelo",
+        "Várias demandas: decompor → paralelo com contexto compartilhado → uma resolução. Handoff: customer ID, causa raiz, valor, ação recomendada",
+        "Escalar: pedido explícito (já), lacuna/exceção de política, sem progresso. Não por sentimento nem confiança autodeclarada. Frustrado + simples: reconhecer e oferecer; escalar se reiterar. Vários clientes: pedir identificador. Calibração: critérios + few-shot no system prompt",
+        "Próximo: Módulo 07 — Orquestração multiagente: coordenador, subagents e decomposição. Para começar: python3 engine/aula.py start Claude-Architect/07-multiagente/roteiro.json"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 07 ou parar por aqui",
+      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+    }
+  ]
+}

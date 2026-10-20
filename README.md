@@ -9,7 +9,7 @@ por vez, tira dúvidas, aplica quizzes e provas, e **salva onde você parou** pr
 | 1 | [AWS & Cloud — mega intensivo](AWS/README.md) | ✅ Completo — 19 módulos + simulados CLF-C02/SAA-C03 |
 | 2 | [SOLID — design OO (exemplos em C#)](SOLID/README.md) | ✅ Completo — 7 módulos (fundamentos + 5 princípios + capstone) |
 | 3 | [Entrevista Angular + .NET — intensivo](Entrevista-Angular-DotNet/README.md) | ✅ Completo — 7 módulos (3 Angular + 4 .NET) + simulado geral |
-| 4 | [Claude Certified Architect — preparação para a prova](Claude-Architect/README.md) | ✅ Completo — 11 módulos + 6 bancos por cenário + 5 simulados |
+| 4 | [Claude Certified Architect — preparação para a prova](Claude-Architect/README.md) | ✅ Completo — 11 módulos + 6 bancos por cenário + 5 simulados (alinhado ao guia oficial v1.0) |
 
 ## 🚀 Começando (5 minutos)
 

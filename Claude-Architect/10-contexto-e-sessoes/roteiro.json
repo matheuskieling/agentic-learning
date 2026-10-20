@@ -1,0 +1,163 @@
+{
+  "modulo": "10",
+  "titulo": "Gestão de contexto, codebase grande e sessões",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — o contexto é finito e o modelo confia no que está nele",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# para a linguagem salva",
+        "Task statements cobertos: 5.1 (preservar informação crítica em interações longas), 5.4 (contexto na exploração de codebase grande) e 1.7 (estado de sessão, retomada e fork)",
+        "Onde cai: 5.1 nos Cenários 1 (suporte), 3 (pesquisa multiagente) e 6 (extração); 5.4 e 1.7 nos Cenários 4 (developer productivity) e 2 (Claude Code); 1.7 também no 3",
+        "Ideia central: decidir o que entra (aparado), o que não pode ser parafraseado (case facts), onde fica (começo, com cabeçalhos), o que sai da conversa (scratchpad, manifest) e se a sessão antiga ainda vale",
+        "Aviso de escopo: prompt caching existe, mas os detalhes são fora do escopo oficial (§17); recursos de gestão de contexto da API também não estão no guia e não decidem questão",
+        "Formato: 7 blocos de teoria, quiz de 15 e prova de 20 em estilo cenário"
+      ],
+      "checkpoint": "Pergunte se o aluno já viu um agente ou sessão longa 'ficar vago' ou trocar números com o tempo e confirme que está pronto para começar",
+      "ref": "10-contexto-e-sessoes/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Histórico completo e o custo do que acumula",
+      "pontos": [
+        "5.1-K4: a Messages API não guarda estado; cada request leva o histórico completo (user, assistant, tool_use, tool_result). Mandar só a última mensagem quebra a coerência",
+        "Mostre o JSON do request do turno 4 com messages completo e o tool_result aparado (marcado com ← AQUI)",
+        "5.1-K3: resultados de tool acumulam e consomem tokens desproporcionalmente à relevância (40+ campos quando 5 importam)",
+        "5.1-S3: apare a saída para os campos relevantes ANTES de anexar ao histórico: na tool, no código do loop (mostre o C#) ou num hook PostToolUse (Módulo 06)",
+        "Anti-padrões que aparecem como alternativa: 'instrua o agente a ignorar campos', 'janela maior', 'mande só a última mensagem', 'resuma cada resultado com outro modelo'",
+        "Caixa volátil: prompt caching existe; detalhes não caem"
+      ],
+      "checkpoint": "Pergunte em inglês: 'A support bot answers turn 1 correctly but on turn 3 no longer knows which order the customer mentioned. The code sends a messages array containing only the latest user message. What should change?' (esperado: enviar o histórico completo em cada request)",
+      "ref": "10-contexto-e-sessoes/teoria.md#1-histórico-completo-e-o-custo-do-que-acumula"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Resumo progressivo perde números: case facts e camada por issue",
+      "pontos": [
+        "5.1-K1: o resumo progressivo transforma valores, percentuais, datas e expectativas declaradas pelo cliente em frases vagas (dê o exemplo INV-30412, US$ 1.840, 12%, crédito até 31/03)",
+        "5.1-S1: bloco persistente de case facts (valores, datas, nº de pedido, status) incluído em cada prompt, fora do histórico resumido, atualizado pelo código a partir das tools",
+        "5.1-S2: sessão com várias demandas → camada de contexto separada com um registro estruturado por issue; lista solta faz o modelo cruzar valor de uma demanda com pedido de outra",
+        "Mostre o JSON do request do turno 41: system com <case_facts> por issue e messages com o resumo vago (os dois ← AQUI)",
+        "Anti-padrões: reescrever o prompt de resumo, resumir com mais frequência, 'lembre bem dos números', janela maior para resumir mais tarde",
+        "Prova: Cenário 1 (reembolso com valor arredondado ou pedido errado após N turnos) e Cenário 6 (resumo de lote arredonda valores)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'After 30 turns, an escalation note says the customer wants a refund on a recent invoice. Which kinds of information did summarization most likely lose, and where should they live instead?' (esperado: números, %, datas, expectativas; case facts fora do resumo)",
+      "ref": "10-contexto-e-sessoes/teoria.md#2-resumo-progressivo-perde-números-case-facts-e-camada-por-issue"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Lost in the middle e entrada agregada",
+      "pontos": [
+        "5.1-K2: começo e fim de entradas longas são bem processados; achados do meio podem ser omitidos. Pista de prova: 'o dado estava no input' e 'o que fica no meio é que falha'",
+        "5.1-S4: resumo dos achados-chave no INÍCIO da entrada agregada + seções com cabeçalhos explícitos por fonte/subagent",
+        "Mostre o JSON do request do agente de síntese com KEY FINDINGS no topo (← AQUI)",
+        "Anti-padrões: embaralhar a ordem a cada execução, janela maior, pedir para o modelo revisar o rascunho contra o input inteiro, uma síntese por subagent (perde o cruzamento)",
+        "Prova: Cenário 3 (subagent do meio some do relatório) e Cenário 1 (cláusula de contrato no meio de documentos de política)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Seven subagent outputs are concatenated in completion order; findings from the middle outputs keep disappearing from the report. What should you change in how the input is assembled?' (esperado: resumo no início + cabeçalhos por seção)",
+      "ref": "10-contexto-e-sessoes/teoria.md#3-lost-in-the-middle-como-montar-uma-entrada-agregada"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Contratos entre agentes: metadados e dados estruturados",
+      "pontos": [
+        "5.1-S5: subagents incluem metadados na saída estruturada: datas (publicação/coleta), local da fonte (documento, página, URL) e contexto metodológico; sem isso, diferença temporal vira 'contradição'",
+        "5.1-S6: downstream com orçamento de contexto limitado → mude o UPSTREAM para devolver fatos-chave, citações e score de relevância, em vez de conteúdo verboso e cadeias de raciocínio",
+        "Mostre o JSON da resposta final do subagent (key_facts com citation, published, method, relevance) e diga que ela volta ao coordenador como tool_result da chamada Task",
+        "Anti-padrões: saída mínima e o downstream reabre as fontes; escolher o valor mais recente quando divergem; janela maior no downstream; melhorar só o prompt do downstream",
+        "Ponte: o Módulo 11 aprofunda proveniência (5.6)",
+        "Prova: Cenário 6 (reconciliação perde os documentos do fim do lote → root cause no upstream verboso) e Cenário 3 (2023 vs 2026 lido como contradição)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'A synthesis agent with a small context budget receives twelve analysis reports of about 6,000 tokens each, mostly narrative and reasoning, and starts dropping sources. Which agents should change, and how?' (esperado: os upstream, devolvendo fatos-chave, citações e relevância)",
+      "ref": "10-contexto-e-sessoes/teoria.md#4-contratos-entre-agentes-metadados-e-dados-estruturados"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Codebase grande: degradação, scratchpad e /compact",
+      "pontos": [
+        "5.4-K1 (sintoma): em sessão longa, respostas inconsistentes e 'padrões típicos' em vez das classes específicas descobertas antes",
+        "5.4-K2/S2: scratchpad file com achados-chave (classes, caminhos, comportamentos confirmados, hipóteses descartadas), consultado nas perguntas seguintes; sobrevive a compactação, sessão nova e handoff",
+        "5.4-S5: /compact reduz contexto quando a exploração enche a janela de saída verbosa; SUBSTITUI o histórico por um resumo (aceita foco). Erro comum que aparece como alternativa: 'o /compact preserva as mensagens recentes' (não preserva)",
+        "Caixa volátil: o Claude Code relê até cinco arquivos recentes após compactar; na prova basta 'resumo no lugar do histórico; o crítico fica em arquivo'",
+        "Anti-padrões: instruir 'sempre cite classes', reler todos os arquivos antes de cada resposta, recomeçar a cada 45 min sem salvar, /clear ou copiar as últimas mensagens, logar toda saída no scratchpad"
+      ],
+      "checkpoint": "Pergunte em inglês: 'After two hours exploring a legacy service, the agent says the module follows a typical repository pattern instead of naming the classes it read earlier. What is happening, and name two mitigations.' (esperado: degradação de contexto; scratchpad + subagents ou /compact)",
+      "ref": "10-contexto-e-sessoes/teoria.md#5-codebase-grande-degradação-scratchpad-e-compact"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Subagents de exploração, resumo entre fases e manifest",
+      "pontos": [
+        "5.4-K3/S1: delegue perguntas específicas ('find all test files', 'trace refund flow dependencies') a subagents; a saída verbosa fica no contexto deles e o principal preserva a coordenação. No Claude Code: Explore subagent",
+        "5.4-S3: resuma os achados da fase 1 antes de lançar os subagents da fase 2 e injete o resumo no prompt inicial deles (subagents não herdam nada)",
+        "5.4-K4/S4: crash recovery: cada agente exporta estado para local conhecido; o coordenador carrega o manifest ao retomar e INJETA o estado nos prompts dos agentes",
+        "Mostre o state/manifest.json e a resposta do coordenador com o tool_use Task cujo input.prompt carrega o estado (← AQUI)",
+        "Anti-padrões: coordenador explorando sozinho, ler o repo inteiro de antemão, passar só a string da tarefa à fase 2, --resume da sessão que caiu perguntando 'o que você fez?', 'confira o git log'"
+      ],
+      "checkpoint": "Pergunte em inglês: 'A coordinator-driven migration crashed halfway through and, on restart, redid modules that were already finished. What design prevents this?' (esperado: estado exportado + manifest carregado e injetado nos prompts)",
+      "ref": "10-contexto-e-sessoes/teoria.md#6-subagents-de-exploração-resumo-entre-fases-e-manifest"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Sessões: --resume <session-name>, fork_session, retomar × recomeçar",
+      "pontos": [
+        "1.7-K1/S1: --resume <session-name> continua uma conversa específica pelo nome; --continue abre só a mais recente (pega a errada quando se alterna tarefas)",
+        "1.7-K2/S2: fork_session cria ramos independentes de uma base de análise comum (duas estratégias de teste ou refatoração); mostre o trecho do Agent SDK em Python com resume=base, fork_session=True e diga que em TS é forkSession",
+        "1.7-K3/S4: ao retomar após mudanças, diga quais arquivos mudaram para uma reanálise direcionada (mostre a mensagem de exemplo)",
+        "1.7-K4/S3: resultados de tool obsoletos → sessão nova com resumo estruturado é mais confiável; contexto ainda majoritariamente válido → retomar e informar as mudanças",
+        "Caixa volátil: o fork ramifica a conversa, não o filesystem; -n, /rename e /branch são detalhes da CLI atual",
+        "Anti-padrões: retomar após grande refatoração 'porque ele vai notar', reexplorar tudo quando 2 arquivos mudaram, duas abordagens na mesma sessão, colar a transcrição inteira, forkar sessão obsoleta"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Yesterday a session mapped the payments module; overnight a teammate rewrote most of it. Resume or start fresh? What if only two files had changed?' (esperado: reescrito → sessão nova com resumo estruturado; 2 arquivos → retomar e informar quais mudaram)",
+      "ref": "10-contexto-e-sessoes/teoria.md#7-sessões-retomar-fork-e-recomeçar-com-resumo"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz do módulo",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "15 questões curtas cobrindo 5.1 (histórico, trimming, case facts, issues, lost in the middle, contratos upstream), 5.4 (degradação, scratchpad, subagents, manifest, /compact) e 1.7 (resume, fork, retomar × recomeçar)",
+        "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-10/questions.json",
+      "checkpoint": "Ao terminar, comente o resultado e quais seções da teoria revisar",
+      "ref": "Claude-Architect/apps/modulo-10/questions.json"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do módulo",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões em estilo cenário do exame (Cenários 1, 2, 3, 4 e 6), feedback por alternativa, algumas de múltipla resposta (Choose TWO)",
+        "Depois de cada resposta, explique por que as alternativas erradas são tentadoras e qual anti-padrão cada uma representa",
+        "Aprovação 70%; abaixo disso, revise as seções correspondentes antes de seguir"
+      ],
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-10/questions.json --id prova",
+      "checkpoint": "Se passou, proponha o Módulo 11; se não, revise os pontos errados com a tabela de decisão",
+      "ref": "Claude-Architect/provas/modulo-10/questions.json"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 10",
+      "pontos": [
+        "Recap: histórico completo e aparado; case facts fora do resumo (um registro por issue); achados no início com cabeçalhos; upstream estruturado com metadados; scratchpad, subagents e /compact contra a degradação; manifest para crash; --resume <nome>, fork_session e recomeçar com resumo quando o contexto envelheceu",
+        "Revise a 'Cola de véspera' da teoria antes dos simulados",
+        "Próximo: Módulo 11 — Propagação de erro, revisão humana e proveniência",
+        "Para começar: python3 engine/aula.py start Claude-Architect/11-confiabilidade/roteiro.json"
+      ],
+      "checkpoint": "Pergunte se quer emendar o Módulo 11 ou parar por aqui",
+      "ref": "Claude-Architect/CLAUDE.md"
+    }
+  ]
+}

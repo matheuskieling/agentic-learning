@@ -1,138 +1,143 @@
 {
   "modulo": "08",
-  "titulo": "Configurando o Claude Code: CLAUDE.md, rules, skills, subagents, permissões e tools nativas",
+  "titulo": "Configurando o Claude Code: CLAUDE.md, rules, commands/skills, plan mode",
   "beats": [
     {
       "id": "intro",
       "fase": "teoria",
-      "titulo": "Abertura: 'onde esta configuração deve morar?'",
+      "titulo": "Abertura: onde cada instrução mora e quando ela entra no contexto",
       "pontos": [
-        "Este módulo cobre o D3 (20% da prova) quase inteiro, mais o task statement 2.5 (tools nativas) do D2",
-        "Cai principalmente nos cenários 2 (Code Generation with Claude Code) e 4 (Developer Productivity); aparece no 5 (CI) quando o assunto é 'vale também no pipeline?'",
-        "A pergunta-mãe: onde mora cada instrução? Escopo certo (quem vê), custo de contexto certo (carrega quando precisa) e mecanismo certo (orientação = texto; regra crítica = permissão/hook)",
-        "Roteiro: superfícies → hierarquia do CLAUDE.md → rules por caminho → skills → settings e permissões → modos/plan mode → subagents → tools nativas",
-        "Formato: eu explico, você pergunta, a gente avança quando fizer sentido; no fim, quiz de 15 e prova de 20"
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# (testes, Result<T>) para a linguagem salva; CLAUDE.md, rules, SKILL.md e YAML ficam no formato real",
+        "Este módulo cobre o D3 de configuração: TS 3.1 (hierarquia e modularização do CLAUDE.md), 3.2 (commands e skills), 3.3 (rules por caminho) e 3.4 (plan mode × execução direta)",
+        "Cai sobretudo no cenário 2 (Code Generation with Claude Code); também no 4 (Developer Productivity) e no 5 (CI), porque o `claude -p` do pipeline lê os mesmos CLAUDE.md, rules e skills do repositório",
+        "Pergunta-mãe: onde esta instrução mora e quando ela entra no contexto? Três eixos: escopo (só eu × time via git × uma pasta), momento de carga (sempre × ao mexer num arquivo que bate × quando alguém invoca) e isolamento (conversa principal × contexto separado)",
+        "Pontes: tools nativas ficaram no M05; hooks e gates determinísticos no M06; CI no M09; /compact e scratchpad no M10",
+        "Aviso de escopo: settings/permissões, managed policy, CLAUDE.local.md, auto memory, plugins e routines existem na doc atual, mas o guia não cobra; não gastaremos tempo com eles",
+        "Roteiro: hierarquia → @import e rules por tema → /memory → rules com paths → commands → skills e frontmatter → plan mode × direto → Explore subagent; no fim, quiz de 15 e prova de 20"
       ],
-      "checkpoint": "Pergunte se o aluno já usa CLAUDE.md, skills ou settings.json no dia a dia (para calibrar exemplos) e confirme que pode começar",
+      "checkpoint": "Pergunte se o aluno já usa CLAUDE.md, rules ou skills no dia a dia (para calibrar os exemplos) e confirme que pode começar",
       "ref": "08-claude-code-config/teoria.md"
     },
     {
       "id": "t1",
       "fase": "teoria",
-      "titulo": "Superfícies: o mesmo motor em todo lugar (3.0)",
+      "titulo": "Hierarquia do CLAUDE.md: user, project, directory (3.1)",
       "pontos": [
-        "CLI, VS Code/Cursor, JetBrains, desktop, web e mobile rodam o MESMO motor",
-        "Logo CLAUDE.md, settings, skills, subagents, hooks e MCP valem igual em todas: a configuração mora em arquivos, não na interface",
-        "O `claude -p` do CI também é o mesmo motor, e por isso o CLAUDE.md do repo vale no pipeline",
-        "Agendamento [volátil]: routines na nuvem (máquina desligada, disparo por agenda/API/GitHub), tarefas agendadas no desktop (rodam local, enxergam rede privada), `/loop` (polling dentro da sessão aberta)",
-        "Anti-padrão: configurar convenções 'por IDE' ou duplicar arquivos por superfície"
+        "Três níveis do guia: user (`~/.claude/CLAUDE.md`, só aquele usuário, em todos os projetos dele), project (`CLAUDE.md` na raiz ou `.claude/CLAUDE.md`, versionado, o time e o CI recebem) e directory (`CLAUDE.md` num subdiretório, entra quando o Claude trabalha naquela pasta)",
+        "Os níveis se somam (concatenam); nenhum sobrescreve o outro",
+        "Ponto que a prova adora: user-level NÃO vai pelo git. Funciona na máquina de quem escreveu, e só nela",
+        "Mostre a árvore do imobi-portal: regra do Money no project, data do importador no directory, preferência de idioma no user",
+        "Diagnóstico clássico (3.1-S1): dev novo clonou e não recebe a convenção que os veteranos recebem → a regra está no `~/.claude/CLAUDE.md` deles → mover para o project e commitar",
+        "Distratores: cada dev copiar o arquivo do colega; hook que reescreve o código; CAIXA ALTA; 'a raiz sobrescreve a pasta'",
+        "CLAUDE.md é contexto, não enforcement (garantia é hook/gate, M06)"
       ],
-      "checkpoint": "Pergunte: um relatório diário precisa ler um banco que só existe na rede interna da empresa; routine na nuvem ou tarefa agendada local? Por quê?",
-      "ref": "08-claude-code-config/teoria.md#1-superfícies-o-mesmo-motor-em-todo-lugar"
+      "checkpoint": "Pergunte em inglês: 'A CI job and a new hire both ignore the rule \"use the Money type for prices\", but two senior developers always get it. The rule is in the seniors' ~/.claude/CLAUDE.md. What is the fix?' Resposta esperada: mover para o CLAUDE.md do projeto (raiz ou .claude/CLAUDE.md) e commitar",
+      "ref": "08-claude-code-config/teoria.md#1-hierarquia-do-claudemd-31"
     },
     {
       "id": "t2",
       "fase": "teoria",
-      "titulo": "Hierarquia do CLAUDE.md, @import, AGENTS.md e auto memory (3.1)",
+      "titulo": "Modularizar: @import seletivo por pacote e .claude/rules/ por tema (3.1)",
       "pontos": [
-        "Níveis: managed policy (org, não excluível) → usuário (~/.claude/CLAUDE.md) → projeto (./CLAUDE.md ou ./.claude/CLAUDE.md, versionado) → CLAUDE.local.md (pessoal, gitignored) → subdiretório",
-        "Diretório atual e acima carregam no início; subdiretórios abaixo carregam SOB DEMANDA quando o Claude toca arquivos de lá; tudo concatena, nada sobrescreve",
-        "Mostre o CLAUDE.md de exemplo com @README.md e @~/.claude/minhas-preferencias.md: import relativo ao arquivo que importa, @~/ = home, profundidade limitada (doc atual: 4 saltos); import organiza mas não economiza contexto",
-        "AGENTS.md é lido só quando não há CLAUDE.md (nem CLAUDE.local.md); com ambos, CLAUDE.md vence → para unificar, `@AGENTS.md` dentro do CLAUDE.md",
-        "Auto memory: MEMORY.md escrito pelo próprio Claude; primeiras 200 linhas/25 KB no início; local da máquina (não vai para o time)",
-        "Monorepo: claudeMdExcludes para pular CLAUDE.md de outros times; --add-dir dá acesso a outro diretório (CLAUDE.md de lá não carrega por padrão)",
-        "Lembrete: CLAUDE.md orienta, não garante. Bloquear de verdade é com deny/hook",
-        "Como cai: 'o colega novo não recebe a convenção' → estava no ~/.claude do veterano; mova para o projeto"
+        "@import: uma linha `@caminho/arquivo.md` no CLAUDE.md traz aquele arquivo para o contexto junto com o CLAUDE.md que o referencia; caminho relativo ao arquivo que importa",
+        "Padrão do guia (3.1-S2): padrões num lugar só (`standards/`) e o CLAUDE.md de CADA PACOTE importa só o que se aplica a ele; quem escolhe é o mantenedor, que conhece o domínio",
+        "Mostre o `packages/pharmacy-api/CLAUDE.md` importando `dotnet-api.md` e `hipaa-logging.md`, enquanto o `scheduling-ui` importa só `react-ui.md` e `accessibility.md`",
+        "Pegadinha: importar tudo no CLAUDE.md raiz organiza o arquivo, mas carrega tudo em toda sessão. Import não é carga sob demanda",
+        "`.claude/rules/` (3.1-K4/S3): dividir o CLAUDE.md monolítico em arquivos por tema (`testing.md`, `api-conventions.md`, `deployment.md`); sem `paths` eles carregam sempre, e o ganho é organização e um dono por tema (menos conflito de merge)",
+        "Distratores: copiar o texto para cada pacote; transformar padrão universal em skill; 'rules carregam quando o Claude acha relevante'"
       ],
-      "checkpoint": "Pergunte onde o aluno colocaria (a) a URL do sandbox pessoal dele e (b) a regra 'toda rota nova precisa de teste de integração'",
-      "ref": "08-claude-code-config/teoria.md#2-hierarquia-do-claudemd"
+      "checkpoint": "Pergunte em inglês: 'Your root CLAUDE.md now contains four @ lines that import all team standards. Does this make each package load only the standards it needs?' Resposta esperada: não; importados carregam junto com o CLAUDE.md raiz em toda sessão. O certo é import seletivo no CLAUDE.md de cada pacote",
+      "ref": "08-claude-code-config/teoria.md#2-modularizar-import-e-clauderules-por-tema-31"
     },
     {
       "id": "t3",
       "fase": "teoria",
-      "titulo": "Regras em .claude/rules/ e regras por caminho (3.1/3.3)",
+      "titulo": "/memory: verificar o que está carregado (3.1)",
       "pontos": [
-        "Arquivos .md em .claude/rules/ dividem instruções por tema",
-        "Sem frontmatter `paths` = carrega sempre no início; com `paths:` (globs) = carrega só quando o Claude lê/edita arquivo que bate",
-        "Mostre o exemplo .claude/rules/testes.md com paths ['**/*Tests.cs', 'tests/**/*.cs']",
-        "Por quê: convenção que atravessa diretórios (testes em 40 pastas) → um glob cobre tudo, inclusive pastas futuras, e só gasta contexto quando relevante",
-        "Anti-padrões: copiar CLAUDE.md em cada pasta (duplica e não cobre pasta nova); jogar tudo no CLAUDE.md raiz (carrega sempre); usar skill para convenção que deve valer sempre"
+        "/memory mostra quais arquivos de memória (os CLAUDE.md de cada nível) estão em jogo na sessão e permite abri-los para editar",
+        "É o primeiro passo para comportamento inconsistente entre sessões ou entre devs: 'ontem seguiu, hoje não'; 'na minha máquina segue, na do colega não'",
+        "Fluxo: rodar /memory na sessão que falha (e na que funciona) → comparar (falta o arquivo do projeto? há um ~/.claude/CLAUDE.md conflitante? a sessão foi aberta noutra pasta?) → só então corrigir o lugar ou o texto",
+        "Distratores: perguntar ao Claude se ele leu o CLAUDE.md (autodeclaração não é verificação); reescrever com mais ênfase antes de verificar; trocar de modelo",
+        "Nota volátil: a doc atual também sugere /context para ver o que carregou no início; na prova, a resposta é /memory"
       ],
-      "checkpoint": "Pergunte: qual a diferença prática entre uma rule sem `paths` e um trecho no CLAUDE.md raiz? E com `paths`?",
-      "ref": "08-claude-code-config/teoria.md#3-regras-em-clauderules-e-regras-por-caminho-33"
+      "checkpoint": "Pergunte em inglês: 'Claude followed the API naming rules in Monday's session but not in Tuesday's, which was started from a different folder. What is the most effective first step?' Resposta esperada: rodar /memory para verificar quais arquivos de memória estão carregados e comparar",
+      "ref": "08-claude-code-config/teoria.md#3-memory-o-que-está-carregado-nesta-sessão-31"
     },
     {
       "id": "t4",
       "fase": "teoria",
-      "titulo": "Skills e comandos: fundidos, prioridade, frontmatter, context: fork, plugins (3.2)",
+      "titulo": "Rules por caminho: frontmatter paths com globs (3.3)",
       "pontos": [
-        "Comandos foram fundidos em skills: .claude/commands/deploy.md e .claude/skills/deploy/SKILL.md criam o mesmo /deploy; mesmo nome → a skill vence",
-        "Prioridade em colisão: enterprise > pessoal (~/.claude/skills) > projeto (.claude/skills); plugin tem namespace /plugin:skill e não colide",
-        "Frontmatter: description (+when_to_use) dirige o auto-carregamento; disable-model-invocation para efeito colateral; user-invocable:false para conhecimento de fundo; allowed-tools; paths; context: fork + agent",
-        "Mostre o SKILL.md revisar-pr: $0/$ARGUMENTS, `!`gh pr diff $0`` injeta saída antes, context: fork roda em subagent isolado sem o histórico",
-        "O corpo da skill entra uma vez e NÃO é relido → escreva instruções permanentes, não passos de uso único",
-        "Plugins: pacote de skills + subagents + hooks + MCP para distribuir entre repositórios/times"
+        "Arquivo em `.claude/rules/` com frontmatter YAML `paths:` (lista de globs) só entra no contexto quando o Claude trabalha com um arquivo que bate → menos contexto irrelevante e menos tokens",
+        "Mostre `.claude/rules/terraform.md` com `paths: [\"terraform/**/*\"]` (exemplo do guia) e `.claude/rules/testing-dotnet.md` com `**/*Tests.cs`",
+        "Glob por tipo de arquivo ignora o diretório: `**/*.test.tsx` ou `**/*Tests.cs` pegam testes em qualquer pasta, inclusive as futuras",
+        "Rule com glob vence CLAUDE.md por subdiretório quando a convenção atravessa a base (CLAUDE.md de pasta é preso ao diretório); convenção de uma pasta só continua no CLAUDE.md dela",
+        "Dois diagnósticos que caem: 'movemos para rules e o contexto inicial não caiu' → faltou `paths`; 'a rule não pega parte dos arquivos' → glob ancorado em diretório (`tests/**` com testes ao lado do código em `src/`)",
+        "Distratores: CLAUDE.md em cada pasta; tudo no raiz 'e o Claude infere'; skill para convenção que deve ser automática"
       ],
-      "checkpoint": "Pergunte: o time criou /deploy e o Claude disparou o deploy sozinho numa conversa. Qual campo do frontmatter resolve?",
-      "ref": "08-claude-code-config/teoria.md#4-skills-e-comandos-32"
+      "checkpoint": "Pergunte em inglês: 'Migration files live in db/migrations/ of nine different services. Should the migration conventions go in a CLAUDE.md inside each migrations folder or in one rule file? Why?' Resposta esperada: uma rule em .claude/rules/ com paths: [\"**/db/migrations/**/*.sql\"], porque cobre todas as pastas (inclusive novas) sem duplicar e só carrega ao mexer em migrations",
+      "ref": "08-claude-code-config/teoria.md#4-rules-por-caminho-paths-com-globs-33"
     },
     {
       "id": "t5",
       "fase": "teoria",
-      "titulo": "settings.json: hierarquia e permissões allow/ask/deny",
+      "titulo": "Slash commands: .claude/commands/ (time) × ~/.claude/commands/ (pessoal) (3.2)",
       "pontos": [
-        "Precedência: managed > linha de comando > .claude/settings.local.json > .claude/settings.json > ~/.claude/settings.json",
-        "Escalares: vence o nível mais alto; listas de permissão se mesclam entre níveis",
-        "Avaliação: deny → ask → allow; allow NÃO abre exceção num deny, venha de onde vier",
-        "Mostre o settings.json de exemplo: Bash(dotnet test *) com ' *' = prefixo; Bash(npm run test:*) é a forma equivalente com ':*'; Read(./.env) em deny; WebFetch(domain:...)",
-        "Permissão é enforcement determinístico; CLAUDE.md é probabilístico. Segredo/produção → deny ou hook PreToolUse",
-        "Anti-padrões: 'nunca leia o .env' só no CLAUDE.md; allowlist do time no settings.local.json; allow: ['Bash'] amplo demais"
+        "`.claude/commands/<nome>.md` no repositório vira /<nome> para todo o time: versionado, chega a quem clona ou dá pull, e mudanças passam por code review",
+        "`~/.claude/commands/<nome>.md` é comando pessoal: só você, em todos os seus projetos",
+        "Mostre `.claude/commands/release-notes.md` com `$ARGUMENTS`",
+        "Distratores: distribuir copiando para o ~/.claude/commands de cada dev (wiki, script, hook) → versões divergem; descrever o procedimento no CLAUDE.md (ele guarda instruções, não define comandos); arquivo de config inventado",
+        "Nota volátil: a doc atual diz que commands foram fundidos em skills e `.claude/commands/` continua funcionando; na prova, comando do time = `.claude/commands/`"
       ],
-      "checkpoint": "Pergunte: há deny de `git push` no projeto e allow no settings.local.json do dev. O push roda? Por quê?",
-      "ref": "08-claude-code-config/teoria.md#5-settingsjson-hierarquia-e-permissões"
+      "checkpoint": "Pergunte em inglês: 'A developer wants a /standup command only for herself, available in all her repositories. Where does it go? And a /hotfix-checklist that every developer gets on pull?' Resposta esperada: ~/.claude/commands/standup.md; .claude/commands/hotfix-checklist.md no repositório",
+      "ref": "08-claude-code-config/teoria.md#5-slash-commands-projeto--pessoal-32"
     },
     {
       "id": "t6",
       "fase": "teoria",
-      "titulo": "Modos de permissão e plan mode vs. execução direta (3.4)",
+      "titulo": "Skills: SKILL.md, context: fork, allowed-tools, argument-hint, variante pessoal; skill × CLAUDE.md (3.2)",
       "pontos": [
-        "Modos: default (Manual), acceptEdits, plan, auto (classificador), dontAsk (nega o que não está pré-aprovado: bom para CI), bypassPermissions (só container/VM isolado)",
-        "Troca: Shift+Tab na sessão, --permission-mode na CLI, defaultMode no settings",
-        "Plan mode: explora, propõe plano, pede aprovação e só então edita → multi-arquivo, arquitetural, várias abordagens válidas, requisito confuso (ex.: migrar lib em 45+ arquivos)",
-        "Direto: escopo pequeno e claro (null check, constante, bug com stack trace apontando a linha)",
-        "Anti-padrões: plan mode para trocar uma string; direto numa migração ambígua; bypassPermissions como rotina na máquina do dev"
+        "Skill de projeto em `.claude/skills/<nome>/SKILL.md` (versionada); pessoal em `~/.claude/skills/<nome>/SKILL.md`; o SKILL.md aceita frontmatter YAML",
+        "`context: fork`: roda a skill num sub-agent isolado; a saída verbosa (análise de codebase) ou exploratória (brainstorm) fica lá e só o resultado volta. Isola contexto, não disco nem git; o sub-agent não vê o histórico",
+        "`allowed-tools` no sentido do guia: RESTRINGE as tools durante a skill (ex.: só escrita de arquivos para evitar ação destrutiva). Nota volátil: a doc atual diz que pré-aprova; na prova, use o sentido do guia",
+        "`argument-hint`: pede o parâmetro quando o dev invoca a skill sem argumento (na doc atual, aparece como dica no autocomplete)",
+        "Mostre o SKILL.md do scaffold-collection com os três campos anotados",
+        "Variante pessoal (3.2-K4): copiar para `~/.claude/skills/` com OUTRO nome, para não afetar o time",
+        "Skill × CLAUDE.md (3.2-S5): CLAUDE.md = sempre carregado, padrão universal; skill = sob demanda, fluxo específico. Procedimento de tarefa ocasional no CLAUDE.md pesa em toda sessão e vaza; padrão universal numa skill só vale se alguém invocar",
+        "Distratores: /compact depois da skill verbosa; 'nunca rode comandos destrutivos' no corpo da skill; editar a skill do time para o seu gosto"
       ],
-      "checkpoint": "Dê dois casos e peça a escolha: (a) corrigir NullReferenceException com stack trace na linha 42; (b) trocar a estratégia de cache da aplicação inteira",
-      "ref": "08-claude-code-config/teoria.md#6-modos-de-permissão-e-plan-mode-vs-execução-direta-34"
+      "checkpoint": "Pergunte em inglês: 'A team skill reads 150 files to map dependencies and dumps 2,000 lines into the session; afterwards Claude loses track of earlier decisions. Which single frontmatter change fixes this?' Resposta esperada: context: fork, para rodar a skill num sub-agent isolado e devolver só o resumo",
+      "ref": "08-claude-code-config/teoria.md#6-skills-skillmd-e-o-frontmatter-que-cai-32"
     },
     {
       "id": "t7",
       "fase": "teoria",
-      "titulo": "Subagents nativos e customizados; a permissão do pai desce (3.4)",
+      "titulo": "Plan mode × execução direta, e a combinação dos dois (3.4)",
       "pontos": [
-        "Nativos: Explore e Plan (somente leitura; não carregam CLAUDE.md), general-purpose (explora e age)",
-        "Valor: contexto isolado; o ruído fica no subagent e só a conclusão volta. Não recebe o histórico, então o prompt de delegação precisa ser explícito",
-        "Customizados em .claude/agents/ (time, versionado) ou ~/.claude/agents/ (pessoal); só name e description obrigatórios; description diz quando delegar",
-        "Mostre o revisor-seguranca.md: tools Read, Grep, Glob (menor privilégio), model, permissionMode",
-        "Subagent não escala além do modo do pai: pai em acceptEdits/auto/bypass → subagent herda; pai em default/dontAsk/plan → subagent pode ter modo próprio, mas nunca vira bypass",
-        "Anti-padrões: revisor com Write/Edit; achar que o subagent lembra a conversa; ler 40 arquivos na conversa principal em vez de usar o Explore"
+        "Plan mode: explora a base sem editar, desenha a abordagem e só muda arquivos depois da aprovação. Para tarefas complexas: larga escala, várias abordagens válidas, decisões arquiteturais, muitos arquivos",
+        "Exemplos do guia: reestruturar em microsserviços; migração de biblioteca em 45+ arquivos; escolher entre integrações com requisitos de infraestrutura diferentes. Valor: evitar retrabalho caro",
+        "Execução direta: mudança simples e bem delimitada; exemplos do guia: bug de um arquivo com stack trace claro, uma condicional de validação de data",
+        "Combinar (3.4-S4): plan mode para investigar e planejar → execução direta para implementar o plano aprovado (ex.: migração Newtonsoft.Json → System.Text.Json)",
+        "Regra de bolso: a complexidade já está no enunciado? → plan mode desde o início. Dá para descrever o diff numa frase? → direto",
+        "Distratores: 'comece direto e deixe a implementação revelar'; 'direto com especificação detalhada'; 'comece direto e troque se complicar'; 'plan mode para tudo'; 'implemente as duas e compare'; 'commit a cada arquivo para reverter'"
       ],
-      "checkpoint": "Pergunte: a sessão principal está enchendo o contexto com leituras de arquivos para mapear o módulo de faturamento. O que fazer?",
-      "ref": "08-claude-code-config/teoria.md#7-subagents-nativos-e-customizados-34"
+      "checkpoint": "Dê dois casos em inglês e peça a escolha: (a) 'Add a check that rejects a refund whose date is after the order's cancellation date in RefundValidator.cs'; (b) 'Replace the in-house job scheduler used by 48 files with a hosted queue; the team has not chosen between two vendors'. Resposta esperada: (a) direto; (b) plan mode para investigar e decidir, depois execução direta do plano",
+      "ref": "08-claude-code-config/teoria.md#8-plan-mode--execução-direta-34"
     },
     {
       "id": "t8",
       "fase": "teoria",
-      "titulo": "Tools nativas e exploração incremental (2.5)",
+      "titulo": "Explore subagent: descoberta verbosa fora da conversa principal (3.4)",
       "pontos": [
-        "Grep = conteúdo; Glob = arquivos por padrão de nome; Read; Write = criar/sobrescrever; Edit = troca de trecho exato e único; Bash; WebSearch/WebFetch; Agent (subagent, antiga Task); Skill; NotebookEdit; AskUserQuestion; ToolSearch",
-        "Padrão que a prova cobra: Grep pelos pontos de entrada → Read → Grep pelos usos/imports → Read, construindo aos poucos",
-        "Anti-padrão: ler o repositório inteiro de antemão (gasta a janela e degrada)",
-        "Edit falha se old_string não for único (ou não existir) → amplie o trecho com contexto, use replace_all se quer trocar todos, ou leia e reescreva",
-        "Para exploração volumosa, delegue ao Explore (devolve só a conclusão)"
+        "Explore = subagent nativo, somente leitura: faz a descoberta (dezenas de Read e Grep) no próprio contexto e devolve um resumo",
+        "Uso no guia: isolar a saída verbosa da descoberta e evitar o esgotamento da janela em tarefas de várias fases (descobrir → planejar → implementar)",
+        "Mostre o diagrama sem/com Explore: 140 arquivos lidos ocupando 70% da janela × resumo de uma página",
+        "Como cai: 'a sessão esquece decisões depois de uma exploração grande' (causa) ou 'a tarefa de várias fases vai estourar a janela' (correção: Explore na descoberta)",
+        "Distratores: ler tudo na conversa principal; janela maior; colar a transcrição; guardar texto bruto num scratchpad e relê-lo (scratchpad é para achados-chave, M10)",
+        "Ponte: é o mesmo princípio do subagent isolado do M07 e do /compact/scratchpad do M10"
       ],
-      "checkpoint": "Pergunte qual tool usar para (a) listar todos os *Controller.cs e (b) achar quem chama CalcularFrete",
-      "ref": "08-claude-code-config/teoria.md#8-tools-nativas-e-exploração-incremental-25"
+      "checkpoint": "Pergunte em inglês: 'Phase 1 of a three-phase refactor reads 90 files and fills 65% of the context window before any design work. What should you change so the session does not run out of room in phase 3?' Resposta esperada: delegar a fase de descoberta ao Explore subagent, que devolve só o resumo",
+      "ref": "08-claude-code-config/teoria.md#9-explore-subagent-descoberta-verbosa-fora-da-conversa-principal-34"
     },
     {
       "id": "q1",
@@ -140,7 +145,8 @@
       "titulo": "Quiz de fixação do Módulo 08 (15 questões)",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "15 questões curtas: hierarquia do CLAUDE.md, rules, skills, settings/permissões, modos, subagents, tools nativas",
+        "15 questões curtas cobrindo 3.1 (níveis, dev novo, /memory, @import), 3.2 (command pessoal, SKILL.md, context: fork, allowed-tools, argument-hint, variante pessoal), 3.3 (rules com paths) e 3.4 (direto × plan, combinação, Explore)",
+        "Há uma questão 'Choose TWO': o aluno responde com duas letras separadas por vírgula",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora",
         "Meta: 70%"
       ],
@@ -154,11 +160,12 @@
       "titulo": "Prova do Módulo 08 (20 questões em estilo de cenário)",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "20 questões no estilo do exame (cenários 2, 4 e 5), com feedback por alternativa",
-        "Algumas são de múltipla resposta ('Choose TWO'): responda com letras separadas por vírgula",
+        "20 questões no estilo do exame, nos cenários 2, 4 e 5, com feedback por alternativa",
+        "Três são de múltipla resposta ('Choose TWO'): responda com letras separadas por vírgula",
+        "Ao comentar cada questão, explique por que cada alternativa errada é tentadora e em que situação ela seria certa",
         "Aprovação: 70%"
       ],
-      "checkpoint": "Analise os erros por tópico; se ficou abaixo de 70%, revise a cola de véspera e refaça",
+      "checkpoint": "Analise os erros por task statement (3.1, 3.2, 3.3, 3.4); se ficou abaixo de 70%, revise a cola de véspera e refaça",
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-08/questions.json --id prova",
       "ref": "08-claude-code-config/teoria.md#cola-de-véspera"
     },
@@ -167,12 +174,13 @@
       "fase": "fechamento",
       "titulo": "Fechamento do Módulo 08",
       "pontos": [
-        "Recapitule a pergunta-mãe: escopo certo, custo de contexto certo, mecanismo certo",
-        "Três frases para levar: time = projeto versionado; convenção que atravessa pastas = rule com paths; impedir = deny/hook, não CLAUDE.md",
-        "Próximo: Módulo 09, Claude Code em CI/CD (-p, saída JSON, GitHub Actions, Batch API vs. síncrono) e refinamento iterativo"
+        "Recapitule a pergunta-mãe: escopo (user × project × directory), momento de carga (sempre × paths × invocação) e isolamento (context: fork, Explore)",
+        "Quatro frases para levar: time = project versionado (e /memory para conferir o que carregou); convenção espalhada = rule com paths; fluxo ocasional = skill, padrão universal = CLAUDE.md; tarefa complexa = plan mode para investigar, direto para implementar",
+        "Lembrete das divergências: na prova, comando do time = .claude/commands/, allowed-tools restringe, /memory verifica o que carregou",
+        "Próximo: Módulo 09, refinamento iterativo, Claude Code em CI/CD (-p, --output-format json, --json-schema) e review multi-instância/multi-pass. Para começar: python3 engine/aula.py start Claude-Architect/09-claude-code-workflows-ci/roteiro.json"
       ],
       "checkpoint": "Pergunte se ficou alguma dúvida e se o aluno quer seguir para o Módulo 09 agora ou fazer uma revisão antes",
-      "ref": "09-claude-code-cicd/teoria.md"
+      "ref": "09-claude-code-workflows-ci/teoria.md"
     }
   ]
 }

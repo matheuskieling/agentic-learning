@@ -8,110 +8,113 @@
       "titulo": "Abertura — o que vamos fazer neste módulo",
       "pontos": [
         "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e conduza o código de aplicação na linguagem salva (se não houver, pergunte e grave); os arquivos usam C# como referência-base; JSON fica como é",
-        "Objetivo: task statements 4.3 (saída estruturada), 4.4 (validação com retry) e 4.5 (Batch API)",
-        "Este módulo é quase todo o cenário 6 (Structured Data Extraction) e parte do cenário 5 (CI)",
-        "Ao fim: quiz (15) e prova (20 em estilo cenário, 70%)"
+        "Objetivo: task statements 4.3 (saída estruturada com tool use e JSON schema), 4.4 (validação, retry e loops de feedback) e 4.5 (Message Batches API) — todos do D4 (20% da prova)",
+        "Onde cai: cenário 6 (Structured Data Extraction) quase inteiro; cenário 5 (CI) em findings estruturados, detected_pattern e síncrono × batch",
+        "Se o aluno fez a versão antiga deste módulo, desaprender duas coisas: (1) na prova, 'saída estruturada confiável' = tool_use + JSON schema (output_config.format é só nota volátil, fora do guia); (2) tool_choice 'any' e forçado são respostas CERTAS — o 400 em alguns modelos novos não decide nenhuma questão",
+        "Formato: 7 beats de teoria com checkpoint em inglês no estilo do exame; depois quiz (15) e prova (20, aprovação 70%)"
       ],
-      "checkpoint": "Confirme que o aluno está pronto para começar",
+      "checkpoint": "Confirme que o aluno está pronto para começar e se lembra do que viu de JSON schema/tool use no M01",
       "ref": "03-saida-estruturada/teoria.md"
     },
     {
       "id": "t1",
       "fase": "teoria",
-      "titulo": "Por que saída estruturada + tool como schema",
+      "titulo": "Tool use + JSON schema: o caminho mais confiável (4.3)",
       "pontos": [
-        "Texto livre sai malformado, sem campo, com nome/tipo errado ou com texto em volta; regex/try-catch é frágil",
-        "Três caminhos: tool cujo input_schema é a saída; strict: true; output_config.format",
-        "Tool como schema: a tool não executa nada; o input do tool_use É o seu JSON",
-        "Forçar a tool: tool_choice {type: tool} valia em modelos anteriores; nos novos any/tool retornam 400 → auto + instrução nomeando a tool + strict (e verifique se a chamada veio), ou structured outputs",
-        "Como cai: cenário 6 — 'migramos de modelo e o tool_choice forçado começou a dar 400'"
+        "Fato do guia: tool use com JSON schema é 'the most reliable approach' para saída conforme ao schema; elimina erros de SINTAXE JSON (texto em volta, cerca de código, vírgula faltando)",
+        "Tool de extração: o input_schema É a saída desejada; a tool não executa nada; o dado vem em content[].input do bloco tool_use (mostrar o JSON do request e da resposta com o caminho até o campo)",
+        "strict: true na tool = modo estrito (o guia: 'strict mode for syntax error elimination')",
+        "Por quê: 'responda só com JSON' é instrução → probabilística; o schema da tool é aplicado pela API",
+        "Distratores típicos: reforçar 'ONLY JSON' no prompt, regex do 1º '{' ao último '}', try/catch + retry no parse, few-shot como garantia de formato, devolver o dado num tool_result 'para confirmar'",
+        "Caixa volátil: structured outputs (output_config.format) existe na doc atual, mas o guia não o cita — na prova, a resposta é a tool de extração"
       ],
-      "checkpoint": "Pergunte: o tool_choice forçado deu 400 após a migração e a tool só existia para obter JSON. Qual a alternativa mais limpa?",
-      "ref": "03-saida-estruturada/teoria.md#2-tool-como-schema-extração-via-tool-use"
+      "checkpoint": "Pergunte em inglês: \"An extraction prompt says 'return only JSON', and 3% of responses fail to parse because of text around the JSON. What is the most reliable fix?\" (esperado: extraction tool whose input_schema is the target schema, tool_choice guaranteeing the call, read tool_use.input)",
+      "ref": "03-saida-estruturada/teoria.md#1-tool-use-com-json-schema-o-caminho-mais-confiável"
     },
     {
       "id": "t2",
       "fase": "teoria",
-      "titulo": "strict: true e output_config.format",
+      "titulo": "tool_choice: auto, any e forçado (4.3)",
       "pontos": [
-        "strict: true na tool → input segue o schema exatamente; exige additionalProperties: false em todo objeto. Opcionais são permitidas, mas contam para um limite por request [volátil]; prefira tudo em required + nullable para o que pode faltar",
-        "Structured outputs: output_config.format com json_schema → a resposta segue o schema; o output_format de topo está depreciado",
-        "Quando usar: só o JSON da resposta → output_config.format; argumentos válidos num loop de tools → strict",
-        "Mesmo com schema, cheque stop_reason: max_tokens pode truncar; refusal pode não seguir o schema",
-        "Como cai: cenários 5 e 6 — 'JSON precisa sempre validar no parser do CI'"
+        "auto (padrão): o modelo PODE responder em texto em vez de chamar a tool",
+        "any: TEM que chamar alguma tool, mas escolhe qual → garante saída estruturada quando há vários schemas de extração e o tipo do documento é desconhecido",
+        "Forçado {\"type\": \"tool\", \"name\": \"extract_metadata\"}: TEM que chamar aquela → garante que a extração rode antes do enriquecimento; os passos seguintes vêm em turnos posteriores com auto (forçar em todos os turnos prende o modelo naquela tool)",
+        "Mostrar os 3 requests com o caminho até tool_choice (// ← AQUI), incluindo a troca forçado → auto no turno 2",
+        "Distratores: instrução no system prompt ('sempre chame X primeiro') = probabilística; forçar UMA tool com tipo desconhecido (schema errado → fabricação); 'any' para garantir ordem; fundir tudo numa tool gigante",
+        "Nota volátil: Opus 5.5, Sonnet 5.5, Fable 5.1 e Mythos 5.1 devolvem 400 para any/forçado (outros aceitam) — isso não muda a resposta de prova"
       ],
-      "checkpoint": "Pergunte: qual a exigência obrigatória de um schema para usar strict, e por que preferir required + nullable a campos opcionais?",
-      "ref": "03-saida-estruturada/teoria.md#3-strict-true-e-output_configformat"
+      "checkpoint": "Pergunte em inglês: \"Your pipeline has extract_invoice, extract_receipt and extract_contract and doesn't know the document type in advance; 5% of responses come back as prose. Which tool_choice fixes it? And what would you use to make sure extract_metadata runs before the enrichment tools?\" (esperado: \"any\"; forced tool on the first request, then \"auto\")",
+      "ref": "03-saida-estruturada/teoria.md#2-tool_choice-auto-any-e-forçado"
     },
     {
       "id": "t3",
       "fase": "teoria",
-      "titulo": "Schema ≠ semântica; nullable, other e unclear",
+      "titulo": "Design do schema e normalização de formato (4.3)",
       "pontos": [
-        "Conformidade com schema ≠ correção semântica: total pode ser número e não bater com os itens; valide em código",
-        "Campo nullable para dado que pode faltar (evita inventar)",
-        "Enum com 'other' + campo de detalhe para categoria fora da lista",
-        "Enum com 'unclear' para fonte ambígua/ilegível (evita chute)",
-        "Por quê: schema que obriga valor força o modelo a escolher algo — e ele inventa"
+        "Required × optional: obrigatório-não-nulo só o que sempre existe na fonte; campo obrigatório para dado que falta → o modelo fabrica um valor plausível",
+        "Nullable/optional (\"type\": [\"string\", \"null\"]) deixa o modelo dizer 'não existe'",
+        "Enum + \"other\" + campo de detalhe (categoria legível fora da lista) × \"unclear\" (fonte ambígua/ilegível) × null (dado ausente) — usar a tabela da teoria",
+        "Normalização: o schema garante tipo e forma, não a interpretação (05/04 é abril ou maio? 1.250,00 é 1250 ou 1,25?) → regras de normalização NO PROMPT junto com o schema estrito (ISO 8601, ISO 4217, dia/mês pelo país do emissor)",
+        "Distratores: tudo required 'para o downstream não receber vazio'; enum fechado + mapear para o mais próximo; texto livre no lugar do enum; achar que format: date ou pattern resolve ambiguidade de locale"
       ],
-      "checkpoint": "Pergunte: o modelo inventa o número do pedido de compra quando ele não existe na fatura. Que mudança de schema resolve?",
-      "ref": "03-saida-estruturada/teoria.md#4-schema--semântica-padrões-de-schema"
+      "checkpoint": "Pergunte em inglês: \"Supplier invoices often have no PO number and the model fills in plausible fake ones; dates arrive as 05/04/2026, 'April 5' and 2026-04-05 and some come out with day and month swapped. What two changes do you make?\" (esperado: make the PO field nullable/optional; add normalization rules to the prompt alongside the strict schema)",
+      "ref": "03-saida-estruturada/teoria.md#3-design-do-schema-opcional-nullable-other-e-unclear"
     },
     {
       "id": "t4",
       "fase": "teoria",
-      "titulo": "Limites do strict: o que validar no código",
+      "titulo": "Sintaxe × semântica: stated_total, calculated_total e conflict_detected (4.3/4.4)",
       "pontos": [
-        "Strict suporta só um subconjunto de JSON Schema [detalhe volátil]",
-        "Não suportados: minimum/maximum/multipleOf, minLength/maxLength, restrições de array além de minItems 0/1, recursão, enum com tipos complexos, $ref externo",
-        "Suportados: tipos básicos, enum simples, const, $ref interno, formats comuns, additionalProperties: false, anyOf/allOf com limitações, pattern com regex simples (sem backreference/lookaround)",
-        "Recurso não suportado em schema cru → 400; os helpers do SDK movem a restrição para a descrição do campo e validam localmente",
-        "Regra de prova: o que o strict não suporta, seu código valida (e isso alimenta o retry). Como cai: cenário 6 — 'ligamos strict e o schema com minimum/maxLength passou a dar 400'"
+        "Schema estrito elimina erro de SINTAXE, não erro SEMÂNTICO: itens que não somam o total, valor no campo errado, contagem do resumo ≠ lista",
+        "Validação semântica é código seu; o guia cita Pydantic (Python) — validadores que devolvem erros por campo e alimentam o retry; em .NET, validador próprio (mostrar o trecho C#)",
+        "Self-correction flow: extrair stated_total (impresso) E calculated_total (soma dos itens) para a divergência aparecer em vez de ser corrigida em silêncio",
+        "conflict_detected (booleano) para fonte inconsistente: o próprio documento se contradiz → revisão humana; erro de extração (item pulado) → retry com o erro",
+        "Distratores: 'strict ligado, então está certo / é bug da API'; regra na descrição do campo; minimum/maximum no lugar de regra entre campos; pedir só o total 'corrigido'"
       ],
-      "checkpoint": "Pergunte: o time ligou strict num schema com minimum: 1 e maxLength: 9 e tomou 400. Desligar o strict é a correção? O que fazer?",
-      "ref": "03-saida-estruturada/teoria.md#5-limites-do-strict-o-que-validar-no-seu-código"
+      "checkpoint": "Pergunte em inglês: \"Strict mode is on and every output passes the schema, yet 2% of invoices have line items that don't add up to the total. A teammate says strict mode should have caught this. How do you respond, and how would you design the schema to surface it?\" (esperado: strict removes syntax errors, not semantic ones; validate in code; extract stated_total and calculated_total, plus conflict_detected for inconsistent sources)",
+      "ref": "03-saida-estruturada/teoria.md#5-sintaxe--semântica-o-que-o-schema-não-pega"
     },
     {
       "id": "t5",
       "fase": "teoria",
-      "titulo": "Loop de validação com retry (4.4)",
+      "titulo": "Retry com feedback de erro, limites do retry e detected_pattern (4.4)",
       "pontos": [
-        "Ciclo: extrai → valida (schema + semântica) → devolve os erros ESPECÍFICOS no prompt → tenta de novo até um limite → falha explícita",
-        "Feedback específico ('total 1.250 difere da soma 1.205; confira o item 3'), não 'tente de novo'",
-        "Extraia valor declarado E calculado para detectar discrepância",
-        "Retry não recupera informação ausente da fonte → null (+ revisão humana), não mais tentativas",
-        "detected_pattern permite medir quais padrões geram achados úteis; limite é backstop; nunca gravar dado inválido"
+        "Retry-with-error-feedback: anexar os erros de validação ESPECÍFICOS (campo, regra, valor encontrado, esperado)",
+        "O follow-up leva 3 coisas: documento original + extração que falhou + erros específicos (mostrar o JSON: user(doc) → assistant(tool_use) → user(tool_result is_error com os erros))",
+        "Retry funciona quando a informação está na fonte (formato, estrutura, campo trocado); NÃO funciona quando está ausente ou só existe num documento externo não fornecido ('conforme Anexo C') → null + revisão, ou fornecer o documento",
+        "Limite de tentativas como backstop; esgotou → fila de revisão; nunca gravar dado inválido",
+        "detected_pattern (cenário 5): cada achado registra a construção de código que o disparou; agregar os descartes dos devs por padrão revela falsos positivos sistemáticos → refinar critério/few-shot daquela categoria (M02)",
+        "Distratores: mais tentativas, mensagem genérica, só os erros sem o documento, modelo maior no retry, filtrar achados por confiança autodeclarada, pedir ao dev o motivo de cada descarte"
       ],
-      "checkpoint": "Pergunte: após 3 retries o CNPJ continua errado, e o documento não traz o CNPJ. O que fazer?",
-      "ref": "03-saida-estruturada/teoria.md#6-loop-de-validação-com-retry-task-statement-44"
+      "checkpoint": "Pergunte em inglês: \"After 3 retries with specific errors, the approved_by field is still invented in 6% of documents. Those documents say 'approval per the attached memo', and the memo is not sent to the model. What do you do?\" (esperado: stop retrying — the information is not in the source; return null and route to review, or include the memo)",
+      "ref": "03-saida-estruturada/teoria.md#6-retry-com-feedback-de-erro-e-quando-ele-não-adianta"
     },
     {
       "id": "t6",
       "fase": "teoria",
-      "titulo": "Batch API: fatos (4.5)",
+      "titulo": "Message Batches API: fatos e quando usar (4.5)",
       "pontos": [
-        "50% mais barata, até 24h, sem SLA",
-        "custom_id por request; resultados fora de ordem → case por custom_id",
-        "Não suporta loop multi-turn de tools dentro de um request",
-        "Poll de processing_status até ended; resultados: succeeded, errored, canceled, expired",
-        "Pegadinha mais comum: usar batch onde alguém está esperando"
+        "Fatos: 50% de economia, até 24 h de processamento, SEM SLA de latência; custom_id correlaciona request e resultado (podem vir fora de ordem); polling até processing_status = ended (mostrar os JSONs)",
+        "Sem multi-turn tool calling dentro de um request: o batch não executa tool no meio e devolve o resultado; extração via tool_use funciona porque o input já é o produto. [volátil] Server tools (web search, code execution) rodam no batch; as tools do seu código não — na prova, vale 'sem multi-turn tool calling'",
+        "Use para não bloqueante e tolerante a latência (overnight, auditoria semanal, testes noturnos, backlog); NÃO use para bloqueante (pré-merge, gate de deploy, alguém esperando)",
+        "Distratores: batch em passo bloqueante 'com polling' ou 'com fallback por timeout'; batches pequenos 'saem mais rápido'; casar pela ordem; tudo síncrono 'porque o batch bagunça a ordem'"
       ],
-      "checkpoint": "Pergunte: por que casar os resultados pela posição no arquivo é um bug?",
-      "ref": "03-saida-estruturada/teoria.md#7-batch-api-task-statement-45"
+      "checkpoint": "Pergunte em inglês: \"A nightly batch lets the model call lookup_supplier to enrich each extraction. 30% of results end with stop_reason 'tool_use' and no extraction. What is happening, and what are two ways to fix it?\" (esperado: batch requests cannot execute tools mid-request; pre-fetch the supplier data into the prompt, or run the tool step synchronously / as a separate round)",
+      "ref": "03-saida-estruturada/teoria.md#8-message-batches-api-fatos-e-quando-usar"
     },
     {
       "id": "t7",
       "fase": "teoria",
-      "titulo": "Batch: quando usar, quando não, e como operar",
+      "titulo": "Operando o batch: cadência pelo SLA, falhas por custom_id e amostra (4.5)",
       "pontos": [
-        "Use: análise noturna, relatório semanal, processamento em massa, avaliação offline",
-        "Não use: pré-merge/passo bloqueante de CI, tempo real, depuração interativa, loop de tools multi-turn",
-        "Refine o prompt numa amostra síncrona antes do volume",
-        "Reenvie só os custom_id que falharam; combine com o loop de validação",
-        "Como cai: cenário 5 ('cortar custo do review de PR com batch' → não) e 6 ('50 mil contratos até o fim da semana' → sim, após amostra)"
+        "Conta do pior caso: espera até a próxima submissão (janela W) + até 24 h de processamento + folga (polling, validação, reprocessar falhas) ≤ SLA",
+        "Exemplo do guia: SLA de 30 h → submeter a cada 4 h (4 + 24 = 28 h, 2 h de folga); 6 h fecha no limite sem folga; 1×/dia dá 48 h; 'quando acumular N documentos' não tem teto de espera",
+        "Falhas: reenviar só os custom_id errored/expired, COM a modificação adequada (chunking do documento que estourou o contexto; erro transitório volta como está); reenviar o lote inteiro paga de novo o que deu certo",
+        "Refinar o prompt numa amostra representativa antes do volume → maximiza o sucesso na 1ª passada e reduz o custo de reenvio",
+        "Distratores: polling mais frequente para 'ganhar tempo'; dividir em batches menores; abandonar o batch por ter SLA contratual; reenviar sem modificar"
       ],
-      "checkpoint": "Dê os dois casos (gate de PR × varredura noturna de segurança) e peça ao aluno qual vai para batch e por quê",
-      "ref": "03-saida-estruturada/teoria.md#8-batch-quando-usar-quando-não-e-como-operar"
+      "checkpoint": "Pergunte em inglês: \"Documents arrive around the clock, the contract requires results within 30 hours, and a batch can take up to 24 hours. How often must you submit batches, and why doesn't once a day work? Then: 312 of 10,000 requests errored with context-length errors — what do you resubmit?\" (esperado: every 4 hours, 28 h worst case; once a day = 48 h; resubmit only those 312 custom_ids after chunking the documents)",
+      "ref": "03-saida-estruturada/teoria.md#9-operando-o-batch-cadência-pelo-sla-falhas-e-amostra"
     },
     {
       "id": "q1",
@@ -119,11 +122,11 @@
       "titulo": "Quiz de fixação do módulo",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "15 questões curtas sobre saída estruturada, strict, padrões de schema, retry e Batch API",
-        "Depois de cada resposta, explique por que as erradas são tentadoras"
+        "15 questões de fixação cobrindo 4.3, 4.4 e 4.5 (tool_use + schema, tool_choice, nullable/other/unclear, normalização, sintaxe × semântica, retry, detected_pattern, batch)",
+        "Depois de cada resposta, explique por que as erradas são tentadoras (qual anti-padrão cada uma representa)"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-03/questions.json",
-      "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+      "checkpoint": "Ao terminar, comente o resultado e aponte os beats a revisar",
       "ref": "Claude-Architect/apps/modulo-03/questions.json"
     },
     {
@@ -132,11 +135,12 @@
       "titulo": "Prova do módulo",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "20 questões em estilo de cenário, feedback por alternativa, algumas 'Choose TWO'",
+        "20 questões em estilo de cenário (cenários 5 e 6), com feedback por alternativa e algumas 'Choose TWO'",
+        "Depois de cada resposta, explique por que as erradas são tentadoras e em qual situação elas seriam certas",
         "Aprovação 70%; só seguir para o Módulo 04 após passar"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-03/questions.json --id prova",
-      "checkpoint": "Se passou, proponha o Módulo 04; se não, revise os pontos errados na teoria",
+      "checkpoint": "Se passou, proponha o Módulo 04; se não, revise na teoria os pontos errados e refaça",
       "ref": "Claude-Architect/provas/modulo-03/questions.json"
     },
     {
@@ -144,13 +148,13 @@
       "fase": "fechamento",
       "titulo": "Fechamento do Módulo 03",
       "pontos": [
-        "Recap: 3 caminhos de estrutura; strict exige additionalProperties: false (prefira required + nullable); schema ≠ semântica; nullable/other/unclear; faixas e tamanhos não suportados (400 no schema cru) → validar em código; retry com erros específicos e limite; retry não cria dado; Batch 50%/24h/custom_id/sem multi-turn/nunca bloqueante",
-        "Com os Módulos 01–03, você cobriu quase todo o D4 (20% da prova)",
+        "Recap: tool_use + JSON schema é o mais confiável (elimina sintaxe); auto pode vir texto, any garante alguma tool, forçado garante aquela (depois auto); nullable/other/unclear; normalização no prompt; strict ≠ semântica (valide em código, stated_total × calculated_total, conflict_detected); retry = documento + extração falha + erros específicos, inútil se o dado não está na fonte; detected_pattern; batch 50%/24 h/sem SLA/custom_id/sem multi-turn; W + 24 h + folga ≤ SLA; reenviar só os custom_id falhos, modificados; amostra antes do volume",
+        "Com M02 e M03 você cobriu 4.1–4.5; o 4.6 (review multi-instância/multi-pass) vem no M09",
         "Revise a 'Cola de véspera' do teoria.md",
-        "Próximo: Módulo 04 — Design de tools: descrições, erros estruturados, tool_choice e tool search"
+        "Próximo: Módulo 04 — Design de tools: descrições, erros estruturados, distribuição e tool_choice (TS 2.1, 2.2, 2.3). Para iniciar: python3 engine/aula.py start Claude-Architect/04-design-de-tools/roteiro.json"
       ],
       "checkpoint": "Pergunte se quer emendar o Módulo 04 ou parar por aqui",
-      "ref": "Claude-Architect/CLAUDE.md#plano-completo-do-curso"
+      "ref": "03-saida-estruturada/teoria.md#cola-de-véspera"
     }
   ]
 }

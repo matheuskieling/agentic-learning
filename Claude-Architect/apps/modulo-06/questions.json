@@ -1,266 +1,281 @@
 {
-  "titulo": "Module 06 — Quiz: the agentic loop, hooks, and handoff",
+  "titulo": "Módulo 06 — Quiz (fixação)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Which field of the Messages API response should decide whether the agentic loop continues or ends?",
+      "pergunta": "Which statement best describes the difference between prompt-based guidance and a programmatic prerequisite for enforcing tool order in an agent?",
       "opcoes": [
-        "The last `text` block in `content`, looking for signals such as \"done\"",
-        "The `stop_reason`",
-        "The number of blocks in `content`",
-        "`usage.output_tokens` compared with `max_tokens`"
-      ],
-      "correta": 1,
-      "explicacao": "`stop_reason` is the API contract: `tool_use` → execute and continue; `end_turn` → finished. Text is ambiguous and is not a stop signal.",
-      "feedbacks": [
-        "Classic anti-pattern #1: deciding when to stop by reading natural language. The model can write \"all set\" and still request a tool in the same turn.",
-        "Correct. `stop_reason` is the structured signal that drives the loop.",
-        "Counting blocks tells you nothing: a final response can have a single block, and one with tools can have several.",
-        "Comparing tokens would only help detect truncation, and `stop_reason: max_tokens` already exists for that."
-      ]
-    },
-    {
-      "pergunta": "The response came back with `stop_reason: \"max_tokens\"`. What does this indicate?",
-      "opcoes": [
-        "The model finished normally and used exactly its budget",
-        "The context window filled up",
-        "The response was cut off at the output ceiling and is incomplete",
-        "A server-side tool hit its iteration cap"
+        "A prerequisite is a logging hook that records out-of-order calls for review; prompt guidance is what actually prevents them.",
+        "With few-shot examples of the right order, prompt guidance reaches the same reliability as a prerequisite at lower cost.",
+        "Prompt guidance makes the right order likely but keeps a non-zero failure rate; a prerequisite blocks the wrong order every time.",
+        "A programmatic prerequisite is a stronger form of prompt guidance that places the required order inside each of the tools' descriptions."
       ],
       "correta": 2,
-      "explicacao": "`max_tokens` = it was cut off at the OUTPUT limit, mid-response. Continue the generation or raise the ceiling; never treat it as complete.",
+      "explicacao": "Instructions in the prompt produce probabilistic compliance: they raise the odds of the right order but never reach zero failures. A programmatic prerequisite (a hook or gate) runs on every call and blocks the out-of-order step deterministically, which is what a mandatory sequence such as identity verification before a refund requires.",
       "feedbacks": [
-        "Finishing normally is `end_turn`. `max_tokens` means truncation, not completion.",
-        "A full window before reaching the output ceiling is `model_context_window_exceeded`, a different value.",
-        "Correct. The output is truncated (cut-off JSON, a half-finished sentence).",
-        "That's `pause_turn`, tied to server-side tool loops."
-      ]
+        "Tempting because many hooks do log, but a prerequisite blocks the out-of-order call; monitoring only records the violation after it happens, and the prompt is the probabilistic part.",
+        "Few-shot examples improve consistency, but they remain prompt-based guidance with a non-zero failure rate; only the prerequisite blocks the wrong order every time.",
+        "Correct. Prompt guidance is probabilistic; a programmatic prerequisite is deterministic.",
+        "A tool description is still text the model reads, so it is guidance, not enforcement. A prerequisite is code that blocks the call."
+      ],
+      "ts": "1.4"
     },
     {
-      "pergunta": "Your agent uses the server-side web search tool, and the response arrives with `stop_reason: \"pause_turn\"`. What should you do?",
+      "pergunta": "In the customer support agent, a programmatic prerequisite guards process_refund. What should unlock the refund call?",
       "opcoes": [
-        "Resend the conversation, appending the response as an assistant turn, so the model can continue",
-        "Treat it as an error and abort the task",
-        "Build a `tool_result` for the web search and send it back",
-        "Stop and show the partial text as the final answer"
+        "A get_customer result earlier in this session that returned a verified customer ID matching the refund's customer.",
+        "The model stating in its reasoning that it already verified the customer's identity in an earlier turn.",
+        "A lookup_order call that returned the order, since an order lookup implies that the customer was identified.",
+        "The customer's name and email typed in the conversation, matched by the model against the order's billing data."
       ],
       "correta": 0,
-      "explicacao": "`pause_turn` = the server-side loop hit its iteration cap. Resend so the model picks up where it left off.",
+      "explicacao": "The prerequisite should depend on the result of the prerequisite tool, not on what the model says. Blocking process_refund until get_customer has returned a verified customer ID, and checking that the refund targets that ID, is the pattern the exam guide describes.",
       "feedbacks": [
-        "Correct. Just resend with the response appended; the model continues the work.",
-        "It's not an error: it's a pause anticipated by the protocol.",
-        "Server-side tools are executed by Anthropic; you don't build a `tool_result` for them.",
-        "The task isn't finished. Showing the partial text as final delivers incomplete work."
-      ]
+        "Correct. The gate unlocks on get_customer's verified result for the same customer.",
+        "A self-declaration is exactly what the gate exists to avoid; the model can state it verified when it did not.",
+        "An order lookup does not verify identity; the official example blocks lookup_order too until get_customer has run.",
+        "Matching typed details is the model's own heuristic, not a verified result from the identity tool."
+      ],
+      "ts": "1.4"
     },
     {
-      "pergunta": "Why can code that only checks for `HTTP 200` treat a safety refusal as an \"empty success\"?",
+      "pergunta": "A customer writes: \"My headphones arrived broken, I was charged twice for my subscription, and my coupon didn't apply.\" What is the recommended way for the agent to handle this message?",
       "opcoes": [
-        "Because refusals come with HTTP 400 and the code doesn't handle 400",
-        "Because the refusal only appears in the response header",
-        "Because the refusal comes as a special `tool_use` block",
-        "Because the refusal arrives with HTTP 200 and `stop_reason: \"refusal\"`"
+        "Resolve the broken headphones first, then ask the customer to open a separate new conversation for each of the other two issues.",
+        "Escalate the whole conversation to a human, because a message with several separate issues is too complex for the agent.",
+        "Handle the issues one at a time in the order written, confirming each resolution with the customer before the next one starts.",
+        "Split it into three items, investigate them in parallel using the shared customer context, then send one unified resolution."
       ],
       "correta": 3,
-      "explicacao": "A refusal is a valid API response (HTTP 200). Only by looking at `stop_reason` can you distinguish it from a normal response.",
+      "explicacao": "Multi-concern requests should be decomposed into distinct items, each investigated in parallel using shared context (the verified customer and their orders), and then synthesized into one resolution. That is faster than a sequential flow and keeps the answers consistent.",
       "feedbacks": [
-        "A refusal isn't an HTTP error; if it were a 400, code that checks for 200 wouldn't even treat it as a success.",
-        "The refusal is signaled in the body, via `stop_reason`, not via a header.",
-        "There's no refusal `tool_use`; the signal is `stop_reason: refusal`.",
-        "Correct. That's why you check `stop_reason` before reading `content`."
-      ]
+        "It pushes work back onto the customer and loses the shared context between the issues.",
+        "Several issues do not make a case an escalation; complexity alone is not a trigger, and each item here is within the agent's scope.",
+        "Sequential handling works but is slow and makes the customer confirm repeatedly; the issues are independent and can be investigated in parallel.",
+        "Correct. Decompose, investigate in parallel with shared context, then give one unified resolution."
+      ],
+      "ts": "1.4"
     },
     {
-      "pergunta": "A response's `content` has a `text` block (\"I'll look up your order.\") and a `tool_use` block. What should the loop do?",
+      "pergunta": "An agent escalates a refund case to a human who cannot see the conversation. Which handoff content does the exam guide call for?",
       "opcoes": [
-        "Show the text to the user and stop, since there's already a text response",
-        "Execute the tool, return the `tool_result`, and continue the loop",
-        "Discard the text and resend, asking only for the `tool_use`",
-        "Ask the model to choose between responding and calling the tool"
+        "The full conversation transcript, so the human has each message and can decide what matters for the case.",
+        "The customer ID, root cause, refund amount, and recommended action, each as a structured field.",
+        "A short free-text paragraph that describes the problem, written in the agent's own words for readability.",
+        "A structured record of the customer's sentiment and the agent's confidence, so the human can prioritize it."
       ],
       "correta": 1,
-      "explicacao": "Mixed text and `tool_use` are normal. The `stop_reason` will be `tool_use`: execute and continue. Having text doesn't mean it's finished.",
+      "explicacao": "When the human lacks the transcript, the handoff must be a structured summary with what is needed to act: customer ID, root cause, refund amount, and recommended action. That avoids re-investigation and re-contacting the customer.",
       "feedbacks": [
-        "Classic mistake: having text isn't a signal of completion. The requested tool would never be executed.",
-        "Correct. The text is narration; the `tool_use` is the requested action.",
-        "Mixed content is valid, and the text should remain in the history.",
-        "The model has already decided: it called the tool. There's no choice to redo."
-      ]
-    },
-    {
-      "pergunta": "The model requested three tools in the same response. How should the results come back?",
-      "opcoes": [
-        "Three `user` messages, one per result, in order of execution",
-        "Only the first tool's result; the model will ask for the others later",
-        "A single `user` message with three `tool_result` blocks, each with the exact `tool_use_id`",
-        "A single `tool_result` concatenating the three outputs"
+        "A transcript hands the human a document to read instead of a case to act on, and the key facts still have to be dug out.",
+        "Correct. These are the fields the guide lists for a structured handoff.",
+        "Free text is better than nothing but tends to omit the ID, the amount, or the recommended action.",
+        "Sentiment and self-reported confidence do not tell the human what happened or what to do."
       ],
-      "correta": 2,
-      "explicacao": "Parallel tool use: all `tool_result` blocks go in a single `user` message, each matched by the request's `tool_use_id`.",
-      "feedbacks": [
-        "Spreading results across several `user` messages breaks the protocol.",
-        "Every `tool_use` needs a response; a missing result causes an error.",
-        "Correct. One result per request, exact ids, one message.",
-        "Concatenating loses the link between each request and its result."
-      ]
+      "ts": "1.4"
     },
     {
-      "pergunta": "A tool timed out. What is the right way to inform the model?",
+      "pergunta": "What does a PostToolUse hook in the Claude Agent SDK let you do?",
       "opcoes": [
-        "Return a `tool_result` with `is_error: true` and a message explaining the failure",
-        "Omit that tool's `tool_result` so as not to confuse the model",
-        "Return a `tool_result` with empty content, as if there were no data",
-        "Throw an exception and restart the conversation from scratch"
+        "Transform a tool's result after the tool runs and before the model processes it, for example to normalize formats.",
+        "Block a tool call before it runs when its arguments break a policy, for example a refund above a set limit for the agent.",
+        "Re-run a tool with corrected arguments whenever the first call returns an error, before the agent sees the result.",
+        "Change which tool the model will select next, based on the result of the tool that has just finished running."
       ],
       "correta": 0,
-      "explicacao": "The failure also gets a result, with `is_error: true`, so the model can reason about recovery (retry, another tool, escalate).",
+      "explicacao": "PostToolUse hooks intercept tool results after execution and can transform them before the model processes them, for example to normalize timestamps or mask sensitive data. Blocking a call before it runs is the job of tool call interception (PreToolUse).",
       "feedbacks": [
-        "Correct. An explicit error lets the model decide how to recover.",
-        "Omitting the result breaks the protocol and hides the problem.",
-        "Empty as success is silent suppression: the model concludes \"there's no data\" when the lookup never even ran.",
-        "Aborting everything over one failure wastes the work already done; the model can recover."
-      ]
-    },
-    {
-      "pergunta": "A team configured the loop to stop after exactly 5 iterations on every task. What is the problem?",
-      "opcoes": [
-        "None, as long as the number is chosen based on the historical average",
-        "The problem is only cost: 5 iterations are too expensive",
-        "Iteration limits are forbidden in any form",
-        "A fixed limit as the primary criterion cuts off long tasks and doesn't reflect the real end; it should only be a backstop"
+        "Correct. PostToolUse transforms results before the model sees them.",
+        "That is interception of the outgoing call, which happens in PreToolUse; by the time PostToolUse runs, the tool has executed.",
+        "Hooks transform or block; deciding to retry with new arguments is part of the agent's loop, not a PostToolUse feature.",
+        "Tool selection stays with the model; a hook can change what the model reads, not pick its next tool."
       ],
-      "correta": 3,
-      "explicacao": "An arbitrary limit as the primary stopping mechanism is an anti-pattern. A high cap as a backstop (with an alert) is acceptable; the normal end is `end_turn`.",
-      "feedbacks": [
-        "The average doesn't solve it: tasks above it would be cut off midway.",
-        "The problem isn't cost, it's correctness: the stopping criterion is arbitrary.",
-        "An overstatement: as a safety net against infinite loops, a cap is correct.",
-        "Correct. As a backstop, yes; as a stopping criterion, no."
-      ]
+      "ts": "1.5"
     },
     {
-      "pergunta": "What is the essential difference between a task budget and `max_tokens`?",
+      "pergunta": "Three MCP tools return dates as Unix timestamps, ISO 8601 strings with offsets, and numeric status codes. One of the servers is third-party. Where is normalization most reliable?",
       "opcoes": [
-        "Task budget applies per response; `max_tokens` applies to the entire task",
-        "Task budget is visible to the model, which organizes itself to fit; `max_tokens` is invisible and cuts off midway",
-        "The two are equivalent; only the name changes",
-        "`max_tokens` limits the input; task budget limits the output"
-      ],
-      "correta": 1,
-      "explicacao": "Task budget [volatile, beta] is a task-level budget that the model sees and respects by planning. `max_tokens` is a per-response output ceiling that the model doesn't see.",
-      "feedbacks": [
-        "Reversed: `max_tokens` is per response; the budget is for the task.",
-        "Correct. Visible (it organizes) vs. invisible (it cuts off).",
-        "They're not equivalent: the behavior when the limit is reached is the opposite.",
-        "`max_tokens` is an output ceiling, not an input ceiling."
-      ]
-    },
-    {
-      "pergunta": "A team needs an agent with 4 internal tools, no file access, no subagents, and no resumable sessions. What is the most appropriate way to build it?",
-      "opcoes": [
-        "Claude Agent SDK, since it's the most complete",
-        "Managed Agents, to avoid writing code",
-        "A manual loop on the Messages API, or the SDK's Tool Runner",
-        "An orchestrator with one subagent per tool"
+        "In the system prompt, with conversion rules written out for each tool's format.",
+        "In a PreToolUse hook that converts each tool's date arguments before it runs.",
+        "In a PostToolUse hook that converts every tool result before the model processes it.",
+        "In each MCP server, by asking each vendor to switch their output to ISO 8601."
       ],
       "correta": 2,
-      "explicacao": "Choose the simplest approach that meets the need. Without hooks, subagents, sessions, or file tools, a manual loop/Tool Runner is enough.",
+      "explicacao": "A PostToolUse hook normalizes heterogeneous formats deterministically, on every call, before the agent processes the data. It works even for servers you cannot modify, and it does not depend on the model remembering a rule.",
       "feedbacks": [
-        "The Agent SDK brings Claude Code's entire harness; here that's unnecessary complexity.",
-        "Managed Agents are for when you don't want to operate the execution/sandbox; the question doesn't call for that.",
-        "Correct. The simplest one that solves the problem.",
-        "One subagent per tool is unnecessary decomposition for 4 tools."
-      ]
-    },
-    {
-      "pergunta": "A rule says refunds may only be processed after identity has been verified. How do you guarantee it?",
-      "opcoes": [
-        "Programmatic enforcement, such as a `PreToolUse` hook or a prerequisite inside the refund tool",
-        "Repeat the rule in capital letters in the system prompt and in the user message",
-        "Add three few-shot examples of verification before the refund",
-        "A second model that reviews the conversation before each refund"
+        "Conversion rules in the prompt depend on the model applying them correctly every time, which is probabilistic.",
+        "Right mechanism, wrong side: PreToolUse changes the arguments going out, but the mixed formats are in the results coming back.",
+        "Correct. PostToolUse normalization is deterministic and works for third-party servers.",
+        "You do not control a third-party server, and waiting on vendors is not a reliable or quick fix."
       ],
-      "correta": 0,
-      "explicacao": "A rule with financial consequences requires a deterministic guarantee: code (hook/prerequisite). Prompts, few-shot, and an LLM reviewer are probabilistic.",
-      "feedbacks": [
-        "Correct. Deterministic: without verification, the tool doesn't run.",
-        "Emphasis in the prompt lowers the failure rate, but doesn't bring it to zero.",
-        "Few-shot improves the average; it's not a guarantee.",
-        "Another LLM is still probabilistic and adds cost and latency."
-      ]
+      "ts": "1.5"
     },
     {
-      "pergunta": "In a `command`-type `PreToolUse` hook, the script ends with exit code 2. What happens?",
+      "pergunta": "Policy says refunds above $500 need human approval. Which hook design enforces this and keeps the workflow moving?",
       "opcoes": [
-        "The tool runs normally and the error is only logged",
-        "The entire session is terminated",
-        "The hook is ignored and the next hook decides",
-        "The tool is blocked and stderr goes back to Claude as the reason"
-      ],
-      "correta": 3,
-      "explicacao": "Exit 0 passes; exit 2 blocks and sends stderr back to Claude, which reads the reason and adjusts. Other codes are a non-blocking error.",
-      "feedbacks": [
-        "That's the behavior of other exit codes (non-blocking error), not of 2.",
-        "What's blocked is the action, not the session; Claude keeps working.",
-        "Exit 2 has its own meaning: block.",
-        "Correct. Blocking with feedback to the model."
-      ]
-    },
-    {
-      "pergunta": "You want a CRM tool's result to reach the model with the card number masked. Which hook event should you use?",
-      "opcoes": [
-        "`PreToolUse`",
-        "`PostToolUse`",
-        "`UserPromptSubmit`",
-        "`Stop`"
+        "A PostToolUse hook on process_refund that alerts a supervisor whenever an issued refund is above the $500 limit.",
+        "A PreToolUse hook on process_refund that denies calls above $500 and tells the agent to call escalate_to_human.",
+        "A PreToolUse hook that denies every process_refund call and sends each refund request to escalate_to_human.",
+        "A PostToolUse hook on lookup_order that adds a note telling the model not to refund more than $500 for that order."
       ],
       "correta": 1,
-      "explicacao": "`PostToolUse` runs after the tool and is the place to normalize, clean up, and annotate the result (e.g., mask PII).",
+      "explicacao": "Tool call interception (PreToolUse) can block a policy-violating action before it happens and redirect the agent to an alternative workflow such as human escalation. Refunds within the limit still go through automatically.",
       "feedbacks": [
-        "`PreToolUse` acts before execution; the result doesn't exist yet.",
-        "Correct. Post-execution, handling what the model will see.",
-        "`UserPromptSubmit` handles the user's prompt, not tool output.",
-        "`Stop` fires when the agent is about to end its turn."
-      ]
-    },
-    {
-      "pergunta": "A hook needs to apply to every developer in the repository. Where should you configure it?",
-      "opcoes": [
-        "Each developer's `~/.claude/settings.json`",
-        "`.claude/settings.local.json`",
-        "The project's `.claude/settings.json`, versioned in git",
-        "In CLAUDE.md, as an instruction"
+        "PostToolUse runs after the refund has been issued; it can report the violation but not prevent it.",
+        "Correct. Intercept the call, deny above the threshold, and redirect to escalation.",
+        "It enforces the limit by removing all automation, which sends easy refunds to humans and hurts first-contact resolution.",
+        "A note in the result is still guidance the model may not follow; it does not block the refund call."
       ],
-      "correta": 2,
-      "explicacao": "Project settings (`.claude/settings.json`) are shared via git. `settings.local.json` is personal and gitignored; `~/.claude` belongs to the user.",
-      "feedbacks": [
-        "It would require each person to configure it manually; nothing guarantees everyone will.",
-        "The `.local` file is personal and stays out of git.",
-        "Correct. Project = shared with the team.",
-        "CLAUDE.md is an instruction (probabilistic); it doesn't run hooks."
-      ]
+      "ts": "1.5"
     },
     {
-      "pergunta": "Which items should be included in a support agent's handoff to a human representative? (Choose TWO.)",
+      "pergunta": "Which of these business rules most clearly calls for a hook instead of a prompt instruction?",
       "opcoes": [
-        "The complete, unedited transcript, so nothing is lost",
-        "The actions the agent has already taken and the reason for the escalation",
-        "The model's self-reported confidence level in its own analysis",
-        "The customer's identity (and whether it has been verified), the problem, and the recommended action",
-        "The customer's sentiment score as the main justification"
+        "Greet returning customers by name and keep each reply under 120 words.",
+        "Offer the extended warranty when the customer seems interested in it.",
+        "Use a friendly tone and avoid technical jargon with first-time buyers.",
+        "Never send a refund to an account other than the verified one."
+      ],
+      "correta": 3,
+      "explicacao": "Hooks give deterministic guarantees, so they fit rules that require guaranteed compliance, such as financial or identity rules. Tone, length, and judgment calls are best handled with prompt instructions, where occasional deviation is acceptable.",
+      "feedbacks": [
+        "A style rule: occasional deviations are acceptable, so a prompt instruction is the proportionate tool.",
+        "This needs judgment about the customer's interest, which a prompt handles well and a hook cannot evaluate.",
+        "Tone is best-effort guidance; enforcing it with a hook would be over-engineering.",
+        "Correct. A financial rule that must always hold calls for deterministic enforcement in code."
+      ],
+      "ts": "1.5"
+    },
+    {
+      "pergunta": "Which TWO situations are appropriate escalation triggers for the customer support agent? Choose TWO.",
+      "opcoes": [
+        "The conversation has passed 20 turns while the agent works through a long multi-item return request.",
+        "The customer asks for a price match with a competitor, and the policy covers only own-site price changes.",
+        "The agent rates its own confidence in the resolution it is about to propose at 5 out of 10.",
+        "The customer says they want to talk to a person instead of continuing with the agent.",
+        "The customer writes in capital letters and uses strong language about a delivery that is two days late."
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "Handoff = a structured summary: customer/verification, problem, request, root cause, actions taken, why it was escalated, recommended action, amount.",
+      "explicacao": "Appropriate triggers are an explicit request for a human, a policy exception or gap, and an inability to make progress. Strong language, conversation length, and self-reported confidence are poor proxies for whether the case actually needs a human.",
       "feedbacks": [
-        "A raw transcript forces the human to reread everything; the goal is to highlight what matters.",
-        "Correct. It keeps the human from repeating what has already been done.",
-        "Self-reported confidence is poorly calibrated; it's not a basis for decisions.",
-        "Correct. Identity, problem, and recommendation are the core of the handoff.",
-        "Sentiment is neither an escalation criterion nor central information about the case."
-      ]
+        "Length alone is not a trigger; long cases that are fully covered by the policy should still be resolved.",
+        "Correct. The policy is silent on competitor price matching, which is a policy gap.",
+        "Self-reported confidence is poorly calibrated and is not a reliable escalation trigger.",
+        "Correct. An explicit request for a human is honored immediately.",
+        "Sentiment is not complexity: an angry customer with a late delivery is a case the agent can resolve."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "Mid-conversation, a customer writes: \"I'd like to speak with a human, please.\" The agent is fairly sure it could solve the issue in one more turn. What should it do?",
+      "opcoes": [
+        "Solve the issue in one more turn, then offer the transfer if the customer still wants it.",
+        "Explain that it can resolve this faster and ask the customer to confirm the transfer request.",
+        "Escalate right away with a structured handoff, without investigating the issue any further.",
+        "Look up the order first, so the structured handoff includes a full diagnosis of the issue."
+      ],
+      "correta": 2,
+      "explicacao": "An explicit request for a human is honored immediately, without first attempting investigation or a resolution. The agent passes along what it already knows in a structured handoff.",
+      "feedbacks": [
+        "It overrides the customer's explicit preference to chase first-contact resolution.",
+        "Asking for confirmation pushes back on a request the customer already made clearly.",
+        "Correct. Honor the explicit request immediately, with a handoff.",
+        "Investigating first delays the transfer the customer asked for; send what is already known."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "A frustrated customer complains about a damaged item that the policy covers with a replacement. They do not ask for a human. What should the agent do?",
+      "opcoes": [
+        "Acknowledge the frustration and offer the replacement, escalating only if the customer then asks again for a human.",
+        "Escalate at once, because strong frustration shows the case needs a human's judgment and empathy to resolve.",
+        "Set the tone aside and process the replacement without comment, since tone does not change the policy.",
+        "Add an automatic goodwill discount to the replacement, since frustration signals a risk of churn."
+      ],
+      "correta": 0,
+      "explicacao": "When the issue is within the agent's capability, it should acknowledge the frustration and offer the resolution, escalating only if the customer reiterates a preference for a human.",
+      "feedbacks": [
+        "Correct. Acknowledge, offer the in-policy resolution, and escalate if the customer reiterates.",
+        "Frustration is not complexity; escalating a straightforward, in-policy case lowers first-contact resolution.",
+        "Resolving is right, but skipping the acknowledgment ignores the customer and leaves no path if they ask for a person.",
+        "A discount the policy does not define is the agent improvising compensation; acknowledge the frustration, offer the in-policy fix, and escalate if the customer reiterates."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "A retailer's policy covers price adjustments when the price drops on its own website. A customer asks the agent to match a competitor's lower price. What should the agent do?",
+      "opcoes": [
+        "Apply the website adjustment rule by analogy, since the customer would get the same outcome.",
+        "Escalate, because the policy is silent on matching a competitor's price for this item.",
+        "Decline, because the policy does not list competitor prices among the cases that it covers.",
+        "Offer a small goodwill credit as a compromise, then close the case as resolved."
+      ],
+      "correta": 1,
+      "explicacao": "When the policy is ambiguous or silent on the customer's specific request, the agent should escalate. Competitor price matching when the policy addresses only own-site adjustments is the exam guide's own example.",
+      "feedbacks": [
+        "Extending a rule by analogy means the agent is creating policy it has no authority to set.",
+        "Correct. A policy gap is an escalation trigger.",
+        "Reading silence as a refusal is also a policy decision the agent is not authorized to make.",
+        "A compromise is still an improvised exception the policy does not define."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "Why is customer sentiment a poor trigger for escalating a support conversation?",
+      "opcoes": [
+        "It fires too late, since frustration shows up only after the customer has already given up.",
+        "It is too noisy on short messages, so it first needs to be averaged over several turns.",
+        "It ignores the agent's own confidence score, which is a better signal of how hard the case is.",
+        "It measures emotion, not whether the case actually needs a human's authority."
+      ],
+      "correta": 3,
+      "explicacao": "Sentiment-based escalation is an unreliable proxy for case complexity: an angry customer may have a trivial, in-policy issue, while a calm customer may need a policy exception.",
+      "feedbacks": [
+        "Timing is not the issue: even an instant, perfectly timed sentiment signal still measures mood, so a calm customer who needs a policy exception is never escalated.",
+        "Averaging makes the signal steadier, not more relevant: an angry customer with a trivial in-policy issue still gets escalated.",
+        "Self-reported confidence is also an unreliable proxy for case complexity, so swapping one proxy for another does not fix the trigger.",
+        "Correct. Emotion and case complexity are different things: the triggers that matter are an explicit request, a policy gap, or no progress."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "get_customer returns two accounts named Ana Lima, both with recent orders. What should the agent do?",
+      "opcoes": [
+        "Pick the account with the most recent order, which is the most likely match.",
+        "List both accounts with their emails so the customer can choose the right one.",
+        "Ask for an additional identifier, such as the order number or the account email.",
+        "Escalate to a human, since ambiguity about who the customer is needs a person."
+      ],
+      "correta": 2,
+      "explicacao": "Multiple customer matches require clarification with an additional identifier rather than heuristic selection. The agent can resolve the ambiguity itself, without guessing and without exposing other customers' data.",
+      "feedbacks": [
+        "Recency is a heuristic; a wrong pick acts on someone else's account.",
+        "It involves the customer but exposes another customer's email; asking for an identifier avoids the leak.",
+        "Correct. Ask for an additional identifier before acting.",
+        "The agent can resolve this with one question, so escalation lowers first-contact resolution needlessly."
+      ],
+      "ts": "5.2"
+    },
+    {
+      "pergunta": "A support agent escalates many simple in-policy cases and handles some policy-exception requests on its own. What is the most proportionate first fix?",
+      "opcoes": [
+        "Add explicit escalation criteria to the system prompt, with few-shot examples of escalate versus resolve.",
+        "Train a classifier on past tickets to decide which conversations should be sent to a human agent.",
+        "Add an explicit rule to escalate whenever the agent's self-reported confidence drops below 7 of 10.",
+        "Add a hook that escalates every conversation in which a refund or a policy exception is mentioned by the customer."
+      ],
+      "correta": 0,
+      "explicacao": "Poor escalation calibration comes from unclear decision boundaries. Explicit criteria with few-shot examples in the system prompt address that directly and are the proportionate first step before adding infrastructure.",
+      "feedbacks": [
+        "Correct. Explicit escalation criteria with few-shot examples are the first fix for miscalibrated escalation.",
+        "Over-engineering: it needs labeled data and ML infrastructure before the prompt has been improved.",
+        "Self-reported confidence is poorly calibrated; the agent is often confident on exactly the hard cases.",
+        "Escalation here is a judgment call; a keyword hook would escalate many resolvable refunds and still miss unstated exceptions."
+      ],
+      "ts": "5.2"
     }
   ]
 }

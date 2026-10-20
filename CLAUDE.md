@@ -147,4 +147,4 @@ arquivos Markdown. Convenções:
 | 1 | AWS & Cloud (mega intensivo) | `AWS/` | ✅ Completo — 19 módulos + simulados CLF-C02/SAA-C03 |
 | 2 | SOLID (design OO, exemplos em C#) | `SOLID/` | ✅ Completo — 7 módulos (fundamentos + 5 princípios + capstone) |
 | 3 | Entrevista Angular + .NET (intensivo) | `Entrevista-Angular-DotNet/` | ✅ Completo — 7 módulos (3 Angular + 4 .NET) + simulado geral |
-| 4 | Claude Certified Architect (preparação CCAR-F, foco em prova) | `Claude-Architect/` | ✅ Completo — 11 módulos + 6 bancos por cenário + 5 simulados |
+| 4 | Claude Certified Architect (preparação CCAR-F, foco em prova) | `Claude-Architect/` | ✅ Completo — 11 módulos + 6 bancos por cenário + 5 simulados (alinhado ao guia oficial v1.0) |

@@ -1,261 +1,281 @@
 {
-  "titulo": "Module 10 — Quiz: context management and prompt caching",
+  "titulo": "Módulo 10 — Quiz",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Why does a long conversation get more expensive with each turn on the Messages API?",
+      "pergunta": "A support chatbot built on the Messages API answers its first turn correctly, but on the third turn it no longer knows which order the customer mentioned. Why must the application send the complete conversation history with each request?",
       "opcoes": [
-        "Because the model charges a fixed per-turn fee that grows with the number of turns",
-        "Because the API is stateless: the entire history is resent and billed on every request",
-        "Because the model generates longer responses as the history grows",
-        "Because the prompt cache expires at the end of each turn and the entire prefix has to be written again, at the write premium"
+        "Because the model uses the earlier turns only as few-shot examples of the reply format it should follow in each new turn.",
+        "Because the API keeps no conversation state, so the model knows only what each request contains, including earlier turns.",
+        "Because the API keeps only the most recent turns server-side, so older turns must be resent to stay available to the model.",
+        "Because the API stores user turns but not tool results, so tool_result blocks must be resent on every later request."
       ],
       "correta": 1,
-      "explicacao": "The Messages API keeps no state: each request carries the full history, and all those input tokens are billed again (except whatever comes from the cache).",
+      "explicacao": "The Messages API is stateless: each request must carry the complete conversation history, including earlier user turns, assistant replies, and tool results, for the model to stay coherent. Sending only the latest message makes the model lose what was said before.",
       "feedbacks": [
-        "There's no per-turn fee; billing is per token.",
-        "Correct. Stateless = resending and paying for the history on every turn.",
-        "Response length doesn't grow because of the history; the cost comes from the resent input.",
-        "The cache doesn't expire every turn (TTL of minutes, refreshed on read); and caching makes things cheaper, not more expensive."
-      ]
+        "The history is not mainly a set of format examples; it is the only way the model learns what was said and done earlier in the conversation.",
+        "Correct. Without stored state, the model sees only what the request contains, so earlier turns must be resent.",
+        "The API keeps no turns at all between requests, recent or old; the full history, including the latest turns, must be in every request.",
+        "Nothing is stored server-side, neither user turns nor tool results; every earlier message must be resent, not only the tool_result blocks."
+      ],
+      "ts": "5.1"
     },
     {
-      "pergunta": "A critical rule ('never refund above 500 without approval') sits in the middle of a 30,000-token system prompt and is sometimes ignored. What is the most direct context fix?",
+      "pergunta": "An order lookup tool returns 45 fields per call, and the support agent uses only 5 of them. Over a long conversation with several lookups, which approach is recommended?",
       "opcoes": [
-        "Switch to a model with a larger window, so the 30,000-token prompt takes up a smaller fraction of the context",
-        "Repeat the rule at several points in the middle of the prompt",
-        "Increase max_tokens so the model has room to reason",
-        "Move the rule to the beginning, under a clear heading (and enforce it in code)"
+        "Tell the agent in the system prompt to ignore the fields it does not need, so that it focuses on the five relevant fields.",
+        "Pass the full result to the agent, because the extra fields give the model more context for later turns of the conversation.",
+        "Move to a model with a larger context window, so that the accumulated lookups no longer crowd the rest of the conversation.",
+        "Trim each result to the relevant fields before it is added to the conversation, so unused fields never accumulate."
       ],
       "correta": 3,
-      "explicacao": "Lost in the middle: information in the middle of long contexts receives less attention. Place what's critical at the beginning, under a heading. And a critical financial rule should be enforced in code (a hook), not just in the prompt.",
+      "explicacao": "Tool results accumulate in context and consume tokens out of proportion to their relevance. Trimming verbose tool outputs to the relevant fields before they are appended keeps the context focused; this can happen in the tool, in the loop code, or in a PostToolUse hook.",
       "feedbacks": [
-        "A larger window doesn't improve attention to the middle; it tends to make it worse, and it costs more.",
-        "Repeating it in the middle still leaves it in the middle; and it adds noise.",
-        "max_tokens limits the output; it doesn't change attention to the input.",
-        "Correct. Position and structure attack lost in the middle; code guarantees the rule."
-      ]
+        "The ignored fields still occupy the context and still compete for attention; a prompt instruction does not remove them.",
+        "Unused fields add cost and noise on every turn and push useful facts further away; more data is not more useful context.",
+        "A larger window postpones the problem while every lookup still carries 40 irrelevant fields.",
+        "Correct. Trimming before accumulation keeps token use proportional to relevance."
+      ],
+      "ts": "5.1"
     },
     {
-      "pergunta": "After an automatic summary, the support agent started calling process_refund with the wrong order_id. What is the recommended fix?",
+      "pergunta": "A long support conversation is progressively summarized to save space. Which information is most at risk of being lost in those summaries?",
       "opcoes": [
-        "Keep a CASE FACTS block (IDs, amounts, dates) outside the summary and reinject it on every turn",
-        "Instruct the summarizer to 'preserve all important details, especially IDs and amounts', and review the summary prompt",
-        "Disable summarization and let the conversation grow indefinitely",
-        "Ask the customer for the order_id again on every tool call"
+        "Exact amounts, percentages, dates, and the expectations the customer stated, which tend to become vague phrases.",
+        "The overall topic of the conversation, which summaries tend to drop in favor of the most recent detailed exchange.",
+        "The system prompt instructions, which are summarized together with the history and lose their priority over time.",
+        "The tool definitions, which are removed from the request once the conversation history has been summarized once."
       ],
       "correta": 0,
-      "explicacao": "Summaries lose exact values and IDs. Transactional facts go in a persistent case facts block that is never summarized.",
+      "explicacao": "Progressive summarization keeps the narrative but condenses numerical values, percentages, dates, and customer-stated expectations into vague text. Those are exactly the details that later become tool arguments or commitments to the customer.",
       "feedbacks": [
-        "Correct. Case facts take the exact data out of the summary's reach.",
-        "Summarization is still probabilistic; this is the anti-pattern of trusting the summary.",
-        "The conversation will overflow the window and degrade; it doesn't solve anything.",
-        "A terrible experience, and it doesn't attack the cause (loss in the summary)."
-      ]
+        "Correct. Precise transactional details and stated expectations are what summaries blur.",
+        "Summaries are good at keeping the overall topic; what they lose is precision.",
+        "The system prompt is sent separately from the message history and is not part of what gets summarized.",
+        "Tool definitions are sent with each request independently of how the history is condensed."
+      ],
+      "ts": "5.1"
     },
     {
-      "pergunta": "In Claude Code, which of these is MOST likely to be lost after a /compact?",
+      "pergunta": "Where should a \"case facts\" block (order numbers, amounts, dates, statuses) live in a long-running support agent whose history is summarized?",
       "opcoes": [
-        "The contents of the project's CLAUDE.md",
-        "The most recent messages in the conversation, which are the first to be summarized by /compact",
-        "The literal error message from a stack trace read at the start of the session",
-        "What was written to the memory file"
+        "Inside the summarized history, written as a short paragraph, so that it is condensed along with the rest of the conversation.",
+        "In a separate structured log that the agent can query with a tool, so that the prompt itself stays as short as possible.",
+        "In every prompt, outside the summarized history, maintained by the application from tool results rather than by the model.",
+        "Only in the first request of the session, since the model carries the exact values forward through the later summaries."
       ],
       "correta": 2,
-      "explicacao": "CLAUDE.md, the system prompt, recent messages, and memory survive. Old details, early tool results, and exact text (such as error messages) can be lost.",
+      "explicacao": "Transactional facts are extracted into a persistent case facts block that is included in each prompt and kept outside the summarized history. The application updates it from tool results, so exact values never pass through the summarizer.",
       "feedbacks": [
-        "CLAUDE.md is reloaded; it survives.",
-        "Recent messages are preserved.",
-        "Correct. Exact text from the start of the session is the kind of detail a summary loses.",
-        "Memory lives on disk; it survives."
-      ]
-    },
-    {
-      "pergunta": "What is a typical sign of context degradation in a long codebase-exploration session?",
-      "opcoes": [
-        "The agent starts using Grep instead of Read",
-        "The agent asks for permission to edit files",
-        "The agent starts creating subagents for parallel tasks instead of doing the exploration directly in the main session",
-        "Vague answers like 'follows the typical patterns' instead of citing the specific class already read"
+        "Putting the facts inside the summarized text exposes them to the same condensation that blurs them.",
+        "A queryable log depends on the agent deciding to look things up; the facts need to be present in every prompt.",
+        "Correct. Included in each prompt, outside the summary, and maintained by code.",
+        "Values from the first request are exactly what later summaries condense away; the block must be repeated on every request."
       ],
-      "correta": 3,
-      "explicacao": "Signs of degradation: generic answers instead of specific code, inconsistency, and forgetting earlier findings.",
-      "feedbacks": [
-        "Using Grep is healthy exploration, not degradation.",
-        "Asking for permission is permission-mode behavior, not a context signal.",
-        "Delegating to subagents is a mitigation, not a symptom.",
-        "Correct. Generic where it should be specific is the classic symptom."
-      ]
+      "ts": "5.1"
     },
     {
-      "pergunta": "A long-running coordinator needs to be able to resume work if the process crashes midway. What should you implement?",
+      "pergunta": "A support session involves three separate issues, each with its own order ID, amount, and status. How should these facts be kept so the agent does not mix them up?",
       "opcoes": [
-        "A manifest in a known location with tasks, status, and paths to partial results",
-        "A lower iteration limit",
-        "A 1-hour cache TTL",
-        "A system prompt asking the model to 'remember where it left off' and resume from the last completed task"
-      ],
-      "correta": 0,
-      "explicacao": "State saved in a known location + the coordinator's manifest let a new session read it and resume after a crash.",
-      "feedbacks": [
-        "Correct. The state needs to live outside the conversation.",
-        "An iteration limit doesn't save state.",
-        "Caching isn't persistence of work state.",
-        "The model has no memory across processes; a prompt doesn't save state."
-      ]
-    },
-    {
-      "pergunta": "An agent makes hundreds of search calls; the old results have already been synthesized and just take up space. Which mechanism is the most appropriate?",
-      "opcoes": [
-        "Memory tool, moving the old results into files outside the conversation",
-        "Compaction",
-        "Case facts block",
-        "Context editing (clearing old tool results)"
-      ],
-      "correta": 3,
-      "explicacao": "Context editing clears old tool results (and/or thinking). Ideal for verbose agentic loops whose results have already been consumed.",
-      "feedbacks": [
-        "The memory tool persists across sessions; it doesn't reduce the current context.",
-        "Compaction summarizes the narrative; here it's enough to discard results already used.",
-        "Case facts store exact values; they don't free up space.",
-        "Correct. Clearing stale tool results is exactly the use case."
-      ]
-    },
-    {
-      "pergunta": "The team enabled server-side compaction, but the history keeps growing until it overflows. The code does messages.Add(response.Content[0].Text). What is the cause?",
-      "opcoes": [
-        "The compaction threshold is too high; it needs to be lowered so it fires before the history grows",
-        "It appends only the text and discards the compaction block; you need to append the entire response.content",
-        "Compaction doesn't work with tools",
-        "A cache breakpoint is missing on the last block"
+        "As one combined, structured list of all confirmed values, so the agent can scan every number of the session at once.",
+        "As one structured record per issue in a separate context layer, so each ID, amount, and status stays tied to its issue.",
+        "In the conversation summary only, so the agent sees the issues in the order the customer raised them in the session.",
+        "In three parallel sessions, one per issue, so that the agent never sees more than a single issue's values at a time."
       ],
       "correta": 1,
-      "explicacao": "With compaction, the response carries a compaction block. Extracting only the text silently loses that state.",
+      "explicacao": "For multi-issue sessions, structured issue data (order IDs, amounts, statuses) is extracted and persisted in a separate context layer, one record per issue. The structure preserves which values belong together.",
       "feedbacks": [
-        "Even with an appropriate threshold, the discarded block keeps compaction from taking effect.",
-        "Correct. Append the entire response.content.",
-        "Compaction works in loops with tools.",
-        "Caching has nothing to do with the history's growth."
-      ]
+        "A flat list loses the association between each issue and its values, which is how amounts get applied to the wrong order.",
+        "Correct. Per-issue structured records keep IDs, amounts, and statuses together.",
+        "The summary is where precise values get blurred; it is not a safe place for transactional data.",
+        "Splitting one customer conversation into separate sessions breaks continuity and still leaves each session to manage its own facts."
+      ],
+      "ts": "5.1"
     },
     {
-      "pergunta": "Which mechanism makes preferences discovered about a customer available at the NEXT support interaction, days later?",
+      "pergunta": "A synthesis agent receives a long aggregated input and keeps omitting findings that appear in its middle sections. Which change best mitigates this?",
       "opcoes": [
-        "Memory tool (persistent files outside the conversation)",
-        "Context editing",
-        "Compaction, which summarizes the previous interaction into a reusable block",
-        "Prompt caching with a 1-hour TTL"
+        "Place a summary of all key findings at the beginning and organize the detailed results under explicit section headers.",
+        "Shuffle the order of the detailed results on every run, so that no single source is consistently placed in the middle.",
+        "Give the synthesis agent an explicit instruction to review its draft against the full input before replying.",
+        "Move the synthesis to a model with a larger context window, so the aggregated input fills a smaller share of it."
       ],
       "correta": 0,
-      "explicacao": "The memory tool stores findings in files that persist across sessions; you implement the storage.",
+      "explicacao": "Models process the beginning and end of long inputs reliably but may omit findings in the middle. Putting a key-findings summary first and structuring the details with explicit section headers mitigates this position effect.",
       "feedbacks": [
-        "Correct. Persistence across sessions.",
-        "Context editing deletes; it doesn't persist anything.",
-        "Compaction lives inside a single conversation.",
-        "Caching isn't business memory, and it expires in minutes/1 hour."
-      ]
-    },
-    {
-      "pergunta": "What is the essential difference between task budget and max_tokens?",
-      "opcoes": [
-        "Task budget is billed in dollars; max_tokens in tokens",
-        "Task budget is visible to the model, which organizes itself to fit; max_tokens is invisible and cuts off midway",
-        "Task budget applies only to the Batch API",
-        "max_tokens limits the entire agentic task; task budget limits each individual response and cuts off when it hits the ceiling"
+        "Correct. Key findings up front plus explicit headers counteract lost in the middle.",
+        "Shuffling spreads the omissions across sources instead of preventing them.",
+        "A second pass over the same long input is subject to the same position effect.",
+        "The effect concerns position within the input, not the share of the window it fills."
       ],
-      "correta": 1,
-      "explicacao": "Visible ceiling → the model plans and finishes in an orderly way. Invisible ceiling → truncation with stop_reason max_tokens.",
-      "feedbacks": [
-        "Both are measured in tokens.",
-        "Correct.",
-        "It has nothing to do with the Batch API.",
-        "Reversed: max_tokens is per response; task budget is for the agentic task."
-      ]
+      "ts": "5.1"
     },
     {
-      "pergunta": "How does a safety refusal reach your code on the Messages API?",
+      "pergunta": "A downstream agent has a limited context budget and receives long, verbose reports, including reasoning chains, from several upstream agents. What should change?",
       "opcoes": [
-        "As HTTP 400 with type invalid_request_error",
-        "As HTTP 403",
-        "As HTTP 200 with stop_reason 'refusal'",
-        "As a timeout exception in the SDK"
-      ],
-      "correta": 2,
-      "explicacao": "The refusal arrives with HTTP 200 and stop_reason refusal. That's why you need to check stop_reason before reading content.",
-      "feedbacks": [
-        "400 is for a malformed request, not a refusal.",
-        "403 is permissions/authentication.",
-        "Correct. Success status, refusal content.",
-        "A refusal isn't a timeout."
-      ]
-    },
-    {
-      "pergunta": "In what order is the prompt caching prefix rendered?",
-      "opcoes": [
-        "system → tools → messages",
-        "messages → system → tools",
-        "tools → system → messages",
-        "Order doesn't matter; the cache works per independent block"
-      ],
-      "correta": 2,
-      "explicacao": "tools → system → messages. A change to the tools invalidates the cached system and messages.",
-      "feedbacks": [
-        "Tools come before system.",
-        "Messages are the final part of the prefix.",
-        "Correct.",
-        "The cache matches the exact prefix; order is everything."
-      ]
-    },
-    {
-      "pergunta": "The system prompt starts with 'Now: 2026-10-11T14:02:37Z' and has cache_control at the end. What happens?",
-      "opcoes": [
-        "The cache works normally, because the timestamp is short",
-        "The cache automatically ignores dates in the prefix",
-        "The API returns a 400, because variable content isn't allowed inside a block marked with cache_control",
-        "Every request pays for a cache write and there's never a read, because the prefix always changes"
+        "Raise the downstream agent's output token limit, so that it has more room to work through the verbose reports it receives.",
+        "Have the downstream agent write a structured summary of each upstream report first, so its later reasoning uses shorter text.",
+        "Instruct the downstream agent to skim each report and focus only on the passages that look most relevant to its own task.",
+        "Have the upstream agents return key facts, citations, and relevance scores instead of verbose content and reasoning."
       ],
       "correta": 3,
-      "explicacao": "Any differing byte in the prefix invalidates the cache. With a timestamp in the system prompt, every request writes and none reads: it ends up more expensive than not caching at all.",
+      "explicacao": "When downstream agents have limited context budgets, upstream agents should return structured data (key facts, citations, relevance scores) rather than verbose content and reasoning chains. Subagents should also include metadata such as dates, source locations, and methodological context so downstream synthesis stays accurate.",
       "feedbacks": [
-        "Size doesn't matter; a single differing byte is enough.",
-        "There's no date normalization; matching is exact.",
-        "There's no error: the invalidation is silent.",
-        "Correct. A classic silent invalidator."
-      ]
-    },
-    {
-      "pergunta": "Repeated requests show cache_read_input_tokens = 0 and cache_creation_input_tokens = 0, with cache_control on a ~300-token system prompt. What is the most likely cause?",
-      "opcoes": [
-        "A prefix below the model's minimum cacheable length: it silently doesn't cache",
-        "A timestamp in the system prompt",
-        "The 5-minute TTL expired between requests and the cache was discarded before being read",
-        "Too many breakpoints"
+        "The output limit does not change how much input the downstream agent must hold; the reports still consume its context.",
+        "Summarizing downstream still requires reading every verbose report into the limited context first, and adds a lossy step.",
+        "Skimming instructions do not reduce the tokens that the reports occupy, and the relevant facts can still be missed.",
+        "Correct. Fixing the upstream output format keeps the downstream context for the facts that matter."
       ],
-      "correta": 0,
-      "explicacao": "If not even the write happens, the prefix didn't reach the minimum cacheable length. Below the minimum there's no error, just zero.",
-      "feedbacks": [
-        "Correct. Zero writes point to a prefix that's too small.",
-        "A timestamp would cause a write on every request (creation > 0), not zero.",
-        "An expired TTL would cause a new write, not zero.",
-        "More than 4 breakpoints would produce an error, not silence."
-      ]
+      "ts": "5.1"
     },
     {
-      "pergunta": "Which of these does NOT invalidate prompt caching?",
+      "pergunta": "Which observation best indicates context degradation during an extended codebase exploration session?",
       "opcoes": [
-        "Building the tools list dynamically per request",
-        "Serializing the system prompt from a dictionary with nondeterministic key order",
-        "Placing the user's question after the last breakpoint",
-        "Including the session ID at the beginning of the system prompt"
+        "The agent re-reads a file it opened an hour earlier, right after the engineer says a teammate has just pushed changes to it.",
+        "The agent's answers slow down noticeably as the session grows, although each answer still names the exact classes involved.",
+        "The agent starts describing the module in generic terms instead of naming the classes it read earlier, and contradicts itself.",
+        "The agent reports no matches for a function it described earlier, because a commit merged during the session renamed it."
       ],
       "correta": 2,
-      "explicacao": "Putting the volatile part after the last breakpoint is exactly the correct design. The other three are silent invalidators.",
+      "explicacao": "In extended sessions, degraded context shows up as inconsistent answers and references to \"typical patterns\" rather than the specific classes discovered earlier. Re-reading a file that just changed, slower answers that stay specific, and an empty search after a rename are expected behavior or a different issue.",
       "feedbacks": [
-        "Varying tools change the start of the prefix: it invalidates everything.",
-        "Unstable key order changes the prefix's bytes.",
-        "Correct. Stable first, volatile after.",
-        "A session ID in the prefix makes each session a different prefix."
-      ]
+        "Re-reading a file after being told it changed is correct targeted re-analysis, not forgetting.",
+        "Latency grows with context, but answers that still name the exact classes show the findings are intact; slowness alone is not the degradation symptom.",
+        "Correct. Generic descriptions in place of the classes it discovered, plus self-contradiction, are the hallmark symptoms.",
+        "This is a valid empty result caused by a real code change, not an inconsistency produced by degraded context."
+      ],
+      "ts": "5.4"
+    },
+    {
+      "pergunta": "What is the main purpose of having an agent maintain a scratchpad file during a long codebase investigation?",
+      "opcoes": [
+        "To persist key findings outside the conversation so the agent can reference them for later questions and after resets.",
+        "To store every tool output in full so the agent can replay the whole investigation if the session ever has to restart.",
+        "To give engineers a log to review, since the agent itself does not read files it wrote earlier in the same session.",
+        "To lower the cost of each request, since scratchpad content is automatically excluded from the context window."
+      ],
+      "correta": 0,
+      "explicacao": "Scratchpad files persist key findings across context boundaries such as compaction, new sessions, and subagent handoffs. The agent references them for subsequent questions, which counteracts context degradation.",
+      "feedbacks": [
+        "Correct. Persisted, distilled findings that the agent references are the point of the scratchpad.",
+        "Full tool outputs would make the scratchpad another verbose dump; it should hold the key findings.",
+        "The agent is meant to read the scratchpad back; that is how it counteracts degradation.",
+        "Nothing is excluded automatically; the value comes from what is written and later consulted, not from a token discount."
+      ],
+      "ts": "5.4"
+    },
+    {
+      "pergunta": "A main agent coordinates a codebase investigation and needs answers to questions such as \"find all test files\" and \"trace refund flow dependencies.\" How should it handle them?",
+      "opcoes": [
+        "Run each search itself in the main session, so that every raw result is available when it builds the overall picture.",
+        "Delegate each question to a subagent along with the relevant prior findings, and keep only the returned summary.",
+        "Delegate each question to a subagent with only the question, since subagents inherit the main agent's findings.",
+        "Read every file in the repository first, so that later questions can be answered without any more exploration."
+      ],
+      "correta": 1,
+      "explicacao": "Spawning subagents for specific questions isolates verbose exploration output in their own context while the main agent preserves high-level coordination. Because subagents do not inherit context, relevant findings from earlier phases are summarized and injected into their prompts.",
+      "feedbacks": [
+        "Running every search in the main session floods the coordinating context with raw output.",
+        "Correct. Delegation with injected prior findings keeps the main context clean and the subagents informed.",
+        "Subagents do not inherit the main agent's context; without the prior findings they rediscover or contradict them.",
+        "Reading everything upfront wastes context; understanding should be built incrementally with targeted exploration."
+      ],
+      "ts": "5.4"
+    },
+    {
+      "pergunta": "In a multi-agent workflow that may crash partway through, what does structured state persistence for crash recovery involve?",
+      "opcoes": [
+        "Resuming the coordinator's conversation after a crash and asking it to recall which of the tasks it had already completed.",
+        "Restarting the whole workflow from the beginning after a crash, since no partial result from before can be trusted.",
+        "Keeping every agent inside one long session, so that the coordinator's own history holds the progress of each subagent.",
+        "Each agent exports state to a known location; on resume the coordinator loads a manifest and injects it into prompts."
+      ],
+      "correta": 3,
+      "explicacao": "Each agent exports its state to a known location, and on resume the coordinator loads a manifest and injects the relevant state into agent prompts. This turns recovery into reading structured state instead of relying on conversation memory.",
+      "feedbacks": [
+        "Recalling progress from a conversation that ended mid-task is unreliable and is not structured state.",
+        "Restarting discards completed work and can overwrite results that were already correct.",
+        "Subagents run in isolated contexts, so one long session neither holds their progress reliably nor survives a crash.",
+        "Correct. Per-agent state exports plus a coordinator-loaded manifest enable recovery."
+      ],
+      "ts": "5.4"
+    },
+    {
+      "pergunta": "A developer's Claude Code session is filling up with verbose Grep and file-read output during a long exploration. Which statement about /compact is correct?",
+      "opcoes": [
+        "It keeps the most recent messages word for word and deletes the older ones, so that the latest tool results stay exact.",
+        "It clears the conversation entirely and starts a new empty session, keeping only the name of the previous session.",
+        "It replaces the conversation history with a summary, which reduces context usage when discovery output fills it.",
+        "It moves verbose tool outputs into a scratchpad file automatically, so that the agent can read them back later."
+      ],
+      "correta": 2,
+      "explicacao": "/compact reduces context usage during extended exploration by replacing the conversation history with a summary, optionally focused by an instruction. Anything that must survive exactly should be kept in files such as a scratchpad, not left to the summary.",
+      "feedbacks": [
+        "/compact does not preserve the recent messages verbatim; the whole conversation is replaced by a summary.",
+        "Clearing the conversation and starting empty describes /clear, not /compact.",
+        "Correct. A summary replaces the verbose history, freeing context.",
+        "/compact does not write a scratchpad; persisting findings to a file is something the agent or developer does deliberately."
+      ],
+      "ts": "5.4"
+    },
+    {
+      "pergunta": "A developer wants to return to a specific investigation from two days ago in Claude Code, although several other sessions have run since then. What should she use?",
+      "opcoes": [
+        "`claude --continue`, which reopens the conversation in the current directory that best matches the investigation.",
+        "`claude --resume <session-name>`, which continues that exact named conversation with its earlier context.",
+        "A fresh session with the original prompt, since sessions cannot be reopened once the terminal has been closed.",
+        "fork_session on the most recent session, which copies the earlier investigation into a new independent branch."
+      ],
+      "correta": 1,
+      "explicacao": "Named session resumption with `--resume <session-name>` continues a specific prior conversation, which is how investigations are carried across work sessions. `--continue` only reopens the most recent session.",
+      "feedbacks": [
+        "`--continue` picks the most recent session, not the one that matches a topic.",
+        "Correct. Named resumption targets the exact conversation.",
+        "Sessions are saved and can be resumed after the terminal closes.",
+        "Forking the most recent session copies that session's history, not the investigation from two days ago."
+      ],
+      "ts": "1.7"
+    },
+    {
+      "pergunta": "What is fork_session designed for when managing agent sessions?",
+      "opcoes": [
+        "Running the same prompt twice as independent runs and keeping whichever of the two answers turns out to be more accurate.",
+        "Moving a session to a different machine, so that another engineer can continue the work with the same history.",
+        "Creating independent branches from a shared analysis baseline, for example to compare two refactoring approaches.",
+        "Splitting a long session into smaller independent sessions, so that each one stays well below the context window limit."
+      ],
+      "correta": 2,
+      "explicacao": "fork_session creates a new session that starts from a copy of an existing session's history and then diverges independently. It is used to explore divergent approaches, such as two testing or refactoring strategies, from the same analysis.",
+      "feedbacks": [
+        "Forking is not a voting or best-of-two mechanism; each branch pursues a different direction.",
+        "Forking is about branching the conversation, not transferring it between machines.",
+        "Correct. Independent branches from a common baseline are the purpose of forking.",
+        "A fork starts with the full copied history, so it does not shrink the context."
+      ],
+      "ts": "1.7"
+    },
+    {
+      "pergunta": "An engineer is returning to a code analysis session from last week. Which TWO practices follow the guidance on resuming versus starting fresh? Choose TWO.",
+      "opcoes": [
+        "If most files are unchanged, start a fresh session with no context so the agent safely re-explores the whole codebase.",
+        "If most files are unchanged, resume the session and tell it exactly which files changed so that it re-analyzes only those.",
+        "If most analyzed files were rewritten, start a new session and inject a structured summary of the findings still valid.",
+        "In either case, fork the old session and ask the fork for a structured summary, so stale results stay in the original.",
+        "If most analyzed files were rewritten, resume anyway, since the agent re-reads every file before relying on what it knows."
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "Resume when prior context is mostly valid, and inform the session about the specific file changes for targeted re-analysis. When prior tool results are stale, a new session with an injected structured summary is more reliable than resuming.",
+      "feedbacks": [
+        "Discarding mostly valid context forces a full re-exploration that is unnecessary.",
+        "Correct. Mostly valid context plus a precise list of changes enables targeted re-analysis.",
+        "Correct. Stale results call for a fresh session seeded with a structured summary.",
+        "A fork copies the original history, so the stale tool results come along into the new branch.",
+        "A resumed agent trusts its earlier tool results; it does not re-read files it believes it already knows."
+      ],
+      "ts": "1.7"
     }
   ]
 }

@@ -1,361 +1,441 @@
 {
-  "titulo": "Module 04 — Exam: Tool design (scenario-style)",
+  "titulo": "Módulo 04 — Prova (estilo exame): design de tools",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "A telecom carrier has a support agent (Agent SDK) with the tools `get_account` (\"Retrieves account data\") and `get_invoice` (\"Retrieves invoice data\"). In the logs, when the customer asks \"why is my bill higher?\", the agent calls `get_account` in 40% of cases and finds no invoice amounts. What is the BEST first action?",
+      "pergunta": "A cybersecurity vendor's support agent (Agent SDK) uses get_customer, lookup_order, process_refund, check_license_status, and escalate_to_human. Tool descriptions were rewritten last quarter and scored 96% correct selection on an evaluation set. A release two weeks ago added a \"Payments\" section to the system prompt (\"If the customer mentions a refund, charge, or payment, take care of it right away\"), a longer greeting, and a new escalation policy. Since then, process_refund has been called before lookup_order in 9% of conversations, almost all of them containing the word \"charge,\" as in \"why was I charged twice?\" What is the most likely root cause?",
       "opcoes": [
-        "Add an intent classifier that analyzes the question and routes to the right tool before the model decides",
-        "Include 10 few-shot examples in the system prompt showing billing questions calling `get_invoice`",
-        "Rewrite the descriptions to say what each tool returns, when to use each one, and how they differ",
-        "Merge the two tools into a `get_customer_everything` that returns the account and invoices together"
-      ],
-      "correta": 2,
-      "explicacao": "The description is the selection criterion. Vague, nearly identical descriptions cause misrouting; the simplest fix is to state each tool's purpose, what it returns, and how they differ.",
-      "feedbacks": [
-        "More complex than necessary: it adds a component to compensate for an ambiguous interface, which stays ambiguous.",
-        "Tempting, and it sometimes helps, but it attacks the symptom; the tool definition still doesn't say when to use it.",
-        "Correct: the simplest fix that works, in the interface itself.",
-        "Merging can be valid for redundant tools, but here the purposes are distinct; returning everything wastes context and hides the difference."
-      ]
-    },
-    {
-      "pergunta": "A platform team is writing the `search_incidents` tool for the developer productivity agent. They want the model to choose it correctly and to know how to handle what it returns. Which TWO elements should be in the `description`? (Choose TWO.)",
-      "opcoes": [
-        "The name of the team that maintains the tool, the link to the repository, and the internal support channel",
-        "When to use it and when NOT to use it, including how it differs from `search_alerts`",
-        "The tool's version history",
-        "What happens with zero results (empty list, not an error) and the input, with an example",
-        "The instruction 'always call this tool first, before any other', to ensure it gets used"
-      ],
-      "corretas": [
-        1,
-        3
-      ],
-      "explicacao": "A good description covers: purpose/when to use it, input format with an example, output, edge cases (zero results), and how it differs from similar tools.",
-      "feedbacks": [
-        "Useful for humans, irrelevant to the model's decision; it takes up context.",
-        "Correct: differentiating it from its neighbors prevents misrouting.",
-        "Helps neither to choose nor to use the tool.",
-        "Correct: edge cases and an input example reduce wrong calls and misinterpretation of empty results.",
-        "A fixed order isn't a selection criterion; if it's a mandatory rule, it goes in code."
-      ]
-    },
-    {
-      "pergunta": "An invoice extraction pipeline uses a `record_invoice` tool whose `input_schema` is the desired output. Sometimes the model sends `total_amount` as a string (\"1.234,56\") and includes an `extra_note` field that doesn't exist in the schema, breaking the parser. What is the most direct fix?",
-      "opcoes": [
-        "Enable `strict: true` on the tool, with `additionalProperties: false` on every object in the schema",
-        "Add to the system prompt: 'use only the schema fields and send numbers without Brazilian formatting'",
-        "Have a second model review the JSON before the parser",
-        "Replace the parser with a more tolerant one that ignores unknown fields and converts numeric strings automatically"
+        "The new Payments instruction ties words like \"charge\" and \"refund\" to acting at once, and that overrides the tool descriptions.",
+        "The process_refund description lacks a boundary saying that billing questions go to lookup_order before any refund is issued.",
+        "The longer system prompt pushes the tool descriptions into the middle of the context, where the model processes them less reliably.",
+        "The new escalation policy discourages escalate_to_human, so the agent settles billing disputes on its own by calling process_refund."
       ],
       "correta": 0,
-      "explicacao": "`strict: true` guarantees that the arguments follow the schema exactly: correct types and no extra fields.",
+      "explicacao": "The misroutes began with the system prompt change and cluster around the word \"charge,\" while the same descriptions had already proven reliable. A keyword-sensitive instruction (\"if the customer mentions a refund, charge, or payment, take care of it right away\") creates an association between those words and the action tool that overrides well-written descriptions. Review the system prompt for keyword triggers and reword them around intent before changing the tools.",
       "feedbacks": [
-        "Correct: a shape problem, solved with a schema guarantee.",
-        "A prompt is probabilistic; it will still fail sometimes.",
-        "A second model to check the first is more complex than necessary.",
-        "Hides the problem and lets malformed data into the pipeline."
-      ]
-    },
-    {
-      "pergunta": "In the same invoice pipeline, now with `strict: true`, the audit found invoices where `total_amount` doesn't match the sum of the items and `issue_date` is later than the date of receipt. What should be done?",
-      "opcoes": [
-        "Add `minimum` and `maximum` to the schema for `total_amount`",
-        "Switch to a forced `tool_choice` on the extraction tool",
-        "Add few-shot examples with correct invoices until the inconsistencies stop showing up in tests",
-        "Validate the sum and the dates in code and return the specific errors to the model in a retry"
+        "Correct. The keyword-triggered instruction ties \"charge\" to taking action, which pulls process_refund ahead of lookup_order despite good descriptions.",
+        "Tempting because missing boundaries are the usual cause of misrouting, but these descriptions scored 96% before the release; the regression tracks the new prompt wording, not the tools.",
+        "Tempting because position effects are real in long inputs, but a longer greeting would degrade selection broadly, not specifically in conversations that contain \"charge.\"",
+        "Tempting because escalation rules do shape tool choice, but the symptom is process_refund before lookup_order on simple billing questions, not disputes that should have been escalated."
       ],
-      "correta": 3,
-      "explicacao": "Strict guarantees shape, not semantics. The sum and date consistency are business rules: validate them in code and resend the specific errors.",
-      "feedbacks": [
-        "Numeric ranges aren't supported by strict and, in any case, wouldn't verify the sum.",
-        "Forcing the tool guarantees that it gets called, not that the values are right.",
-        "It may reduce the problem, but it doesn't guarantee anything; a critical rule goes in code.",
-        "Correct: semantic validation + retry with the errors."
-      ]
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-K4"
     },
     {
-      "pergunta": "In a multi-agent research system, the academic search subagent gets a timeout from the papers API and returns `[]`. The coordinator writes in the report: \"there are no studies on the topic\". Which TWO changes fix the problem? (Choose TWO.)",
+      "pergunta": "A news publisher's research system has a coordinator plus search, document analysis, and synthesis subagents. To cut round trips, the team gave the synthesis subagent the same web_search and fetch_page tools the search subagent uses; the coordinator still passes it the complete findings. Since the change, 34% of synthesis runs issue 5–12 new searches, latency is up 45%, and editors find citations to blogs and press releases that the search subagent's source-quality criteria would have excluded. What is the flaw in this design?",
       "opcoes": [
-        "Return a `tool_result` with `is_error: true`, a transient category, `isRetryable: true`, and the attempted query",
-        "Instruct the coordinator to distrust any empty list coming from subagents and repeat the search three times before concluding",
-        "Increase the API timeout to 5 minutes",
-        "Remove the search subagent and let the coordinator search directly",
-        "In the subagent, retry the transient error locally with backoff, and only then propagate the failure with context"
+        "The coordinator passes the findings as prose, so the synthesis subagent cannot map claims to sources and searches again to rebuild attribution.",
+        "The search subagent's queries are too narrow, which leaves gaps in the findings that the synthesis subagent then fills with its own searches.",
+        "Synthesis now holds tools outside its specialization, so it does its own research, without the source criteria, rather than synthesizing.",
+        "The synthesis prompt does not say that searching is out of scope; an explicit rule against new searches would restore its intended role."
+      ],
+      "correta": 2,
+      "explicacao": "The synthesis subagent already receives the complete findings, yet it now runs its own searches, skips the search subagent's source criteria, and adds latency. Agents given tools outside their specialization tend to misuse them: synthesis should combine findings, not research. Remove the search tools from synthesis; if it often needs quick checks, give it a narrow scoped tool instead.",
+      "feedbacks": [
+        "Tempting because structured findings with source metadata do help attribution, but the coordinator already passes the complete findings; the new behavior started when synthesis received search tools.",
+        "Tempting because narrow searches do leave gaps, but nothing changed in the search subagent; the extra searches and weak citations began with the tool change.",
+        "Correct. Giving synthesis web_search and fetch_page put tools outside its specialization in its hands, so it researches without the search subagent's criteria.",
+        "Tempting because it is a cheap change, but a prompt rule is probabilistic while the tools stay available; removing the out-of-role tools removes the misuse."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-K2"
+    },
+    {
+      "pergunta": "A fintech payments startup built a developer productivity agent with the Agent SDK. For simplicity, every subagent (codebase explorer, boilerplate generator, legacy-docs writer) is defined with the same 14 tools, including create_jira_ticket, trigger_ci_pipeline, and run_readonly_sql. In one week the explorer opened 23 Jira tickets for code smells it noticed, and the boilerplate generator triggered 160 CI runs, one after almost every file it wrote. Nobody asked for either. Which statement about this behavior is correct?",
+      "opcoes": [
+        "The descriptions of create_jira_ticket and trigger_ci_pipeline lack boundaries; rewriting them would stop the extra calls without changing which agents hold them.",
+        "The subagents inherit the coordinator's conversation history, where tickets and CI runs were discussed earlier, and they repeat those actions on their own.",
+        "Each subagent uses tools its role never needed because it received all of them; scoping tools by role, with narrow exceptions, prevents this.",
+        "Fourteen tools is within normal limits, so the calls reflect model judgment; a more capable model would choose side-effecting tools more conservatively."
+      ],
+      "correta": 2,
+      "explicacao": "Every subagent received the same 14 tools, so each one uses side-effecting tools its role never needed: the explorer files tickets and the generator triggers CI. Scoped tool access gives each subagent only the tools for its role, adding a narrow cross-role tool only where a specific need is frequent. Smaller, role-relevant tool sets also make each selection decision simpler.",
+      "feedbacks": [
+        "Tempting because descriptions drive selection, but a description cannot remove a capability; as long as every subagent holds every tool, out-of-role use stays possible.",
+        "Tempting because context leakage sounds plausible, but subagents do not inherit the coordinator's history automatically; the cause is the tools each one was given.",
+        "Correct. The subagents act outside their roles because they all received the full set; scope tools by role and add narrow cross-role tools only for frequent needs.",
+        "Tempting because a stronger model may choose better, but 14 tools per agent is far above the 4–5 that keeps selection reliable, and a model change does not fix over-provisioning."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-K3"
+    },
+    {
+      "pergunta": "In a news publisher's research system, the search subagent has search_news_wire (a licensed wire feed covering only the last 72 hours) and search_web. Both descriptions were recently rewritten with input formats, sample queries, and the 72-hour boundary. Still, requests like \"latest research on microplastics in bottled water\" go to search_news_wire 40% of the time and return nothing useful. The subagent's system prompt reads: \"Cite every source. Prefer primary documents. For anything latest or breaking, use the wire.\" An engineer proposes adding three few-shot examples of \"latest\" requests about older topics routed to search_web. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: few-shot examples are the most effective way to show tool selection for ambiguous requests, and three examples are within the recommended range.",
+        "Reject it for now: the prompt's \"latest or breaking\" rule overrides the rewritten descriptions, so reword that rule around the 72-hour window before adding examples.",
+        "Reject it: merge the two search tools into one that chooses between the wire and the web internally, so the subagent no longer has to pick a source.",
+        "Reject it: the descriptions are still the weak point, so extend the search_news_wire description with more examples of requests outside its window."
+      ],
+      "correta": 1,
+      "explicacao": "The descriptions are already good, so the persistent misrouting points to the system prompt rule \"For anything latest or breaking, use the wire,\" a keyword-sensitive instruction that overrides the 72-hour boundary in the descriptions. Rewording that rule around the actual window is the fix. Adding few-shot examples on top of a conflicting instruction leaves the model with contradictory guidance.",
+      "feedbacks": [
+        "Tempting because few-shot examples do help with genuinely ambiguous tool selection, but here the ambiguity is created by a conflicting keyword rule; fix the rule first.",
+        "Correct. The keyword rule overrides well-written descriptions; review and reword the system prompt before considering examples on top of it.",
+        "Tempting because one tool removes the choice, but consolidation is a larger architectural change and leaves in place the prompt rule that causes the misrouting.",
+        "Tempting because descriptions are the usual first fix, but they already state the 72-hour boundary; more description text cannot outweigh an explicit instruction that contradicts it."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-S4"
+    },
+    {
+      "pergunta": "At a fintech payments startup, the developer productivity agent calls an internal MCP tool, query_settlement_logs, to investigate failed payouts. Every failure returns the same text, \"Request failed,\" whether the log store timed out, the date range was malformed, or the engineer lacks access to production logs. The agent retries all three cases up to 5 times and then tells the engineer that the logs are unavailable. Which TWO changes to the tool's error responses would let the agent recover appropriately? Choose TWO.",
+      "opcoes": [
+        "Return an errorCategory (transient, validation, or permission) with an isRetryable boolean, so that the agent retries only the failures that can succeed.",
+        "Include the HTTP status code and the full stack trace in the error text, so that the agent has the complete technical picture when it decides what to do next.",
+        "Add a readable description of what failed and what would fix it, such as the expected date format or the role required, so that the agent can act on it.",
+        "Log the full details on the server and return only a generic error code, so that internal information does not leak into the agent's conversation context.",
+        "Make the MCP server retry each failed request three times before it responds, so that the agent sees an error only after the server has tried enough."
       ],
       "corretas": [
         0,
-        4
+        2
       ],
-      "explicacao": "Empty ≠ failure: a timeout is a structured, retryable error. The subagent attempts local recovery and only propagates what it couldn't resolve, with context.",
+      "explicacao": "The agent retries everything because every failure looks the same. An errorCategory with an isRetryable flag tells it which failures are worth retrying, and a human-readable description tells it how to fix the input or what to tell the engineer. Together they turn a failure into a recovery decision instead of five wasted attempts.",
       "feedbacks": [
-        "Correct: it signals the failure in a way the coordinator won't confuse with 'nothing found'.",
-        "Treats legitimately empty results as suspect and generates useless retries; the problem is the tool masking the error.",
-        "It may reduce timeouts, but when one happens the error is still masked.",
-        "Doesn't fix the suppression and worsens the division of responsibilities.",
-        "Correct: local recovery from transient errors is the subagent's job."
-      ]
+        "Correct. A category plus isRetryable lets the agent retry the timeout and stop retrying the malformed range and the access denial.",
+        "Tempting because more detail seems helpful, but raw status codes and stack traces are not a recovery signal; the agent still has to guess whether a retry can succeed.",
+        "Correct. A readable description (expected date format, required role) lets the agent correct the call or explain to the engineer what is needed.",
+        "Tempting as a security practice, but a generic code leaves the agent unable to choose a recovery; return safe, actionable metadata rather than nothing.",
+        "Tempting because server-side retries can absorb transient failures, but retrying malformed input and missing permissions wastes time, and the agent still gets an uninformative error."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-S1"
     },
     {
-      "pergunta": "An e-commerce support agent attempts `issue_refund` for R$ 2,000; the policy caps automatic refunds at R$ 500. The tool returns `{\"error\": \"failed\"}` and the agent tries 6 more times before giving up. What is the BEST fix in the tool?",
+      "pergunta": "A fintech payments startup's developer productivity agent has an MCP tool, analyze_code(path, instructions), that engineers use for three jobs: tracing where card data flows, summarizing legacy modules, and checking whether a code comment's claim matches the code. The agent writes the instructions itself, and the output varies from prose to bullet lists. A dashboard that ingests the results fails to parse 18% of them, and card-data traces sometimes come back as module summaries. What is the most effective first step?",
       "opcoes": [
-        "Return HTTP 500 with the full stack trace so the agent understands the severity of the failure",
-        "A business error with `isRetryable: false` and an explanation of the limit, so the agent can inform the customer or escalate",
-        "Configure the agent to retry any failing tool at most 2 times, and then apologize to the customer",
-        "Make the tool refund R$ 500 and return success"
-      ],
-      "correta": 1,
-      "explicacao": "A business error isn't retryable; with a category and an explanation, the agent can decide whether to explain the policy or escalate.",
-      "feedbacks": [
-        "The model doesn't see your backend's HTTP status; it sees the `tool_result`. And 'severe' doesn't say what to do.",
-        "Correct.",
-        "An arbitrary retry cap is a backstop, not a fix; the agent still doesn't know why it failed.",
-        "Silently performs a financial action different from the one requested."
-      ]
-    },
-    {
-      "pergunta": "The `query_crm` tool started failing because the service token expired. The agent tells the customer \"I couldn't find your account\". How should the tool signal this failure?",
-      "opcoes": [
-        "Success with an empty result, since no data was returned",
-        "A validation error, so the model adjusts the customer ID",
-        "A retryable transient error, so the model keeps retrying in a loop with backoff until the token is renewed",
-        "A permission error, not retryable, citing the expired credential, so the agent escalates"
-      ],
-      "correta": 3,
-      "explicacao": "An expired token is a permission issue: insisting won't fix it, and the failure must not turn into 'not found'.",
-      "feedbacks": [
-        "That is exactly the mistake: empty ≠ failure.",
-        "The input was correct; the model will 'fix' an ID that had nothing wrong with it.",
-        "The token won't come back on its own; retrying in a loop wastes calls.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "In contract extraction, the `find_customer_by_cnpj` tool receives \"12.345.678/0001-90\", but the backend accepts digits only. Today it returns `{\"error\": \"Operation failed\"}` and the model gives up. What should be improved?",
-      "opcoes": [
-        "A validation error saying the CNPJ must contain only its 14 digits, so the model fixes it and tries again",
-        "Return a permission error to force escalation",
-        "Mark it as a transient, retryable error so that automatic retry with exponential backoff resolves the failure",
-        "Remove the backend validation and accept the CNPJ in any format, normalizing it later in batch"
-      ],
-      "correta": 0,
-      "explicacao": "A validation error is correctable: with the specific message, the model adjusts the input and tries again.",
-      "feedbacks": [
-        "Correct: a specific error turns a failure into a correction.",
-        "It isn't a lack of access; escalating a format error wastes a human's time.",
-        "Repeating the same input will always fail.",
-        "Attacks the wrong side and may introduce inconsistent data."
-      ]
-    },
-    {
-      "pergunta": "In a research system with a coordinator and 4 subagents, one of the subagents fails permanently (its source is down all day). The other three brought back enough material for a good part of the report. What is the expected behavior?",
-      "opcoes": [
-        "Abort the entire workflow and return an error to the user",
-        "Generate the report normally with the three sources, without mentioning the one that failed, so as not to confuse the reader",
-        "Proceed with the partial results, note the gap and the reason in the report, and offer an alternative",
-        "Rerun the subagent indefinitely until the source comes back"
+        "Expand the analyze_code description with sample instructions for each of the three jobs, so that the agent writes consistent instructions on every call.",
+        "Add a normalization step that converts each analyze_code result into the dashboard's format, so that varied output no longer breaks ingestion.",
+        "Split analyze_code into trace_card_data_flow, summarize_module, and check_comment_claim, so that every job gets its own input schema and output format.",
+        "Add a mode enum (trace, summarize, check) to analyze_code with one free-form result field, so that a single tool still covers all three jobs."
       ],
       "correta": 2,
-      "explicacao": "Don't abort the workflow because of one failure: proceed with the partial results, note the gap, and offer an alternative.",
+      "explicacao": "One generic tool with free-form instructions serves three different jobs, so the agent decides what the tool does on every call and the output has no contract. Splitting it into purpose-specific tools, each with a defined input schema and output format, fixes both the mixed-up jobs and the parsing failures. Better descriptions and downstream normalization only treat symptoms of the missing contract.",
       "feedbacks": [
-        "Throws away valid work because of one step.",
-        "Silent suppression: the reader thinks coverage is complete.",
-        "Correct.",
-        "A non-transient failure; infinite retries stall the system."
-      ]
-    },
-    {
-      "pergunta": "A productivity agent has 18 tools (git, CI, tickets, wiki, deploy, metrics, chat...). It frequently calls the wrong tool, even after the descriptions were revised. The tasks clearly cluster into research, analysis, and actions. What is the BEST architecture?",
-      "opcoes": [
-        "Keep one agent and switch to a larger model",
-        "Coordinator + specialized subagents (research, analysis, action), each with 4–5 cohesive tools",
-        "One subagent per tool, 18 in total, coordinated by a central agent",
-        "Describe in the system prompt a detailed decision tree of which tool to use in each type of situation"
+        "Tempting because descriptions are the primary selection mechanism, but the problem is a tool with no contract, not a choice between tools; better instructions still produce free-form output.",
+        "Tempting because it fixes parsing quickly, but it patches the symptom downstream while card-data traces keep coming back as summaries.",
+        "Correct. Purpose-specific tools with defined input and output contracts remove the ambiguity and give the dashboard a stable format.",
+        "Tempting because a mode enum looks like a light version of splitting, but the single free-form result keeps the output without a contract, so parsing failures remain."
       ],
-      "correta": 1,
-      "explicacao": "With many tools, selection degrades; descriptions aren't enough. Distribute the tools across specialized subagents with 4–5 tools each.",
-      "feedbacks": [
-        "Attacks the symptom; the problem is the number of options in the decision.",
-        "Correct.",
-        "The opposite extreme: coordination overhead with no gain.",
-        "An external decision tree goes against letting the model decide; a long, fragile prompt."
-      ]
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-S3"
     },
     {
-      "pergunta": "The team connected 7 MCP servers to the agent; the tool definitions add up to ~45k tokens, and in most sessions the agent uses only 4 of them. Latency went up and tool selection got worse. What should be done?",
+      "pergunta": "A cybersecurity vendor's support agent calls process_refund for license refunds. Policy allows refunds only within 30 days of license activation. For older licenses the tool returns {\"error\": \"REFUND_REJECTED\"}; the agent retries 3–4 times, then tells customers that \"a technical problem occurred,\" and satisfaction scores on refund conversations have dropped 12 points. The team is choosing how process_refund should report this case. Which design should it use?",
       "opcoes": [
-        "Remove 5 MCP servers and keep only the 2 most used",
-        "Shorten every description to one line",
-        "Swap the `tools` array every turn, sending only the tools a classifier deems relevant to the intent",
-        "Tool search with `defer_loading: true`, keeping the ~4 frequent tools loaded"
+        "Return isError: true with errorCategory \"validation\", so that the agent re-checks the activation date and amount it sent and then calls the tool again.",
+        "Return a successful result with refund_status \"denied\" and the policy code POL-30D, so that the call is not seen as a failure and retries stop.",
+        "Block these calls in a PreToolUse hook that routes out-of-window refunds to escalate_to_human, so that the agent does not handle the policy itself.",
+        "Return isError: true with errorCategory \"business\", isRetryable: false, and a customer-friendly note on the 30-day rule for the agent to relay."
       ],
       "correta": 3,
-      "explicacao": "Large catalog / several MCP servers / >10k tokens: tool search loads tools on demand and preserves the cache; keep the frequent ones loaded.",
+      "explicacao": "An out-of-window refund is a business rule violation, and retrying cannot change the outcome. Reporting it as a business error with isRetryable: false stops the wasted retries, and a customer-friendly explanation lets the agent tell the customer about the 30-day rule and the options that remain. Misclassifying it, hiding it behind a code, or escalating every case all leave the agent unable to explain the policy.",
       "feedbacks": [
-        "Loses capability that is sometimes needed.",
-        "Worsens selection (the description is the criterion) and doesn't solve the volume.",
-        "Invalidates the prompt cache every turn and requires an external classifier.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "After enabling tool search, an engineer marked ALL tools with `defer_loading: true`, including `lookup_order`, which is used in 90% of conversations. What should be expected, and how should it be fixed?",
-      "opcoes": [
-        "An extra search on almost every turn; leave the 3–5 frequent tools non-deferred",
-        "No impact; deferring everything is the recommended configuration",
-        "The prompt cache starts being invalidated every turn; go back to loading all tools in the request",
-        "The model can no longer call `lookup_order`; remove tool search"
+        "Tempting because the agent could double-check its input, but nothing in the request is malformed; calling it validation invites the agent to resubmit a call the policy will always reject.",
+        "Tempting because a non-error result would stop the retries, but an opaque code gives the agent nothing to tell the customer, so it still improvises an explanation.",
+        "Tempting because hooks give deterministic control, but the tool already enforces the rule; escalating every out-of-window case sends routine policy answers to humans and lowers resolution.",
+        "Correct. A business category, isRetryable: false, and a customer-friendly explanation let the agent stop retrying and explain the policy."
       ],
-      "correta": 0,
-      "explicacao": "At least one tool must remain non-deferred, and the frequent ones should stay loaded to avoid unnecessary searches.",
-      "feedbacks": [
-        "Correct.",
-        "The recommendation is precisely to keep the frequent ones loaded.",
-        "Deferring doesn't invalidate the cache; the problem is the discovery cost.",
-        "It can still be found through search; removing tool search throws away the benefit."
-      ]
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-S2"
     },
     {
-      "pergunta": "An extraction pipeline used `tool_choice: {\"type\": \"tool\", \"name\": \"extract_invoice\"}` to guarantee JSON. When it migrated to a newer model, every request started returning 400. The tool's only purpose was to get JSON matching the schema. What is the BEST fix?",
+      "pergunta": "A fintech payments startup's developer productivity agent has two MCP tools: analyze_logs (\"Analyzes log data\") and analyze_events (\"Analyzes event data\"). analyze_logs searches application logs in the observability stack; analyze_events reads payment-provider webhook deliveries from the event store. When engineers ask why a webhook was not processed, the agent calls analyze_logs 31% of the time and reports that nothing was found. Which TWO changes most directly remove the overlap? Choose TWO.",
       "opcoes": [
-        "Switch to `tool_choice: any`",
-        "Revert to the previous model permanently, since it accepts all `tool_choice` options",
-        "Use structured outputs (`output_config.format` with `json_schema`) instead of the forced tool",
-        "Use an assistant prefill that starts the response with `{` to force the model to produce JSON"
-      ],
-      "correta": 2,
-      "explicacao": "[volatile, but this is the point] On newer models, forced `any`/`tool` returns 400. If forcing existed only to get JSON, structured outputs is the way to go (or `auto` + an instruction + `strict`).",
-      "feedbacks": [
-        "`any` also returns 400 on these models.",
-        "Works around the problem without solving it and blocks future upgrades.",
-        "Correct.",
-        "Prefill also returns 400 on newer models."
-      ]
-    },
-    {
-      "pergunta": "A customer service agent uses `tool_choice: {\"type\": \"any\"}` (on a model that accepts it). Customers complain that when they just say \"thanks!\", the agent fires off a pointless order lookup. What is the fix?",
-      "opcoes": [
-        "Add a `reply_text` tool for the model to call when it just wants to talk to the customer",
-        "Use `tool_choice: auto`, letting the model decide between calling a tool or replying in text",
-        "Use `tool_choice: none` on every turn",
-        "Use `disable_parallel_tool_use: true`"
-      ],
-      "correta": 1,
-      "explicacao": "`any` forces the model to call some tool. A conversational agent needs `auto` (the default).",
-      "feedbacks": [
-        "A hack that keeps the root problem (forcing a tool).",
-        "Correct.",
-        "Prevents the agent from using tools when it needs them.",
-        "Limits the number of calls, but still forces one."
-      ]
-    },
-    {
-      "pergunta": "A support agent sometimes emits `update_address` and `recalculate_shipping` in parallel in the same response; shipping is calculated with the old address. What is the simplest adjustment?",
-      "opcoes": [
-        "Switch to `tool_choice: none`",
-        "Remove `recalculate_shipping` from the agent",
-        "Instruct in the system prompt: 'never call two tools at the same time; wait for the result of each one'",
-        "Set `disable_parallel_tool_use: true` to limit it to one call per response"
-      ],
-      "correta": 3,
-      "explicacao": "`disable_parallel_tool_use: true` limits the model to one call per response, forcing the sequence.",
-      "feedbacks": [
-        "Prevents any tool call.",
-        "Loses necessary functionality.",
-        "A prompt is probabilistic; the parameter is deterministic.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "The research agent uses server-side web search. On broad queries, the response sometimes arrives incomplete; the log shows `stop_reason: \"pause_turn\"`, and the code treats any stop_reason other than `tool_use` as the end. What should be fixed?",
-      "opcoes": [
-        "On receiving `pause_turn`, resend the conversation with the assistant's response so the model can continue",
-        "Increase `max_tokens` to 32k, because the response is being cut off before the model finishes the research",
-        "Lower the web search's `max_uses` so the loop ends sooner",
-        "Treat `pause_turn` as an error and escalate"
-      ],
-      "correta": 0,
-      "explicacao": "`pause_turn` indicates that the server-side loop hit its iteration cap; resending the response lets it continue.",
-      "feedbacks": [
-        "Correct.",
-        "Confuses it with `max_tokens`; the cap that was hit is on server-side iterations.",
-        "It would worsen the research coverage.",
-        "It isn't an error; it's an expected continuation."
-      ]
-    },
-    {
-      "pergunta": "A coordinator monitors the health of the research subagent by checking whether the Messages API call returned HTTP 200. Even so, some reports come out with no sources at all, and the web search apparently 'didn't run'. What is probably happening?",
-      "opcoes": [
-        "The API returned HTTP 429 and the SDK converted it to 200",
-        "The web search failed and the error came back with HTTP 200, inside the result block that the code doesn't read",
-        "The model refused the search, and the code should check a `refusal` header in the HTTP response before proceeding",
-        "Web search only works with `tool_choice: any`"
-      ],
-      "correta": 1,
-      "explicacao": "Server-side tool errors come back with HTTP 200 and an error object inside the result (e.g., `max_uses_exceeded`). You have to inspect the block.",
-      "feedbacks": [
-        "Made up; the SDK doesn't do that.",
-        "Correct.",
-        "A refusal comes through `stop_reason`, not a header; and it doesn't explain the symptom.",
-        "Web search doesn't depend on a forced `tool_choice`."
-      ]
-    },
-    {
-      "pergunta": "A research subagent has web fetch enabled (without web search). The prompt asks it to 'read the competitor's pricing page' without providing the URL, and the fetch fails. Why?",
-      "opcoes": [
-        "Web fetch requires `strict: true`",
-        "Web fetch is a client-side tool, so it has to be executed by your own code, not by the API",
-        "Web fetch only fetches URLs already present in the conversation; it doesn't invent or discover URLs",
-        "A `tool_choice: tool` pointing to web fetch was missing"
-      ],
-      "correta": 2,
-      "explicacao": "Web fetch isn't a crawler: it fetches URLs that came from the user or from previous results (e.g., from a web search). Provide the URL or enable web search first.",
-      "feedbacks": [
-        "Strict is for custom tools.",
-        "Web fetch is server-side.",
-        "Correct.",
-        "Forcing the call doesn't create a valid URL."
-      ]
-    },
-    {
-      "pergunta": "A productivity agent received three `tool_use` blocks in one response (`toolu_1`, `toolu_2`, `toolu_3`); `toolu_2` failed with a timeout. Which TWO statements describe the correct way to return the results? (Choose TWO.)",
-      "opcoes": [
-        "Send three separate `user` messages, one for each `tool_result`, in the order in which the executions finished",
-        "Omit `toolu_2` and resend only the successful results so as not to confuse the model",
-        "All the `tool_result` blocks go in a single `user` message, each referencing the exact `tool_use_id`",
-        "Re-issue the `toolu_2` call from the client itself with a new ID before responding",
-        "The result for `toolu_2` goes with `is_error: true` and content describing the timeout"
+        "Add a system prompt rule sending any question that mentions \"webhook\" or \"event\" to analyze_events, so that those questions skip analyze_logs.",
+        "Rename analyze_events to query_webhook_deliveries, so that the tool's name states the specific data source it reads rather than a generic verb.",
+        "Add six few-shot examples of webhook questions answered with analyze_events, so that the agent learns the routing pattern from demonstrations.",
+        "Merge both tools into a single analyze_data tool with a source parameter, so that the agent no longer has to choose between two similar-looking tools.",
+        "Rewrite both descriptions to state each data source, input format, and when to use the other tool instead, so that their purposes stop overlapping."
       ],
       "corretas": [
-        2,
+        1,
         4
       ],
-      "explicacao": "Parallel calls: all results in a single `user` message, with the exact `tool_use_id` values; the one that failed also gets a result, with `is_error: true`.",
+      "explicacao": "Two tools with generic names and near-identical descriptions overlap functionally, so the agent cannot tell which data source each one reads. Renaming the tool to state its source and rewriting both descriptions with inputs and boundaries removes the overlap at the interface. Keyword rules and few-shot examples treat the symptom, and consolidation changes more than the problem needs.",
       "feedbacks": [
-        "Splitting into several messages breaks the return pattern.",
-        "Every `tool_use` needs a result; omitting one produces an invalid request and hides the failure.",
-        "Correct.",
-        "IDs are generated by the model; the client doesn't create calls.",
-        "Correct: the model can reason about recovery."
-      ]
+        "Tempting because it routes webhook questions quickly, but keyword-triggered rules create unintended associations (log questions that mention events, for example) and override descriptions.",
+        "Correct. A name that states the specific source tells the model what the tool is for, which removes much of the overlap.",
+        "Tempting because examples demonstrate routing, but they add tokens without fixing the overlapping definitions that cause the confusion.",
+        "Tempting because one tool removes the choice, but merging is a larger architectural change than needed and pushes the same source decision into a parameter.",
+        "Correct. Descriptions that state each data source, the input format, and when to use the other tool make the boundary explicit."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-S2"
     },
     {
-      "pergunta": "A developer assistant builds the `tools` array on every turn with only the 'relevant' tools according to a classifier. The API bill went up and `usage.cache_read_input_tokens` is always 0. What is the cause and the fix?",
+      "pergunta": "A cybersecurity vendor expanded its support agent into an \"all-in-one\" assistant: alongside get_customer, lookup_order, process_refund, and escalate_to_human, it now has 15 more tools for license management, threat-intel lookups, sandbox reports, and billing. Every tool description follows the same template, with input formats and boundaries. Correct tool selection fell from 95% to 79%, and the errors are spread across many different tool pairs rather than concentrated on one. What is the most likely root cause?",
       "opcoes": [
-        "The system prompt is below the minimum token count for caching; enlarge it with more instructions and examples",
-        "Varying `tools` changes the prefix (tools → system → messages) and invalidates the cache; keep it stable",
-        "Caching only works with `tool_choice: none`, so disable tools on conversational turns",
-        "The classifier adds latency; replace it with a smaller, faster model to choose the tools"
+        "The new billing tools overlap with process_refund, and their near-identical descriptions send refund requests to the wrong tool.",
+        "The system prompt grew to explain each new tool family, and its keyword-based rules now conflict with the tool descriptions.",
+        "The new tool families lack few-shot examples, so the agent has no demonstrations of when to prefer them over the original tools.",
+        "With 19 tools in one agent, each selection has more options to weigh, which degrades reliability across the tool set."
+      ],
+      "correta": 3,
+      "explicacao": "The descriptions follow a solid template, and the errors are spread across many tool pairs instead of concentrating on one overlap. That pattern points to tool count: 19 tools in one agent make every selection decision more complex. The fix is to distribute the tools across specialized agents, each with a small, role-relevant set.",
+      "feedbacks": [
+        "Tempting because overlapping descriptions cause misrouting, but an overlap would concentrate errors on specific pairs; here they are spread across the whole tool set.",
+        "Tempting because keyword rules can override descriptions, but nothing points to a wording pattern, and the degradation is broad rather than tied to particular words.",
+        "Tempting because few-shot examples help with ambiguous cases, but adding examples for 15 tools does not shrink the size of each decision.",
+        "Correct. Too many tools in one agent degrade selection reliability across the board; distribute them so each agent has a small, focused set."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-K1"
+    },
+    {
+      "pergunta": "A cybersecurity vendor's support agent can reset a customer's MFA device through an MCP tool. The tool maps failures as follows: identity-provider timeout → transient, isRetryable: true; malformed device ID → validation; account managed by an enterprise tenant whose admin must approve resets → transient, isRetryable: true. Logs show the agent retrying tenant-managed resets six times over three minutes and then telling customers that the service is temporarily down. What is the flaw in this implementation?",
+      "opcoes": [
+        "Identity-provider timeouts should be non-retryable, because repeated reset attempts can lock the customer's account and open a security incident.",
+        "The admin-approval case is a permission error reported as transient, so the agent keeps retrying instead of explaining who must approve the reset.",
+        "The tool should return an empty successful result when approval is missing, so that the agent does not treat a policy-controlled reset as a failure.",
+        "The agent has no retry limit, and adding a maximum of two retries to its system prompt would remove the long delay before it answers the customer."
       ],
       "correta": 1,
-      "explicacao": "The cache matches the exact prefix in the order tools → system → messages; varying `tools` per request invalidates everything.",
+      "explicacao": "Admin approval is a permission problem: no number of retries will succeed until the tenant admin approves. Labeling it transient and retryable makes the agent wait through six retries and then misinform the customer. Classifying it as a permission error (isRetryable: false, with a description of who must approve) lets the agent explain the next step right away.",
       "feedbacks": [
-        "There may be a minimum token count, but the question points to the varying array as something that changes on every request.",
-        "Correct.",
-        "There is no such requirement.",
-        "Addresses latency, not cache invalidation."
-      ]
+        "Tempting because security systems can lock accounts, but a timeout is the textbook transient error, and retrying it with a delay is appropriate.",
+        "Correct. The approval case is a permission error marked as transient, so the agent retries something that can never succeed and gives a wrong explanation.",
+        "Tempting because it avoids a failure path, but an empty success hides the real reason and leaves the agent unable to tell the customer what is needed.",
+        "Tempting because it shortens the delay, but the agent would still retry a call that cannot succeed and still report a temporary outage."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-K2"
+    },
+    {
+      "pergunta": "A cybersecurity vendor runs an intake step before its support agent: one Messages API call reads the customer's first message and must end in one of three tools, route_to_billing, route_to_technical, or escalate_to_human. The request sets tool_choice to {\"type\": \"auto\"}. In 6% of calls the response has stop_reason \"end_turn\" and contains only text (for example, \"It sounds like a billing question\"), so the router drops those tickets into a default queue. Which statement about this behavior is correct?",
+      "opcoes": [
+        "With \"auto\" the model may answer in text; tool_choice {\"type\": \"any\"} guarantees a call to one of the three tools and still lets the model pick one.",
+        "Only a forced tool selection guarantees a tool call; {\"type\": \"any\"} raises the likelihood of a call but still allows the model to reply in text.",
+        "The text replies show that the response was cut off before the tool call, so raising max_tokens would let the model reach the routing decision.",
+        "A system prompt rule stating that each reply must call a routing tool guarantees a tool call as reliably as changing the tool_choice setting."
+      ],
+      "correta": 0,
+      "explicacao": "With tool_choice \"auto,\" the model may return text instead of calling a tool, which is exactly what happens in 6% of intake calls. Setting tool_choice to \"any\" guarantees that the model calls one of the provided tools while leaving the choice among them to the model. A forced tool would remove that routing choice, and neither a prompt rule nor max_tokens guarantees a call.",
+      "feedbacks": [
+        "Correct. \"any\" guarantees a tool call and still lets the model choose among the three routing tools.",
+        "Tempting because forced selection does guarantee a call, but \"any\" guarantees one too; forcing a single named tool would remove the routing decision.",
+        "Tempting because truncation can cut responses short, but a truncated response ends with stop_reason \"max_tokens,\" not \"end_turn\"; these are complete text answers.",
+        "Tempting because it is a quick change, but prompt instructions are probabilistic; tool_choice is the setting that guarantees a tool call."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S5"
+    },
+    {
+      "pergunta": "A cybersecurity vendor's support agent has lookup_license (\"Looks up license information\") and lookup_subscription (\"Looks up subscription information\"). In 17% of license questions the agent calls lookup_subscription, and it sometimes passes order numbers to lookup_license. A teammate proposes rewriting both descriptions to state the accepted inputs (license keys such as XXXX-XXXX-XXXX-XXXX versus subscription IDs), sample questions (\"is my endpoint license still active?\"), edge cases (expired and trial keys return a status, not an error), and when to use the other tool instead. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: input formats, sample questions, edge cases, and boundaries are what the model relies on when it chooses between two similar tools.",
+        "Adopt only the boundary sentences; input formats and sample questions belong in the input schema and in few-shot examples, not in descriptions.",
+        "Reject it: longer descriptions cost tokens on each call, and a routing layer that matches license-key and order-number patterns is more dependable.",
+        "Reject it: merge lookup_license and lookup_subscription into a single lookup tool, so that the agent does not have to choose between the two of them."
+      ],
+      "correta": 0,
+      "explicacao": "Descriptions are the main signal the model uses to choose between similar tools. The proposal adds exactly what minimal descriptions lack: accepted input formats, sample questions, edge cases, and the boundary with the similar tool. It is the low-effort, high-leverage fix; a routing layer or consolidation is a heavier change that a description problem does not warrant.",
+      "feedbacks": [
+        "Correct. Input formats, sample questions, edge cases, and boundaries are what let the model tell lookup_license from lookup_subscription.",
+        "Tempting because schemas and few-shot examples have their roles, but the description is the primary selection mechanism, and formats and examples belong there too.",
+        "Tempting because pattern matching looks deterministic, but a routing layer is over-engineered for a description problem and bypasses the model's language understanding.",
+        "Tempting because one tool removes the choice, but consolidation is a larger change than a first fix warrants when the descriptions are simply inadequate."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-K2"
+    },
+    {
+      "pergunta": "An ed-tech platform extracts data from uploaded course documents with two extraction tools: extract_syllabus (\"Extracts course information\") and extract_catalog_entry (\"Extracts course data\"). For 14% of syllabi the model calls extract_catalog_entry, so weekly schedules and grading policies are lost. The output schemas are consumed by three other teams and cannot change this quarter, and the team cannot add a new pipeline stage. What is the most effective fix within these constraints?",
+      "opcoes": [
+        "Set tool_choice to {\"type\": \"any\"} to guarantee that each uploaded document produces a tool call instead of a free-text answer.",
+        "Rewrite each description to state the document it handles, the input it expects, what it outputs, and when to use the other tool.",
+        "Add a classification call that detects the document type, then force the matching extraction tool in a second call per document.",
+        "Merge both tools into one extract_course tool whose schema holds the fields from both, with the fields that differ marked optional."
+      ],
+      "correta": 1,
+      "explicacao": "The two extraction tools have near-identical one-line descriptions, so the model cannot tell a syllabus tool from a catalog-entry tool. Rewriting each description to state which document it handles, its expected input, its output, and when to use the other tool fixes selection without changing schemas or adding stages. tool_choice \"any\" only guarantees that some tool is called, not the right one.",
+      "feedbacks": [
+        "Tempting because \"any\" is right when several extraction schemas exist and the document type is unknown, but the model already calls a tool; the problem is which one.",
+        "Correct. Differentiating purpose, inputs, outputs, and when to use each tool fixes selection within both constraints.",
+        "Tempting because classifying and then forcing a tool is reliable, but it adds the pipeline stage the team cannot build, and better descriptions have not been tried yet.",
+        "Tempting because one tool removes the choice, but it changes the schemas that three teams consume, which the constraints rule out."
+      ],
+      "cenario": 6,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-S1"
+    },
+    {
+      "pergunta": "In a news publisher's research system, the document analysis subagent reads articles through an MCP tool, get_archive_article. When an article is under embargo, the archive returns 403 and the tool sends back the text \"Error: access denied\" as a normal result. In 5% of reports the synthesis step quotes \"access denied\" as article content or lists the error message as a finding. What is the most effective first step?",
+      "opcoes": [
+        "Instruct the analysis subagent to discard any article text that begins with \"Error\" and to record that article as a missing source in its structured findings.",
+        "Return the failure with isError: true and structured metadata (category, retryability, description), so that the agent knows the call failed and why.",
+        "Throw an exception in the MCP server so that the tool call fails at the protocol level and the analysis run stops before synthesis can use it.",
+        "Add a PostToolUse hook that removes any tool result shorter than 200 characters before the analysis subagent processes the content."
+      ],
+      "correta": 1,
+      "explicacao": "The tool reports an access failure as successful content, so the agent has no way to know the call failed. The MCP isError flag exists to communicate tool failures back to the agent; with structured metadata (category, retryability, description) the agent can treat the article as unavailable, note the gap, or try another source. Text filters and hooks patch the symptom, and aborting the run throws away the rest of the analysis.",
+      "feedbacks": [
+        "Tempting because it is simple, but it depends on the model parsing message text, and any change in wording breaks it; the tool should signal the failure explicitly.",
+        "Correct. isError: true with structured metadata tells the agent the call failed and how to recover, instead of handing it an error string as content.",
+        "Tempting because a hard failure is unambiguous, but stopping the run discards the remaining analysis; returning the error in the tool result lets the agent continue and note the gap.",
+        "Tempting because a hook filters deterministically, but length is a poor proxy, it silently drops data, and the agent never learns that the source was embargoed."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-K1"
+    },
+    {
+      "pergunta": "A fintech payments startup's developer productivity agent uses find_callers(symbol) on an internal code-search MCP server that indexes 300 repositories. When the index service is unreachable, the tool returns {\"callers\": []}. Last week the agent concluded that the deprecated settleBatchV1 had no callers, generated a PR deleting it, and two services broke after the merge. The team is choosing how find_callers should behave from now on. Which design should it adopt?",
+      "opcoes": [
+        "Return the empty list with an added warning field, and keep the result marked as successful so that index outages do not interrupt the agent loop.",
+        "Retry inside the server until the index responds, so that the agent receives only complete results and does not have to handle an outage itself.",
+        "Keep the current response and instruct the agent to call find_callers twice and compare the results before it trusts an empty list of callers.",
+        "Return isError: true with a transient category when the index is unreachable, and keep an empty callers list for searches that found no match."
+      ],
+      "correta": 3,
+      "explicacao": "An unreachable index is an access failure, not a search that found nothing. Returning it as an empty success led the agent to conclude that the function was unused. The tool should return isError: true with a transient category when it cannot search, and an empty list only when the search completed with no matches, so the agent can retry or report the gap instead of acting on false information.",
+      "feedbacks": [
+        "Tempting because it adds a signal without changing the contract, but a success-marked empty list still reads as \"no callers,\" and the agent can easily act on it.",
+        "Tempting because the agent would only see real results, but retrying until the index returns can hang the session during an outage and takes the decision away from the agent.",
+        "Tempting because a second call might catch a flaky index, but it doubles the cost, an outage returns two identical empty lists, and the ambiguity remains.",
+        "Correct. Separating an access failure (isError, transient) from a valid empty result lets the agent make the right decision."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-S4"
+    },
+    {
+      "pergunta": "An ed-tech platform extracts course records from transcripts sent by 400 universities. An extraction subagent fills the schema, and a catalog subagent with six tools maps course codes such as \"CS 101\" to canonical catalog IDs, which the extraction subagent needs to validate credit hours. 72% of documents need at least one code mapped; about 90% of those codes are exact matches in the catalog table, while renamed or merged courses need the catalog subagent's fuzzy search and registrar lookups. Every mapping now goes extraction → coordinator → catalog subagent → coordinator → extraction. The requirement is to cut per-document latency by 30% without lowering mapping accuracy. What should you change?",
+      "opcoes": [
+        "Give the extraction subagent a scoped lookup_catalog_id tool for exact matches, and keep sending renamed or merged courses through the coordinator.",
+        "Give the extraction subagent the full set of six catalog tools, so that it can resolve each course code on its own without leaving its context.",
+        "Have the extraction subagent collect the unresolved codes and send them to the coordinator as one batch after it finishes the document.",
+        "Preload the course catalogs of the 400 universities into the extraction subagent's prompt, so that each code can be matched in context."
+      ],
+      "correta": 0,
+      "explicacao": "Most mappings are exact matches that need only a simple lookup, yet each one costs four hops through the coordinator. A scoped cross-role tool for that frequent, simple need removes the round trips in the common case, while renamed or merged courses still go through the coordinator to the catalog subagent's specialized tools. This keeps least privilege and preserves accuracy on the hard cases.",
+      "feedbacks": [
+        "Correct. A narrow lookup tool covers the frequent exact-match case, and complex mappings keep using the coordinator and the catalog subagent.",
+        "Tempting because it removes every round trip, but it over-provisions the extraction subagent with tools outside its specialization, which degrades selection and invites misuse.",
+        "Tempting because batching reduces hops, but credit-hour validation depends on the canonical IDs, so deferring every mapping to the end blocks the rest of the extraction.",
+        "Tempting because it avoids lookups entirely, but loading 400 catalogs floods the context with irrelevant data and degrades extraction quality."
+      ],
+      "cenario": 6,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S3"
+    },
+    {
+      "pergunta": "In a news publisher's research system, every subagent tool reports failures as {\"status\": \"error\", \"message\": \"Operation failed\"}. Over a month, the coordinator re-dispatched queries against paywalled sources three times each, and none of those attempts ever succeeded, while it dropped a wire feed after one brief timeout even though the same query succeeded 20 seconds later. 15% of reports have coverage gaps. What is the most likely root cause?",
+      "opcoes": [
+        "Every failure looks the same, so the agents cannot tell a permanent restriction from a temporary outage and pick the wrong recovery for each.",
+        "The coordinator's retry policy is miscalibrated: three attempts are too many for paywalled sources and too few for feeds with brief timeouts.",
+        "The subagents do not retry locally with backoff, so every transient failure reaches the coordinator and uses up its limited retry budget.",
+        "The coordinator decomposes each topic too narrowly, so every failed source leaves an entire subtopic without any alternative coverage."
+      ],
+      "correta": 0,
+      "explicacao": "The coordinator wastes retries on paywalled sources and abandons transient timeouts because every failure says \"Operation failed.\" Uniform error responses hide whether a failure is permanent or temporary, so the agents cannot choose the right recovery. Structured errors with a category and an isRetryable flag would separate the two cases.",
+      "feedbacks": [
+        "Correct. Identical failure responses keep the agents from telling permanent access restrictions apart from transient outages.",
+        "Tempting because the retry counts look wrong, but no single number fits both cases; the coordinator needs to know which kind of failure occurred.",
+        "Tempting because local recovery is good practice, but it would not stop the repeated retries against paywalls, which never succeed no matter who retries.",
+        "Tempting because narrow decomposition does cause coverage gaps, but the evidence shows gaps from mishandled failures, not from missing subtopics."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-K3"
+    },
+    {
+      "pergunta": "A news publisher's fact-checking research system has a document analysis subagent with five tools, including summarize_article (\"Summarizes an article and its key claims\") and extract_claims (\"Extracts the key claims from an article\"). Both accept a URL or raw text. When the coordinator asks for claim lists with exact quotes for verification, the subagent calls summarize_article 35% of the time, and the verification step cannot match the paraphrased claims to the source text. What is the flaw in this design?",
+      "opcoes": [
+        "The verification step demands exact string matches instead of fuzzy-matching the paraphrased claims against the source article.",
+        "Five tools on one subagent exceed what it can choose from reliably, so the analysis tools belong in two separate subagents.",
+        "The two descriptions overlap almost completely and never state the output format or when to use one instead of the other.",
+        "The subagent does not force tool_choice to extract_claims on every request, which is what would guarantee exact quotes."
+      ],
+      "correta": 2,
+      "explicacao": "Both tools promise the \"key claims\" of an article and accept the same inputs, so their descriptions overlap almost entirely. Without stating the outputs (a paraphrased summary versus exact quoted claims) and when to use each, the model misroutes between them. Rewrite or rename the tools so the boundary is explicit.",
+      "feedbacks": [
+        "Tempting because it would make verification more tolerant, but it shifts the cost downstream and weakens verification while the misrouting continues.",
+        "Tempting because tool count affects selection, but five tools is within the 4–5 range the guide treats as reliable, and the errors concentrate on one overlapping pair.",
+        "Correct. The overlapping descriptions do not distinguish outputs or usage, which is what causes the misrouting.",
+        "Tempting because forcing a tool guarantees that call, but it would also break the summary requests that this subagent legitimately handles."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-K3"
+    },
+    {
+      "pergunta": "An ed-tech platform's extraction system has a coordinator and three subagents: intake (classifies documents), extractor (fills schemas), and validator (checks records against enrollment rules). All three are defined with the same 12 tools, including write_to_sis (writes to the student information system) and email_registrar. The validator has started calling write_to_sis to \"fix\" records itself, and the extractor emails registrars about 40 times a week when a field is missing. Which TWO changes best prevent this? Choose TWO.",
+      "opcoes": [
+        "Keep write_to_sis and email_registrar with the coordinator, so that subagents report needed fixes and missing fields instead of acting.",
+        "Move the three subagents to a more capable model that follows role instructions closely, so that they stop using tools outside their roles.",
+        "Define each subagent's tools in its own AgentDefinition, so that the validator and the extractor receive only the tools their roles require.",
+        "Add a rule to each subagent's system prompt saying it must not write to the SIS or contact registrars, so that the roles stay separate.",
+        "Rewrite the write_to_sis and email_registrar descriptions to name the agent that should use them, so that other agents stop picking them."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "The subagents act outside their roles because each one holds the full tool set, including side-effecting tools. Restricting each subagent's tools in its AgentDefinition to what its role needs, and keeping write and contact tools with the coordinator, prevents cross-specialization misuse; subagents then report fixes and missing fields instead of acting on them. Prompt rules, descriptions, and bigger models all leave the capability in place.",
+      "feedbacks": [
+        "Correct. Keeping side-effecting tools with the coordinator routes those actions through a single, controlled point.",
+        "Tempting because stronger models follow instructions more closely, but the over-provisioned tool sets remain, and each decision still has options the role never needs.",
+        "Correct. Per-subagent tool restrictions in the AgentDefinition limit each one to the tools of its role.",
+        "Tempting because it is quick, but prompt rules are probabilistic while the tools stay available, so the misuse can continue.",
+        "Tempting because descriptions guide selection, but they cannot restrict which agent calls a tool; the capability stays with every subagent."
+      ],
+      "cenario": 6,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S1"
+    },
+    {
+      "pergunta": "A news publisher's document analysis subagent uses a generic http_get(url) tool. Logs show it sometimes fetches search-result pages, paywall login screens, and social media threads, then analyzes them as if they were source documents; 8% of the analyzed \"documents\" are neither articles nor reports. An engineer proposes replacing http_get with load_publication(url), which accepts only domains on the newsroom's source allowlist, checks that the response is an article or a PDF report, and otherwise returns a validation error naming the reason. How should you evaluate this proposal?",
+      "opcoes": [
+        "Reject it: keep http_get and list the approved domains in the subagent's system prompt, so that the list can change without a deployment.",
+        "Reject it: keep http_get and add a PostToolUse hook that discards pages that are not articles, so that the analysis step does not see them.",
+        "Adopt it, but keep http_get as a fallback for sources outside the allowlist, so that the subagent keeps its full source coverage.",
+        "Adopt it: the narrower tool makes the bad fetches impossible instead of discouraged, and its errors tell the agent why a URL was refused."
+      ],
+      "correta": 3,
+      "explicacao": "A generic http_get gives the subagent a capability far broader than its role, so it fetches pages that are not documents. Replacing it with a constrained tool that validates source URLs and content type moves the restriction into the tool itself, and validation errors explain each rejection to the agent. A prompt list, an after-the-fact filter, or keeping the generic tool as a fallback all preserve the misuse.",
+      "feedbacks": [
+        "Tempting because a prompt list is easy to update, but it is probabilistic; the generic tool still lets the agent fetch anything.",
+        "Tempting because hooks are deterministic, but filtering after the fetch wastes calls and silently drops content; the constrained tool prevents the bad fetch and explains why.",
+        "Tempting because it seems to protect coverage, but keeping http_get as a fallback preserves exactly the capability that causes the misuse.",
+        "Correct. A constrained tool that validates document URLs removes the misuse at its source and returns errors the agent can act on."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S2"
     }
   ]
 }

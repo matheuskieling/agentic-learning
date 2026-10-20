@@ -1,261 +1,281 @@
 {
-  "titulo": "Module 05 — Quiz: MCP",
+  "titulo": "Módulo 05 — Quiz: MCP e tools nativas",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Claude Code is configured with 3 MCP servers. How many MCP clients does the host maintain?",
+      "pergunta": "Your team wants an MCP server that every developer receives automatically when they clone or pull the repository. Where should it be configured?",
       "opcoes": [
-        "A single client shared by the 3 servers",
-        "Three: one client per server (1:1 connection)",
-        "None: the model speaks MCP directly",
-        "It depends on the transport: only remote servers use a client"
+        "In the project's .mcp.json at the repository root, committed with the code",
+        "In each developer's ~/.claude.json, following a setup step in the README",
+        "In the project's CLAUDE.md, in a section that lists the team's servers",
+        "In a .claude/mcp-servers.json file that Claude Code merges at startup"
       ],
-      "correta": 1,
-      "explicacao": "The host runs one client per server; each connection is 1:1.",
+      "correta": 0,
+      "explicacao": "Project-level .mcp.json is the guide's place for shared team tooling: it is version-controlled, so everyone who clones or pulls gets the same definition. User-level ~/.claude.json is personal.",
       "feedbacks": [
-        "Tempting for the sake of economy, but the MCP architecture is 1:1.",
-        "Correct.",
-        "The protocol is spoken by the client inside the host, not by the model.",
-        "It applies equally to stdio and remote."
-      ]
+        "Correct. A committed .mcp.json shares the server definition with the whole team.",
+        "User-level configuration is personal; a README step pushes setup onto each developer and drifts over time.",
+        "CLAUDE.md carries instructions for the model; it does not configure MCP connections.",
+        "No such file exists; project MCP servers are defined in .mcp.json."
+      ],
+      "ts": "2.4"
     },
     {
-      "pergunta": "What is the correct order at the start of an MCP session?",
+      "pergunta": "A developer wants to try an experimental MCP server in all of her projects without affecting her teammates. Which configuration does the exam guide recommend?",
       "opcoes": [
-        "`tools/call` → `initialize` → `tools/list`",
-        "`tools/list` → `initialize` → `notifications/initialized`",
-        "`notifications/initialized` → `initialize` → `tools/call`",
-        "`initialize` → `notifications/initialized` → `tools/list`"
+        "The project .mcp.json, in an entry marked as optional for other users",
+        "Her user-level ~/.claude.json, which is personal and not version-controlled",
+        "Her ~/.claude/CLAUDE.md, describing the command that starts the server",
+        "The project .mcp.json on a branch that only she ever checks out on her own machine"
+      ],
+      "correta": 1,
+      "explicacao": "The guide maps personal or experimental servers to user-scoped ~/.claude.json and shared team tooling to the project .mcp.json. User-level configuration applies across her projects and is never committed.",
+      "feedbacks": [
+        "Anything in the shared .mcp.json reaches everyone who pulls it; there is no per-user optional marker.",
+        "Correct. User-level ~/.claude.json is the guide's answer for personal and experimental servers.",
+        "CLAUDE.md is an instruction file; describing a command does not configure a server.",
+        "A branch ties the server to one repository and to whoever checks it out, not to all of her projects."
+      ],
+      "ts": "2.4"
+    },
+    {
+      "pergunta": "What does writing \"Authorization\": \"Bearer ${GITHUB_TOKEN}\" in a committed .mcp.json achieve?",
+      "opcoes": [
+        "The placeholder points to the token kept in the team's versioned .claude/settings.json",
+        "The token is read from a .env file that Claude Code keeps next to the .mcp.json",
+        "The value is expanded from each user's environment, so no secret is committed",
+        "The value comes from each developer's ~/.claude.json, so the file stays clean"
+      ],
+      "correta": 2,
+      "explicacao": "Environment variable expansion lets the shared .mcp.json reference a credential without containing it. Each developer, or the CI job, defines GITHUB_TOKEN in their own environment.",
+      "feedbacks": [
+        "${VAR} reads the environment, not a settings file; a token kept in a versioned settings file would be committed anyway.",
+        "The value comes from the environment of whoever runs Claude Code, not from a companion file.",
+        "Correct. ${VAR} keeps secrets out of version control while the definition stays shared.",
+        "~/.claude.json holds user-level server definitions; the placeholder is expanded from environment variables, not from that file."
+      ],
+      "ts": "2.4"
+    },
+    {
+      "pergunta": "An agent is configured with three MCP servers: tickets, CI, and docs. Which statement about tool availability matches the exam guide?",
+      "opcoes": [
+        "Only the first server in the file is active until the agent switches servers",
+        "The agent must call a discovery tool before any server's tools can be used",
+        "Tools are loaded from one server per turn, chosen from the user's request",
+        "Tools from all three are discovered at connection and available together"
       ],
       "correta": 3,
-      "explicacao": "Handshake: `initialize` (negotiates version and capabilities), confirmation with `notifications/initialized`, then discovery and use.",
+      "explicacao": "Tools from every configured MCP server are discovered when the agent connects and are available simultaneously, so one task can combine ticket, CI, and docs tools.",
       "feedbacks": [
-        "You don't call a tool before initializing.",
-        "Discovery comes after the handshake.",
-        "The notification confirms an `initialize` that has already happened.",
-        "Correct."
-      ]
+        "There is no active-server concept; every configured server contributes its tools.",
+        "Discovery happens at connection time, not through a tool the agent must call first.",
+        "The agent is not limited to one server per turn; it can call tools from several servers.",
+        "Correct. Multi-server simultaneous access is the behavior the guide describes."
+      ],
+      "ts": "2.4"
     },
     {
-      "pergunta": "Which messaging protocol does MCP use?",
+      "pergunta": "Which of these is the best fit for an MCP resource rather than an MCP tool?",
       "opcoes": [
-        "JSON-RPC 2.0",
-        "gRPC with Protobuf",
-        "REST with OpenAPI",
-        "GraphQL"
+        "A catalog of open issue summaries that the server refreshes every hour",
+        "Creating an issue with a title, a description, and an initial priority level",
+        "Closing an issue once the related fix has been deployed to production",
+        "Reassigning an issue to another member of the on-call engineering rotation"
       ],
       "correta": 0,
-      "explicacao": "MCP uses JSON-RPC 2.0 (requests, responses, notifications).",
+      "explicacao": "Resources expose content catalogs, such as issue summaries, documentation hierarchies, and database schemas, so the agent can see what exists without exploratory calls. Operations that change state are actions and remain tools.",
       "feedbacks": [
-        "Correct.",
-        "It's not the basis of MCP.",
-        "The transport can be HTTP, but the messages are JSON-RPC.",
-        "It's not the basis of MCP."
-      ]
-    },
-    {
-      "pergunta": "Which server primitive exposes read-only content addressed by URI, such as a browsable catalog?",
-      "opcoes": [
-        "Tools (`tools/call`)",
-        "Prompts (`prompts/get`)",
-        "Resources",
-        "Roots (URI boundaries)"
+        "Correct. A catalog of issue summaries is content to read, which is what resources are for.",
+        "Creating an issue is an action with side effects, so it belongs in a tool.",
+        "Closing an issue changes state; it is an action and stays a tool.",
+        "Reassignment is an action the agent decides to take, so it is a tool."
       ],
-      "correta": 2,
-      "explicacao": "Resources are read-only content addressed by URI; they reduce blind exploratory calls.",
-      "feedbacks": [
-        "Tools are executable actions/queries.",
-        "Prompts are reusable templates.",
-        "Correct.",
-        "Roots is a client primitive (URI boundaries)."
-      ]
+      "ts": "2.4"
     },
     {
-      "pergunta": "What is sampling in MCP?",
+      "pergunta": "Claude keeps using the built-in Grep instead of an MCP tool that searches symbols across all of the company's repositories. What is the most effective first fix according to the exam guide?",
       "opcoes": [
-        "The server asks the host for a completion from the model",
-        "The client randomly picks which server to call",
-        "The server asks the user for input",
-        "Sampling of server logs for performance debugging"
-      ],
-      "correta": 0,
-      "explicacao": "Sampling: the server requests a completion from the host's model, without needing its own API key.",
-      "feedbacks": [
-        "Correct.",
-        "No such primitive exists.",
-        "That's elicitation.",
-        "It's not a protocol primitive."
-      ]
-    },
-    {
-      "pergunta": "An MCP server needs the user to confirm a value in the middle of an operation. Which primitive should it use?",
-      "opcoes": [
-        "Sampling",
-        "Elicitation",
-        "Roots",
-        "Resources (`resources/read`)"
+        "Add a line to CLAUDE.md telling Claude to always prefer the MCP tool",
+        "Expand the MCP tool's description to detail its capabilities and outputs",
+        "Remove Grep from the allowed tools so only the MCP tool remains usable",
+        "Add a hook that converts each Grep call into a call to the MCP tool"
       ],
       "correta": 1,
-      "explicacao": "Elicitation: the server asks the user for input through the client.",
+      "explicacao": "Tool descriptions are the primary mechanism for tool selection. A detailed description of what the MCP tool covers and returns lets Claude prefer it when it is the better choice, without blocking Grep for plain text searches.",
       "feedbacks": [
-        "Sampling asks the model for a completion, not the user.",
-        "Correct.",
-        "Roots defines URI/filesystem boundaries.",
-        "Resources are content to be read."
-      ]
+        "A blanket rule does not say when the tool fits and pushes simple text searches to the wrong tool.",
+        "Correct. Explaining capabilities and outputs keeps the agent from preferring built-in tools over a more capable MCP tool.",
+        "Grep is still needed for content searches such as log messages and string literals.",
+        "A rewriting hook is over-engineered and breaks legitimate text searches."
+      ],
+      "ts": "2.4"
     },
     {
-      "pergunta": "What is the roots primitive for?",
+      "pergunta": "Your team needs Claude to work with Jira and with an internal release-approval workflow unique to your company. Which approach matches the exam guide?",
       "opcoes": [
-        "Listing the available tools",
-        "Authenticating the server via OAuth",
-        "Telling the server the URI/filesystem boundaries within which it may operate",
-        "Defining the directory where the project's `.mcp.json` should live in the repository"
+        "Build one custom MCP server that covers both Jira and the release workflow",
+        "Build a custom Jira server and look for a community server for the workflow",
+        "Use a community Jira MCP server and build a custom server for the workflow",
+        "Skip MCP and let Claude call both systems' REST APIs through Bash scripts"
       ],
       "correta": 2,
-      "explicacao": "Roots: the client tells the server the allowed boundaries (URIs/directories).",
+      "explicacao": "For standard integrations such as Jira, the guide recommends existing community MCP servers; custom servers are reserved for team-specific workflows like an internal approval process.",
       "feedbacks": [
-        "That's `tools/list`.",
-        "Authentication is a different layer.",
-        "Correct.",
-        "The `.mcp.json` lives at the project root, unrelated to roots."
-      ]
+        "Reimplements a standard integration and couples it with internal logic in one server.",
+        "Inverts the rule: Jira is the standard part, and the internal workflow will not have a community server.",
+        "Correct. Community server for the standard integration, custom server for the team-specific workflow.",
+        "Raw API calls through Bash lose tool descriptions and schemas and are fragile."
+      ],
+      "ts": "2.4"
     },
     {
-      "pergunta": "Which transport is the default for remote MCP servers and the only remote one with OAuth in Claude Code?",
+      "pergunta": "An agent makes 10 to 15 exploratory calls per session just to learn which tables and columns exist in a database. Which change best addresses this?",
       "opcoes": [
-        "stdio (local process)",
-        "SSE (Server-Sent Events, legacy)",
-        "Persistent WebSocket",
-        "Streamable HTTP (`type: http`)"
+        "Raise the per-session tool call limit so that the exploration can finish",
+        "Paste the full schema into the system prompt at the start of every session",
+        "Add a list_tables tool and tell the agent to call it first in each session",
+        "Expose the database schema as an MCP resource that the agent can read"
       ],
       "correta": 3,
-      "explicacao": "Streamable HTTP is the default remote transport and supports OAuth; SSE is legacy.",
+      "explicacao": "A database schema is a content catalog; exposing it as an MCP resource gives the agent visibility into the available data without exploratory tool calls.",
       "feedbacks": [
-        "stdio is local.",
-        "SSE is legacy/deprecated.",
-        "[volatile] and it's not the default.",
-        "Correct."
-      ]
+        "A higher limit allows more blind calls instead of removing the need for them.",
+        "Costs context in every session and goes stale when the schema changes.",
+        "Reduces the calls to one per session but keeps exploration as a tool call.",
+        "Correct. Resources expose catalogs such as database schemas so the agent does not need to explore."
+      ],
+      "ts": "2.4"
     },
     {
-      "pergunta": "A remote entry in `.mcp.json` has only `\"url\": \"https://...\"`, with no `type`. What happens?",
+      "pergunta": "Which built-in tool should Claude use to find every call to ValidateTicket( across a codebase?",
       "opcoes": [
-        "It's treated as stdio and fails; you need to declare `\"type\": \"http\"`",
-        "It's automatically detected as HTTP from the URL's `https://` scheme",
-        "It's treated as SSE",
-        "It works, but without OAuth"
+        "Grep, because it searches file contents for a text pattern",
+        "Glob, because it matches files using wildcard name patterns",
+        "Read, because it loads complete files for close inspection",
+        "Bash, because it can list every directory recursively"
       ],
       "correta": 0,
-      "explicacao": "Without `type`, the entry is read as stdio (with no `command`) and fails.",
+      "explicacao": "Finding callers of a function is a content search, which is what Grep does across the codebase. Glob only matches file paths.",
       "feedbacks": [
-        "Correct.",
-        "Tempting, but there's no autodetection.",
-        "There's no fallback to SSE.",
-        "It doesn't even connect."
-      ]
+        "Correct. Grep searches inside files, wherever they are and whatever they are named.",
+        "Glob matches paths, not contents, so it cannot see calls inside files.",
+        "Read loads specific files; it does not search the codebase.",
+        "Listing directories shows file names, not the calls inside them."
+      ],
+      "ts": "2.5"
     },
     {
-      "pergunta": "Where does a server added with `claude mcp add` without `--scope` end up?",
+      "pergunta": "Which built-in tool is the right choice to list every file in a repository that matches **/*.spec.ts?",
       "opcoes": [
-        "In the `.mcp.json` at the project root, to be shared with the team",
-        "In the local scope (the default), in `~/.claude.json`, only for you in this project",
-        "In `.claude/settings.local.json`, which is the project's personal file",
-        "In the user scope, in `~/.claude.json`, applying to all your projects"
+        "Grep, searching for the describe( keyword inside each test file",
+        "Glob, matching file paths against the naming pattern given",
+        "Read, opening each folder to check the names of the files",
+        "Bash, running the test command and then reading its full output"
       ],
       "correta": 1,
-      "explicacao": "The default is local, stored in `~/.claude.json`. MCP's local scope ≠ `settings.local.json`.",
+      "explicacao": "Finding files by name or extension pattern is a path question, which Glob answers directly with recursive patterns like **/*.spec.ts.",
       "feedbacks": [
-        "That's the project scope.",
-        "Correct.",
-        "Classic trap: it's not that file.",
-        "User requires `--scope user`."
-      ]
-    },
-    {
-      "pergunta": "Which file holds project-scoped MCP servers, shared with the team via git?",
-      "opcoes": [
-        "`~/.claude.json`",
-        "`.claude/settings.json`",
-        "`.mcp.json` at the project root",
-        "The project's `CLAUDE.md`, in the tools section"
+        "A content keyword returns false positives and misses spec files written in another style.",
+        "Correct. Glob is for file path pattern matching.",
+        "Read loads file contents; it is not a way to list files by name.",
+        "Test output depends on the runner's configuration and is a poor substitute for a path search."
       ],
-      "correta": 2,
-      "explicacao": "Project scope = `.mcp.json` versioned at the root.",
-      "feedbacks": [
-        "It holds the local and user scopes.",
-        "Project settings, not the list of MCP servers.",
-        "Correct.",
-        "Instructions, not server configuration."
-      ]
+      "ts": "2.5"
     },
     {
-      "pergunta": "How do you put an API token in the versioned `.mcp.json` without exposing the secret?",
+      "pergunta": "Which statement correctly describes the built-in Read, Write, and Edit tools?",
       "opcoes": [
-        "Use `${API_TOKEN}` (environment variable expansion)",
-        "Base64-encode the token before pasting it into the file",
-        "Put the token in a comment",
-        "Add `.mcp.json` to the repository's `.gitignore`"
-      ],
-      "correta": 0,
-      "explicacao": "`.mcp.json` expands `${VAR}` (and `${VAR:-default}`); each developer sets the variable in their own environment.",
-      "feedbacks": [
-        "Correct.",
-        "Base64 isn't a secret.",
-        "JSON doesn't even support comments, and the token would still be exposed.",
-        "You lose the sharing, which is the whole point of the project scope."
-      ]
-    },
-    {
-      "pergunta": "The internal server requires an SSO token that expires every hour. Which mechanism should you use?",
-      "opcoes": [
-        "A fixed token in `headers`, renewed manually when it expires",
-        "A variable in `env`",
-        "`headersHelper`, a command that generates the headers on the fly",
-        "SSE transport"
-      ],
-      "correta": 2,
-      "explicacao": "`headersHelper` generates headers dynamically: ideal for short-lived credentials.",
-      "feedbacks": [
-        "It expires and breaks within an hour.",
-        "`env` is for stdio servers and would also be static.",
-        "Correct.",
-        "The transport doesn't solve the credential problem; and SSE is legacy."
-      ]
-    },
-    {
-      "pergunta": "In `claude mcp add notes -- npx -y @example/notes-server`, what is the `--` for?",
-      "opcoes": [
-        "It indicates that the server is remote and should use Streamable HTTP",
-        "It separates the `claude` options from the stdio server's command",
-        "It enables the project scope and writes to `.mcp.json`",
-        "It disables the server approval prompt on the first run"
+        "Edit rewrites the whole file; Write changes one unique piece of matched text",
+        "Read and Write work on whole files; Edit changes text matched by a unique anchor",
+        "Read and Edit work on whole files; Write appends new text to the very end of a file",
+        "Write and Edit both select what to change through a regular expression pattern"
       ],
       "correta": 1,
-      "explicacao": "Everything after `--` is the server's command; without it, flags such as `-y` would be interpreted by `claude`.",
+      "explicacao": "Read and Write are full-file operations; Edit makes targeted modifications by matching anchor text that must appear exactly once.",
       "feedbacks": [
-        "Remote uses `--transport http` and a URL.",
-        "Correct.",
-        "Scope is set with `--scope`.",
-        "It has nothing to do with approval."
-      ]
+        "Swaps the roles: Write saves a whole file and Edit makes the targeted change.",
+        "Correct. Full-file operations versus targeted edits with unique text matching.",
+        "Edit is not a full-file operation, and Write saves complete content rather than appending.",
+        "Edit uses exact text matching, and Write takes the complete file content."
+      ],
+      "ts": "2.5"
     },
     {
-      "pergunta": "How does a `create_issue` tool from an MCP server named `github` appear in Claude Code (for example, in permission rules and hooks)?",
+      "pergunta": "An Edit call fails because its anchor text appears 5 times in the file, and only one of those occurrences should change. What does the exam guide recommend as the reliable fallback?",
       "opcoes": [
-        "`github.create_issue`",
-        "`create_issue` (no server prefix)",
-        "`github/create_issue`",
-        "`mcp__github__create_issue`"
+        "Set replace_all on the same Edit call so that every occurrence is updated",
+        "Use Bash with sed to replace the text on each of the lines where it matches",
+        "Read the full file, then Write back the version with the one change",
+        "Grep for the anchor, then have Edit change only its first match"
+      ],
+      "correta": 2,
+      "explicacao": "When Edit cannot find unique anchor text, the guide's fallback is Read + Write: load the full file, make the intended change, and write the full content back.",
+      "feedbacks": [
+        "replace_all would change all five occurrences, but only one of them should change.",
+        "sed would change all five occurrences, not just the intended one.",
+        "Correct. Read + Write is the reliable fallback for non-unique matches.",
+        "The first match is not necessarily the intended one, and Edit does not offer a first-match mode."
+      ],
+      "ts": "2.5"
+    },
+    {
+      "pergunta": "An agent must understand how a refund request flows through an unfamiliar 3,000-file codebase. Which strategy matches the exam guide?",
+      "opcoes": [
+        "Read every file in the repository first to build a complete picture",
+        "Glob for files named *refund* and read all of them before answering",
+        "Ask the developer for a written summary of the flow before exploring",
+        "Grep for entry points, Read those files, then follow imports from there"
       ],
       "correta": 3,
-      "explicacao": "MCP tools in Claude Code follow `mcp__<server>__<tool>`.",
+      "explicacao": "The guide recommends building understanding incrementally: Grep to find entry points, then Read to follow imports and trace the flow, rather than reading everything upfront.",
       "feedbacks": [
-        "That's not the format used.",
-        "Without the prefix, tools from different servers would collide.",
-        "That's not the format used.",
-        "Correct."
-      ]
+        "Reading everything upfront floods the context with unrelated code.",
+        "File names do not reveal the flow, and reading every match still front-loads context.",
+        "Pushes the work onto the developer instead of exploring the code effectively.",
+        "Correct. Start from entry points found with Grep and follow the code with Read."
+      ],
+      "ts": "2.5"
+    },
+    {
+      "pergunta": "A function is re-exported by a wrapper module under two aliases. How should Claude find all of its usages?",
+      "opcoes": [
+        "List every name the wrapper exports for it, then Grep each name",
+        "Grep for the original function name with a case-insensitive pattern",
+        "Glob for the files whose names contain the original function name",
+        "Read only the wrapper module, since every caller has to import it"
+      ],
+      "correta": 0,
+      "explicacao": "Consumers of a wrapper call the exported aliases, not the original name. Identify all exported names first, then search for each one across the codebase.",
+      "feedbacks": [
+        "Correct. Exported names first, then a Grep for each, traces usage through the wrapper.",
+        "Case-insensitivity does not catch aliases with different names.",
+        "File names say nothing about which code calls the function.",
+        "Reading the wrapper gives the aliases, but the callers are found only by searching for them."
+      ],
+      "ts": "2.5"
+    },
+    {
+      "pergunta": "Which statements about integrating MCP servers match the exam guide? Choose TWO.",
+      "opcoes": [
+        "Personal or experimental servers go in the project .mcp.json under a separate key",
+        "An agent can use one MCP server at a time and has to switch between its servers",
+        "Resources are the right mechanism for actions with side effects, such as refunds",
+        "Shared team servers go in the project .mcp.json, with secrets referenced as ${VAR}",
+        "Tools from every configured server are available to the agent at the same time"
+      ],
+      "corretas": [
+        3,
+        4
+      ],
+      "explicacao": "The guide places shared tooling in project-scoped .mcp.json with environment variable expansion for credentials, and states that tools from all configured servers are discovered at connection and available simultaneously. Personal servers belong in ~/.claude.json, and resources are for content catalogs.",
+      "feedbacks": [
+        "Personal or experimental servers belong in user-level ~/.claude.json, not in the shared file.",
+        "There is no single active server; the agent sees all configured servers' tools.",
+        "Resources expose content catalogs; actions with side effects remain tools.",
+        "Correct. Project scope plus ${VAR} is the guide's pattern for shared servers.",
+        "Correct. All configured servers contribute their tools simultaneously."
+      ],
+      "ts": "2.4"
     }
   ]
 }

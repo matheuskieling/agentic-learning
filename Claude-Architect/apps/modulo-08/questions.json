@@ -1,271 +1,281 @@
 {
-  "titulo": "Module 08 — Configuring Claude Code (review quiz)",
+  "titulo": "Módulo 08 — Quiz (fixação)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "The rule \"every new route needs an integration test\" must apply to all developers in the repository. Where should it live?",
+      "pergunta": "Which statement about the CLAUDE.md configuration hierarchy is correct?",
       "opcoes": [
-        "In each developer's `~/.claude/CLAUDE.md`",
-        "In the `CLAUDE.md` at the project root, versioned in git",
-        "In the `CLAUDE.local.md` at the project root",
-        "In the project's auto memory (`MEMORY.md`)"
-      ],
-      "correta": 1,
-      "explicacao": "Team instructions go in the project's CLAUDE.md (./CLAUDE.md or ./.claude/CLAUDE.md), which is versioned and reaches everyone when they clone.",
-      "feedbacks": [
-        "Tempting because it 'works', but the user file is personal: each developer would have to copy it by hand, and anyone who doesn't won't get the rule.",
-        "Correct: the project's CLAUDE.md is shared via git and loaded for everyone.",
-        "CLAUDE.local.md is personal and goes in .gitignore, so the team doesn't receive it.",
-        "Auto memory is written by Claude itself and is local to the machine; it's not a channel for team rules."
-      ]
-    },
-    {
-      "pergunta": "A repository has `AGENTS.md` (used by another coding agent) and also `CLAUDE.md` at the root. What does Claude Code load by default, and how do you unify them?",
-      "opcoes": [
-        "It loads both and concatenates them; there's nothing to do",
-        "It loads only AGENTS.md, because it's the open standard",
-        "It loads whichever was modified most recently",
-        "It loads only CLAUDE.md; to make use of AGENTS.md, import it with `@AGENTS.md` inside CLAUDE.md"
-      ],
-      "correta": 3,
-      "explicacao": "AGENTS.md is only read when there is no CLAUDE.md. With both, CLAUDE.md wins; the simple way to have a single source is `@AGENTS.md` in CLAUDE.md.",
-      "feedbacks": [
-        "Sounds reasonable, but by default AGENTS.md is ignored when a CLAUDE.md exists.",
-        "It reverses the rule: CLAUDE.md is the one that takes priority.",
-        "There's no criterion based on modification date.",
-        "Correct: CLAUDE.md wins; the @import brings AGENTS.md along with it."
-      ]
-    },
-    {
-      "pergunta": "A file `.claude/rules/tests.md` has the frontmatter `paths: [\"**/*Tests.cs\"]`. When does it enter the context?",
-      "opcoes": [
-        "When Claude reads or edits a file that matches the glob",
-        "Always, at the start of the session, like CLAUDE.md",
-        "Only when the user types `/tests`",
-        "Only when an Explore subagent is triggered"
+        "Instructions in `~/.claude/CLAUDE.md` apply only to that user, across their projects, and are not shared with teammates through version control.",
+        "Project-level instructions must live in `.claude/CLAUDE.md`; a `CLAUDE.md` file placed at the repository root is not read by Claude Code.",
+        "A `CLAUDE.md` in a subdirectory replaces the project-level file for any work that Claude does on files inside that particular subdirectory.",
+        "User-level instructions are copied into the project `CLAUDE.md` the first time a developer opens the repository with Claude Code."
       ],
       "correta": 0,
-      "explicacao": "A rule with `paths` is conditional: it loads when Claude touches (Read/Write/Edit) a file that matches the pattern. Without `paths`, it always loads.",
+      "explicacao": "The hierarchy has three levels: user (`~/.claude/CLAUDE.md`, personal), project (root `CLAUDE.md` or `.claude/CLAUDE.md`, shared via version control) and directory (a `CLAUDE.md` in a subdirectory). User-level instructions never reach teammates through the repository, which is the root of many 'works on my machine' problems.",
       "feedbacks": [
-        "Correct: conditional loading by path.",
-        "That's the behavior of a rule WITHOUT `paths`.",
-        "It confuses a rule with a skill/command; rules aren't invoked with `/`.",
-        "It has nothing to do with subagents."
-      ]
+        "Correct. User-level instructions are personal and are not shared through version control.",
+        "Tempting because `.claude/` holds most configuration, but the project level accepts either `.claude/CLAUDE.md` or a root `CLAUDE.md`.",
+        "Tempting because the subdirectory file is more specific, but levels are combined, not replaced; the project instructions still apply.",
+        "Tempting because it would explain how personal rules spread, but nothing is copied; user-level files stay on that user's machine."
+      ],
+      "ts": "3.1"
     },
     {
-      "pergunta": "The repository has `.claude/commands/deploy.md` and `.claude/skills/deploy/SKILL.md`, with different contents. What happens with `/deploy`?",
+      "pergunta": "Three senior developers get Claude Code to return `Result<T>` from domain services instead of throwing exceptions. A developer who joined this week cloned the same repository, and in his sessions Claude throws exceptions. The seniors' rule lives in each of their own `~/.claude/CLAUDE.md` files. What is the best fix?",
       "opcoes": [
-        "Both run in sequence",
-        "The command wins, because it's the older format",
-        "The skill wins",
-        "Claude Code refuses to start because of the name conflict"
+        "Ask the new developer to copy one senior's `~/.claude/CLAUDE.md` to his machine, so that his sessions load the same instructions.",
+        "Move the rule into the project-level `CLAUDE.md` and commit it, so every developer who clones or pulls the repository receives it.",
+        "Restate the rule in capital letters at the top of each senior's `~/.claude/CLAUDE.md`, so that Claude treats it as a higher priority.",
+        "Create a `/result-pattern` skill in `.claude/skills/`, so the new developer can invoke the rule whenever he works on domain services."
+      ],
+      "correta": 1,
+      "explicacao": "The rule is a team convention stored at the user level, which applies only to each senior and is not shared through version control. Moving it to the project-level CLAUDE.md fixes the hierarchy problem for the new hire and for every future teammate and CI run.",
+      "feedbacks": [
+        "Tempting because it works immediately for one person, but it is manual, drifts over time and leaves the rule outside the repository.",
+        "Correct. A team convention belongs at the project level, versioned with the repository.",
+        "Tempting because emphasis sometimes helps adherence, but the new developer never loads that file at all, so emphasis changes nothing for him.",
+        "Tempting because skills are shared, but a skill loads only when invoked; a rule that should always apply belongs in CLAUDE.md."
+      ],
+      "ts": "3.1"
+    },
+    {
+      "pergunta": "A developer reports that Claude Code followed the project's structured-logging conventions yesterday but ignores them in today's session, which she started from a different folder. A teammate's sessions behave correctly. What should she do first to diagnose this?",
+      "opcoes": [
+        "Ask Claude in the session whether it has read the project `CLAUDE.md`, and trust its answer about which conventions are in effect.",
+        "Rewrite the logging conventions with more emphasis and examples, then restart the session to see whether the behavior improves.",
+        "Run the `/memory` command to check which memory files are loaded in this session, and compare them with her teammate's session.",
+        "Switch the session to a larger model, since inconsistent rule-following between sessions usually comes from limited model capacity."
       ],
       "correta": 2,
-      "explicacao": "Commands and skills have been merged; both create `/deploy`. In a name conflict, the skill wins.",
+      "explicacao": "Inconsistent behavior across sessions is first a question of which instruction files are actually loaded. The `/memory` command shows the memory files in play for the session, so she can see whether the project file, a personal file or a directory-level file differs from her teammate's setup before changing any text.",
       "feedbacks": [
-        "The contents aren't combined; only one wins.",
-        "That's the trap: the legacy format still works, but it loses in a conflict.",
-        "Correct.",
-        "There's no startup error because of this."
-      ]
-    },
-    {
-      "pergunta": "Claude triggered the `/deploy-prod` skill on its own during a conversation about deployment. Which adjustment fixes this directly?",
-      "opcoes": [
-        "Remove the skill's `description`",
-        "Add `disable-model-invocation: true` to the frontmatter",
-        "Add `user-invocable: false` to the frontmatter",
-        "Write \"don't run a deploy without being asked\" in CLAUDE.md"
+        "Tempting because it is quick, but self-reported answers are not verification; the session's loaded files are what matter.",
+        "Tempting because clearer rules help, but if the file is not loaded, no rewrite will change the behavior; verify first.",
+        "Correct. `/memory` verifies which memory files are loaded and is the first diagnostic step for inconsistent behavior.",
+        "Tempting (the 'bigger model' distractor): the symptom follows the session's setup, not the model, so this skips the real check."
       ],
-      "correta": 1,
-      "explicacao": "`disable-model-invocation: true` makes it so only the user can invoke the skill: the right choice for actions with side effects.",
-      "feedbacks": [
-        "A hack: the description is there for guidance; without it the skill is poorly documented and the control isn't explicit.",
-        "Correct: only you invoke it.",
-        "It's the opposite: `user-invocable: false` hides it from the menu and lets ONLY Claude invoke it.",
-        "A prompt instruction is probabilistic; there's a deterministic control in the frontmatter."
-      ]
+      "ts": "3.1"
     },
     {
-      "pergunta": "What does `context: fork` do in a skill's frontmatter?",
+      "pergunta": "A package's `CLAUDE.md` contains the line `@../../standards/payments-api.md`. What does this line do?",
       "opcoes": [
-        "Runs the skill in an isolated subagent, which doesn't see the conversation history, and returns the result",
-        "Creates a fork of the git repository before executing",
-        "Duplicates the current session so the user can compare two responses",
-        "Makes the skill be reread from disk on every turn"
-      ],
-      "correta": 0,
-      "explicacao": "`context: fork` runs the skill in a subagent with its own context (optionally of the type defined in `agent`); the conversation history doesn't go along.",
-      "feedbacks": [
-        "Correct.",
-        "A mix-up with a git 'fork'; it has nothing to do with the repository.",
-        "It's not a session branch for comparing responses.",
-        "The skill's body isn't reread; and that has nothing to do with `context: fork`."
-      ]
-    },
-    {
-      "pergunta": "The same scalar key (e.g., `model`) is set in `~/.claude/settings.json`, `.claude/settings.json`, and `.claude/settings.local.json`, with no managed settings and no CLI flag. Which value applies?",
-      "opcoes": [
-        "The one in `~/.claude/settings.json`, because it belongs to the user",
-        "The one in `.claude/settings.json`, because it belongs to the team",
-        "The first file read in alphabetical order",
-        "The one in `.claude/settings.local.json`"
+        "It adds a link that Claude may decide to open later in the session if the payments standard seems relevant to the task at hand.",
+        "It registers `payments-api.md` as a slash command that developers working in that package can invoke as `/payments-api`.",
+        "It loads `payments-api.md` only when Claude edits files whose paths fall under the `standards/` directory of the repository.",
+        "It imports the content of `payments-api.md` into context with that `CLAUDE.md`, so the standard lives in one file and is reused."
       ],
       "correta": 3,
-      "explicacao": "Precedence: managed > command line > local project > shared project > user. Without managed/CLI, local wins.",
+      "explicacao": "The `@` import syntax references an external file and brings its content into context together with the CLAUDE.md that contains the line. This keeps CLAUDE.md modular: a standard is written once and imported by each package that needs it.",
       "feedbacks": [
-        "The user level has the LOWEST precedence.",
-        "The shared file loses to the local project file.",
-        "There's no alphabetical order in precedence.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "The project's `.claude/settings.json` has `deny: [\"Bash(git push *)\"]`, and one developer's `settings.local.json` has `allow: [\"Bash(git push *)\"]`. Does `git push` run without being blocked?",
-      "opcoes": [
-        "Yes, because local takes precedence over project",
-        "Yes, but only after a confirmation prompt",
-        "No: deny is evaluated before allow, and allow doesn't carve out an exception to a deny",
-        "It depends on which rule is more specific"
+        "Tempting because it looks like a hyperlink, but an import is expanded into context; it does not depend on Claude choosing to open it.",
+        "Tempting because slash commands are also Markdown files, but commands live in `.claude/commands/`; an `@` line is an import.",
+        "Tempting because it resembles path-scoped loading, but that is what `paths` frontmatter in `.claude/rules/` does, not imports.",
+        "Correct. `@` imports pull the referenced file into context alongside the importing CLAUDE.md."
       ],
-      "correta": 2,
-      "explicacao": "Rules are evaluated deny → ask → allow; the first match decides, regardless of level or specificity.",
-      "feedbacks": [
-        "Level precedence applies to scalar keys; permission lists are merged and deny wins.",
-        "It doesn't turn into a prompt: deny blocks.",
-        "Correct.",
-        "Specificity doesn't change the evaluation order."
-      ]
+      "ts": "3.1"
     },
     {
-      "pergunta": "What does the permission rule `Bash(dotnet test *)` allow?",
+      "pergunta": "A developer wants a personal `/standup-notes` command that summarizes her commits for the daily stand-up. It should be available in every repository she works on and should not appear for her teammates. Where should she create it?",
       "opcoes": [
-        "Any command that starts with `dotnet test`, such as `dotnet test --filter Unit`",
-        "Only the exact command `dotnet test *` with a literal asterisk",
-        "Any `dotnet` command, including `dotnet publish`",
-        "Only tests, because Claude Code understands the semantics of \"test\""
+        "In `~/.claude/commands/standup-notes.md` in her home folder, since user-scoped commands are personal and not versioned.",
+        "In `.claude/commands/standup-notes.md` in each repository, since commands placed there stay private to whoever wrote them.",
+        "In the project `CLAUDE.md` of each repository, under a 'Personal commands' heading that describes the summary she wants.",
+        "In `~/.claude/CLAUDE.md`, as a line that defines `/standup-notes`, since user-level memory files define personal commands."
       ],
       "correta": 0,
-      "explicacao": "The trailing ` *` performs prefix matching. The `:*` form (e.g., `Bash(npm run test:*)`) is equivalent.",
+      "explicacao": "User-scoped commands live in `~/.claude/commands/` and are personal: available to that developer in all her projects and never shared through a repository. Project-scoped commands in `.claude/commands/` are the opposite, shared with everyone who clones the repository.",
       "feedbacks": [
-        "Correct.",
-        "The asterisk is a wildcard, not a literal.",
-        "The prefix is `dotnet test`, not `dotnet`.",
-        "The rule is text matching, not semantics."
-      ]
+        "Correct. `~/.claude/commands/` holds personal commands that do not reach teammates.",
+        "Tempting because the file name is hers, but `.claude/commands/` is versioned with the repository, so every teammate would get the command.",
+        "Tempting because CLAUDE.md is where instructions go, but it does not define commands, and the project file is shared with the team.",
+        "Tempting because it is personal, but CLAUDE.md files hold instructions, not command definitions; commands are files in a commands directory."
+      ],
+      "ts": "3.2"
     },
     {
-      "pergunta": "For which task is plan mode the most appropriate choice?",
+      "pergunta": "Your team wants a project skill named `release-check` that uses frontmatter options such as `context: fork` and `argument-hint`, shared through the repository. Which file defines it?",
       "opcoes": [
-        "Adding a null check on a line pointed out by a stack trace",
-        "Migrating the logging library used in 45 files, with two possible approaches",
-        "Renaming a constant in a single file",
-        "Fixing a typo in a log message"
+        "`.claude/commands/release-check.json`, with `context`, `allowedTools` and `argumentHint` defined as JSON keys inside the file",
+        "`.claude/skills/release-check/SKILL.md`, with the options declared in the YAML frontmatter at the top of the Markdown file",
+        "`~/.claude/skills/release-check/SKILL.md`, because skill frontmatter is honored only for skills stored in each user's home",
+        "`.claude/rules/release-check.md`, with a `paths` field listing the files on which the release check should be triggered"
       ],
       "correta": 1,
-      "explicacao": "Plan mode is for multi-file or architectural changes, or ones with several valid approaches: it explores, proposes, and only edits after approval.",
+      "explicacao": "Project skills live in `.claude/skills/<name>/SKILL.md`, and the SKILL.md file supports YAML frontmatter options including `context: fork`, `allowed-tools` and `argument-hint`. Because it is in the repository, the skill is shared with the team.",
       "feedbacks": [
-        "Small, clear scope: direct execution.",
-        "Correct.",
-        "Trivial; plan mode would just add friction.",
-        "Trivial; direct execution."
-      ]
+        "Tempting because it lists the right options, but skills are Markdown files with YAML frontmatter, not JSON files in the commands directory.",
+        "Correct. A project skill is `.claude/skills/<name>/SKILL.md` with YAML frontmatter.",
+        "Tempting because personal skills also use SKILL.md, but this location is personal and not shared; frontmatter works in project skills too.",
+        "Tempting because rules also use frontmatter, but rules carry conventions that load by path; they are not invocable skills."
+      ],
+      "ts": "3.2"
     },
     {
-      "pergunta": "Which statements about the built-in Explore and Plan subagents are true? (Choose TWO.)",
+      "pergunta": "Which statement about the `context: fork` option in a skill's frontmatter is correct?",
       "opcoes": [
-        "They can edit files when the parent is in acceptEdits",
-        "They are read-only",
-        "They inherit the full history of the main conversation",
-        "They keep the main context clean, returning only the conclusion of the exploration",
-        "They must be defined manually in `.claude/agents/` before use"
+        "It creates a git worktree for the skill, so that any files the skill edits are kept apart from the developer's working copy.",
+        "It duplicates the current conversation into a second session, so the developer can compare two answers from the same skill.",
+        "It runs the skill in an isolated sub-agent context, so verbose or exploratory output does not pollute the main conversation.",
+        "It reloads the skill file from disk on every turn, so that edits made to `SKILL.md` during a session take effect immediately."
+      ],
+      "correta": 2,
+      "explicacao": "`context: fork` runs the skill in an isolated sub-agent context. Verbose output (such as a codebase analysis) or exploratory context (such as brainstorming alternatives) stays in that context, and only the result returns to the main session.",
+      "feedbacks": [
+        "Tempting because 'fork' suggests version control, but the option isolates conversation context, not files.",
+        "Tempting because 'fork' suggests copying the session, but the sub-agent does not receive the conversation; it runs the skill on its own.",
+        "Correct. A forked skill runs in an isolated sub-agent and keeps its output out of the main conversation.",
+        "Tempting because it sounds like a refresh option, but `context: fork` is about where the skill runs, not how often it is read."
+      ],
+      "ts": "3.2"
+    },
+    {
+      "pergunta": "A project skill generates API client boilerplate. It only needs to create and write files, but in one run it executed a shell command that deleted a generated folder containing hand-written code. Which frontmatter setting addresses this?",
+      "opcoes": [
+        "`argument-hint`, listing the folders the skill may write to, so that Claude asks before touching anything outside of them",
+        "`context: fork`, so that the skill's shell commands run in an isolated sub-agent and cannot affect the developer's files",
+        "A `description` stating that the skill is non-destructive, so Claude avoids shell commands while the skill is running",
+        "`allowed-tools`, limited to file write operations, so that the skill cannot run shell commands while it is executing"
+      ],
+      "correta": 3,
+      "explicacao": "`allowed-tools` in skill frontmatter restricts tool access during the skill's execution. Limiting it to file write operations keeps a boilerplate generator from running destructive shell commands, which a prompt or description can only discourage.",
+      "feedbacks": [
+        "Tempting because it names the folders, but `argument-hint` prompts for parameters; it does not limit what the skill can do.",
+        "Tempting because 'isolated' sounds safe, but `context: fork` isolates conversation context, not the file system.",
+        "Tempting because descriptions shape behavior, but wording is guidance, not a restriction on tools.",
+        "Correct. `allowed-tools` restricts the skill to the tools it needs, preventing destructive actions."
+      ],
+      "ts": "3.2"
+    },
+    {
+      "pergunta": "Developers often invoke the team's `/triage-incident` skill without the incident ID it needs, and Claude then guesses the most recent incident. What is the most direct fix?",
+      "opcoes": [
+        "Add `argument-hint` to the skill's frontmatter, so developers are prompted for the incident ID when they invoke it without one.",
+        "Add a line to the project `CLAUDE.md` telling developers to always pass the incident ID when they invoke the triage skill.",
+        "Add `context: fork` to the skill, so that the sub-agent can look up the correct incident ID before the triage begins.",
+        "Add `allowed-tools` to the skill, so it can query the incident tracker and pick the incident that it judges most urgent."
+      ],
+      "correta": 0,
+      "explicacao": "`argument-hint` in skill frontmatter declares the expected argument so developers are prompted for the required parameter when they invoke the skill without it. That fixes the missing-ID problem at the point of invocation instead of letting Claude guess.",
+      "feedbacks": [
+        "Correct. `argument-hint` prompts for the required parameter when the skill is invoked without arguments.",
+        "Tempting because it documents the requirement, but CLAUDE.md instructions are read by Claude, not shown to developers when they type the command.",
+        "Tempting because a sub-agent could search, but isolation does not tell it which incident the developer meant.",
+        "Tempting because it automates the choice, but letting Claude pick the incident is still guessing, just with more tools."
+      ],
+      "ts": "3.2"
+    },
+    {
+      "pergunta": "Your team's `/gen-migration` skill in `.claude/skills/` produces terse output. You prefer a verbose version that explains each schema change, but your teammates like the current one. What should you do?",
+      "opcoes": [
+        "Edit `.claude/skills/gen-migration/SKILL.md` to add the explanations, since teammates can simply skip over the extra text.",
+        "Create a personal copy in `~/.claude/skills/` with a different name, such as `gen-migration-verbose`, and edit that copy.",
+        "Add a section to the project `CLAUDE.md` asking Claude to explain each schema change whenever the skill runs for you.",
+        "Keep a personal branch of the repository with a modified `SKILL.md`, and rebase it whenever the team skill changes."
+      ],
+      "correta": 1,
+      "explicacao": "Personal skill variants belong in `~/.claude/skills/` with a different name, so they do not affect teammates and do not compete with the team's skill. You keep both: the shared `/gen-migration` and your own `/gen-migration-verbose`.",
+      "feedbacks": [
+        "Tempting because it is one edit, but changing the versioned skill changes it for the whole team.",
+        "Correct. A personal variant in `~/.claude/skills/` with a different name avoids affecting teammates.",
+        "Tempting because it looks targeted, but the project CLAUDE.md is shared and always loaded, so the instruction reaches everyone.",
+        "Tempting because it isolates your change, but it creates ongoing merge work for something the personal skills directory handles directly."
+      ],
+      "ts": "3.2"
+    },
+    {
+      "pergunta": "Storybook files (`*.stories.tsx`) sit next to their components in 25 folders, and new folders are added every sprint. The team wants the same story-writing conventions applied whenever Claude edits any of them. Which approach is the most maintainable?",
+      "opcoes": [
+        "Place a `CLAUDE.md` with the story conventions in each of the 25 folders, and add one to each new folder during code review.",
+        "Add a 'Stories' section to the root `CLAUDE.md`, and rely on Claude to apply it when the file being edited is a story file.",
+        "Create `.claude/rules/stories.md` with `paths: [\"**/*.stories.tsx\"]`, so the rule loads for story files in any folder.",
+        "Create a `/story-conventions` skill that developers invoke before they ask Claude to write or update a story file."
+      ],
+      "correta": 2,
+      "explicacao": "Glob-pattern rules apply conventions by file type regardless of directory, so one rule covers all current and future folders. Directory-level CLAUDE.md files are bound to their directories and must be duplicated, which is why path-specific rules are preferred for conventions spread across the codebase.",
+      "feedbacks": [
+        "Tempting because it works per folder, but it duplicates the conventions 25 times and depends on reviewers remembering new folders.",
+        "Tempting because it is simple, but it loads for all work and relies on inference rather than explicit matching.",
+        "Correct. A `paths` glob by file type covers story files wherever they live, including new folders.",
+        "Tempting because skills are reusable, but they load on demand; automatic application needs a path-scoped rule."
+      ],
+      "ts": "3.3"
+    },
+    {
+      "pergunta": "Which statement about a file in `.claude/rules/` whose YAML frontmatter has `paths: [\"infra/**/*.tf\"]` is correct?",
+      "opcoes": [
+        "It loads at the start of every session, like `CLAUDE.md`, and the `paths` field only tells Claude where the conventions apply.",
+        "It loads only when a developer types the rule's file name as a slash command while working on the infrastructure files.",
+        "It loads only when the session is launched from inside the `infra/` directory, and stays out of sessions started elsewhere.",
+        "It loads when Claude works with a file matching the glob, so it adds no context while Claude edits unrelated files."
+      ],
+      "correta": 3,
+      "explicacao": "A `paths` field with glob patterns makes the rule conditional: it loads only when Claude works with matching files. That keeps Terraform conventions out of context during unrelated work, reducing irrelevant context and token usage.",
+      "feedbacks": [
+        "Tempting because rules without `paths` do load at startup, but adding `paths` is precisely what makes loading conditional.",
+        "Tempting because commands are also Markdown files, but rules are not invoked; they load by matching file paths.",
+        "Tempting because it sounds like directory scoping, but matching is based on the files Claude works with, not the launch folder.",
+        "Correct. Path-scoped rules load when matching files are worked on and stay out of unrelated work."
+      ],
+      "ts": "3.3"
+    },
+    {
+      "pergunta": "Which TWO tasks are better suited to direct execution than to plan mode? Choose TWO.",
+      "opcoes": [
+        "Choosing between event-driven and polling integration with a supplier, each with new infrastructure",
+        "Moving authorization checks from 30 controllers into one shared middleware component",
+        "Fixing the `NullReferenceException` that the stack trace points to at line 88 of `OrderService.cs`",
+        "Adding a conditional that rejects a booking whose end date falls before its start date",
+        "Migrating 52 files from one HTTP client library to another, including custom retry handlers"
       ],
       "corretas": [
-        1,
+        2,
         3
       ],
-      "explicacao": "Explore and Plan are built-in, read-only, and work in an isolated context, returning only the result.",
+      "explicacao": "Direct execution fits simple, well-scoped changes such as a single-file bug fix with a clear stack trace or adding one date validation. Large migrations, cross-cutting refactors and choices between integration approaches with different infrastructure needs are what plan mode is designed for.",
       "feedbacks": [
-        "Write/Edit are denied to them, whatever the parent's mode.",
-        "Correct: read-only.",
-        "A subagent has isolated context; it doesn't inherit the history.",
-        "Correct: that's their main value.",
-        "They're built-in; `.claude/agents/` is for custom ones."
-      ]
-    },
-    {
-      "pergunta": "A custom subagent has `permissionMode: bypassPermissions`, but the main session is in `default`. What happens?",
-      "opcoes": [
-        "The subagent runs in bypass, because its frontmatter takes priority",
-        "The main session switches to bypass as well",
-        "Claude Code refuses to load the subagent",
-        "The subagent doesn't get bypass: it can't escalate beyond the main conversation's mode"
+        "Tempting because it might be a small diff at first, but it is an architectural choice with different infrastructure requirements: plan mode.",
+        "Tempting because the pattern repeats, but it touches 30 controllers and changes a cross-cutting design: plan mode.",
+        "Correct. A single-file fix with a clear stack trace is a well-understood change with clear scope.",
+        "Correct. Adding one date validation conditional is a simple, well-scoped change.",
+        "Tempting because it is mechanical, but a migration across 52 files with custom handlers is large-scale and multi-file: plan mode."
       ],
-      "correta": 3,
-      "explicacao": "The parent's permission flows down: a subagent doesn't escalate privileges. A subagent with bypassPermissions in a default session doesn't get bypass.",
-      "feedbacks": [
-        "That's exactly what the rule prevents.",
-        "Nothing flows up from the subagent to the parent.",
-        "It loads normally; it just doesn't get the requested mode.",
-        "Correct."
-      ]
+      "ts": "3.4"
     },
     {
-      "pergunta": "A developer wants to know which files call the `CalculateShipping` method. Which built-in tool is the most appropriate?",
+      "pergunta": "You need to migrate a .NET solution from `Newtonsoft.Json` to `System.Text.Json` across about 70 files, several with custom converters. Which workflow fits best?",
       "opcoes": [
-        "Glob with `**/*.cs`",
-        "Read on every `.cs` file",
-        "Grep for `CalculateShipping`",
-        "WebFetch on the internal documentation"
-      ],
-      "correta": 2,
-      "explicacao": "Grep searches content; Glob only finds files by name/pattern.",
-      "feedbacks": [
-        "Glob lists files by name; it doesn't look at content.",
-        "Reading everything up front is the classic anti-pattern: it burns context.",
-        "Correct.",
-        "It doesn't answer where the code calls the method."
-      ]
-    },
-    {
-      "pergunta": "`Edit` failed because the snippet `return null;` appears 7 times in the file. What is the best next action?",
-      "opcoes": [
-        "Expand the `old_string` with surrounding lines until it's unique (or use `replace_all` if the intent is to change all of them)",
-        "Repeat the same Edit until it works",
-        "Switch to Bash with `sed -i` without looking at the file",
-        "Give up and ask the user to edit it manually"
+        "Use plan mode to investigate usages and agree on a migration plan, then switch to direct execution to implement the approved plan.",
+        "Stay in plan mode for the whole migration, so Claude re-plans each file before editing it and every single change gets reviewed.",
+        "Use direct execution from the start and let Claude migrate the files in alphabetical order, fixing compile errors as they appear.",
+        "Use direct execution for files without converters first, and enter plan mode later only if the converter files cause trouble."
       ],
       "correta": 0,
-      "explicacao": "Edit requires a unique snippet. Expand the snippet's context, use `replace_all` when changing all occurrences, or read and rewrite the file.",
+      "explicacao": "Plan mode is for investigation and design; once a plan is approved, direct execution is the efficient way to carry it out. Combining them avoids both risks: committing to an approach before exploring, and paying planning overhead on every file of an already-planned migration.",
       "feedbacks": [
-        "Correct.",
-        "The same input will fail the same way.",
-        "It works around the problem blindly and may change the wrong occurrences.",
-        "Unnecessary: there's a simple fix."
-      ]
+        "Correct. Plan mode to investigate and plan, then direct execution to implement the planned approach.",
+        "Tempting because it maximizes review, but re-planning each file adds overhead once the approach is already decided.",
+        "Tempting because compile errors guide the work, but discovering the converter strategy file by file is the rework planning prevents.",
+        "Tempting because it starts with the easy part, but the converter complexity is known up front; postponing planning invites rework."
+      ],
+      "ts": "3.4"
     },
     {
-      "pergunta": "Which items enter the context right at the start of the session, regardless of which files Claude touches? (Choose TWO.)",
+      "pergunta": "During a multi-phase task, the discovery phase requires searching about 200 files to map how invoices are generated. How does the Explore subagent help?",
       "opcoes": [
-        "The `CLAUDE.md` at the project root",
-        "The `CLAUDE.md` in a subdirectory below the working directory",
-        "A rule in `.claude/rules/` without `paths` frontmatter",
-        "A rule in `.claude/rules/` with `paths: [\"src/api/**\"]`",
-        "The full body of every skill in the project"
+        "It reads files into the main conversation faster than Read, so discovery can finish before the context window fills up.",
+        "It runs the verbose discovery in its own context and returns a summary, so the main session keeps room for later phases.",
+        "It compresses the main conversation after each file is read, so earlier messages are summarized while discovery continues.",
+        "It switches the session into plan mode, so files read during discovery leave the context once the plan has been approved."
       ],
-      "corretas": [
-        0,
-        2
-      ],
-      "explicacao": "The project's CLAUDE.md and rules without `paths` load at startup. A subdirectory's CLAUDE.md and rules with `paths` load on demand; for skills, only the description is available until invocation.",
+      "correta": 1,
+      "explicacao": "The Explore subagent isolates verbose discovery output in its own context and returns a summary, preserving the main conversation's context. In multi-phase tasks this prevents the discovery phase from exhausting the context window before planning and implementation.",
       "feedbacks": [
-        "Correct.",
-        "A subdirectory below loads on demand, when Claude touches files there.",
-        "Correct.",
-        "With `paths`, it only loads when a matching file is touched.",
-        "A skill's body only enters when it's invoked; before that, only the description guides automatic loading."
-      ]
+        "Tempting because speed sounds helpful, but the problem is where the output lands, not how fast files are read.",
+        "Correct. Explore keeps verbose discovery in a separate context and hands back only the summary.",
+        "Tempting because it resembles `/compact`, but Explore does not summarize the main conversation; it keeps discovery out of it.",
+        "Tempting because exploring and planning go together, but Explore is a subagent, not a mode switch, and it is what keeps reads out of the main context."
+      ],
+      "ts": "3.4"
     }
   ]
 }

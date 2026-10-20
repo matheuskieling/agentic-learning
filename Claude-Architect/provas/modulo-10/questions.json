@@ -1,361 +1,441 @@
 {
-  "titulo": "Module 10 — Exam: context management and prompt caching",
+  "titulo": "Módulo 10 — Prova (estilo exame)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "A retailer runs a support agent on the Agent SDK. The get_order tool returns the complete order object (about 40 fields, including logistics history), and the agent only uses status, amount, date, and items. In long conversations, the agent starts mixing up values, and the cost per support interaction has risen sharply. What is the BEST first action?",
+      "pergunta": "A retail pharmacy chain extracts terms from supplier contracts with a two-stage pipeline. For each contract, an upstream extraction agent returns its full analysis: the relevant clause text, its step-by-step reasoning, and the extracted values (about 7,500 tokens per contract). A downstream reconciliation agent with a fixed context budget compares each contract against the chain's purchase records. Batches of up to 8 contracts reconcile correctly, but in batches of 20 the agent skips or only partially checks the last 6 to 9 contracts. What is the most likely root cause?",
       "opcoes": [
-        "Migrate to a model with a larger context window",
-        "Add to the system prompt the instruction \"ignore the irrelevant order fields\"",
-        "Make the tool (or a PostToolUse hook) return only the fields relevant to the support interaction",
-        "Enable compaction with a low threshold to summarize the get_order results as soon as they are no longer needed"
+        "The reconciliation prompt lacks explicit criteria for what counts as a discrepancy, so the agent applies weaker checks as the batch grows longer.",
+        "The extraction schema marks too many fields as required, so the upstream agent fabricates values that hide discrepancies in the larger batches.",
+        "The upstream agent returns verbose content and reasoning chains instead of compact key facts with citations, so the downstream budget runs out first.",
+        "The reconciliation agent runs on a model whose context window is too small for this workload, so it needs a larger-context model for 20 contracts."
       ],
       "correta": 2,
-      "explicacao": "Tool output is the biggest silent consumer of context. Cutting it at the source reduces cost per turn and attention noise, and it is the simplest fix that solves the problem.",
+      "explicacao": "The failure depends on batch size, and most of each upstream output is clause text and reasoning that the reconciliation step does not need. When a downstream agent has a limited context budget, the upstream agents should return structured data (key facts, citations, relevance scores) instead of verbose content and reasoning chains, so the whole batch fits and every contract is checked.",
       "feedbacks": [
-        "Tempting because it seems to \"give more room\", but it makes each turn more expensive and doesn't reduce the noise; it attacks the symptom.",
-        "The tokens still come in and are still paid for; asking the model to ignore them is probabilistic and doesn't reduce cost.",
-        "Correct. Return only what the agent uses.",
-        "Compaction would summarize values that need to be exact (risk of losing numbers) and is more complex than simply not bringing in the junk."
-      ]
-    },
-    {
-      "pergunta": "In a support agent, after about 40 turns the history is summarized automatically. The team noticed that, after the summary, the agent sometimes calls process_refund with a rounded amount or with the order_id of another order mentioned in the conversation. What is the correct design?",
-      "opcoes": [
-        "Keep a case facts block (IDs, amounts, dates) outside the summary, reinjected on every turn",
-        "Rewrite the summarization prompt asking it to preserve numbers and IDs exactly",
-        "Increase the number of turns before the summary to 80",
-        "Add a second model that compares the summary with the original history and corrects divergent numbers and IDs"
+        "Explicit criteria improve consistency, but they do not explain why the checks collapse only as the batch grows; the input volume changes, not the definition of a discrepancy.",
+        "Required fields can cause fabrication, but that would appear at any batch size; here the last contracts are skipped, which points to an exhausted context budget.",
+        "Correct. Upstream verbosity consumes the downstream agent's limited budget; returning key facts, citations, and relevance scores fixes the cause.",
+        "A larger window treats the symptom and keeps paying for reasoning text that nobody downstream uses; the efficient fix is to change what the upstream agents return."
       ],
-      "correta": 0,
-      "explicacao": "Summaries lose exact values and IDs. Whatever becomes a tool argument can't be paraphrased: it goes in a case facts block that is never summarized.",
-      "feedbacks": [
-        "Correct. Transactional facts stay out of the summary's reach.",
-        "Tempting, but summarization remains probabilistic; it will still lose or round values sometimes.",
-        "Only postpones the problem and increases cost and lost in the middle.",
-        "A more complex solution than necessary (another model checking the first) and still probabilistic."
-      ]
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S6"
     },
     {
-      "pergunta": "A multi-agent research system combines the reports of 6 subagents into a single 120,000-token context before asking the synthesizer for conclusions. The findings of the regulatory subagent, which sit in the middle of the concatenation, are frequently omitted from the synthesis. Which adjustment is most appropriate?",
+      "pergunta": "A developer at a municipal transit agency is using Claude Code to investigate a fare-capping bug over several days. Each evening she closes the terminal, and each morning she runs `claude --continue` to pick up the investigation. On Wednesday afternoon she opened a separate session to ask a quick question about the GTFS feed parser. On Thursday morning, `claude --continue` opened the parser conversation, and she spent 25 minutes re-explaining the fare-capping findings in a new session. What is the flaw in her workflow?",
       "opcoes": [
-        "Increase the synthesizer's max_tokens",
-        "Ask the subagents for structured summaries and put the key findings at the beginning, with per-source headers",
-        "Shuffle the order of the reports randomly on each run",
-        "Use a model with a 1M-token window so the 120,000 tokens take up a small fraction of the context"
+        "She should run /compact before closing the terminal each evening, because a session that has not been compacted is not saved for the next day.",
+        "She relies on reopening the most recent session instead of naming the investigation session and continuing it with `claude --resume <session-name>`.",
+        "She should paste a copy of the previous day's transcript into a fresh session each morning, because resumed sessions carry stale context forward.",
+        "She should keep both topics in one long-running session, so that `claude --continue` returns to the conversation that holds every finding."
       ],
       "correta": 1,
-      "explicacao": "Lost in the middle: the middle of long contexts receives less attention. Key findings at the beginning, with section headers, and less raw volume.",
+      "explicacao": "`claude --continue` reopens the most recent session in the directory, so any side conversation becomes the new target. Naming the investigation session and returning to it with `--resume <session-name>` continues that specific prior conversation across work sessions, with its still-valid context intact.",
       "feedbacks": [
-        "max_tokens limits the output; the problem is attention to the input.",
-        "Correct. Reduces volume, positions the critical content, and structures it with headers.",
-        "Randomizing only changes what gets ignored; it doesn't solve the problem.",
-        "More room doesn't improve attention to the middle; it tends to make it worse."
-      ]
-    },
-    {
-      "pergunta": "A developer uses Claude Code in a long refactoring session. At the start, they explained that \"the integration tests need the ORDERS_DB_URL variable pointing to the test container\". After a /compact, Claude started running the tests against the default configuration. What is the best way to prevent this from now on?",
-      "opcoes": [
-        "Avoid /compact and let the session grow to the limit",
-        "Repeat the instruction every 10 messages",
-        "Run /compact more often, so the summary is generated while the instruction is still recent in the conversation",
-        "Record the convention in the project's CLAUDE.md, which is reloaded and survives /compact"
+        "Sessions are saved as you work; /compact reduces context usage within a session and has nothing to do with whether it can be resumed the next day.",
+        "Correct. A named session resumed with `--resume <session-name>` targets the specific investigation instead of whatever ran last.",
+        "Pasting a full transcript re-injects everything, including verbose output, and gains nothing here: the code has not changed, so the prior context is still valid and resuming is the better choice.",
+        "Mixing unrelated topics in one session pollutes the investigation's context; the real problem is selecting the right session, which naming solves."
       ],
-      "correta": 3,
-      "explicacao": "What must not be lost goes into a file. CLAUDE.md survives /compact; older details from the conversation can be lost.",
-      "feedbacks": [
-        "The session degrades, and sooner or later it will compact or overflow anyway.",
-        "Depends on manual discipline and pollutes the context; it isn't a design.",
-        "Compacting more often loses more details, not fewer.",
-        "Correct. A permanent instruction goes into a file that is loaded in every session."
-      ]
+      "cenario": 2,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-S1"
     },
     {
-      "pergunta": "A team uses Claude Code to understand a 2-million-line .NET monolith. After dozens of greps and reads, the main session's answers have become generic (\"the module follows typical repository patterns\") and it rereads files it has already analyzed. Which change of approach is most effective?",
+      "pergunta": "An industrial IoT company built a developer productivity agent with the Claude Agent SDK to explore its legacy firmware-update service. In phase 1, subagents map the module structure and report back to the coordinator. In phase 2, the coordinator spawns new subagents to trace specific flows, passing each one only its task, such as \"trace the OTA rollback flow.\" The phase-2 subagents repeat most of the Glob and Grep discovery from phase 1, take about three times longer, and two of them describe `DeviceRegistry` as active code although phase 1 identified it as deprecated. Which statement about this behavior is correct?",
       "opcoes": [
-        "Delegate the exploration to subagents (e.g., Explore) that return only a summary of the findings",
-        "Ask Claude to read all of the module's files at once at the start, to have the complete context before answering",
-        "Increase effort to max",
-        "Restart the session from scratch whenever the answers become vague, without saving anything"
+        "Phase-2 subagents start with isolated context, so without a phase-1 summary in their initial prompt they rediscover the structure and can contradict it.",
+        "Phase-2 subagents inherit the coordinator's history but rank it below their own tool results, so they override the phase-1 conclusions with whatever they find.",
+        "Phase-1 subagents returned too little detail, so they should pass their complete tool outputs forward for the phase-2 subagents to reuse directly.",
+        "The contradictions come from running phase-2 subagents in parallel; running them one at a time would let each one build on the previous conclusions."
       ],
       "correta": 0,
-      "explicacao": "The exploration noise stays in the subagent's context; the main session receives only the conclusion. It's the classic mitigation for a large codebase.",
+      "explicacao": "Subagents do not inherit the coordinator's context, so a bare task string forces them to rediscover the codebase and lets them reach conclusions that conflict with phase 1. Summarizing the key findings of one exploration phase and injecting that summary into the initial context of the next phase's subagents removes the duplicated discovery and keeps the phases consistent.",
       "feedbacks": [
-        "Correct. A subagent isolates the noise and returns a summary.",
-        "Reading everything up front is the anti-pattern that exhausts the context.",
-        "More effort doesn't restore attention to a saturated context.",
-        "Loses all the findings; with no saved state, it starts over from scratch."
-      ]
+        "Correct. Isolated context with no injected phase-1 summary explains both the repeated discovery and the contradiction.",
+        "Subagents do not inherit the coordinator's conversation history at all, so there is no ranking between inherited history and tool results.",
+        "Forwarding complete tool outputs would flood the phase-2 subagents with verbose discovery data; a concise summary of the key findings is what they need.",
+        "Sequential execution does not share context between subagents either; each one still starts with only what its own prompt contains."
+      ],
+      "cenario": 4,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-S3"
     },
     {
-      "pergunta": "A research coordinator delegates 8 sequential subtasks that take hours. In the last run, the process crashed after completing 3 of them, and the new run redid everything from the beginning. Which mechanism solves this?",
+      "pergunta": "At an industrial IoT company, an engineer used an Agent SDK-based assistant yesterday to analyze a telemetry ingestion service: the session read 58 files and produced a migration plan. Overnight, a teammate merged a refactor that rewrote the message-parsing layer and renamed the queue client; 39 of the 58 files changed. The engineer proposes resuming yesterday's session by its session ID and asking it to continue the migration plan. How should you evaluate this proposal?",
       "opcoes": [
-        "Resume the previous session with --resume and rely on the history to know which subtasks were already completed",
-        "Reduce the number of subtasks to fit in a single window",
-        "Keep a manifest in a known location (tasks, status, partial results) that is read at startup",
-        "Increase the coordinator's max_tokens"
-      ],
-      "correta": 2,
-      "explicacao": "State saved in a known location + a manifest lets the new run read what was already completed and resume from there.",
-      "feedbacks": [
-        "Tempting, but the session may have crashed in the middle of a step, and the history isn't a reliable record of state; the state needs to live outside the conversation.",
-        "Changes the problem instead of solving it; long-running work is still subject to failures.",
-        "Correct. A manifest is the basis for resuming after a crash.",
-        "Has nothing to do with state persistence."
-      ]
-    },
-    {
-      "pergunta": "In a long Claude Code session investigating a concurrency bug, Claude started forgetting hypotheses that had already been ruled out and proposing them again. Which TWO measures directly address the problem? (Choose TWO.)",
-      "opcoes": [
-        "Increase --max-turns",
-        "Ask Claude to record hypotheses, evidence, and ruled-out items in a draft file (scratchpad) and consult it",
-        "Switch the permission mode to acceptEdits",
-        "Disable CLAUDE.md to free up space",
-        "Run /compact proactively, with an instruction to focus on the ruled-out hypotheses and the evidence, before the session degrades further"
-      ],
-      "corretas": [
-        1,
-        4
-      ],
-      "explicacao": "A scratchpad survives compression and keeps the findings; a proactive, focused /compact reduces noise while preserving what's essential.",
-      "feedbacks": [
-        "The number of turns has nothing to do with remembering findings.",
-        "Correct. A draft file persists outside the scrollback.",
-        "The permission mode doesn't affect context.",
-        "CLAUDE.md is small and useful; removing it takes away project context without solving the forgetting.",
-        "Correct. Compacting before degradation sets in, with a focus, is a recommended mitigation."
-      ]
-    },
-    {
-      "pergunta": "A research agent makes about 200 web search calls per task, each result with ~3,000 tokens. The older results have already been incorporated into the agent's own synthesis notes, but they still take up the window. What is the BEST option?",
-      "opcoes": [
-        "Use the memory tool to move the old results to files and reduce what stays in the window",
-        "Use context editing to clear old tool results that have already been consumed",
-        "Use a case facts block with the results",
-        "Reduce to 50 searches per task"
-      ],
-      "correta": 1,
-      "explicacao": "Context editing (clearing old tool results) was built for verbose agentic loops whose old content has already been used.",
-      "feedbacks": [
-        "The memory tool is for persisting across sessions; it isn't the mechanism for trimming the current session.",
-        "Correct.",
-        "Case facts is for a few exact values; putting search results there would increase the context.",
-        "Limits the quality of the research without addressing the buildup of already-consumed results."
-      ]
-    },
-    {
-      "pergunta": "A team enabled server-side compaction in a long-running C# agent. Even so, the requests grow until they hit the limit. The loop does: history.Add(new Message(\"assistant\", response.Content[0].Text)). What should be fixed?",
-      "opcoes": [
-        "Lower the compaction trigger threshold",
-        "Add a cache breakpoint on the last block",
-        "Replace compaction with context editing, which doesn't depend on the response format to work",
-        "Append the entire response.Content to the history, preserving the compaction block"
-      ],
-      "correta": 3,
-      "explicacao": "The response includes a compaction block. Appending only the text silently discards that state, and the compaction never takes effect.",
-      "feedbacks": [
-        "The compaction block is still discarded; the threshold doesn't matter.",
-        "Caching doesn't reduce the size of the history.",
-        "Switches mechanisms without fixing the bug; and the code would still lose tool_use/thinking blocks.",
-        "Correct. Append the entire content, not just the text."
-      ]
-    },
-    {
-      "pergunta": "To comply with LGPD, a team decided that, on every turn, it would walk through the history already sent and replace CPFs with \"***\" in older messages before the next request. After that, 400 errors started appearing on models with thinking, and the cache stopped getting reads. What is the correct approach?",
-      "opcoes": [
-        "Mask the CPF before it enters the history (PostToolUse or in the tool) and keep the history append-only",
-        "Turn off thinking so the history can be edited freely, and keep replacing the CPFs on every turn",
-        "Move the editing to the system prompt",
-        "Increase the cache TTL to 1 hour"
+        "Reject it: most prior tool results are stale, so start a new session and inject a structured summary of the findings that still hold and of the changes.",
+        "Accept it: resuming preserves the full analysis, and the agent will notice the refactor on its own the next time it reads any of the changed files.",
+        "Accept it, but fork the session first with fork_session, so that the stale history stays in the original session and the new branch starts clean.",
+        "Reject it: start a new session with no prior context and have it rebuild a structured map by re-reading the 58 files, so no old assumption carries over."
       ],
       "correta": 0,
-      "explicacao": "Editing old turns breaks preserved thinking blocks (400) and invalidates the cache prefix. Sensitive data should be handled at the input, keeping the history append-only.",
+      "explicacao": "With two-thirds of the analyzed files rewritten, the session's earlier tool results describe code that no longer exists, and the model treats its history as current. Starting fresh with an injected structured summary of what is still valid is more reliable than resuming with stale tool results; resumption is the right choice when prior context is mostly valid.",
       "feedbacks": [
-        "Correct. Clean it at the source; never rewrite the past.",
-        "Attacks the symptom, sacrifices quality, and still invalidates the cache.",
-        "Doesn't solve it: the CPF remains in the old messages.",
-        "TTL doesn't help when the prefix changes."
-      ]
-    },
-    {
-      "pergunta": "A support agent serves the same customer several times a month. The company wants agreements made in one interaction (e.g., \"customer prefers contact by email; 20 BRL credit promised\") to be available in the next one, days later. Which mechanism should be used?",
-      "opcoes": [
-        "Compaction with a high threshold",
-        "Context editing that preserves the last interaction and clears the earlier ones, to keep the recent agreements in the window",
-        "Persistent memory (memory tool) with per-customer findings, read at the start of the next interaction",
-        "Prompt caching with a 1-hour TTL"
+        "Correct. The prior results are mostly stale, so a fresh session seeded with a structured summary and the change list is the reliable choice.",
+        "A resumed model trusts its history; it has no reason to re-read files it believes it already knows, so it keeps planning against the old code.",
+        "A fork starts with a copy of the original history, stale tool results included, so the new branch does not start clean.",
+        "Starting fresh is right, but discarding the findings that still hold forces an unnecessary full re-exploration; inject a structured summary instead."
       ],
-      "correta": 2,
-      "explicacao": "Findings that need to hold across sessions go into persistent memory outside the conversation.",
-      "feedbacks": [
-        "Compaction acts within a single conversation; it doesn't carry across sessions.",
-        "Context editing deletes content; it doesn't persist anything.",
-        "Correct. Persistence across sessions.",
-        "Caching is a cost/latency optimization and it expires; it isn't business memory."
-      ]
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-S3"
     },
     {
-      "pergunta": "A code migration agent runs long tasks. With a low max_tokens to contain cost, it frequently ends with stop_reason max_tokens in the middle of a half-edited file. The team wants to limit spending but have the agent finish in an orderly way. What should they use?",
+      "pergunta": "Engineers at an industrial IoT company use a developer productivity agent in long sessions to ask questions about a legacy SCADA gateway. After roughly 90 minutes, answers stop naming the specific classes found earlier, such as `ModbusFrameAssembler`, and instead say the gateway \"likely follows a typical adapter pattern\"; two answers contradict earlier ones. Engineers need to keep asking follow-up questions in the same working session, and the team cannot change the model. What is the most effective fix?",
       "opcoes": [
-        "Lower max_tokens even further",
-        "A task budget (a visible ceiling: the model plans and wraps up the work), keeping max_tokens as a per-response ceiling",
-        "A fixed limit of 5 loop iterations as the main stopping mechanism, combined with an even lower max_tokens per response",
-        "Add \"be concise\" to the prompt"
-      ],
-      "correta": 1,
-      "explicacao": "max_tokens is invisible and cuts off midway. A task budget is visible: the model organizes itself to fit.",
-      "feedbacks": [
-        "Truncates even earlier.",
-        "Correct. A visible ceiling allows a graceful finish.",
-        "An iteration limit as the main stopping mechanism is an anti-pattern; it only serves as a backstop.",
-        "A vague instruction doesn't give the model any sense of the ceiling."
-      ]
-    },
-    {
-      "pergunta": "A CI job calls the Messages API to review PRs. The code only checks whether the HTTP status is 2xx and then posts content as a comment. On some PRs the job goes green, but the comment comes out empty or with a generic sentence. What is missing?",
-      "opcoes": [
-        "Retry with exponential backoff on 5xx and 429 errors, since empty responses usually indicate API instability",
-        "Increase the HTTP client timeout",
-        "Switch to the Batch API",
-        "Check stop_reason before reading content and handle refusal (HTTP 200) and max_tokens"
-      ],
-      "correta": 3,
-      "explicacao": "A refusal arrives with HTTP 200 and stop_reason refusal; truncation, with max_tokens. Code that only looks at the status treats both as success.",
-      "feedbacks": [
-        "There is no 5xx: the response is 200.",
-        "There is no timeout; the response arrived.",
-        "Batch isn't for a blocking CI step and doesn't solve the detection.",
-        "Correct. stop_reason decides."
-      ]
-    },
-    {
-      "pergunta": "A support agent has a 12,000-token system prompt with fixed policies and cache_control at the end. To \"provide temporal context\", the first line of the system prompt is \"Current date and time: <ISO 8601 with seconds>\". Input cost went up after enabling the cache. What is the fix?",
-      "opcoes": [
-        "Move the date/time to after the last breakpoint (e.g., into the user message)",
-        "Change the cache TTL to 1 hour, so the entry survives between requests and is read more often",
-        "Add a second breakpoint in the middle of the system prompt",
-        "Disable the cache, which doesn't work for large system prompts"
+        "Have the agent keep a scratchpad file of key findings (class names, file paths, confirmed behaviors) and consult it before each follow-up answer.",
+        "Add a system prompt rule requiring the agent to name specific classes and file paths in every answer and to avoid describing typical design patterns.",
+        "Have the agent re-read every file it has opened so far before answering each follow-up question, so that its answers are based on fresh file content.",
+        "Restart the session automatically every 45 minutes, so that each follow-up question is answered from a short context that has not yet degraded."
       ],
       "correta": 0,
-      "explicacao": "A timestamp in the prefix changes on every request: each call pays the cache write (premium) and never reads. Volatile content goes after the last breakpoint.",
+      "explicacao": "Generic \"typical pattern\" answers and contradictions are classic context degradation in an extended session. A scratchpad file that records key findings and is consulted for subsequent questions keeps the specific discoveries available without changing the model or breaking session continuity.",
       "feedbacks": [
-        "Correct. Stable first, volatile after.",
-        "TTL doesn't help: the prefix changes on every request.",
-        "The timestamp is at the beginning; any breakpoint after it is invalidated too.",
-        "Caching works well for a large system prompt; the problem is the variable byte."
-      ]
-    },
-    {
-      "pergunta": "A platform builds each request's tool list according to the user's profile (sometimes 6, sometimes 9 tools, in different orders). The system prompt has 15,000 tokens and cache_control, but cache_read_input_tokens is almost always 0. What is the cause and the fix?",
-      "opcoes": [
-        "The 15,000-token system prompt is too large for a single cached block; split it into 4 breakpoints of similar size",
-        "The 5-minute TTL is short; use 1 hour",
-        "Tools come before the system prompt in the prefix; fix the set and order of the tools (or use tool search with defer_loading)",
-        "The model doesn't support caching with tools"
+        "Correct. Persisted findings that the agent consults counteract degradation and preserve continuity.",
+        "A prompt rule cannot restore findings that are diluted in a long context; the agent may comply by naming classes that are wrong.",
+        "Re-reading every file adds even more output to an already crowded context and makes each answer slower and more expensive.",
+        "Periodic restarts discard the findings along with the noise and break the continuity the engineers need."
       ],
-      "correta": 2,
-      "explicacao": "Prefix order: tools → system → messages. A variable tool list is a silent invalidator. Tool search exists partly so you don't have to modify the tools array.",
-      "feedbacks": [
-        "Breakpoints don't fix a prefix that changes at the beginning.",
-        "TTL doesn't help when the prefix changes.",
-        "Correct.",
-        "Caching works with tools; they are part of the prefix."
-      ]
+      "cenario": 4,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-S2"
     },
     {
-      "pergunta": "After reorganizing the prompt to use caching, how should the team VERIFY, in production, that the cache is being used?",
+      "pergunta": "A municipal transit agency uses Claude Code to migrate its scheduling application to a new data-access library. A coordinator session delegates each of 15 services to a subagent. After six hours, the terminal crashed while service 9 was in progress. On restart, the coordinator had no reliable record of what had finished: it re-ran services 1 to 5 and overwrote manual fixes that engineers had applied. What is the most effective first step to make this workflow recoverable?",
       "opcoes": [
-        "Measure average latency before and after and assume the cache is working if it drops consistently",
-        "Monitor usage.cache_read_input_tokens; zero on repeated requests indicates invalidation",
-        "Check whether the API returned a cache warning in the header",
-        "Count how many blocks have cache_control"
-      ],
-      "correta": 1,
-      "explicacao": "usage.cache_read_input_tokens shows how much was read from the cache; cache_creation_input_tokens shows how much was written.",
-      "feedbacks": [
-        "Latency is indicative but noisy, and it doesn't prove cache reads.",
-        "Correct.",
-        "Invalidation and a prefix below the minimum are silent; there is no warning.",
-        "Having markers doesn't mean the cache is being read."
-      ]
-    },
-    {
-      "pergunta": "A structured extraction team put cache_control on a short system prompt (about 250 tokens) that is repeated across thousands of requests. In the logs, cache_creation_input_tokens and cache_read_input_tokens are always 0, with no error. What is the most likely explanation?",
-      "opcoes": [
-        "There is a hidden timestamp in the system prompt",
-        "The cache_control was placed on a block that the API doesn't accept as a breakpoint, and the marker was ignored without an error",
-        "The requests go to different regions",
-        "The prefix is below the model's minimum cacheable length; in that case there is no caching, silently"
+        "Resume the crashed coordinator session with `--resume` and ask it to list which services it had completed before the crash, then skip those services.",
+        "Add an explicit CLAUDE.md instruction telling the coordinator to check the git log for already-migrated services before it delegates new work.",
+        "Assign the 15 services to separate developers who each run their own session, so that a single crash affects only the service in progress.",
+        "Have each subagent export its state (service, status, changed files) to a known location, and have the coordinator load that manifest on resume."
       ],
       "correta": 3,
-      "explicacao": "Below the minimum cacheable length (which depends on the model), nothing is written or read, and there is no error.",
+      "explicacao": "The conversation history of a crashed process is not a reliable record of completed work, especially for work done inside subagents. Structured state persistence, where each agent writes its state to a known location and the coordinator loads a manifest on resume and injects it into agent prompts, lets the workflow continue exactly where it stopped.",
       "feedbacks": [
-        "A timestamp would cause a write on every request (creation > 0), not zero.",
-        "It's unlikely the API would ignore a valid marker; and the \"zero writes\" symptom points to size.",
-        "That isn't the explanation for writes always being zero.",
-        "Correct. Zero creation with a marker = prefix too small."
-      ]
+        "The coordinator's transcript holds neither the partial work of the subagent in progress nor a verified per-service status; asking the model to recall progress is a heuristic, not recoverable state.",
+        "Git history does not record which services are verified, in progress, or manually fixed, and a prompt instruction leaves the check to the model's judgment.",
+        "Splitting the work across people shifts the burden to developers and still provides no recovery state when any one session crashes.",
+        "Correct. Exported per-agent state plus a manifest that the coordinator loads on resume is the designed crash-recovery mechanism."
+      ],
+      "cenario": 2,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-K4"
     },
     {
-      "pergunta": "A productivity assistant answers questions about a 60,000-token technical manual that changes once a month. Each request has: definitions for 4 fixed tools, fixed instructions, the manual, the logged-in user's name, and the question. Which layout makes the best use of the cache?",
+      "pergunta": "A retail pharmacy chain's extraction system has subagents that pull dosing limits and interaction warnings from supplier bulletins and clinical notices; a synthesis step merges them into formulary updates. Reviewers found that the synthesis flagged two dosing limits as contradictory when one came from a 2023 bulletin and the other from a 2026 label revision, and that it mixed figures from a pilot study with label values. Which design should the team adopt?",
       "opcoes": [
-        "tools → instructions → manual (breakpoint here) → user name and question",
-        "tools → user name → instructions → manual → question (breakpoint at the end)",
-        "question → manual → instructions → tools, with a breakpoint at the beginning",
-        "Cache only the question, which is what changes"
+        "Require each subagent's structured output to carry metadata for every value (publication date, source document and page, methodology) for synthesis to use.",
+        "Keep the subagents' structured outputs to the extracted values only, so the synthesis context stays small, and let synthesis reopen the sources when values disagree.",
+        "Require the same structured metadata on every value, and have synthesis keep the most recent value whenever two records disagree, so no conflict reaches the formulary.",
+        "Keep subagent outputs to the extracted values only, and have the synthesis step send every disagreement to a pharmacist as a contradiction, so a human resolves it."
       ],
       "correta": 0,
-      "explicacao": "Stable first, volatile after: everything that repeats across requests goes before the breakpoint; user data and the question come after.",
+      "explicacao": "The synthesis errors come from values arriving without their dates, source locations, and methodological context, so a temporal difference looks like a contradiction and pilot data looks like label data. Requiring subagents to include that metadata in their structured outputs gives the downstream synthesis what it needs to interpret each value accurately.",
       "feedbacks": [
-        "Correct.",
-        "The user's name in the middle of the prefix invalidates the cached manual for each different user; a breakpoint at the end includes the question, which always changes.",
-        "The prefix order is tools → system → messages, and volatile content at the beginning invalidates everything.",
-        "Caching what changes on every request just pays the write premium."
-      ]
+        "Correct. Dates, source locations, and methodology in the structured output let synthesis tell an update from a conflict and a pilot result from a label value.",
+        "Small outputs save context, but without dates and methods the synthesis step cannot tell which value is newer or how it was obtained, and it will not know which sources to reopen.",
+        "The metadata is right, but always keeping the newest value discards information arbitrarily; conflicting credible values should be annotated, not silently resolved.",
+        "Sending every disagreement to a pharmacist pushes the burden onto humans and still labels a legitimate 2023-to-2026 update as a contradiction."
+      ],
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S5"
     },
     {
-      "pergunta": "A team is investigating why an agent's cache is almost never read. Which TWO practices found in the code are silent prompt caching invalidators? (Choose TWO.)",
+      "pergunta": "A consulting firm runs a Claude Agent SDK support agent for clients of its subscription analytics product. To control length, the conversation history is progressively summarized after 30 turns. In escalated billing disputes, the summary reads \"client disputes some charges on a recent invoice and wants this resolved soon,\" while the transcript says \"INV-30412, $1,840 overcharge, 12% above the contract rate; client expects a credit before the March 31 board meeting.\" Which TWO changes address this problem? Choose TWO.",
       "opcoes": [
-        "The system prompt is generated by serializing a Dictionary<string, object> without stable key ordering",
-        "The user's question comes after the last breakpoint",
-        "The breakpoint is on the last block of the stable system prompt",
-        "The session ID is inserted into the first line of the system prompt for traceability",
-        "The TTL used is the default 5 minutes and there are requests every 30 seconds"
+        "Persist the client's stated expectations, such as the requested credit and its deadline, as explicit fields sent with every prompt instead of the summary.",
+        "Rewrite the summarization prompt with explicit instructions to be thorough and to preserve every important number, date, and commitment from earlier turns.",
+        "Have the summarizer append a case facts section to every summary it writes, listing the amounts, dates, and invoice numbers that it decided to keep.",
+        "Extract amounts, percentages, dates, and invoice numbers into a persistent case facts block that is included in every prompt, outside the summarized history.",
+        "Move the agent to a model with a larger context window, so that summarization starts later in each conversation and affects fewer of the disputes."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Nondeterministic key order changes the prefix bytes; a session ID in the prefix makes each session a distinct prefix.",
+      "explicacao": "Progressive summarization condenses numbers, percentages, dates, and customer-stated expectations into vague text. Transactional facts belong in a persistent case facts block outside the summarized history, and the client's stated expectations must be captured explicitly as well, because they are exactly what a narrative summary blurs.",
       "feedbacks": [
-        "Correct. Different bytes in the prefix on each serialization.",
-        "That is the correct design (volatile content after the breakpoint).",
-        "That is also the correct design.",
-        "Correct. A variable identifier at the beginning of the prefix.",
-        "With requests every 30 s, the 5-min cache stays warm (a read refreshes the TTL)."
-      ]
+        "Correct. Customer-stated expectations are among the details that summaries turn vague, so they need explicit, persisted fields.",
+        "A better summarization prompt is still probabilistic condensation; it can reduce the loss of exact values but cannot guarantee they survive.",
+        "A case facts section written by the summarizer still passes through the summarizer, so it keeps only what the model chose to keep; the facts must be extracted outside the summarized history.",
+        "Correct. Exact amounts, percentages, dates, and IDs survive only if they never pass through the summarizer.",
+        "A larger window delays summarization but does not change what it loses once it runs; long disputes are still blurred."
+      ],
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-K1"
     },
     {
-      "pergunta": "An architect reviews the context management proposal for a long-running research agent. Which TWO statements in the proposal are correct? (Choose TWO.)",
+      "pergunta": "A consulting firm's support agent for its software clients often handles several issues in one session, such as a duplicate charge on one invoice, a seat-count change, and a refund for a cancelled workshop. The code appends every confirmed transactional value to a single case facts list that is included in each prompt. In 9% of multi-issue sessions, the agent applies the refund amount from one issue to another issue's invoice or reports the wrong status; single-issue sessions show no such errors. What is the most likely root cause?",
       "opcoes": [
-        "The memory tool automatically reduces the context size of the current session",
-        "Compaction is the best way to ensure that exact numeric values are preserved",
-        "Compaction is appropriate for long-running work that needs to preserve the narrative of what was tried and why",
-        "Editing old messages in the history is a safe way to save tokens",
-        "Numbers that will be used as tool arguments should be kept in a case facts block, outside what gets summarized"
+        "The progressive summary is dropping amounts from earlier turns, so the agent reconstructs values for older issues from the vague narrative that remains.",
+        "Facts from different issues share one flat list, so the agent cannot tell which invoice, amount, and status belong together; each issue needs its own record.",
+        "The agent has access to too many tools in multi-issue sessions, which makes it call process_refund with parameters that belong to a different tool call.",
+        "The issues are investigated one after another instead of in parallel, so details of the earlier issues expire from context before the agent resolves them."
+      ],
+      "correta": 1,
+      "explicacao": "The values are present in the case facts list, so they were not lost to summarization; they are mixed up because nothing ties each amount and status to its issue. In multi-issue sessions, structured issue data (order or invoice IDs, amounts, statuses) should be persisted in a separate context layer with one record per issue.",
+      "feedbacks": [
+        "Summarization loss would affect single-issue sessions too, and the values here are in the case facts list; the errors are cross-issue mix-ups, not missing values.",
+        "Correct. A flat list loses the association between each issue and its values; per-issue structured records fix it.",
+        "Tool count can hurt selection, but the agent is calling the right tool with values from the wrong issue, which points to how the facts are organized.",
+        "Parallel investigation does not change how the facts are stored, and the confirmed values remain in the prompt either way."
+      ],
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S2"
+    },
+    {
+      "pergunta": "A municipal transit agency's team wrote a runbook for long Claude Code exploration sessions in its route-planning codebase. Sessions fill with dozens of Grep results and full-file reads, and responses slow down and start missing earlier conclusions. The runbook says: \"When the context indicator passes 80%, open a new session, paste in the last 20 messages from the old one, and continue exploring.\" What is the flaw in this runbook?",
+      "opcoes": [
+        "It carries the latest verbose output forward and drops earlier conclusions; /compact would replace the long history with a summary instead.",
+        "It acts too late; the copy should happen at 50% so that less verbose discovery output accumulates in each session before switching to a new one.",
+        "The new session does not load the project's CLAUDE.md, so the team's conventions are lost every time the developer switches to a fresh session.",
+        "Copying messages loses the session's permission grants; the developer should reopen the original session with `--resume` and keep exploring there."
+      ],
+      "correta": 0,
+      "explicacao": "The last 20 messages are mostly recent tool output, while the conclusions reached early in the session are left behind. `/compact` is designed for this situation: it reduces context usage during extended exploration by replacing the verbose history with a summary, which can be focused on the findings that matter.",
+      "feedbacks": [
+        "Correct. /compact replaces the verbose discovery history with a summary instead of keeping only the most recent messages.",
+        "Switching earlier still keeps only recent messages and still drops earlier conclusions; the threshold is not the flaw.",
+        "A new Claude Code session loads the project CLAUDE.md, so conventions are not what gets lost.",
+        "Resuming the original session restores the same full context, so it does nothing to reduce context usage."
+      ],
+      "cenario": 2,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-S5"
+    },
+    {
+      "pergunta": "Engineers at an industrial IoT company use a developer productivity agent built on the Claude Agent SDK for a four-hour exploration of a legacy PLC integration codebase. No code changes during the session. Which TWO observations most indicate context degradation in the extended session rather than a different problem? Choose TWO.",
+      "opcoes": [
+        "It gives a retry interval for the PLC poller that contradicts what it reported an hour earlier in the same session.",
+        "Answers take longer because each new question leads it to read several files it has not opened earlier in the session.",
+        "It asks for clarification when an engineer's question names a class that does not exist anywhere in the repository.",
+        "It says the alarm handler follows a typical observer pattern instead of naming the AlarmDispatcher class it read.",
+        "A Grep for a function returns no matches because that function was renamed in a commit merged before the session."
       ],
       "corretas": [
-        2,
+        0,
+        3
+      ],
+      "explicacao": "Context degradation in extended sessions shows up as answers that fall back on \"typical patterns\" instead of the specific classes discovered earlier, and as inconsistent answers about facts that have not changed. Asking about a nonexistent class, a valid empty search result, and slower answers during new exploration are expected behavior or different issues.",
+      "feedbacks": [
+        "Correct. Inconsistent answers about unchanged facts are a core symptom of context degradation.",
+        "Reading new files for new questions is normal incremental exploration; it costs time but does not indicate degradation.",
+        "Asking for clarification about a class that does not exist is correct behavior, not a sign of degradation.",
+        "Correct. Falling back on a generic pattern instead of the specific class it discovered is a hallmark of degraded context.",
+        "This is a valid empty result: the search worked and found nothing because the code changed before the session, which is a different issue."
+      ],
+      "cenario": 4,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-K1"
+    },
+    {
+      "pergunta": "A developer at a municipal transit agency runs three investigations with Claude Code during the same week: a timetable import bug, a fare-capping refactor, and a real-time vehicle feed latency issue. Each investigation has accumulated analysis that is still valid. A teammate proposes keeping a notes file per investigation and starting a fresh session each morning by pasting the notes in, arguing that there is no reliable way to return to a specific earlier conversation. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: resuming earlier sessions always reintroduces stale context, so a fresh session with pasted notes is the safer default for multi-day work.",
+        "Reject it: give each investigation a session name and continue it with `claude --resume <session-name>`, which restores that exact conversation.",
+        "Accept it, but merge the three investigations into a single long session, so that the notes file only needs to be pasted in once each morning.",
+        "Reject it: keep one terminal open per investigation for the whole week, so that each conversation stays live and does not have to be resumed later."
+      ],
+      "correta": 1,
+      "explicacao": "Named session resumption exists for exactly this: `--resume <session-name>` continues a specific prior conversation, and because each investigation's analysis is still valid, resuming keeps the full context that pasted notes would lose. Starting fresh with a summary is the better choice only when prior tool results have become stale.",
+      "feedbacks": [
+        "Stale context is a risk only when files or sources have changed; here the analysis is still valid, so resuming is better and \"always\" overgeneralizes.",
+        "Correct. Named sessions resumed with `--resume <session-name>` return to the specific investigation with its context intact.",
+        "Merging unrelated investigations pollutes each one's context and makes answers less focused; separate named sessions avoid that.",
+        "Keeping terminals open all week is fragile and unnecessary: sessions are saved as you work, and a named session can be resumed directly whenever it is needed."
+      ],
+      "cenario": 2,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-K1"
+    },
+    {
+      "pergunta": "An engineer at an industrial IoT company spent 90 minutes with an Agent SDK-based assistant analyzing a device provisioning service. She now wants to compare two refactoring approaches: extracting a provisioning state machine, or moving the logic into an event-driven pipeline. She tried both in the same session, but the second plan kept referring to decisions made for the first (\"since the state already lives in the FSM...\"). The 90-minute analysis must not be redone. What is the most effective fix?",
+      "opcoes": [
+        "Tell the assistant in the same session to disregard the state-machine plan before it drafts the pipeline plan, so both plans still share the analysis.",
+        "Start two new sessions that each redo the analysis from scratch, so that the two refactoring plans stay fully independent of each other.",
+        "Spawn two subagents that receive only the description of their approach, so that each plan is produced in an independent, isolated context.",
+        "Resume the analysis session twice with fork_session, creating one independent branch per approach from the shared analysis as the common baseline."
+      ],
+      "correta": 3,
+      "explicacao": "fork_session creates independent branches that each start from a copy of the shared analysis, so each refactoring approach builds on the 90-minute baseline without seeing the other approach's decisions. Exploring divergent approaches from a common baseline is exactly what forking is for.",
+      "feedbacks": [
+        "An instruction to disregard earlier reasoning does not remove it from the context; the first plan's decisions keep leaking into the second.",
+        "Fresh sessions avoid contamination but violate the constraint by repeating the 90-minute analysis twice.",
+        "Subagents do not inherit the session's analysis, so each would plan without the baseline unless it were passed in explicitly.",
+        "Correct. Each fork inherits the shared analysis and then diverges independently, which isolates the two approaches."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-K2"
+    },
+    {
+      "pergunta": "A video-on-demand service uses a multi-agent research system built on the Claude Agent SDK. This morning the coordinator's session built a shared baseline on subscriber churn: 38 vetted sources, the key findings, and the open questions. Product leads now want two follow-up directions explored, a pricing-sensitivity deep dive and a content-catalog gap analysis, both starting from that baseline and without either one influencing the other. What is the most effective first step?",
+      "opcoes": [
+        "Continue in the coordinator's session and run the pricing direction first, then the catalog direction, so that the second can reuse what the first found.",
+        "Use fork_session on the coordinator's session to create two branches from the shared baseline, one for each direction, and run each branch on its own.",
+        "Export the coordinator's full transcript and paste it into two brand-new sessions, so that each direction begins with an identical copy of the baseline.",
+        "Start the catalog direction in a new, independent coordinator session given only the original churn topic, so the baseline cannot bias it."
+      ],
+      "correta": 1,
+      "explicacao": "Both directions need the same starting analysis but must not influence each other. fork_session creates parallel exploration branches from a shared baseline: each branch inherits the morning's work and then diverges independently.",
+      "feedbacks": [
+        "Running both in one session lets the first direction's findings shape the second, which is exactly the influence the product leads want to avoid.",
+        "Correct. Forking gives each direction the shared baseline and keeps the two explorations independent.",
+        "Pasting a raw transcript carries verbose tool output into each session and is a manual approximation of what forking already provides.",
+        "Avoiding bias by discarding the baseline forces the catalog direction to repeat the morning's research."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-S2"
+    },
+    {
+      "pergunta": "In a video-on-demand service's multi-agent research system, a subagent calls a catalog lookup tool that returns more than 60 fields per title (cast, crew, artwork URLs, regional ratings, encoding profiles), while the analysis uses six: title, release date, genre, region, viewing hours, and source. After about 25 lookups, the subagent's context is dominated by these results and it starts omitting findings it recorded earlier. Which design should the team adopt?",
+      "opcoes": [
+        "Append each full lookup result to the context and have the subagent summarize older results periodically, so no field is lost if a later question needs it.",
+        "Append each full lookup result to the context and move the subagent to a larger-context model, so that all 60 fields from every lookup stay available.",
+        "Trim each lookup result to the six relevant fields before it is appended, so that token use always stays proportional to what the analysis needs.",
+        "Trim each lookup result by having the subagent restate the six relevant fields after every call, so later reasoning can rely on the short restatement."
+      ],
+      "correta": 2,
+      "explicacao": "Tool results accumulate in context and consume tokens far out of proportion to their relevance when only six of 60+ fields matter. Trimming verbose tool outputs to the relevant fields before they accumulate keeps the context focused and protects the earlier findings.",
+      "feedbacks": [
+        "Periodic summaries add lossy condensation on top of the bloat; it is simpler and safer never to keep the irrelevant fields.",
+        "A larger window postpones the problem while every lookup still pays for 54 unused fields that compete for attention.",
+        "Correct. Trimming before accumulation keeps token use proportional to relevance.",
+        "Restating the fields adds tokens on top of the full result, which is still appended to the context; trimming has to happen before the result accumulates."
+      ],
+      "cenario": 3,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S3"
+    },
+    {
+      "pergunta": "A video-on-demand service's research system passes the outputs of seven subagents to a synthesis agent as one input of about 90,000 tokens, concatenated in the order the subagents finished. The requirement is that every subagent's key findings appear in the final report. Findings from the outputs placed first and last are always included, but in about one report in four, findings from the outputs in positions 3 to 5 are missing. What should you change to meet the requirement?",
+      "opcoes": [
+        "Randomize the order of the subagent outputs on every run, so that no subagent's findings are consistently placed in the middle of the input.",
+        "Add an explicit self-check in which the synthesis agent compares its draft with the full input, so that any findings it missed are added back.",
+        "Put a summary of all subagents' key findings at the start of the input, and place each detailed output under its own explicit section header.",
+        "Run seven synthesis calls, one per subagent output, and concatenate the seven partial reports, so that each output receives undivided attention."
+      ],
+      "correta": 2,
+      "explicacao": "First and last outputs covered while the middle positions drop out is the lost-in-the-middle effect. Placing a key-findings summary at the beginning of the aggregated input and organizing the detailed results under explicit section headers mitigates position effects, so every subagent's findings are processed.",
+      "feedbacks": [
+        "Randomizing spreads the omission across subagents instead of preventing it; some findings still land in the middle on every run.",
+        "A self-check over the same long input suffers the same position effect, so the middle findings are likely to be missed again.",
+        "Correct. Key findings up front plus explicit headers counteract the position effect.",
+        "Separate syntheses lose the cross-source integration the report needs, and stitching partial reports together produces duplication and inconsistency."
+      ],
+      "cenario": 3,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S4"
+    },
+    {
+      "pergunta": "A consulting firm's support agent for its training-services clients receives, at the start of each session, a long input: the client profile followed by 14 policy documents (about 40,000 tokens), with the client's contract terms inserted between policy documents 7 and 8. In 6% of late-cancellation cases, the agent charges the standard fee even though the contract includes a waiver clause. Logs confirm that the waiver clause is present in the input every time. What is the most likely root cause?",
+      "opcoes": [
+        "The retrieval step sometimes loads an outdated contract version for these clients, so the waiver clause the agent sees does not apply to the case.",
+        "The system prompt lacks explicit escalation criteria for fee disputes, so the agent defaults to the standard policy instead of escalating.",
+        "Content in the middle of a long input is processed less reliably than content at the beginning or end, so the waiver clause is overlooked.",
+        "The input is close to the context limit, so the earliest documents are truncated before the agent reasons about the cancellation request."
+      ],
+      "correta": 2,
+      "explicacao": "The clause is present but sits in the middle of a long input, between policy documents, which is where models process information least reliably. This is the lost-in-the-middle effect; the fix is to place key facts such as contract exceptions at the beginning and organize the input with explicit section headers.",
+      "feedbacks": [
+        "Nothing points to a version problem: the logs show the applicable waiver clause in the input, which rules out a retrieval error.",
+        "Escalation criteria govern when to hand off, but here the agent misapplies a fee it should have waived; the clause is being overlooked, not escalated.",
+        "Correct. Middle-of-input content is the most likely to be omitted, which matches an intermittent miss on a clause placed there.",
+        "Truncation would remove content consistently, and the logs show the full input, clause included, reaching the model; the clause is present yet ignored."
+      ],
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-K2"
+    },
+    {
+      "pergunta": "An industrial IoT company's developer productivity agent investigates a large firmware build system over several days. The investigation crosses context boundaries: /compact runs, new sessions on later days, and subagents launched for specific questions. The team adds a scratchpad file, `NOTES.md`, to the workflow. Which TWO practices make the scratchpad effective across these boundaries? Choose TWO.",
+      "opcoes": [
+        "Clear the scratchpad whenever /compact runs, so that older findings do not conflict with the summary that replaces the conversation.",
+        "Keep the scratchpad as a running message inside the conversation that the agent rewrites each turn, so it stays visible without file reads.",
+        "Log every tool call with its full output to the scratchpad, so that nothing the agent has discovered can be lost at a context boundary.",
+        "Have the agent consult the scratchpad before answering follow-up questions and pass its relevant entries to the subagents it launches.",
+        "Record confirmed findings in the scratchpad as they are established: class names, file paths, verified behaviors, and ruled-out hypotheses."
+      ],
+      "corretas": [
+        3,
         4
       ],
-      "explicacao": "Compaction preserves narrative (not precision); case facts preserve exact values. The memory tool persists across sessions; editing the history breaks thinking and the cache.",
+      "explicacao": "A scratchpad works because key findings are written outside the conversation and referenced later. Recording confirmed findings as they emerge, and consulting the file for subsequent questions (including handing relevant entries to new subagents), carries those findings across compaction, new sessions, and subagent boundaries.",
       "feedbacks": [
-        "The memory tool persists findings outside the conversation, but it doesn't trim the current context on its own.",
-        "Summarization is precisely where numbers get lost.",
-        "Correct.",
-        "History should be append-only; editing it breaks preserved thinking and invalidates the cache.",
-        "Correct."
-      ]
+        "Compaction is exactly when the scratchpad matters most; clearing it throws away the findings that the summary may have blurred.",
+        "A message inside the conversation is summarized away by /compact and is absent from new sessions and subagents; the file must live outside the context.",
+        "Logging full outputs turns the scratchpad into another verbose dump; it should hold distilled key findings.",
+        "Correct. The scratchpad counteracts degradation only if the agent references it for later questions and handoffs.",
+        "Correct. Persisting distilled findings as they are confirmed is what lets them survive context boundaries."
+      ],
+      "cenario": 4,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-K2"
+    },
+    {
+      "pergunta": "A video-on-demand service's research system ran yesterday in a coordinator session that collected subscription pricing data from 22 sources. Overnight, five sources published revised figures and two pages were taken down. This morning the team resumed yesterday's session and asked for an updated report. The report repeated yesterday's figures for the revised sources and cited the removed pages as current. Which statement about this behavior is correct?",
+      "opcoes": [
+        "Resuming discarded yesterday's tool results, so the coordinator fell back on general knowledge, which explains why the revised figures were not used.",
+        "Resumed sessions cannot run new tool calls until they are forked, so the coordinator was unable to fetch the revised figures from the five sources.",
+        "The session should have been compacted before resuming, because /compact refreshes old tool results from their sources as it builds a structured summary.",
+        "The resumed session still held yesterday's tool results and treated them as current; a new session seeded with a structured summary is more reliable."
+      ],
+      "correta": 3,
+      "explicacao": "Resuming restores the full prior conversation, including tool results that are now stale, and the model treats them as current facts. When prior tool results are outdated, starting a new session with a structured summary of what remains valid, plus a note of what changed, is more reliable than resuming.",
+      "feedbacks": [
+        "Resuming keeps the prior tool results rather than discarding them; the problem is that they were kept and trusted.",
+        "Resumed sessions can call tools normally; forking creates a branch of the history and has nothing to do with enabling tool calls.",
+        "/compact summarizes the conversation; it does not re-fetch anything, so the stale results would simply be summarized.",
+        "Correct. Stale tool results in a resumed session are trusted as current, so a fresh session with a structured summary is safer."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-K4"
+    },
+    {
+      "pergunta": "At a municipal transit agency, a developer is using Claude Code to plan a migration of the real-time vehicle tracking module. While mapping where the `VehiclePosition` type is used, the main session has already filled about 40% of its context with Grep output and file reads, and many more searches remain. A teammate proposes keeping all discovery in the main session \"so Claude sees every raw result,\" relying on automatic compaction if it fills up. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: the main session plans best when it holds every raw search result, and automatic compaction will handle any overflow without losing the plan.",
+        "Accept it, but have Claude read every file in the module upfront, so that the remaining discovery needs fewer Grep calls and less output overall.",
+        "Reject it: switch the session to a model with a larger context window, so that the discovery output and the migration plan fit in one context.",
+        "Reject it: delegate verbose discovery, such as finding every consumer of VehiclePosition, to subagents like Explore that return only summaries."
+      ],
+      "correta": 3,
+      "explicacao": "Verbose discovery output crowds the context that the main session needs for high-level planning. Delegating exploration to subagents, such as the Explore subagent, isolates the raw output in their own context and returns only summaries, so the main agent keeps coordinating with a clean context.",
+      "feedbacks": [
+        "Raw results compete with the plan for attention, and compaction replaces the details with a summary on its own terms; neither keeps the main session focused.",
+        "Reading the whole module upfront adds even more output to the main context, which is the opposite of what the session needs.",
+        "A bigger window delays the overflow but still mixes verbose discovery with planning in one context, diluting attention.",
+        "Correct. Subagent delegation isolates verbose exploration while the main session keeps the high-level coordination."
+      ],
+      "cenario": 2,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-K3"
     }
   ]
 }

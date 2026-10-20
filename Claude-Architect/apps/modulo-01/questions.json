@@ -1,266 +1,281 @@
 {
-  "titulo": "Module 01 — Quiz: the exam, the Messages API, and the request surface",
+  "titulo": "Módulo 01 — Quiz de fixação",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "How many scenarios appear in a single sitting of the CCAR-F exam?",
+      "pergunta": "Which statement about the CCAR-F exam format matches the official exam guide?",
       "opcoes": [
-        "All 6 scenarios in the bank, always",
-        "4 scenarios randomly drawn from a bank of 6",
-        "2 fixed scenarios and 2 randomly drawn ones",
-        "One scenario per exam domain, i.e., 5 scenarios in total"
-      ],
-      "correta": 1,
-      "explicacao": "The exam randomly draws 4 of the 6 scenarios in the bank, and the questions hang off them.",
-      "feedbacks": [
-        "Incorrect: there are 6 in the bank, but only 4 make it into each sitting.",
-        "Correct: 4 of 6, randomly drawn.",
-        "Incorrect: there are no fixed scenarios; all of them come from the random draw.",
-        "Incorrect: scenarios don't map 1:1 to domains; a single scenario mixes several domains."
-      ]
-    },
-    {
-      "pergunta": "Which domain carries the HIGHEST weight on the exam?",
-      "opcoes": [
-        "D4 — Prompt engineering & structured output",
-        "D3 — Claude Code configuration & workflows",
-        "D2 — Tool design & MCP integration",
-        "D1 — Agentic architecture & orchestration"
-      ],
-      "correta": 3,
-      "explicacao": "D1 weighs 27%; D3 and D4 weigh 20% each, D2 18%, and D5 15%.",
-      "feedbacks": [
-        "Incorrect: D4 weighs 20%.",
-        "Incorrect: D3 weighs 20%.",
-        "Incorrect: D2 weighs 18%.",
-        "Correct: D1 = 27%, more than a quarter of the exam."
-      ]
-    },
-    {
-      "pergunta": "You have 3 minutes left and 4 unanswered questions. What is the best course of action?",
-      "opcoes": [
-        "Mark an option on all of them, since there is no penalty for guessing",
-        "Leave the ones you don't know blank, so you don't lose points",
-        "Answer only the single-answer ones and leave the 'Choose TWO' ones blank",
-        "Review the ones already answered instead of answering the new ones"
+        "60 items in 120 minutes; each multiple-response item states how many options to select; cut score 720 on a 100–1,000 scale.",
+        "60 items in 90 minutes; every multiple-response item asks for exactly two options; you pass with 70% of items answered correctly.",
+        "65 items in 120 minutes; multiple-response items give partial credit per option; cut score 750 on a 100–1,000 scale.",
+        "60 items in 120 minutes; all six scenarios appear on every exam form; pass or fail is decided separately for each domain."
       ],
       "correta": 0,
-      "explicacao": "With no penalty for guessing, a blank answer is a guaranteed lost point; guessing can only help.",
+      "explicacao": "The guide lists 60 multiple-choice and multiple-response items, 120 minutes, and a scaled score of 720 on a 100–1,000 scale. Each multiple-response item states how many responses to select, so read the number instead of assuming two.",
       "feedbacks": [
-        "Correct: no penalty, so always mark an answer.",
-        "Incorrect: there is no deduction for wrong answers; a blank is worth zero either way.",
-        "Incorrect: even on multiple-response questions, guessing has a chance of being right; a blank has none.",
-        "Incorrect: reviewing doesn't make up for leaving questions unanswered."
-      ]
-    },
-    {
-      "pergunta": "One option proposes enforcing the US$500 refund limit solely through an emphatic instruction in the system prompt. Which exam principle does it violate?",
-      "opcoes": [
-        "Measure before changing anything",
-        "Use few-shot examples for edge cases",
-        "A critical (financial) rule belongs in deterministic code, not in the prompt",
-        "Always prefer the most capable model"
+        "Correct. 60 items, 120 minutes, item states how many to select, 720 out of 100–1,000.",
+        "The time is 120 minutes, the passing standard is a scaled 720 (not a raw percentage), and the number to select is stated per item.",
+        "There are 60 items and the cut score is 720; the guide says nothing about partial credit.",
+        "Four of the six scenarios appear per exam, and the pass decision uses the total scaled score, not per-domain results."
       ],
-      "correta": 2,
-      "explicacao": "A prompt is probabilistic, with a nonzero failure rate. A financial limit requires deterministic enforcement (hook/validation).",
-      "feedbacks": [
-        "Incorrect: measuring matters, but the problem here is where the rule is enforced.",
-        "Incorrect: few-shot is still prompting; it provides no guarantee.",
-        "Correct: financial consequence → hook or validation in code.",
-        "Incorrect: no model turns a prompt into a guarantee."
-      ]
+      "ts": "exame"
     },
     {
-      "pergunta": "Which of these is the CORRECT way for the loop to decide whether the agent has finished?",
+      "pergunta": "Your CCAR-F score report shows a scaled score of 742 and 58% correct in Domain 2. Which statement is correct?",
       "opcoes": [
-        "Look for the word 'FINAL' in the response text",
-        "Check the response's stop_reason",
-        "Stop when the response has no text block",
-        "Stop after 10 iterations"
+        "You did not pass, because each domain must reach at least 70% correct for the overall result to count as a pass.",
+        "You passed; the per-domain percentages show where you were weaker but are not used to make the pass/fail decision.",
+        "You passed provisionally; Domain 2 has to be retaken within 12 months through the free renewal assessment.",
+        "The result is pending, because any domain below 60% triggers a manual review of your whole exam by Pearson VUE."
       ],
       "correta": 1,
-      "explicacao": "stop_reason is the loop's control signal: tool_use continues, end_turn ends.",
+      "explicacao": "The pass/fail result is based on the total scaled score, with 720 as the cut score. The percent-correct by domain on the report is there to help you understand your performance, not to decide the result.",
       "feedbacks": [
-        "Incorrect: anti-pattern #1, parsing natural language to decide when it's done.",
-        "Correct: stop_reason decides.",
-        "Incorrect: the presence or absence of text doesn't indicate completion; text and tool_use can coexist.",
-        "Incorrect: anti-pattern #2, an arbitrary limit as the primary mechanism (it only serves as a backstop)."
-      ]
+        "There is no per-domain minimum; only the total scaled score determines pass or fail.",
+        "Correct. 742 is above 720; domain percentages are informational.",
+        "There is no provisional pass; the free renewal assessment is for renewing a credential before it expires.",
+        "The guide describes no manual review triggered by domain scores."
+      ],
+      "ts": "exame"
     },
     {
-      "pergunta": "The model's response contains a text block ('Let me check the order') and a tool_use block. What does this mean?",
+      "pergunta": "How are the six scenarios used on the CCAR-F exam?",
       "opcoes": [
-        "It hasn't finished yet: execute the tool and return the result",
-        "The model has finished; the tool_use is merely informational",
-        "The response is malformed and should be discarded",
-        "You must choose between displaying the text or executing the tool"
+        "Every exam form covers all six scenarios, with ten questions drawn from each one of them.",
+        "Each candidate picks four of the six scenarios when scheduling, based on their own experience.",
+        "Four scenarios are drawn at random from the six, and each one frames a set of questions.",
+        "Scenarios appear only in multiple-response items, while single-answer items stand on their own."
+      ],
+      "correta": 2,
+      "explicacao": "The exam presents 4 scenarios picked at random from a bank of 6, and each scenario frames a set of questions. You cannot choose them, so prepare for all six.",
+      "feedbacks": [
+        "Only four of the six appear on a given exam.",
+        "Scenarios are drawn at random; candidates do not choose them.",
+        "Correct. Four of six, at random, each framing a block of questions.",
+        "The exam is scenario-based throughout; item format does not depend on the scenario."
+      ],
+      "ts": "exame"
+    },
+    {
+      "pergunta": "Which topic does the official guide list as out of scope, so it should never be the knowledge that decides an answer?",
+      "opcoes": [
+        "tool_choice options (\"auto\", \"any\", and forced tool selection)",
+        "The Message Batches API and custom_id request correlation",
+        "stop_reason handling (\"tool_use\" vs \"end_turn\") in loops",
+        "Embedding models and vector database implementation details"
+      ],
+      "correta": 3,
+      "explicacao": "Embeddings and vector databases are on the guide's out-of-scope list, together with items such as fine-tuning, streaming, rate limits and prompt caching details. tool_choice, the Batches API and stop_reason handling are all listed in the guide's technologies and task statements.",
+      "feedbacks": [
+        "tool_choice is part of TS 2.3 and 4.3 and appears in the appendix.",
+        "The Message Batches API is TS 4.5, including custom_id correlation.",
+        "stop_reason handling is the core of TS 1.1.",
+        "Correct. Embedding models and vector databases are out of scope."
+      ],
+      "ts": "exame"
+    },
+    {
+      "pergunta": "A logistics company's agent must get manager approval before cancelling any shipment worth more than $10,000. Audits show it skipped approval in 2 of 600 such cancellations. Following the reasoning the exam rewards, which fix is most appropriate?",
+      "opcoes": [
+        "Rewrite the system prompt so the approval rule is explicit, comes first in capitals, and carries a note on the financial risk.",
+        "Add a programmatic check that blocks cancel_shipment above $10,000 until request_approval has returned an approval for it.",
+        "Add an independent second model that reviews each completed cancellation and flags any that went ahead without approval.",
+        "Add few-shot examples that show the agent requesting approval before each high-value cancellation, including edge cases."
+      ],
+      "correta": 1,
+      "explicacao": "When a rule has financial consequences, prompt-based guidance keeps a non-zero failure rate, as the 2-in-600 audit shows. A programmatic prerequisite gives a deterministic guarantee. This is the 'critical rule goes in code' tie-breaker.",
+      "feedbacks": [
+        "Stronger wording is still probabilistic; it may lower the rate but cannot guarantee the rule.",
+        "Correct. A programmatic gate blocks the action until the prerequisite is met.",
+        "A reviewer after the fact detects violations once the shipment is already cancelled; it does not prevent them.",
+        "Examples improve consistency but remain probabilistic for a rule that needs a guarantee."
+      ],
+      "ts": "exame"
+    },
+    {
+      "pergunta": "Which statement about conversation state in the Messages API is correct?",
+      "opcoes": [
+        "The API keeps earlier turns for each conversation for a while, so a request only needs the newest user message.",
+        "The API is stateless, so every request must carry the full history, including the tool_use and tool_result turns.",
+        "The API keeps the system prompt between calls, so only the messages array needs to be resent with each request.",
+        "The API summarizes earlier turns automatically once a conversation gets long, so resending them is optional."
+      ],
+      "correta": 1,
+      "explicacao": "The Messages API does not store conversation state. Each request must include the complete conversation history the model should see, including tool turns, to keep the conversation coherent.",
+      "feedbacks": [
+        "There is no server-side conversation memory; a request with only the newest message loses everything before it.",
+        "Correct. Complete history in every request.",
+        "The system prompt is a request parameter too; it must be sent on every call.",
+        "The API does not summarize or retain history for you."
+      ],
+      "ts": "5.1"
+    },
+    {
+      "pergunta": "Your harness has executed a tool that the model requested. Where must the result go so the model can use it in the next iteration?",
+      "opcoes": [
+        "Into the system prompt of the next request, under a \"Tool results\" heading that the model reads first.",
+        "Into an assistant message right after the tool_use block, so the model treats it as its own earlier output.",
+        "Into a user message as a tool_result block whose tool_use_id matches the id of the tool_use block.",
+        "Into a separate call to a results endpoint, keyed by the id of the response that requested the tool."
+      ],
+      "correta": 2,
+      "explicacao": "Tool results are appended to the conversation history as tool_result blocks in a user message, each linked by tool_use_id to the request that produced it. That is how the model reasons about its next action.",
+      "feedbacks": [
+        "The system prompt is not where tool results belong; they must be linked to their tool_use in the message history.",
+        "Assistant messages hold the model's output; results are returned by your side in a user message.",
+        "Correct. A tool_result in a user message, matched by tool_use_id.",
+        "There is no results endpoint; everything travels in the messages array of the next request."
+      ],
+      "ts": "1.1"
+    },
+    {
+      "pergunta": "One response contains three tool_use blocks. Two tools succeed and one fails with a permission error. How should the next request be built?",
+      "opcoes": [
+        "One user message with three tool_result blocks, each with its matching tool_use_id, and the failed one marked is_error: true.",
+        "Three user messages, one per result, in the same order as the tool_use blocks, and the failed one sent with an empty content.",
+        "One user message with the two successful tool_result blocks, while the failed call is retried and its result sent later.",
+        "One user message with three tool_result blocks, where the failed one reports success with a note so the loop does not stall."
       ],
       "correta": 0,
-      "explicacao": "content can mix text and tool_use. With stop_reason tool_use, execute the tool and continue the loop.",
+      "explicacao": "All results for one response go back in a single user message, one tool_result per tool_use with the matching tool_use_id. A failed tool still returns a result, flagged with is_error, so the model can decide how to recover.",
       "feedbacks": [
-        "Correct: having text doesn't mean it has finished.",
-        "Incorrect: tool_use is a request for execution, not a comment.",
-        "Incorrect: mixing blocks is normal and valid.",
-        "Incorrect: there's no choice to make; the text is a preamble and the tool needs to run."
-      ]
-    },
-    {
-      "pergunta": "The model requested 3 tools in the same response and one of them failed. How should you return the results?",
-      "opcoes": [
-        "Three separate user messages, one per tool_result",
-        "Only the two successful results, omitting the one that failed",
-        "One user message with the first result, then send the rest later",
-        "One user message with all three tool_result blocks (the failure with is_error: true)"
+        "Correct. One message, every result, the failure flagged.",
+        "Results for one response belong in a single user message, and an empty result hides the failure.",
+        "Every tool_use needs its tool_result in the next message; leaving one out breaks the exchange.",
+        "Reporting a failure as success misleads the model and prevents recovery."
       ],
-      "correta": 3,
-      "explicacao": "All tool_result blocks go in a single user message, each with its tool_use_id; the failure gets is_error: true so the model can reason about recovery.",
-      "feedbacks": [
-        "Incorrect: spreading results across several messages breaks the protocol and discourages parallel calls.",
-        "Incorrect: omitting the failure is error suppression (anti-pattern #7) and leaves a tool_use without a result.",
-        "Incorrect: all pending results must go together.",
-        "Correct: one message, three results, failure flagged."
-      ]
+      "ts": "1.1"
     },
     {
-      "pergunta": "What links a tool_result to the tool request that originated it?",
+      "pergunta": "In a tool definition, which field does the model rely on most to decide when to call that tool instead of a similar one?",
       "opcoes": [
-        "The tool name",
-        "The order of the blocks in the message",
-        "A tool_use_id equal to the id of the tool_use block",
-        "The message's index in the history"
+        "name, because the model maps the tool name directly to user intent and largely ignores the other fields.",
+        "input_schema, because the parameter types tell the model which kinds of requests the tool can handle.",
+        "description, because it explains purpose, inputs, examples and boundaries, and is the main selection signal.",
+        "tool_choice, because it ranks each tool's priority so the model picks the best match for each request."
       ],
       "correta": 2,
-      "explicacao": "Each tool_result references the exact id of the corresponding tool_use in tool_use_id.",
+      "explicacao": "Tool descriptions are the primary mechanism the model uses to select tools. Minimal descriptions lead to unreliable selection among similar tools, so include purpose, input formats, example queries, edge cases and when to use a similar tool instead.",
       "feedbacks": [
-        "Incorrect: the same tool can be called several times; the name doesn't identify the call.",
-        "Incorrect: the link is by id, not by position.",
-        "Correct: the exact tool_use_id.",
-        "Incorrect: the message index isn't used for this."
-      ]
+        "Names help, but two tools with clear names and minimal descriptions are still easily confused.",
+        "The schema constrains arguments; it says little about when the tool is the right choice.",
+        "Correct. The description is the main selection mechanism.",
+        "tool_choice is a request setting (auto, any, forced), not a field of the tool definition, and it does not rank tools."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "An extraction has started returning JSON that is cut off at the end on long documents. Which stop_reason do you expect to see?",
+      "pergunta": "Which tool_choice setting guarantees that the model calls the tool named extract_metadata in this response?",
       "opcoes": [
-        "max_tokens",
-        "stop_sequence",
-        "refusal",
-        "pause_turn"
+        "{\"type\": \"auto\"}, because the model calls extract_metadata whenever its description fits the input.",
+        "{\"type\": \"any\"}, because the model must call a tool, and extract_metadata is the one it has to call.",
+        "{\"type\": \"auto\"} plus a system prompt line that says to always call extract_metadata before anything.",
+        "{\"type\": \"tool\", \"name\": \"extract_metadata\"}, because the model must call exactly that named tool."
+      ],
+      "correta": 3,
+      "explicacao": "Forced tool selection makes the model call that specific tool. \"any\" only guarantees that some tool is called, and \"auto\" lets the model answer in text or choose another tool.",
+      "feedbacks": [
+        "\"auto\" leaves the decision to the model, including replying with text.",
+        "\"any\" forces a tool call but not a particular tool.",
+        "A prompt instruction is probabilistic; it does not guarantee the call.",
+        "Correct. Forced selection names the tool that must be called."
+      ],
+      "ts": "2.3"
+    },
+    {
+      "pergunta": "Why does the exam guide call tool use with a JSON schema the most reliable way to get schema-compliant structured output?",
+      "opcoes": [
+        "The output arrives as the tool's input, shaped by input_schema, which removes syntax errors; semantic errors still need checks.",
+        "The schema makes the model check every value against the source document, which removes both syntax and semantic errors.",
+        "Tool calls skip the model's reasoning and copy fields straight from the source document, so the extracted values cannot be wrong.",
+        "The API rejects any response that is not valid JSON and retries it on the server automatically until the output parses."
       ],
       "correta": 0,
-      "explicacao": "Output truncated at the output ceiling yields stop_reason max_tokens; raise the limit or continue.",
+      "explicacao": "Defining an extraction tool whose input_schema is the target structure, then reading the tool_use input, eliminates JSON syntax errors. It does not prevent semantic errors, such as totals that don't add up or a value in the wrong field; those need validation.",
       "feedbacks": [
-        "Correct: it hit the output ceiling.",
-        "Incorrect: stop_sequence indicates the model hit a configured stop sequence, not truncation.",
-        "Incorrect: refusal is a safety refusal.",
-        "Incorrect: pause_turn belongs to the server-side tool loop."
-      ]
+        "Correct. Syntax errors go away; semantic errors still need validation.",
+        "A schema constrains structure and types; it does not make the model verify meaning against the source.",
+        "The model still interprets the document; values can be misread or misplaced.",
+        "There is no automatic server-side retry; the guarantee comes from the tool's schema."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "Why can a model refusal go unnoticed in code that only checks the HTTP status?",
+      "pergunta": "A response contains a text block (\"I'll check the warranty terms now.\") and a tool_use block, with stop_reason \"tool_use\". What should the loop do?",
       "opcoes": [
-        "Because the refusal comes with HTTP 500",
-        "Because the refusal arrives with HTTP 200 and stop_reason refusal",
-        "Because the refusal only shows up in the server logs",
-        "Because the refusal comes as a timeout exception"
+        "Return the text to the user, since a text block means the model has produced its answer for this turn.",
+        "Execute the tool, append the response and the tool_result to the history, and send the next request.",
+        "Drop the text block, execute the tool, and send only the tool_result so that the history stays compact.",
+        "Ask the model in a new user message whether it has finished, and continue only if it answers that it has not."
       ],
       "correta": 1,
-      "explicacao": "From an HTTP standpoint, a refusal is a successful response; the signal is in stop_reason: refusal.",
+      "explicacao": "stop_reason \"tool_use\" means the model wants the tool executed; text in the same response does not mean it is done. The loop executes the tool, appends the full assistant response and the tool_result, and continues.",
       "feedbacks": [
-        "Incorrect: it's not a server error.",
-        "Correct: HTTP 200 + stop_reason refusal.",
-        "Incorrect: it comes in the response itself.",
-        "Incorrect: it's not a timeout."
-      ]
-    },
-    {
-      "pergunta": "Which statement about the Tool Runner is correct?",
-      "opcoes": [
-        "It is the same product as the Claude Agent SDK",
-        "It hosts the loop and a per-session sandbox on Anthropic's infrastructure, with versioned configs",
-        "It ships with built-in tools such as Read, Edit, and Bash",
-        "A helper in the API SDK that runs the loop over your tools, on your infrastructure"
+        "Text content is not a completion indicator; stop_reason is.",
+        "Correct. Continue on \"tool_use\".",
+        "The assistant response must be appended whole, including its text and tool_use blocks.",
+        "Asking the model is parsing natural language to decide termination; stop_reason already answers it."
       ],
-      "correta": 3,
-      "explicacao": "The Tool Runner automates request → execute → repeat for your own tools only. Built-in tools belong to the Agent SDK; hosting belongs to Managed Agents.",
-      "feedbacks": [
-        "Incorrect: Tool Runner ≠ Agent SDK (a classic trap).",
-        "Incorrect: that describes Managed Agents.",
-        "Incorrect: built-in tools come with the Agent SDK.",
-        "Correct: just the loop, just your tools, on your infrastructure."
-      ]
+      "ts": "1.1"
     },
     {
-      "pergunta": "On recent models, how do you ask the model to decide on its own how much to think?",
+      "pergunta": "Which TWO are anti-patterns for deciding when an agentic loop should end? Choose TWO.",
       "opcoes": [
-        "thinking: {type: enabled, budget_tokens: 8000}",
-        "temperature: 0",
-        "thinking: {type: adaptive}",
-        "An assistant prefill starting with '<thinking>'"
-      ],
-      "correta": 2,
-      "explicacao": "Adaptive thinking replaces budget_tokens; on newer models, budget_tokens returns a 400.",
-      "feedbacks": [
-        "Incorrect: budget_tokens is the old format and returns a 400 on newer models.",
-        "Incorrect: temperature doesn't control reasoning and is rejected on newer models.",
-        "Correct: adaptive.",
-        "Incorrect: prefill returns a 400 on newer models."
-      ]
-    },
-    {
-      "pergunta": "Where does the effort parameter go in the request?",
-      "opcoes": [
-        "At the top level of the request, alongside model",
-        "Inside output_config",
-        "Inside the thinking block",
-        "In the system prompt, as text"
-      ],
-      "correta": 1,
-      "explicacao": "effort lives in output_config (low/medium/high/xhigh/max).",
-      "feedbacks": [
-        "Incorrect: it's not a top-level parameter.",
-        "Correct: output_config.effort.",
-        "Incorrect: thinking only sets the mode (adaptive).",
-        "Incorrect: effort is an API parameter, not a text instruction."
-      ]
-    },
-    {
-      "pergunta": "A team is about to migrate to a newer model. Which step does the exam expect?",
-      "opcoes": [
-        "Swap the model ID directly in production and monitor the rate of 400 errors over the first few hours",
-        "Copy the same parameters, since the API is the same",
-        "Increase max_tokens to compensate for the changes",
-        "Test the request shape on the new model and recalibrate effort"
-      ],
-      "correta": 3,
-      "explicacao": "Accepted parameters change from model to model (budget_tokens, sampling, prefill, and forced tool_choice can return a 400); test and recalibrate beforehand.",
-      "feedbacks": [
-        "Incorrect: discovering 400s in production is exactly what you want to avoid.",
-        "Incorrect: the endpoint is the same, but the accepted surface changes per model.",
-        "Incorrect: it doesn't address the problem of rejected parameters.",
-        "Correct: test the request shape and recalibrate."
-      ]
-    },
-    {
-      "pergunta": "A developer wants to guarantee consistent JSON on a newer model. Which TWO approaches are valid? (Choose TWO.)",
-      "opcoes": [
-        "An assistant prefill starting with '{'",
-        "temperature: 0 and top_p: 0.1",
-        "Structured outputs via output_config.format with a JSON schema",
-        "Increase budget_tokens so the model thinks more about the format",
-        "A clear format instruction in the system prompt"
+        "Ending the loop when the text contains \"Task complete\".",
+        "Ending the loop when the response has stop_reason \"end_turn\".",
+        "Continuing the loop while stop_reason is \"tool_use\".",
+        "Keeping a high iteration cap as a logged safety backstop.",
+        "Using a fixed limit of 5 iterations as the stopping rule."
       ],
       "corretas": [
-        2,
+        0,
         4
       ],
-      "explicacao": "Prefill, sampling, and budget_tokens are rejected on newer models. Structured outputs provide a schema guarantee; an instruction in the system prompt is the textual substitute.",
+      "explicacao": "The guide names three termination anti-patterns: parsing natural language signals, arbitrary iteration caps as the primary stopping mechanism, and checking for assistant text as a completion indicator. Continuing on \"tool_use\" and stopping on \"end_turn\" is the correct control flow; a high cap used only as a backstop is a safety net, not the stopping rule.",
       "feedbacks": [
-        "Incorrect: prefill returns a 400 on newer models.",
-        "Incorrect: sampling parameters are rejected on newer models and don't guarantee format.",
-        "Correct: structural guarantee.",
-        "Incorrect: budget_tokens returns a 400 on newer models and doesn't guarantee format.",
-        "Correct: the recommended substitute for prefill when structured outputs aren't used."
-      ]
+        "Correct. Parsing text for a completion phrase is an anti-pattern.",
+        "\"end_turn\" is exactly the right signal to stop.",
+        "Continuing on \"tool_use\" is the correct control flow.",
+        "A high cap with logging is an acceptable safety net, as long as it is not the main stopping rule.",
+        "Correct. An arbitrary cap as the primary stopping rule cuts long tasks short."
+      ],
+      "ts": "1.1"
+    },
+    {
+      "pergunta": "What distinguishes a model-driven agentic loop from a pre-configured decision tree?",
+      "opcoes": [
+        "In a model-driven loop, Claude plans the whole tool sequence in its first response, and the harness then runs that plan.",
+        "In a model-driven loop, Claude keeps earlier tool results on its side between requests, so only the newest result is sent.",
+        "In a model-driven loop, the run ends once Claude writes any text; a decision tree ends after its last fixed step.",
+        "In a model-driven loop, Claude picks each next tool from the context so far, including what earlier results revealed."
+      ],
+      "correta": 3,
+      "explicacao": "In model-driven decision-making, Claude reasons about which tool to call next based on context, including what earlier tool results revealed. A pre-configured decision tree or tool sequence fixes the path in advance and cannot adapt to what is discovered.",
+      "feedbacks": [
+        "A plan fixed in the first response is just a pre-configured sequence written by the model; the point of the loop is to choose each step after seeing the previous result.",
+        "The API is stateless; the complete history, including earlier tool results, is sent with every request.",
+        "Text in a response is not a completion signal (it often comes with tool_use); the loop ends on stop_reason \"end_turn\".",
+        "Correct. The model chooses the next action from the evolving context."
+      ],
+      "ts": "1.1"
+    },
+    {
+      "pergunta": "A response ends with stop_reason \"max_tokens\". What does that mean for the agentic loop?",
+      "opcoes": [
+        "The output reached max_tokens and was cut off; it is not a finished turn and must be handled as truncation.",
+        "The model judged that it had said enough and ended its turn, so treat it like \"end_turn\" and return the text.",
+        "The conversation exceeded the context window, so drop the oldest turns and resend the same request unchanged.",
+        "The model wants more tool calls than allowed, so raise the iteration cap and continue the loop as usual."
+      ],
+      "correta": 0,
+      "explicacao": "max_tokens is the output limit for a single response. When it is reached the response stops mid-output; treating it as a finished answer delivers truncated text or incomplete JSON. Handle it explicitly, for example by raising the limit or continuing.",
+      "feedbacks": [
+        "Correct. A cutoff, not a finished turn.",
+        "\"end_turn\" is the signal for a natural finish; \"max_tokens\" means the output was cut.",
+        "max_tokens limits the output of one response; it is not a context-window signal.",
+        "max_tokens has nothing to do with the number of tool calls or iterations."
+      ],
+      "ts": "1.1"
     }
   ]
 }

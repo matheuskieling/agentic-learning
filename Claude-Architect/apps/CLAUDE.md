@@ -9,4 +9,4 @@ apps/modulo-NN/
 ```
 
 Conduzido pelo Claude: `python3 engine/session.py start Claude-Architect/apps/modulo-NN/questions.json`.
-Questões curtas e diretas (fato → decisão), em **inglês** como a prova real (a aula segue em PT-BR). O estilo cenário completo fica nas provas e nos simulados.
+Questões de fixação do conteúdo da aula (podem ser conceituais), em **inglês** como a prova real (a aula segue em PT-BR), com `feedbacks` em todas as alternativas e o campo `ts` (task statement do guia). O formato completo do exame fica nas provas e nos simulados.

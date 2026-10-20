@@ -1,0 +1,153 @@
+{
+  "modulo": "09",
+  "titulo": "Refinamento iterativo, CI/CD e review multi-instância/multi-pass",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura: convergir para o resultado e confiar no review automático",
+      "pontos": [
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# (testes xUnit, leitor do structured_output) para a linguagem salva; comandos claude -p, JSON e CLAUDE.md ficam no formato real",
+        "Este módulo fecha o D3 (3.5 refinamento iterativo, 3.6 Claude Code em CI/CD) e traz o 4.6 do D4 (review multi-instância e multi-pass)",
+        "Cenário 5 (Claude Code for Continuous Integration) é o principal: review automático, geração de testes e feedback em PR com poucos falsos positivos; o 3.5 cai também nos cenários 2 (Code Generation) e 4 (Developer Productivity)",
+        "Duas perguntas-mãe: como faço o Claude convergir para o que eu quero? E como rodo o Claude Code sem ninguém olhando e confio no review que ele produz?",
+        "Roteiro: exemplos concretos e testes → entrevista e problemas que interagem → -p e achados estruturados → CLAUDE.md no CI, geração de testes e re-review → auto-revisão × instância independente → multi-pass, confiança por achado e ponte com o Batch",
+        "Alerta: a doc atual recomenda --bare para chamadas scriptadas, e ele pula o CLAUDE.md. Pelo guia (3.6), o CLAUDE.md é O mecanismo de contexto do Claude Code no CI; na prova, não trate o CLAUDE.md do CI como custo a cortar",
+        "No fim: quiz de 15 e prova de 20, em inglês"
+      ],
+      "checkpoint": "Pergunte se o aluno já pôs alguma IA ou linter automático no pipeline (GitHub Actions/Azure DevOps) e o que mais incomodava nos comentários (ruído, duplicata, falso positivo); confirme que pode começar",
+      "ref": "09-claude-code-workflows-ci/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "Exemplos concretos e iteração guiada por testes (3.5)",
+      "pontos": [
+        "Prosa interpretada de forma inconsistente → 2–3 pares entrada → saída, escolhidos nos casos que variaram (mostre o exemplo dos telefones E.164, com a borda 'ramal 204' → null)",
+        "Anti-padrões: prosa mais longa ou enfática; votação entre execuções; JSON schema (garante estrutura, não a semântica da transformação)",
+        "Suíte ANTES da implementação cobrindo comportamento esperado, bordas e requisito de performance (mostre LedgerAggregatorTests com o teste de 1 milhão de lançamentos em menos de 2 s)",
+        "Iterar compartilhando as falhas (esperado × obtido), não impressões como 'ainda está errado'",
+        "Borda teimosa → caso de teste com entrada de exemplo e saída esperada: o null na migração (Null_birth_date_is_migrated_as_null_and_row_is_kept)",
+        "Anti-padrões: testes escritos depois do código (espelham os bugs); meta de cobertura; 'confirme que atendeu cada requisito'; teste de carga manual depois do merge"
+      ],
+      "checkpoint": "Pergunte em inglês: \"Claude's migration script still mishandles rows where discount is NULL after two prose requests to 'handle nulls properly'. What should you give Claude next?\" (Esperado: um caso de teste com uma linha de exemplo contendo NULL e o registro de saída exato)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#1-exemplos-concretos-quando-a-prosa-falha-35"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Padrão entrevista e problemas que interagem (3.5)",
+      "pontos": [
+        "Interview pattern: o Claude faz perguntas ANTES de implementar, para revelar considerações que o dev não anteciparia; o gatilho é domínio desconhecido",
+        "Exemplos do guia: estratégia de invalidação de cache e modos de falha (leia o prompt do PricingService no teoria.md)",
+        "Entrevista × plan mode: plan mode explora o código; a entrevista extrai decisões que não estão no código (quanto atraso de cotação o negócio tolera?)",
+        "Anti-padrões: implementar com default e listar premissas no fim; spec escrita só pelo dev; plan mode para inferir requisito que o código não tem",
+        "Problemas que interagem (a correção de um muda o outro) → uma mensagem detalhada explicando a interação; independentes → em sequência, mudanças pequenas e revisáveis",
+        "Anti-padrões: tudo junto 'para economizar turnos'; acoplados em sessões separadas; agrupar por aparência ('os dois são de validação'); 'não quebre as correções anteriores' no prompt"
+      ],
+      "checkpoint": "Pergunte em inglês: \"Fixing fee rounding changed the totals that currency conversion relies on; separately, the README setup section is outdated. How should you present these to Claude?\" (Esperado: rounding + conversion juntos numa mensagem detalhada que explica a dependência; README à parte, em sequência)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#3-o-padrão-entrevista-35"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "-p e achados estruturados com --output-format json + --json-schema (3.6)",
+      "pontos": [
+        "-p/--print: processa o prompt, imprime em stdout e sai; sem ele, claude abre a sessão interativa e o job de CI trava até o timeout",
+        "O sintoma vem disfarçado: 'morto aos 90 min sem saída', 'verde mas sem nenhum teste' (timeout ... || true). Não resolvem: timeout maior, --max-turns, pseudo-TTY, --output-format sozinho",
+        "--output-format json + --json-schema → a resposta conforme ao schema vem em structured_output; percorra o JSON de saída do teoria.md apontando structured_output.findings[0].file e .line",
+        "Para onde vai: o passo em C# lê structured_output.findings[] e posta cada item como comentário inline no PR (API de review comments), validando file/line contra o diff antes",
+        "Anti-padrões: regex na prosa; 'responda só JSON' ou few-shot do formato; segunda chamada para consertar; stream-json lendo a última linha (texto livre); dar gh/Bash ao Claude para postar sozinho",
+        "[volátil] Em -p ninguém responde prompt de permissão: o que não foi pré-aprovado é negado. Não é alvo de prova"
+      ],
+      "checkpoint": "Pergunte em inglês: \"A CI step runs `claude --output-format json \\\"Generate tests for ...\\\"` and is killed at the 90-minute limit with an empty output file. What is the flaw?\" (Esperado: falta -p; --output-format não torna a execução não interativa)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#5--p----print-claude-code-não-interativo-36"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "CLAUDE.md no CI, geração de testes e re-review após novos commits (3.6)",
+      "pontos": [
+        "Pelo guia, o CLAUDE.md do projeto é O mecanismo de contexto do Claude Code no CI: padrões de teste, convenções de fixtures, critérios de review. O claude -p carrega o CLAUDE.md como uma sessão local",
+        "Documentar padrões de teste, o que é um teste valioso e as fixtures disponíveis → testes melhores e menos saída de baixo valor (mostre o trecho de CLAUDE.md do teoria.md)",
+        "Arquivos de teste existentes no contexto → sem cenários duplicados: o Claude não evita o que não vê",
+        "Re-review após novos commits: achados anteriores no contexto + 'reporte só novos ou ainda não resolvidos'; o status still_open/new em structured_output decide entre responder na thread existente e abrir comentário novo",
+        "Anti-padrões: critérios colados no YAML ou numa skill invocada pelo prompt; CLAUDE.md tratado só como custo; dedupe por hash do texto; revisar só o último commit; rodar o review uma vez só",
+        "[volátil] A doc recomenda --bare para scripts, e ele pula o CLAUDE.md; na prova, o contexto do projeto no CI vem do CLAUDE.md"
+      ],
+      "checkpoint": "Pergunte em inglês: \"Nightly test generation keeps proposing scenarios that the suite already covers, although CLAUDE.md documents the fixtures. What is the most likely root cause?\" (Esperado: os arquivos de teste existentes não estão no contexto da geração)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#7-claudemd-o-contexto-do-projeto-no-ci-e-na-geração-de-testes-36"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Auto-revisão × instância independente (3.6, 4.6)",
+      "pontos": [
+        "Self-review limitation: o modelo retém o contexto de raciocínio da geração e tende a não questionar as próprias decisões na mesma sessão",
+        "Session context isolation (3.6): a sessão que gerou o código revisa pior que uma instância independente",
+        "Instância independente é mais eficaz que instruções de auto-revisão (checklist, 'seja crítico') e que extended thinking na mesma sessão: os dois rodam no contexto enviesado",
+        "Na prática: um segundo claude -p, sessão NOVA, recebendo só artefatos (diff, ticket, critérios do CLAUDE.md)",
+        "Pegadinhas: --resume da sessão geradora num segundo job (runner limpo não é contexto limpo); testes escritos pela própria geradora; 'qualquer review por Claude repete os pontos cegos, só humano serve'"
+      ],
+      "checkpoint": "Pergunte em inglês: \"A lead proposes enabling extended thinking on the same-session self-review step so that Claude catches subtle bugs in its own code. How do you evaluate this?\" (Esperado: rejeitar; revisar com uma instância independente, sem o raciocínio do gerador)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#9-auto-revisão--instância-independente-36-46"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Review multi-pass, confiança por achado e ponte com o Batch (4.6)",
+      "pontos": [
+        "PR grande numa passada só: diluição de atenção → profundidade desigual, bugs óbvios perdidos, achados contraditórios",
+        "Passes por arquivo (local, mesmo critério, paralelizável) + pass de integração separado (fluxo de dados entre arquivos); exemplo: produtor emite kelvin, consumidor compara com limiar em Celsius",
+        "Anti-padrões: janela ou modelo maior; consenso entre execuções; exigir PR menor; só passes por arquivo",
+        "Verification pass: o modelo reporta confiança POR ACHADO; limiares calibrados num conjunto rotulado roteiam a revisão: acima → posta direto; abaixo → fila humana (mostre structured_output.findings[i].confidence)",
+        "As três caras da confiança: filtrar achados no lugar de critério explícito (4.1) = errado; escalonar atendimento por confiança ou sentimento (5.2) = errado; por achado, calibrada, para rotear revisão humana (4.6/5.5) = certo",
+        "Ponte M03: passo bloqueante = síncrono; Batch só para o noturno, e não para tarefa que precisa de tool calling multi-turn (a menos que um script pré-extraia o conteúdo para um prompt de uma volta só)"
+      ],
+      "checkpoint": "Pergunte em inglês: \"Two reviewers can triage only 20 of the 60 findings the CI review produces each week. How should model confidence be used here, and which two uses of confidence would be wrong?\" (Esperado: verification pass com confiança por achado, calibrada num conjunto rotulado, para rotear; errado filtrar no lugar de critério e escalonar por confiança/sentimento)",
+      "ref": "09-claude-code-workflows-ci/teoria.md#11-verification-pass-com-confiança-por-achado-46"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação do Módulo 09 (15 questões)",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "15 questões curtas: exemplos concretos, testes primeiro, null em migração, entrevista, problemas que interagem, -p, json-schema, CLAUDE.md no CI, testes existentes, re-review, auto-revisão, instância independente, multi-pass e confiança por achado",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora",
+        "Meta: 70%"
+      ],
+      "checkpoint": "Comente o resultado e revise os tópicos com erro antes da prova",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-09/questions.json",
+      "ref": "09-claude-code-workflows-ci/teoria.md#tabela-de-decisão"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do Módulo 09 (20 questões em estilo de cenário)",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões no estilo do exame, sobretudo do cenário 5 (CI) e também dos cenários 2 e 4, com feedback por alternativa",
+        "Algumas são de múltipla resposta ('Choose TWO'): responda com letras separadas por vírgula",
+        "Na correção, explique por que cada alternativa errada é tentadora e qual anti-padrão ela representa",
+        "Aprovação: 70%"
+      ],
+      "checkpoint": "Analise os erros por task statement (3.5, 3.6, 4.6); se ficou abaixo de 70%, revise a cola de véspera e refaça",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-09/questions.json --id prova",
+      "ref": "09-claude-code-workflows-ci/teoria.md#cola-de-véspera"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento do Módulo 09",
+      "pontos": [
+        "D3 fechado: configuração (M08) + refinamento iterativo e CI (M09); 4.6 coberto junto com o CI",
+        "Quatro frases para levar: prosa inconsistente → exemplos; CI sem -p trava e achado vira structured_output; o contexto do CI vem do CLAUDE.md; quem gerou não revisa, e PR grande é por arquivo + integração",
+        "Próximo: Módulo 10, gestão de contexto, codebase grande e sessões (5.1, 5.4, 1.7)",
+        "Para começar: python3 engine/aula.py start Claude-Architect/10-contexto-e-sessoes/roteiro.json"
+      ],
+      "checkpoint": "Pergunte se ficou alguma dúvida e se o aluno quer seguir para o Módulo 10 agora",
+      "ref": "10-contexto-e-sessoes/teoria.md"
+    }
+  ]
+}

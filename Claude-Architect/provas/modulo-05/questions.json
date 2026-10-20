@@ -1,361 +1,441 @@
 {
-  "titulo": "Module 05 — Exam: MCP (scenario-style)",
+  "titulo": "Módulo 05 — Prova (estilo exame): MCP e tools nativas",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "At a fintech, each dev on the team added the Jira MCP server with `claude mcp add --transport http jira https://mcp.jira.internal/mcp`. A new dev clones the repository, and their Claude Code doesn't see Jira. What is the BEST fix?",
+      "pergunta": "Your developer productivity agent, built with the Claude Agent SDK for an industrial IoT company, loads MCP servers from the repository's .mcp.json. Last week the team moved the sensor-historian server from each engineer's ~/.claude.json into .mcp.json, with the header \"Authorization\": \"Bearer ${HISTORIAN_TOKEN}\". Since then, 8 of 12 engineers run the agent normally, but for the other 4 every historian tool call fails with HTTP 401. All 12 are on the same commit. What is the most likely root cause?",
       "opcoes": [
-        "Ask the new dev to copy the `~/.claude.json` of a colleague who already has Jira configured and working",
-        "Re-add it with `--scope project` (writes to the `.mcp.json` at the root) and commit the file",
-        "Put the server configuration in the project's `CLAUDE.md`",
-        "Add the server to `.claude/settings.local.json` and commit that file for the whole team"
+        "Variable expansion in .mcp.json applies only to the env block, so the Authorization header reaches the server as the literal placeholder text for everyone.",
+        "The four engineers never defined HISTORIAN_TOKEN in their own environment, because their token only existed inside the old user-level entry they had pasted it into.",
+        "A project-scoped server authenticates with the credentials of the engineer who committed .mcp.json, and that engineer's token lacks access for some of the users.",
+        "Their agent sessions call the historian tools before the server has finished connecting, so those early requests arrive unauthenticated and the server rejects them."
       ],
       "correta": 1,
-      "explicacao": "Without `--scope`, the default is local (only that dev, in `~/.claude.json`). For the whole team, project scope = a versioned `.mcp.json`.",
+      "explicacao": "${HISTORIAN_TOKEN} is expanded from the environment of whoever runs the agent, so each engineer must define the variable. The shared file works for engineers who already export it and fails with an authentication error for those whose token only lived in their old personal configuration. The fix is per-engineer environment setup, not a change to the shared file.",
       "feedbacks": [
-        "Copies someone else's personal settings (and possibly credentials); doesn't scale.",
-        "Correct.",
-        "CLAUDE.md holds instructions for the model, not server configuration.",
-        "That file isn't where MCP servers live and, by definition, it's personal (gitignored)."
-      ]
+        "Tempting if you assume expansion is limited to env, but the same header works for 8 engineers on the same commit, so the placeholder is being expanded wherever the variable exists.",
+        "Correct. Expansion reads each engineer's own environment; without the variable there is no token to send, which matches a consistent 401 for exactly those four users.",
+        "Misreads what a shared configuration shares: .mcp.json shares the server definition, not anyone's credential; each run expands the variable from the local environment.",
+        "A connection race would cause sporadic failures on early calls, not a 401 on every historian call for the same four people."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K2"
     },
     {
-      "pergunta": "A team added the entry `\"observability\": { \"url\": \"https://mcp.obs.example.com/mcp\" }` to `.mcp.json`. The server doesn't connect, and `/mcp` shows a startup failure. What should be fixed?",
+      "pergunta": "A municipal transit agency's platform team uses Claude Code daily. They built an internal MCP server for their documentation: about 600 pages organized in a hierarchy (APIs, GTFS feed specs, runbooks). The server exposes one tool, search_docs(query), which returns the top 5 matching snippets. Session logs show Claude making 7 to 11 search_docs calls with guessed keywords before it finds the right section, and sometimes citing a deprecated page. What is the main flaw in this design?",
       "opcoes": [
-        "Change the URL to `http://` instead of `https://`",
-        "Change the transport to SSE, which is the default for remote servers",
-        "Run Claude Code with `--debug` until the server connects",
-        "Declare `\"type\": \"http\"` in the entry"
+        "search_docs returns short snippets instead of full pages, so Claude cannot judge relevance from them and keeps searching until a snippet looks complete.",
+        "The search_docs description lacks example queries and boundaries, so Claude phrases its queries poorly and needs several attempts to land on a section.",
+        "The server offers too few tools; adding list_sections and get_page tools would let Claude browse the hierarchy level by level instead of guessing terms.",
+        "The documentation hierarchy is reachable only through search calls; nothing exposes it as a resource catalog Claude can see before it starts searching."
       ],
       "correta": 3,
-      "explicacao": "An entry with `url` but no `type` is read as stdio and fails. A remote server always declares `type`.",
+      "explicacao": "The guide treats MCP resources as the mechanism for exposing content catalogs such as documentation hierarchies, giving the agent visibility into what exists without exploratory tool calls. Here Claude has no map of the 600 pages, so every session starts with guessed searches. Exposing the hierarchy, including page status, as a resource lets Claude go straight to the right page.",
       "feedbacks": [
-        "Downgrading security doesn't fix the cause.",
-        "SSE is legacy and isn't the cause.",
-        "`--debug` helps diagnose; it doesn't fix anything.",
-        "Correct."
-      ]
+        "Returning full pages would add tokens to every call but still would not tell Claude which pages exist; the guessing comes from missing visibility, not snippet size.",
+        "A better description can improve query phrasing, but Claude would still be searching blind through a hierarchy it cannot see.",
+        "Browsing tools are a reasonable instinct, yet they keep the exploration as tool calls in every session, which is exactly the pattern resources are meant to remove.",
+        "Correct. A documentation hierarchy is a content catalog, which the guide places in MCP resources to avoid exploratory calls."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K4"
     },
     {
-      "pergunta": "A consulting firm wants to share, via git, the GitHub MCP server, which requires each dev's personal token. Which TWO practices meet this need? (Choose TWO.)",
+      "pergunta": "An engineer at a municipal transit agency asks Claude Code to change the retry delay for the fare-gateway client only. In services.yaml, the line retry_delay_ms: 200 appears in 6 different service blocks. The Edit call fails with an error saying the text was found 6 times, and Claude retries the identical Edit twice more with the same result. Which statement about this behavior is correct?",
       "opcoes": [
-        "In `.mcp.json`, use `\"headers\": { \"Authorization\": \"Bearer ${GITHUB_TOKEN}\" }`",
-        "Commit a service user's token in `.mcp.json`, since the repository is private and only the team has access",
-        "Put `.mcp.json` in `.gitignore` and send the file by email",
-        "Each dev defines `GITHUB_TOKEN` in their own environment (or uses OAuth via `/mcp`)",
-        "Store the token in `CLAUDE.md` so the model passes it on to the server"
+        "The Edit failed because services.yaml had not been read earlier in the session; running Read first and then repeating the same Edit call would let the change succeed.",
+        "Edit needs anchor text that appears exactly once; reading the full file and writing back a version with only the fare-gateway block changed is a reliable fallback.",
+        "Edit matches its anchor approximately, so the retries fail on whitespace differences; normalizing the indentation in the anchor would let one of them succeed.",
+        "Edit replaces every occurrence by default and refused to change all six blocks; running sed through Bash on the fare-gateway line is the expected fallback."
       ],
-      "corretas": [
-        0,
-        3
-      ],
-      "explicacao": "Secrets go in via `${VAR}` in the versioned file; the value comes from each dev's environment (or from OAuth).",
+      "correta": 1,
+      "explicacao": "Edit performs targeted modifications using unique text matching, so an anchor that appears in six blocks cannot identify the one to change, and repeating the identical call keeps failing. The guide's fallback is to Read the full file and Write back the modified content, changing only the intended block.",
       "feedbacks": [
-        "Correct: the file can be shared without the secret.",
-        "A private repository isn't a vault; a literal secret under version control leaks.",
-        "Loses the sharing and spreads the file through a worse channel.",
-        "Correct: completes the variable expansion.",
-        "Exposes the secret to the model's context and to the repository."
-      ]
+        "Plausible because some tools require a prior read, but the error states the text was found 6 times; the problem is uniqueness, not a missing read.",
+        "Correct. Unique anchor text is Edit's requirement; Read + Write is the reliable fallback when that requirement cannot be met.",
+        "Edit uses exact matching, not fuzzy matching; whitespace mismatches cause a not-found failure, while this error reports six matches.",
+        "Edit does not replace all occurrences by default, and sed on a pattern or a line number is fragile when the same line exists in six blocks."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S3"
     },
     {
-      "pergunta": "The productivity agent uses a database MCP server with the `run_query` tool. In the logs, before answering any question, it makes 15–20 calls trying to discover which tables and columns exist. What is the BEST improvement to the server?",
+      "pergunta": "At a municipal transit agency, support tickets quote the error text \"Stop ID not found in active feed\", which is defined as a string constant somewhere in the code. A developer wants Claude Code to find every place in the 4,000-file repository that produces this message. A teammate proposes having Claude run Glob with **/*stop*.* and then read the matched files, since stop-related code usually lives in files named after stops. How should you evaluate this proposal?",
       "opcoes": [
-        "Increase the per-turn call limit",
-        "Paste the full database schema into the system prompt of every session, so the model already knows the tables",
-        "Expose the schema and the table catalog as resources that can be browsed and read",
-        "Create a `guess_table` tool that tries to guess the table name"
-      ],
-      "correta": 2,
-      "explicacao": "Resources are read-only, browsable content; a catalog reduces blind exploratory calls.",
-      "feedbacks": [
-        "Allows more blind attempts instead of eliminating them.",
-        "Static and expensive: it spends context in every session, even when it isn't used.",
-        "Correct.",
-        "One more tool for guessing; the problem is the lack of a catalog."
-      ]
-    },
-    {
-      "pergunta": "A dev wants to test, only in the current project, an experimental MCP server that only she will use, without affecting the team or her other projects. How should she add it?",
-      "opcoes": [
-        "`claude mcp add` without `--scope` (local scope, the default)",
-        "`claude mcp add --scope project`",
-        "`claude mcp add --scope user`",
-        "Edit the project's `.mcp.json` and simply not commit that change"
+        "Reject it: the message is inside file contents, so Grep for the message text finds every file that produces it regardless of how that file is named.",
+        "Accept it: naming conventions are enforced in this repository, so files that produce stop errors will match the pattern and reading them is thorough.",
+        "Accept it with a change: run Glob with a broader pattern such as **/*.* first, then Read each matched file in batches and look for the message.",
+        "Reject it: have Claude Read every source file under services/ first, so it builds a full picture of where errors are raised before answering."
       ],
       "correta": 0,
-      "explicacao": "Local is the default: only you, only this project, stored in `~/.claude.json`.",
+      "explicacao": "Grep searches file contents for patterns such as error messages, function names, or imports; Glob only matches file paths. The message can be produced by any file, such as a shared errors module, a validator, or a controller, whatever its name. Grep for the literal text is the direct and complete approach.",
       "feedbacks": [
-        "Correct.",
-        "Would write to the shared `.mcp.json`.",
-        "Would apply to all of her projects.",
-        "Fragile: the versioned file stays dirty, and the server ends up committed by accident."
-      ]
-    },
-    {
-      "pergunta": "A dev uses a personal note-taking MCP server in every repository he works in and doesn't want to configure it repo by repo or expose it to his colleagues. Which scope?",
-      "opcoes": [
-        "local",
-        "project",
-        "managed",
-        "user"
+        "Correct. Locating an error message is a content search, which is exactly what Grep is for.",
+        "Relies on a naming convention to answer a content question; any file that raises the message under another name is silently missed.",
+        "Reading every matched file reproduces a content search by hand and floods the context; Grep performs that search directly.",
+        "Reading all files upfront wastes context and still depends on scanning by eye; a content search with Grep finds the occurrences first."
       ],
-      "correta": 3,
-      "explicacao": "User = all your projects, in `~/.claude.json`, without sharing.",
-      "feedbacks": [
-        "Local applies only to the current project.",
-        "Project shares with the team via git.",
-        "Managed is organization policy, set by the admin.",
-        "Correct."
-      ]
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-K1"
     },
     {
-      "pergunta": "A dev read that MCP's 'local' scope is personal and put the server definition in `.claude/settings.local.json`. The server doesn't show up. What is the explanation?",
+      "pergunta": "A consulting firm is building a customer support resolution agent with the Claude Agent SDK for a subscription retailer; backend access goes through custom MCP tools. Traces show that at the start of most conversations the agent spends 4 to 6 calls on search_policies and list_order_statuses just to learn which refund policies and order status codes exist, adding about 3 seconds before it addresses the customer. Which changes best give the agent visibility into this data without exploratory calls? Choose TWO.",
       "opcoes": [
-        "The file needs to be committed to the repository for Claude Code to start taking it into account",
-        "MCP's local scope lives in `~/.claude.json`, not in `settings.local.json`",
-        "Servers defined as local only work with the SSE transport, which must be declared in `type`",
-        "The server still needs to be approved with `/mcp`, since every new server needs approval before it shows up"
-      ],
-      "correta": 1,
-      "explicacao": "A classic trick: MCP's local scope ≠ `.claude/settings.local.json`.",
-      "feedbacks": [
-        "A local file is precisely what you don't commit, and it isn't where servers live.",
-        "Correct.",
-        "Scope and transport are independent.",
-        "There's nothing to approve: the server wasn't even read from that file."
-      ]
-    },
-    {
-      "pergunta": "A company's internal MCP server requires an SSO token that expires every 60 minutes. Today the devs paste the token into `headers` and, every hour, the server stops responding. What is the BEST solution?",
-      "opcoes": [
-        "Ask the security team for long-lived, non-expiring tokens specific to the MCP server",
-        "Switch the transport to stdio",
-        "Use `headersHelper` with a command that obtains a fresh token each time the headers are generated",
-        "Restart Claude Code every hour"
-      ],
-      "correta": 2,
-      "explicacao": "`headersHelper` generates the headers dynamically: it's the mechanism for short-lived credentials.",
-      "feedbacks": [
-        "Weakens security to work around a configuration problem.",
-        "The server is remote; changing the transport doesn't apply.",
-        "Correct.",
-        "A manual stopgap that doesn't solve anything."
-      ]
-    },
-    {
-      "pergunta": "A dev clones an open-source repository whose `.mcp.json` declares a stdio server that runs `node scripts/server.js`. Which TWO statements are correct? (Choose TWO.)",
-      "opcoes": [
-        "The server runs automatically as soon as Claude Code opens, without asking anything",
-        "Servers coming from `.mcp.json` (project scope) ask for approval in the interactive session before running",
-        "To speed up onboarding, the recommendation is to pre-approve all project servers on every machine on the team",
-        "The server is ignored because `.mcp.json` only accepts remote servers",
-        "The approval exists because the file can start an arbitrary process; review the command first"
+        "Add a get_policy_catalog tool and instruct the agent in the system prompt to call it first in every conversation, before any other tool.",
+        "Expose the refund policy index (titles, sections, effective dates) as an MCP resource that the agent reads when a conversation starts.",
+        "Cache search_policies results across conversations and replay them for new customers whose questions look similar to earlier ones.",
+        "Paste the full text of all 140 refund policy documents into the system prompt, so that the agent never needs to search for a policy.",
+        "Expose the catalog of order status codes and their meanings as an MCP resource instead of discovering them through list_order_statuses."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Project servers ask for approval: a repository can't run processes on your machine without consent.",
+      "explicacao": "Refund policies and status codes are content catalogs: they describe what data exists rather than performing actions. Exposing them as MCP resources gives the agent that visibility up front and removes the exploratory calls at the start of each conversation. Actions such as process_refund remain tools.",
       "feedbacks": [
-        "Exactly what the approval prevents.",
-        "Correct.",
-        "Removes the protection against untrusted repositories.",
-        "`.mcp.json` accepts both stdio (`command`/`args`/`env`) and remote servers.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A .NET dev wrote a stdio MCP server with the `ModelContextProtocol` SDK. The server connects and drops right afterward, with a parse error on the client. The code uses `Console.WriteLine` to log each request. What is the likely cause?",
-      "opcoes": [
-        "In stdio, stdout is the JSON-RPC channel; logs need to go to stderr",
-        "The C# SDK only supports Streamable HTTP",
-        "`\"type\": \"stdio\"` wasn't declared in `.mcp.json`",
-        "The server needs to implement the sampling primitive to be accepted by Claude Code"
+        "Moves the exploration into a single tool call but still spends a call in every conversation, which is the pattern resources are designed to replace.",
+        "Correct. A policy index is a content catalog; as a resource it shows the agent what exists without a search call.",
+        "Speculative caching across customers risks serving stale or wrong policy data and still does not show the agent what exists.",
+        "Gives visibility at a high, constant token cost and goes stale when policies change; a catalog resource is targeted and current.",
+        "Correct. Status codes and their meanings are reference catalog data that fits an MCP resource."
       ],
-      "correta": 0,
-      "explicacao": "With the stdio transport, any text on stdout corrupts the JSON-RPC messages; log to stderr.",
-      "feedbacks": [
-        "Correct.",
-        "The SDK supports stdio (`WithStdioServerTransport`).",
-        "With `command`, stdio is implicit; that doesn't explain the parse error.",
-        "Sampling is optional, and it's a client primitive."
-      ]
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S5"
     },
     {
-      "pergunta": "A SaaS company publishes a remote MCP server that authenticates users with OAuth 2.0. How should devs configure it in Claude Code?",
+      "pergunta": "At an industrial IoT company, 30 engineers share a repository whose .mcp.json defines the team's MCP servers for Claude Code and for the internal Agent SDK productivity agent. One engineer wants to try an experimental MCP server that wraps her vibration-analysis notebooks. It is unstable, only she needs it, and she wants it available in all of her repositories without affecting teammates. Which actions fit this situation? Choose TWO.",
       "opcoes": [
-        "As stdio, passing the manually obtained OAuth token in the `env` variable",
-        "As SSE, which is the remote transport that supports the OAuth flow in Claude Code",
-        "With `headers` containing the dev's username and password encoded in base64",
-        "As Streamable HTTP (`\"type\": \"http\"`), authenticating via `/mcp` in the session"
-      ],
-      "correta": 3,
-      "explicacao": "Streamable HTTP is the remote transport with OAuth; login is done via `/mcp`, and Claude Code stores and refreshes the token.",
-      "feedbacks": [
-        "The server is remote; stdio is a local process.",
-        "SSE is legacy; OAuth is in Streamable HTTP.",
-        "A literal credential, and without the OAuth flow the server requires.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A bank's security team wants to ensure that devs use only MCP servers approved by the company, without depending on each person configuring things correctly. Which mechanism?",
-      "opcoes": [
-        "A `.mcp.json` in each company repository listing only the servers approved by security",
-        "A rule in the company's `CLAUDE.md` forbidding other servers",
-        "Managed configuration (organization policy) with the allowed/denied servers",
-        "User scope configured on each dev's machine"
-      ],
-      "correta": 2,
-      "explicacao": "Managed is the governance scope pushed by the admin; it applies regardless of what the dev configures.",
-      "feedbacks": [
-        "Devs can still add local/user servers on the side.",
-        "A prompt is probabilistic; a security rule goes in configuration/code.",
-        "Correct.",
-        "Depends on each person and can be changed by the dev."
-      ]
-    },
-    {
-      "pergunta": "An MCP server's `get_logs` tool returns ~60k tokens of raw logs; Claude Code shows a warning and truncates the output, and the agent loses the part with the error. What is the BEST architectural fix?",
-      "opcoes": [
-        "Increase `MAX_MCP_OUTPUT_TOKENS` to 100k, so the entire log fits without truncation",
-        "Have the server filter and paginate (level, time range, limit) and return only what's relevant",
-        "Ask the model to ignore the first lines of the log",
-        "Switch the transport to Streamable HTTP, which has no limit"
-      ],
-      "correta": 1,
-      "explicacao": "[the numbers are volatile] MCP output is subject to a warning and truncation. The architect's fix is for the server to return less, in a more useful form.",
-      "feedbacks": [
-        "Helps in isolated cases, but floods the context and degrades the rest of the session.",
-        "Correct.",
-        "The text has already arrived truncated; the model can't recover what was cut.",
-        "The limit belongs to the host, not the transport."
-      ]
-    },
-    {
-      "pergunta": "A documentation MCP server needs to generate a summary of a long document before returning it, but the company doesn't want the server to have its own LLM API key. Which primitive makes this possible?",
-      "opcoes": [
-        "Sampling: the server requests a completion from the host's model",
-        "Elicitation: the server asks the user for the summary",
-        "Resources: the server publishes the entire document, and the model reads and summarizes it",
-        "Roots: the server requests access to the document's directory"
-      ],
-      "correta": 0,
-      "explicacao": "Sampling lets the server request completions from the host's model, without credentials of its own.",
-      "feedbacks": [
-        "Correct.",
-        "Elicitation asks the user for input, not the model.",
-        "It would handle the reading, but it doesn't generate the summary inside the server.",
-        "Roots deals with access boundaries, not generation."
-      ]
-    },
-    {
-      "pergunta": "An infrastructure MCP server has a `delete_environment` tool. Before deleting, it needs the user to type the environment's name to confirm, in the middle of execution. Which protocol primitive?",
-      "opcoes": [
-        "Sampling",
-        "Server prompts",
-        "Roots",
-        "Elicitation"
-      ],
-      "correta": 3,
-      "explicacao": "Elicitation: the server asks the user for input/confirmation through the client during the operation.",
-      "feedbacks": [
-        "Sampling requests a completion from the model, which can't confirm on the user's behalf.",
-        "Prompts are templates invoked by the user, not a confirmation in the middle of execution.",
-        "Roots defines URI/filesystem boundaries.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "In a support agent that consumes three MCP servers (orders, CRM, logistics) via the Agent SDK, which TWO statements about the architecture are correct? (Choose TWO.)",
-      "opcoes": [
-        "Before listing tools, each client sends `initialize`, negotiating version and capabilities",
-        "The model opens the connections to the three servers and sends `tools/call` directly to each of them",
-        "The host maintains three clients, one per server",
-        "A single client multiplexes the three servers, to save connections and simplify authentication",
-        "`tools/call` can be sent before `initialize` if the tool is already known"
+        "Leave the team's .mcp.json unchanged for now, and propose the server there through a pull request once it is stable and useful.",
+        "Configure the server in her user-level ~/.claude.json, so it is available in every project she opens and is never committed.",
+        "Add the server to the repository's .mcp.json on a personal feature branch, so it loads only while she has that branch checked out locally.",
+        "Describe the server's command and arguments in her ~/.claude/CLAUDE.md, so that Claude starts it whenever one of her tasks needs it.",
+        "Add the server to .mcp.json with an \"experimental\": true flag, so Claude Code loads it only for the engineer who added the entry."
       ],
       "corretas": [
         0,
-        2
+        1
       ],
-      "explicacao": "A host with one client per server (1:1); each connection starts with the `initialize` → `notifications/initialized` handshake.",
+      "explicacao": "The guide places personal or experimental MCP servers in user-scoped ~/.claude.json and shared team tooling in the project's .mcp.json. User-level configuration is available across her projects and is not version-controlled, so teammates are unaffected. If the server later becomes useful to the team, it moves to .mcp.json through normal review.",
       "feedbacks": [
-        "Correct.",
-        "The model emits `tool_use`; it's the host's client that speaks JSON-RPC with the server.",
-        "Correct.",
-        "The architecture is 1:1.",
-        "The handshake is mandatory before any operation."
-      ]
+        "Correct. The shared file stays reserved for team tooling, and promoting the server later through a pull request keeps it reviewed.",
+        "Correct. User-level ~/.claude.json is the guide's place for personal and experimental servers.",
+        "A branch keeps it out of main but ties it to one repository and to whoever checks out the branch; she wants it everywhere and only for herself.",
+        "CLAUDE.md holds instructions for the model, not MCP server configuration; describing a command does not connect a server.",
+        "There is no such flag; anything in the shared .mcp.json is loaded for everyone who pulls the file."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S2"
     },
     {
-      "pergunta": "The SRE team wants to distribute, through its own incidents MCP server, a standardized investigation playbook that devs trigger whenever they want, like a command. Which primitive should they use?",
+      "pergunta": "A transit agency team is changing the signature of computeFare() in pricing/engine.ts. Claude Code ran Grep for computeFare, found 3 call sites, and updated them all, yet the build then broke in 11 other files. It turns out pricing/index.ts re-exports the function as calculateTripFare and legacyFare. Before retrying the change, the team debates how Claude should find every usage. Which approach should they choose?",
       "opcoes": [
-        "An `investigate_incident` tool that the model decides to call when it sees fit",
-        "A resource with the playbook in markdown",
-        "A server prompt, which becomes the slash command `/mcp__incidents__<name>`",
-        "Elicitation asking the dev to paste the playbook"
+        "Grep again for computeFare with a case-insensitive pattern across all packages, so that differently capitalized spellings of the call are also found.",
+        "Glob for **/*fare*.ts to list every file whose name suggests fare logic, then have Claude Read each of those files to find the remaining calls.",
+        "Read the wrapper module to list every name under which the function is exported, then Grep the codebase for each one of those names.",
+        "Have Claude Read every file in the src/ tree before editing, so it sees each usage directly, whatever name or import path that file uses."
       ],
       "correta": 2,
-      "explicacao": "Prompts are reusable templates invoked by the user; in Claude Code they become slash commands.",
+      "explicacao": "When a wrapper module re-exports a function under other names, consumers call those names, so a Grep for the original name misses them. The guide's approach is to identify all exported names first and then search for each across the codebase. This finds the 11 files without loading the whole tree into context.",
       "feedbacks": [
-        "A tool is chosen by the model; the requirement is explicit invocation by the user.",
-        "It would be read-only; it doesn't become an invocable command.",
-        "Correct.",
-        "Inverts the flow: the playbook should come from the server."
-      ]
-    },
-    {
-      "pergunta": "A dev has a `docs` server defined in the project's `.mcp.json` pointing to production, and also a `docs` server in local scope pointing to a test server. Which one does Claude Code use in this project?",
-      "opcoes": [
-        "The one in `.mcp.json`, because project always wins",
-        "The local-scope one, because local > project > user",
-        "Both, automatically renamed to `docs` and `docs-1`",
-        "Neither; duplicate names disable the server"
+        "Case-insensitivity does not catch aliases; calculateTripFare and legacyFare share no spelling with computeFare.",
+        "File names say nothing about which code calls the function; consumers in other folders are missed and the reads cost context.",
+        "Correct. Listing the wrapper's exported names and searching for each one traces usage through the re-export.",
+        "Reading the whole tree upfront floods the context and dilutes attention; a targeted Grep for each exported name is precise."
       ],
-      "correta": 1,
-      "explicacao": "With identical names, the more specific scope wins: local > project > user.",
-      "feedbacks": [
-        "Inverts the precedence.",
-        "Correct.",
-        "There is no automatic renaming.",
-        "Nothing gets disabled; precedence applies."
-      ]
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S5"
     },
     {
-      "pergunta": "A dev runs `claude mcp add spreadsheets npx -y @company/spreadsheets-mcp` and gets an unknown option error for `-y`. How should it be fixed?",
+      "pergunta": "Your Agent SDK productivity agent at an industrial IoT company updates device configuration files of 1,500 to 2,500 lines with many operator comments. Today it reads a file and uses Write to save the full new version, even to change a single threshold. Reviewers report diffs touching hundreds of lines and, in 2 of the last 40 changes, deleted comments. The new requirement is that a single-setting change touches only that setting. What should you change?",
       "opcoes": [
-        "`claude mcp add spreadsheets -- npx -y @company/spreadsheets-mcp`",
-        "`claude mcp add --transport http spreadsheets npx -y @company/spreadsheets-mcp`",
-        "`claude mcp add --scope project spreadsheets npx -y @company/spreadsheets-mcp`",
-        "Remove `-y` and confirm the installation manually every time"
+        "Have the agent use Edit for single-setting changes to existing files, matching unique anchor text around the setting, and keep Write for new files.",
+        "Keep Write, but instruct the agent in the system prompt to reproduce every unchanged line and comment exactly as it appeared in the original.",
+        "Have the agent apply single-setting changes through Bash with sed commands on the setting name, so only matching lines in the file are rewritten.",
+        "Add a hook that intercepts Write calls and rejects any whose diff exceeds 20 lines, so oversized rewrites are blocked before reviewers see them."
       ],
       "correta": 0,
-      "explicacao": "`--` separates `claude`'s options from the stdio server's command; without it, `-y` is read as a `claude` flag.",
+      "explicacao": "Read and Write operate on whole files, while Edit makes targeted modifications using unique anchor text. For a one-setting change in a large existing file, Edit changes only the matched text and leaves comments and ordering untouched, which produces the minimal diff reviewers want. Write remains the right tool for creating new files.",
       "feedbacks": [
-        "Correct.",
-        "It's a local stdio server; HTTP requires a URL.",
-        "Scope doesn't solve the flag parsing.",
-        "Works around the problem instead of fixing it, and breaks in non-interactive use."
-      ]
+        "Correct. Targeted modifications are Edit's job; Write is for full-file operations such as creating new files.",
+        "A prompt instruction is probabilistic; rewriting 2,000 lines from memory will still occasionally drop or alter comments.",
+        "sed on a setting name rewrites every matching line and bypasses the built-in editing tools; the same key can appear in several sections.",
+        "Blocking large writes stops the symptom but leaves the agent without a way to make the small change; the fix is choosing the right tool."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-K3"
     },
     {
-      "pergunta": "A dev connected 9 MCP servers to Claude Code and realizes that the tool definitions would take up a good part of the context. He is thinking about removing servers he uses only occasionally. What should he consider first?",
+      "pergunta": "A transit agency's developers use two MCP servers in Claude Code, both written in-house: jira-mcp, which wraps their standard Jira Cloud instance, and gtfs-validator, which runs the agency's own feed-quality rules. Over 4 months, jira-mcp broke after three Jira API changes, still lacks sprint and custom-field support, and costs two engineers about a day per week. gtfs-validator has needed almost no maintenance. What is the most likely root cause of the Jira problems?",
       "opcoes": [
-        "Remove the least-used servers, since that's the only way to save context in Claude Code",
-        "Merge the 9 servers into one so there's only a single client",
-        "Ask in CLAUDE.md for the model to ignore the tools from the rarely used servers",
-        "Rely on MCP tool search, which loads the definitions on demand"
+        "jira-mcp's tool descriptions are too short, so Claude calls the wrong Jira tools and developers spend their time investigating the failed calls.",
+        "The team built and maintains its own server for a standard integration that existing community Jira MCP servers already cover and keep current.",
+        "jira-mcp is configured in the project's .mcp.json, so every developer's session hits it; per-user configuration would isolate the failures.",
+        "jira-mcp returns a generic error message instead of setting isError with a category, so Claude cannot recover when the Jira API changes."
+      ],
+      "correta": 1,
+      "explicacao": "Jira is a standard integration, and the guide recommends choosing existing community MCP servers for those, reserving custom servers for team-specific workflows like the feed validator. Owning a Jira wrapper puts every API change and missing feature on the team, which matches the symptoms. Adopting a community server removes that burden while gtfs-validator stays custom.",
+      "feedbacks": [
+        "Better descriptions help tool selection, but they do not explain breakages after API changes or the missing sprint and custom-field support.",
+        "Correct. The maintenance cost comes from reimplementing a standard integration that community servers already provide.",
+        "Scope decides who receives the configuration; moving it to per-user config would spread drift without fixing the server itself.",
+        "Structured errors would improve recovery from individual failures, but they cannot keep a homemade wrapper current with Jira's API."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S4"
+    },
+    {
+      "pergunta": "An industrial IoT company's developer productivity agent, built with the Claude Agent SDK, is configured with three MCP servers: firmware-repo, device-registry, and ticketing. To reduce token usage, a design doc proposes a select_server tool: the agent first names the server it needs, and the application restarts the session connected only to that server. Engineers' tasks often combine a ticket, a firmware diff, and a device lookup. What is the main flaw in this design?",
+      "opcoes": [
+        "The switch should be done by a hook that intercepts each tool call and connects the matching server on demand, rather than by a tool the model must call.",
+        "The three servers should first be merged into one custom MCP server, so that the agent sees a single tool list and never has to choose among servers.",
+        "select_server needs a detailed description of which tasks belong to each server, or the agent will often pick the wrong server at the start of a task.",
+        "It assumes the agent works with one server at a time, but tools from all configured servers are discovered at connection and are available together."
       ],
       "correta": 3,
-      "explicacao": "[the details are volatile] In Claude Code, MCP tool search is on by default and avoids loading all the definitions up front.",
+      "explicacao": "Tools from every configured MCP server are discovered when the agent connects and are available simultaneously, so the agent can combine ticketing, firmware, and registry tools in one task. The switcher adds turns, discards context on every restart, and breaks cross-server tasks to solve a problem that does not exist. Keep all three servers connected and rely on clear tool descriptions.",
       "feedbacks": [
-        "Loses capability unnecessarily.",
-        "A lot of rework; and one client per server is the architecture, not the problem.",
-        "The definitions would still take up context; a prompt doesn't remove tools.",
-        "Correct."
-      ]
+        "Moves the switching into a hook but keeps the false premise that only one server can be active; cross-server tasks still break.",
+        "Merging servers is heavy rework for nothing; the agent already sees the tools of all configured servers in one set.",
+        "A better description would make the switch more accurate, but the switch itself is unnecessary and costly.",
+        "Correct. Simultaneous access to every configured server is the default, so a selection step only adds restarts and lost context."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K3"
+    },
+    {
+      "pergunta": "At an industrial IoT company, an engineer asks the Agent SDK productivity agent where the firmware logs \"E-4417 sensor checksum mismatch\". The agent runs Glob with **/*checksum*, gets no matches, and replies that the message does not exist in the codebase. A teammate then finds it on line 212 of telemetry/ingest/frame_parser.c. Which statement about the agent's behavior is correct?",
+      "opcoes": [
+        "The conclusion was reasonable: an empty Glob result usually means the message is assembled at runtime from a template, so no search tool could find it.",
+        "Glob missed the file because its pattern does not reach nested folders; a deeper pattern such as **/**/*checksum* would have matched frame_parser.c.",
+        "Glob matches file paths rather than contents; finding an error message calls for Grep over file contents, which finds the line whatever the file name is.",
+        "The agent should have used Read on the telemetry directory, since Read opens every file in a folder and lets the model scan their contents together."
+      ],
+      "correta": 2,
+      "explicacao": "Glob finds files by name or extension patterns and never looks inside them. frame_parser.c has no 'checksum' in its name, so an empty result says nothing about the message. Grep searches contents and is the tool for locating error messages, function callers, and imports.",
+      "feedbacks": [
+        "An empty Glob result only says that no file name matched; it is no evidence about runtime templates.",
+        "** already matches any depth; the file was missed because its name does not contain the word, not because of nesting.",
+        "Correct. This is a content search, so Grep is the right tool and file names are irrelevant.",
+        "Read loads a specific file, not a whole directory, and scanning folders by reading wastes context compared with Grep."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S1"
+    },
+    {
+      "pergunta": "A transit agency's developers connect Claude Code to an internal MCP server, code-intel, whose find_references tool resolves symbol references across all 14 service repositories, including generated API clients. Its description reads \"Finds references.\" For questions like \"who calls ScheduleBuilder.Publish?\", Claude uses Grep in the local repository about 70% of the time and misses callers in other repositories. A lead proposes adding \"Always use code-intel instead of Grep\" to the project CLAUDE.md. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: CLAUDE.md is loaded in every session, so a project-wide rule is the most direct and reliable way to make Claude pick code-intel.",
+        "Reject it, and instead deny Grep in the project permissions so that Claude has no choice but to call find_references for every search.",
+        "Reject it, and instead add a hook that rewrites every Grep call into a find_references call, so routing no longer depends on the model.",
+        "Reject it, and instead rewrite the description of find_references to explain its cross-repository, symbol-aware coverage and its output."
+      ],
+      "correta": 3,
+      "explicacao": "Claude chooses tools mainly from their descriptions, and \"Finds references.\" gives no reason to prefer the MCP tool over the familiar Grep. Describing its capabilities (cross-repository, symbol-aware, generated clients) and its outputs lets Claude choose it for caller questions while still using Grep for literal text. A blanket \"always\" rule is a keyword-style instruction that also misroutes searches Grep handles well.",
+      "feedbacks": [
+        "Tempting because it is quick, but a blanket rule does not tell Claude when the tool fits and pushes plain text searches to the wrong tool.",
+        "Removing Grep breaks legitimate content searches, such as log messages and string literals, that find_references does not handle.",
+        "A rewriting hook is over-engineered and forces symbol search onto queries that need plain text matching.",
+        "Correct. Detailed descriptions of capabilities and outputs are how the guide keeps the agent from preferring built-in tools over a more capable MCP tool."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S3"
+    },
+    {
+      "pergunta": "A consulting firm's 9 developers build a customer support resolution agent with the Claude Agent SDK and test it from Claude Code. The backend MCP server (get_customer, lookup_order, process_refund, escalate_to_human) is currently added by each developer to their own ~/.claude.json. Three different server URLs are now in use, and a new hire spent two days without the tools. The constraints are one shared definition, reviewed changes, and no credentials in git. What is the most effective fix?",
+      "opcoes": [
+        "Publish the canonical server URL in the onboarding guide and ask every developer to update their own ~/.claude.json entry so that it matches.",
+        "Describe the backend server and its URL in the project's CLAUDE.md, so that Claude Code knows which server to connect to in every session.",
+        "Define the server once in a project-scoped .mcp.json committed to the repository, referencing its token through an environment variable.",
+        "Run a nightly script that copies a canonical ~/.claude.json to every developer machine, so that all user-level entries stay identical."
+      ],
+      "correta": 2,
+      "explicacao": "Project-level .mcp.json is the guide's place for shared team tooling: it is version-controlled, so every developer who clones or pulls gets the same reviewed definition. Credentials stay out of git through environment variable expansion. User-level ~/.claude.json is for personal or experimental servers, which is why the drift and the onboarding gap appeared.",
+      "feedbacks": [
+        "Pushes the burden onto each developer and does nothing to stop the next drift or the next onboarding gap.",
+        "CLAUDE.md gives instructions to the model; it does not configure or connect MCP servers.",
+        "Correct. A committed project .mcp.json gives one reviewed definition, and ${VAR} keeps the token out of the repository.",
+        "Overwriting personal configuration nightly is fragile, clobbers other user-level servers, and bypasses code review."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K1"
+    },
+    {
+      "pergunta": "An engineer at an industrial IoT company asks the Agent SDK productivity agent to list every device profile in a 3,400-file monorepo before an audit. Profiles follow the naming convention <model>.profile.yaml and sit in about 60 folders. The agent ran Grep for the key \"profile:\" and returned 900 hits mixing docs, tests, and unrelated YAML files. What is the most effective first step to get the list?",
+      "opcoes": [
+        "Use Glob with the pattern **/*.profile.yaml to list every file that follows the profile naming convention, wherever it sits in the repo.",
+        "Refine the Grep to the key \"device_profile:\" and exclude the docs and tests folders, then deduplicate the matching files from the results.",
+        "Run ls -R from the repository root through Bash and have the agent scan the complete listing for file names that look like device profiles.",
+        "Spawn a subagent per top-level folder to read its YAML files and report which are device profiles, then merge what the subagents return."
+      ],
+      "correta": 0,
+      "explicacao": "The audit asks which files follow a naming pattern, which is a path question, so Glob is the direct tool: a recursive pattern returns every <model>.profile.yaml regardless of folder. Grep searches contents and returns lines matching a key, which mixes in unrelated files and can miss profiles with a different key layout.",
+      "feedbacks": [
+        "Correct. Finding files by name or extension pattern is exactly what Glob does.",
+        "Still answers a naming question with a content search; any profile with a different key layout is missed, and the results stay noisy.",
+        "Works in principle, but dumps thousands of paths into context for the model to filter by eye; Glob filters by pattern directly.",
+        "Over-engineered: several agents reading files to recover information that a single path pattern returns."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-K2"
+    },
+    {
+      "pergunta": "An industrial IoT company wants its Agent SDK productivity agent to explain how an overheating alarm travels from a sensor reading to an operator notification in a 1,800-file legacy SCADA codebase. Design 1 loads all ~240 files in alarms/, notify/, and core/ into context at the start. Design 2 has the agent search for entry points and follow the code from there. Which approach should you choose?",
+      "opcoes": [
+        "Design 2: Grep for entry points, such as where readings are compared with thresholds, Read those files, then follow imports and calls to trace the flow.",
+        "Design 1: loading the three folders upfront makes indirect calls visible from the start, so the explanation does not skip any step of the alarm flow.",
+        "Design 1, with a twist: read all ~240 files first, but have the agent summarize each into a scratchpad file before it starts answering the question.",
+        "Design 2, with a change: use Glob for files whose names contain alarm to find the entry points, then Read every match to trace the alarm flow."
+      ],
+      "correta": 0,
+      "explicacao": "The guide recommends building codebase understanding incrementally: start with Grep to find entry points, then use Read to follow imports and trace flows, rather than reading all files upfront. Loading 240 files fills the context with code unrelated to this flow and dilutes attention. Glob cannot identify entry points because it does not look at code content.",
+      "feedbacks": [
+        "Correct. Grep finds where the flow starts and Read follows it, keeping only relevant code in context.",
+        "Feels thorough, but most of the 240 files are unrelated to this alarm path, and loading them all degrades attention to the parts that matter.",
+        "Summarizing still requires reading every file upfront; the scratchpad adds cost without changing the approach.",
+        "File names do not reveal where the flow starts; entry points are found by searching code content, not file names."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S4"
+    },
+    {
+      "pergunta": "Your Agent SDK productivity agent at an industrial IoT company reads the repository's .mcp.json, which contains this entry: \"fleet-api\": { \"command\": \"npx\", \"args\": [\"-y\", \"fleet-mcp\"], \"env\": { \"FLEET_API_KEY\": \"fk_live_8c1e...\" } }. A security review requires that no credentials live in the repository, that every engineer uses their own key, and that the server definition stays shared and reviewed. What should you change?",
+      "opcoes": [
+        "Move the fleet-api entry into each engineer's ~/.claude.json with that engineer's own key, and remove it from the repository's .mcp.json.",
+        "Replace the literal value with \"${FLEET_API_KEY}\" in .mcp.json and have each engineer and the CI job define FLEET_API_KEY in their environment.",
+        "Move the key into the env block of the versioned .claude/settings.json, so that .mcp.json itself stays free of credentials and shared.",
+        "Commit a template of ~/.claude.json with a placeholder key to the repository, and have each engineer copy it home and fill in their own key."
+      ],
+      "correta": 1,
+      "explicacao": "Environment variable expansion in .mcp.json keeps the shared definition in version control while each engineer, and the CI job, supplies their own key from their environment. That satisfies all three requirements at once. Moving entries to user-level configuration keeps secrets out of git but loses the shared, reviewed definition.",
+      "feedbacks": [
+        "Meets the no-credentials rule but breaks the shared, reviewed definition; each engineer now maintains a separate copy.",
+        "Correct. ${FLEET_API_KEY} keeps the definition shared and the secret in each engineer's environment.",
+        "Only moves the secret into another committed file, and everyone would still share one key instead of using their own.",
+        "Keeps keys out of git, but what actually loads is a hand-copied user-level file that drifts; the reviewed template is not the active definition."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S1"
+    },
+    {
+      "pergunta": "A transit agency developer asks Claude Code to update all snapshot tests for the timetable UI, which follow the naming convention *.snap.test.ts. Afterward, only 9 of the 31 such files were changed. The transcript shows Claude ran Grep for toMatchSnapshot inside src/timetable/ and edited the files it returned. The other 22 live under packages/*/__tests__/, and several of them use toMatchInlineSnapshot. What is the most likely root cause?",
+      "opcoes": [
+        "Claude's context filled up while it edited the first files, so the session stopped before reaching the snapshot tests stored in other packages.",
+        "The project lacks a path-specific rule for test files, so Claude did not know where snapshot tests are stored in this repository's folder layout.",
+        "The change should have run in plan mode, which explores every directory first and would have listed all 31 snapshot test files before editing.",
+        "Claude selected files by searching content in one folder instead of matching the naming pattern; Glob for **/*.snap.test.ts returns all 31."
+      ],
+      "correta": 3,
+      "explicacao": "The task defined its targets by file name, so the right selection is a path pattern: Glob with **/*.snap.test.ts finds every matching file in any folder. A content search for one assertion in one directory both narrowed the location and missed files using a different assertion style. Grep is for content questions; Glob is for naming patterns.",
+      "feedbacks": [
+        "Nothing points to context exhaustion: Claude edited every file its search returned; the search itself was scoped to one folder and one assertion name.",
+        "Path-specific rules load conventions while editing matching files; they do not make Claude find files it never selected.",
+        "Plan mode helps with architectural changes; this is a tool-selection problem that Glob solves directly.",
+        "Correct. Matching files by naming pattern is Glob's job, regardless of folder or assertion style."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S2"
+    },
+    {
+      "pergunta": "An industrial IoT company's Agent SDK productivity agent must change poll_interval_ms from 500 to 250 only in the [modbus-line-3] block of gateway.conf. The line poll_interval_ms = 500 appears in 9 blocks. The agent's Edit call fails with an error reporting 9 matches, and the agent repeats the same Edit twice before giving up. Which statements about this failure and how to handle it are correct? Choose TWO.",
+      "opcoes": [
+        "Loading the full file with Read and writing back the modified content with Write is a reliable fallback when Edit lacks unique anchor text.",
+        "Retrying the identical Edit call can succeed on a later attempt, because the tool picks a different occurrence of the anchor each time it runs.",
+        "Running sed -i on the poll_interval_ms line through Bash is the safest fallback, because it rewrites only the lines that match its pattern.",
+        "Edit requires its anchor text to appear exactly once in the file, so a line that is repeated across nine blocks cannot be targeted as written.",
+        "The failure means gateway.conf was not read earlier in the session, so a Read followed by the same Edit call will apply the change correctly."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Edit makes targeted modifications using unique text matching, so an anchor that appears nine times cannot identify the block to change, and repeating the call fails the same way. The guide's fallback is Read + Write: load the full file, change only the [modbus-line-3] block, and write the result back.",
+      "feedbacks": [
+        "Correct. Read + Write is the guide's fallback when Edit cannot find unique anchor text.",
+        "Edit is deterministic; the same non-unique anchor produces the same failure every time.",
+        "The pattern matches all nine blocks, so sed would change every one of them, not only [modbus-line-3].",
+        "Correct. Uniqueness of the anchor is Edit's requirement, and the error says it was not met.",
+        "A missing read would produce a different failure; this error reports nine matches, which a Read does not change."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-K4"
+    },
+    {
+      "pergunta": "Before deprecating reserveSeat(), a transit agency developer asks Claude Code for every caller in a 5,200-file repository. Because the function is defined in booking/, Claude reads the 38 files in that folder and reports 6 callers. In review, QA finds 4 more callers in reporting/ and api/handlers/, in files whose names never mention booking. Which statement about this outcome is correct?",
+      "opcoes": [
+        "Finding callers is a content search; Grep for reserveSeat( across the repository returns every file and line that calls it, wherever the file sits.",
+        "Reading folder by folder beats Grep for callers, because Grep misses calls split across lines; Claude should have extended its reading to every folder.",
+        "Glob should have come first, using **/*booking* to find files related to the feature; reading those files would then have exposed every caller.",
+        "The missed callers show that built-in tools cannot cope with 5,200 files; finding callers reliably requires a dedicated code-index MCP server."
+      ],
+      "correta": 0,
+      "explicacao": "Callers are found by searching file contents for the function name, which is what Grep does across the whole codebase. Reading the folder where a function is defined only covers callers that happen to live nearby. Grep for the call pattern, then Read the hits that need more context.",
+      "feedbacks": [
+        "Correct. Locating all callers of a function is the guide's example of selecting Grep.",
+        "Multiline calls are an edge case; reading every folder by hand floods the context and is far less complete than a repository-wide Grep.",
+        "File names do not reveal callers; the missed ones live in files without booking in their names.",
+        "A code index can help across many repositories, but within one repository Grep finds callers directly; nothing here requires a new server."
+      ],
+      "cenario": 2,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S1"
+    },
+    {
+      "pergunta": "A consulting firm built a customer support resolution agent for a telecom client with the Claude Agent SDK. It recently exposed the plan catalog and the troubleshooting-guide hierarchy as MCP resources, cutting exploratory calls by about 60%. A teammate now proposes converting get_customer, lookup_order, process_refund, and escalate_to_human into MCP resources too, \"so the agent sees everything up front.\" How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: resources load without tool calls, so moving all four backend operations removes the remaining calls and cuts latency in every conversation.",
+        "Adopt it only for process_refund and escalate_to_human, since those are the operations whose outcomes the agent most needs to see before replying.",
+        "Reject it: resources suit content catalogs the agent reads; customer lookups and actions with side effects such as refunds should stay MCP tools.",
+        "Reject it: MCP resources are available only inside Claude Code sessions, so an Agent SDK agent would lose access to the four operations entirely."
+      ],
+      "correta": 2,
+      "explicacao": "MCP resources expose content catalogs, such as plan lists, documentation hierarchies, and issue summaries, so the agent knows what exists without exploratory calls. get_customer and lookup_order are parameterized queries, and process_refund and escalate_to_human are actions with side effects, which is what tools are for. The earlier change worked because it targeted catalogs; this one would misuse the mechanism.",
+      "feedbacks": [
+        "Misreads what resources are: a refund or an escalation is an action the agent decides to take, not content to read up front.",
+        "Those two are the clearest side-effecting actions; turning them into readable content makes no sense for the workflow.",
+        "Correct. Catalogs belong in resources; lookups and actions stay tools.",
+        "Agent SDK agents can use MCP resources; the reason to reject is the nature of these operations, not platform support."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K4"
     }
   ]
 }

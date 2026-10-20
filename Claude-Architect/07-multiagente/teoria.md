@@ -1,286 +1,377 @@
-# Módulo 07 — Orquestração multiagente, decomposição, review multi-pass e sessões
+# Módulo 07 — Orquestração multiagente: coordenador, subagents e decomposição
 
-> **Domínio D1 — Arquitetura agêntica & orquestração (27%).** Task statements: **1.2**
-> (orquestração multiagente), **1.3** (spawn de subagents e passagem de contexto), **1.6**
-> (estratégias de decomposição), **1.7** (gestão de sessão) e **4.6** (review multi-pass, do D4).
-> Pré-requisito: Módulo 06 (o loop agêntico). Um sistema multiagente é **um loop que chama outros loops**.
+> **D1 — Arquitetura agêntica & orquestração (27%).** TS **1.2** (coordenador e subagents), **1.3**
+> (invocação de subagents, passagem de contexto, spawn) e **1.6** (estratégias de decomposição).
+> **Onde cai:** cenário **3** (Multi-Agent Research System) acima de todos; também **4** (Developer
+> Productivity), **5** (CI: revisão em passos), **2** (Claude Code: investigação com passos fixos × dinâmica)
+> e **1** (Customer Support).
+> **Só ponte aqui:** sessões `--resume`/`fork_session` em detalhe → M10 (1.7); revisão por instância
+> independente → M09 (4.6); propagação de erro e proveniência → M11 (5.3, 5.6); distribuição de tools e
+> `verify_fact` → M04 (2.3).
 
-O cenário-estrela aqui é o **Multi-Agent Research System** (cenário 3), mas o conteúdo também cai em
-**Claude Code for CI** (cenário 5: review multi-pass, sessão independente), **Code Generation**
-(cenário 2: subagents, `--resume`) e **Developer Productivity** (cenário 4: subagent Explore, sessões).
-
----
-
-## 1. O vocabulário base: "Building Effective Agents"
-
-A prova pressupõe o vocabulário do artigo **"Building Effective Agents"** da Anthropic. Ele separa
-duas famílias de **sistemas agênticos**:
-
-- **Workflows:** LLMs e tools orquestrados por **caminhos de código predefinidos**. Previsíveis,
-  consistentes, bons para tarefas bem definidas.
-- **Agents:** o LLM **dirige dinamicamente** o próprio processo e o uso de tools, mantendo controle
-  sobre **como** cumprir a tarefa. Bons para problemas abertos, em que não dá para prever os passos.
-
-O bloco de construção de ambos é o **LLM aumentado** (*augmented LLM*): um modelo com **retrieval,
-tools e memória**.
-
-### Os 5 padrões de workflow
-
-| Padrão | Como funciona | Quando usar | Exemplo |
-|---|---|---|---|
-| **Prompt chaining** | Sequência fixa de chamadas; a saída de uma é a entrada da próxima; pode ter **gates** (checagens programáticas) entre passos | Tarefa que se decompõe limpo em **passos fixos** conhecidos de antemão; troca latência por precisão | Gerar o esboço → checar se atende critérios (gate) → escrever o documento |
-| **Routing** | Classifica a entrada e a **encaminha** para um fluxo/prompt especializado | Categorias **distintas** que se tratam melhor separadamente | Suporte: dúvida geral / reembolso / suporte técnico, cada um com seu prompt e tools; perguntas fáceis para modelo menor |
-| **Parallelization** | Várias chamadas **simultâneas**, resultados agregados por código. Duas variações: **sectioning** (subtarefas independentes em paralelo) e **voting** (a mesma tarefa várias vezes para obter diversidade/consenso) | Subtarefas independentes (velocidade) ou quando múltiplas perspectivas aumentam a confiança | Sectioning: um modelo responde, outro filtra conteúdo impróprio. Voting: vários prompts procurando vulnerabilidade no mesmo código |
-| **Orchestrator-workers** | Um LLM central **decompõe dinamicamente** a tarefa, delega a workers e sintetiza | Subtarefas **não previsíveis** de antemão (dependem da entrada) | Mudança de código que toca um número imprevisível de arquivos; pesquisa em fontes variadas |
-| **Evaluator-optimizer** | Um LLM gera; outro **avalia e dá feedback**; repete em loop | Há **critérios de avaliação claros** e o refinamento iterativo agrega valor mensurável | Tradução literária com nuances; busca complexa que exige várias rodadas |
-
-**Diferença que mais cai:** *parallelization* tem subtarefas **definidas pelo programador**;
-*orchestrator-workers* tem subtarefas **definidas pelo LLM** a partir da entrada.
-
-### Os princípios do artigo
-
-1. **Comece simples.** Uma única chamada de LLM bem feita, com retrieval e exemplos, resolve muita
-   coisa. Só adicione complexidade (workflow, depois agente) quando ela **comprovadamente** melhora o
-   resultado. Agentes trocam **latência e custo** por desempenho.
-2. **Transparência:** mostre os passos de planejamento do agente.
-3. **Projete com cuidado a ACI** (*agent-computer interface*): documentação e teste das tools merecem
-   o mesmo cuidado de uma interface humana (é o D2).
-4. Frameworks ajudam a começar, mas **abstraem** prompts e respostas e dificultam o debug: entenda o
-   que roda por baixo.
-
-**Anti-padrão.** Montar um sistema multiagente para uma tarefa que um prompt chain (ou uma chamada
-só) resolve. "Mais agentes = melhor" é a alternativa errada clássica.
-
-**Como cai na prova.** Qualquer cenário: "qual arquitetura?". Passos fixos → **prompt chaining**;
-categorias distintas → **routing**; subtarefas independentes → **parallelization**; subtarefas que
-dependem da entrada → **orchestrator-workers**; critério claro de qualidade + iteração →
-**evaluator-optimizer**; e sempre: **a mais simples que resolve**.
+Um sistema multiagente é **um loop agêntico que chama outros loops**. Quase toda questão deste módulo
+pergunta, no fundo, **quem sabe o quê** (contexto) e **quem decide o quê** (o coordenador).
 
 ---
 
-## 2. Hub-and-spoke: o coordenador e seus subagents
+## 1. Hub-and-spoke: toda comunicação passa pelo coordenador
 
-**Fato-chave.** Na arquitetura **hub-and-spoke**, um **coordenador** (o hub):
-1. **Decompõe** a tarefa;
-2. **Delega** a subagents especializados (os spokes);
-3. **Roteia toda a comunicação**: subagents **não conversam entre si**, tudo passa pelo coordenador;
-4. **Agrega** os resultados;
-5. **Trata os erros** dos subagents (resultado parcial, falha, timeout);
-6. **Avalia a síntese** e **redelega** quando há lacunas.
+**Fatos de prova (1.2).**
+- Na arquitetura **hub-and-spoke**, o **coordenador** gerencia **toda a comunicação entre
+  subagents**, o **tratamento de erros** e o **roteamento da informação**. Subagents não conversam
+  entre si.
+- Rotear tudo pelo coordenador dá o que o guia nomeia: **observabilidade** (um lugar vê cada pedido e
+  resultado), **tratamento de erro consistente** e **fluxo de informação controlado**.
 
-**Acione só os subagents que a consulta precisa.** Uma pergunta simples sobre um dado específico
-não precisa passar por busca web + acadêmico + análise + revisão. O coordenador decide o que acionar.
+**Por quê.** Se a análise chama a busca direto (fila, store compartilhado, chamada ponto a ponto), o
+coordenador não vê a busca que falhou, não decide se tenta de novo, não percebe lacunas, e cada par de
+subagents trata erro do seu jeito. (Recuperação **local** de falha transitória continua valendo: o
+subagent propaga só o que não resolveu; M04/M11.)
 
-**Refinamento iterativo.** Roda os subagents → **avalia** o resultado → identifica **lacunas** →
-faz uma **2ª rodada direcionada** só para elas → sintetiza.
+**Anti-padrões que aparecem como alternativa errada.**
+- "Para cortar latência, deixe o subagent X chamar o Y direto" ou "um store compartilhado onde cada
+  subagent publica, lê a saída dos outros e decide o próximo passo".
+- "Pode ir direto, desde que tudo seja logado": log devolve parte da observabilidade, não o controle do
+  fluxo nem o erro centralizado.
+- Fundir dois subagents num só, com as tools dos dois, "para eliminar o round trip".
 
-**Decomposição estreita demais (anti-padrão clássico).** Pedido: "impacto da IA nas **indústrias
-criativas**". O coordenador decompõe em "IA nas artes visuais" e entrega um relatório que ignora
-música, cinema, escrita, games, design. **A falha está no coordenador** (decomposição), não nos
-subagents que fizeram bem o que receberam. Correção: **decompor mais amplo** e **checar
-explicitamente a cobertura** contra o escopo do pedido antes de sintetizar.
+**Nuance.** Uma tool **escopada** `verify_fact` na síntese (checagens simples e frequentes) **não**
+quebra o hub-and-spoke: é tool, não conversa entre subagents (oficial 9; M04).
 
-**Por quê.** Centralizar no coordenador dá **observabilidade** (um lugar vê tudo), **controle de
-erro** e **consistência**. Comunicação direta entre subagents cria acoplamento, perde rastreabilidade
-e impede o coordenador de detectar lacunas.
-
-**Anti-padrões.**
-- Subagents trocando mensagens diretamente.
-- Pipeline fixo que passa **toda** consulta por **todos** os subagents.
-- Culpar/ajustar o subagent quando o defeito é a decomposição do coordenador.
-- Sintetizar sem avaliar cobertura.
-
-**Como cai na prova.** Cenário 3: "o relatório final cobre só parte do tema; os subagents
-funcionaram corretamente" → **corrigir a decomposição do coordenador** e checar cobertura. Pegadinha:
-"melhorar o prompt do subagent de busca" ou "adicionar mais subagents de busca".
+**Como cai na prova.** "Um engenheiro propõe que os subagents se falem direto para ganhar velocidade;
+como avaliar?" → rejeitar. Sintomas no enunciado: "o trace do coordenador não registra 40% das
+buscas", "no timeout da busca, a análise esperou em silêncio".
 
 ---
 
-## 3. Spawn de subagents e passagem de contexto
+## 2. O papel do coordenador: decompor, delegar, agregar e escolher quem chamar
 
-### 3.1 A tool `Agent` e o contexto isolado
+**Fatos de prova (1.2).**
+- O coordenador faz **decomposição**, **delegação**, **agregação** dos resultados e **decide quais
+  subagents invocar conforme a complexidade da consulta**.
+- Ele **analisa a consulta e seleciona dinamicamente** os subagents, em vez de **passar sempre pelo
+  pipeline completo**. "Em que ano a biblioteca entrou no consórcio X?" → só a busca. "Compare o
+  impacto de citação de artigos abertos × pagos em química, 2010–2023" → várias buscas em paralelo +
+  análise + síntese + relatório. Comportamento diferente por consulta é **esperado**, não bug.
 
-**Fato-chave.** Subagents são criados pela tool **`Agent`** (nome anterior: **`Task`**). Para o
-coordenador conseguir criar subagents, `Agent` precisa estar nas **`allowedTools`** dele; dá para
-restringir quais **tipos** de subagent ele pode criar.
+**Por quê.** O coordenador é um LLM que lê as `description` dos subagents: já sabe decidir. Pipeline
+fixo gasta latência e custo e devolve o que ninguém pediu.
 
-**O contexto do subagent é isolado.** Ele **não herda** o histórico do coordenador. Ele recebe:
-o **prompt de delegação** que o coordenador escreveu (+ o system prompt/definição do subagent e,
-no Claude Code, o CLAUDE.md). E devolve **só o resultado final**.
+**Anti-padrões que aparecem como alternativa errada.**
+- "Toda consulta passa pelos N subagents, em ordem, por consistência".
+- "Um **classificador / routing layer** antes do coordenador decide o tipo de consulta" →
+  over-engineering: é trabalho do próprio coordenador (mesmo distrator das oficiais 1, 2 e 3).
+- "Rode o pipeline em paralelo": reduz latência, mas segue chamando quem não é necessário.
 
-Consequência: **tudo o que ele precisa vai explícito no prompt**.
+**Como cai na prova.** "Perguntas simples levam 4 minutos e voltam com seções que ninguém pediu; o
+design manda tudo pelos 4 subagents" → o coordenador deve invocar só o necessário.
 
-| Delegação ruim | Delegação boa |
+---
+
+## 3. Decomposição estreita demais e particionamento do escopo
+
+**Fatos de prova (1.2).**
+- **Decomposição estreita demais:** o coordenador quebra um tema amplo em subtarefas que cobrem só uma
+  fatia → **cobertura incompleta**. Os subagents fazem bem o que receberam; o defeito está **no que
+  receberam**.
+- **Particionar o escopo** para **minimizar duplicação**: **subtemas distintos** ou **tipos de fonte
+  distintos** por subagent (periódicos para um, relatórios governamentais para outro...).
+
+Pedido: *"Como as bibliotecas universitárias se adaptaram ao acesso aberto desde 2015?"*
+
+| Decomposição | Resultado |
 |---|---|
-| "Analise o problema do cliente." | "Cliente C-77 (plano Pro, verificado) relata cobrança duplicada de US$ 129,90 no pedido 8812 em 03/10. Verifique no gateway se houve duas capturas e devolva: ids das capturas, valores, datas e se uma delas foi estornada." |
-| "Pesquise o que falamos antes." | Objetivo, escopo, o que já se sabe, o que **não** precisa repetir, formato de saída esperado, critério de pronto |
+| "custo de assinaturas", "orçamento de APC", "cancelamento de *big deals*" | **Estreita:** só finanças; somem repositórios, capacitação, política de acervo |
+| 3 subagents, todos com "acesso aberto em bibliotecas" | **Sobreposta:** 70% das fontes repetidas, custo triplicado |
+| Subtemas distintos **ou** um tipo de fonte por subagent | Cobre o tema **e** não duplica |
 
-**Por quê.** O isolamento é a **vantagem** do subagent: ele explora muito (lê 50 arquivos, faz 30
-buscas) num contexto próprio e devolve só a conclusão, mantendo o contexto do coordenador limpo. O
-preço é ter de **passar o contexto explicitamente**.
+**Anti-padrões que aparecem como alternativa errada.**
+- Culpar quem está a jusante: "queries da busca literais demais", "análise com relevância estrita
+  demais", "síntese sem checagem de lacunas" (as três erradas da oficial 7).
+- Mesma consulta ampla para todos "por redundância", deduplicando depois na síntese.
+- Aumentar o número de resultados por busca (mais do mesmo recorte).
 
-**Anti-padrão.** Delegar com referência a algo que só existe no histórico do coordenador ("o
-problema", "aquele arquivo", "como discutimos").
+**Como cai na prova.** "Relatório preciso, mas ignora X e Y; o log do coordenador mostra as subtarefas
+A, B, C" → decomposição estreita. "Dois subagents devolvem 70% das mesmas fontes" → particionar.
 
-### 3.2 Paralelismo
+---
 
-**Fato-chave.** Para rodar subagents **em paralelo**, o coordenador emite **várias chamadas `Agent`
-na mesma resposta** (são `tool_use` paralelos, lembra do Módulo 06?). Uma chamada por turno =
-**sequencial**. [volátil] O Claude Code tem limites de concorrência e de profundidade de aninhamento.
+## 4. Refinamento iterativo: avaliar a síntese e redelegar
 
-**Como cai.** "O coordenador dispara 4 pesquisas independentes, mas elas rodam uma após a outra" →
-emitir os 4 `Agent` **numa única resposta** (instrução no prompt do coordenador). Pegadinha: "criar 4
-processos/sessões separadas" ou "aumentar o limite de concorrência" (não é o gargalo).
+**Fatos de prova (1.2).** O coordenador (1) **avalia a saída da síntese** procurando lacunas contra o
+escopo pedido, (2) **redelega** à busca e à análise com **consultas direcionadas** às lacunas,
+(3) **re-invoca a síntese** com achados novos + anteriores e (4) repete **até a cobertura ser
+suficiente**.
 
-### 3.3 Agent SDK: `AgentDefinition` e `parent_tool_use_id`
+**Por quê.** Só o coordenador enxerga o pedido original e tudo o que voltou.
 
-No **Claude Agent SDK** (Python/TypeScript), subagents são declarados por **`AgentDefinition`**:
-**descrição** (quando usar: dirige a escolha do coordenador), **prompt** (o system prompt do
-subagent), **tools** permitidas e **modelo**. Forma conceitual:
+**Anti-padrões que aparecem como alternativa errada.**
+- Entregar a primeira síntese com uma seção "questões em aberto" que ninguém investiga.
+- Pedir à síntese que "complete as lacunas" sozinha: de memória (inventa) ou ganhando tools de busca
+  (sai da especialização).
+- Rodar o pipeline inteiro de novo com a mesma consulta.
+- Teto de iterações como critério **principal** de parada (o critério é cobertura; teto é só rede de
+  segurança).
 
-```json
-{
-  "allowedTools": ["Agent", "Read", "Grep"],
-  "agents": {
-    "verificador-de-cobranca": {
-      "description": "Verifica capturas e estornos no gateway de pagamento. Use para disputas de cobrança.",
-      "prompt": "Você verifica cobranças. Devolva JSON com captura, valor, data, fonte.",
-      "tools": ["mcp__gateway__get_captures", "mcp__gateway__get_refunds"],
-      "model": "sonnet"
+**Ponte M11 (5.3):** lacuna que não fecha vira **coverage annotation** na síntese.
+
+**Como cai na prova.** "Os relatórios dizem 'não foi possível determinar se o módulo X é chamado pelos
+jobs noturnos', a informação era fácil de achar e o log mostra uma única passada" → falta o loop.
+
+---
+
+## 5. Criando subagents: a tool `Task`, `allowedTools` e `AgentDefinition`
+
+**Fatos de prova (1.3).**
+- Subagents são criados pela tool **`Task`**, e **`allowedTools` do coordenador precisa incluir
+  `"Task"`**. Sem isso, as definições existem mas nunca são usadas: o coordenador faz tudo sozinho.
+- Cada tipo de subagent é um **`AgentDefinition`**: **description** (quando usar; é o que o
+  coordenador lê para escolher), **system prompt** (papel e formato de saída) e **restrição de
+  tools** (só o que o papel precisa).
+
+Agent SDK (oficial em Python/TypeScript; abaixo, TS; em Python: `allowed_tools=[...]`,
+`agents={"...": AgentDefinition(...)}`):
+
+```ts
+// Opções do COORDENADOR
+const options = {
+  allowedTools: ["Task", "Read"],                 // ← AQUI: sem "Task", nenhum subagent é criado
+  agents: {
+    "web-search": {                               // um AgentDefinition
+      description: "Finds new sources on an assigned subtopic. Not for analyzing retrieved documents.",
+      prompt: "You are a search specialist. Return each source as JSON (claim, excerpt, url, published).",
+      tools: ["WebSearch", "WebFetch"]            // ← AQUI: restrição de tools do subagent
+    },
+    "synthesis": {
+      description: "Combines the findings passed in its prompt into a cited synthesis. Does not search.",
+      prompt: "You synthesize findings. Preserve every claim-source mapping you receive.",
+      tools: ["mcp__research__verify_fact"]
     }
   }
-}
+};
 ```
 
-As mensagens geradas **dentro** de um subagent chegam ao seu código com **`parent_tool_use_id`**
-apontando para o `tool_use` do `Agent` que o criou. É assim que você faz **atribuição** (qual
-subagent produziu o quê) em logs e UIs.
-
-No **Claude Code**, o equivalente é um arquivo em **`.claude/agents/<nome>.md`** com frontmatter
-(`description`, `tools`, `model`...; detalhes no Módulo 08).
-
-### 3.4 Fork vs. subagent "fresco"
-
-| | **Fork** | **Subagent fresco** |
-|---|---|---|
-| Contexto | **Herda a conversa toda** do pai | Começa **do zero** (só o prompt de delegação) |
-| Custo | **Compartilha o cache de prompt** do pai (mais barato para começar) | Paga o próprio contexto |
-| O que volta | Só o resultado final | Só o resultado final |
-| Quando usar | A subtarefa **depende de muito do que já foi discutido**; reexplicar seria caro e arriscado | Tarefa **delimitada e bem especificada**; você quer **visão independente** (sem o viés da conversa) |
-
-**Pegadinha de nome.** Na skill do Claude Code, `context: fork` roda a skill num **subagent
-isolado** (o histórico **não** vai). Não confunda com o fork que herda a conversa.
-
-**Como cai.** "Precisamos de uma revisão imparcial do plano" → subagent **fresco** (um fork herdaria
-o viés do raciocínio). "Explorar uma alternativa que depende de tudo que já discutimos" → **fork**.
-
-### 3.5 Passagem estruturada: conteúdo + metadados
-
-**Fato-chave.** O que os subagents devolvem (e o que o coordenador repassa) deve separar
-**conteúdo** de **metadados**: afirmação, evidência/trecho, **fonte** (URL/documento), **data**
-(publicação/coleta), tipo de fonte, confiança. Assim a **atribuição sobrevive** à síntese.
+O que o coordenador emite para criar o subagent (resposta da Messages API dentro do loop do SDK):
 
 ```json
 {
-  "claim": "O mercado de música gerada por IA cresceu 38% em 2025",
-  "evidence": "trecho literal do relatório, p. 12",
-  "source": { "url": "https://...", "type": "relatório setorial", "published": "2026-02-10" },
-  "retrieved_at": "2026-10-01"
+  "role": "assistant",
+  "stop_reason": "tool_use",
+  "content": [
+    { "type": "tool_use", "id": "toolu_01",
+      "name": "Task",                              // ← AQUI: a tool que cria o subagent
+      "input": {
+        "subagent_type": "web-search",             // ← AQUI: qual AgentDefinition usar
+        "description": "Search: institutional repositories",
+        "prompt": "Goal: ... (todo o contexto vai aqui; ver §6)" } }
+  ]
 }
 ```
 
-**Anti-padrão.** Subagent devolve um parágrafo em prosa; o coordenador resume os resumos; no final
-ninguém sabe de onde veio cada número (e conflitos entre fontes somem; ver proveniência no Módulo 11).
+> **Na doc atual [volátil]:** a tool `Task` foi renomeada para **`Agent`** (Claude Code v2.1.63);
+> `Task(...)` segue como alias, e `allowedTools` passou a ser descrito como a lista de tools
+> **auto-aprovadas**. **Na prova, responda `Task` / `allowedTools` com `"Task"`.** No Claude Code, o
+> equivalente do `AgentDefinition` é um arquivo em `.claude/agents/` (extra da doc; não cai).
+
+**Por quê.** A `description` é o mecanismo de seleção (descrição vaga → subagent errado). Restringir
+tools é menor privilégio: com tools fora do papel, a síntese pesquisa em vez de sintetizar.
+
+**Anti-padrões que aparecem como alternativa errada.**
+- Coordenador que não delega → "mande delegar no system prompt", "description com 'use
+  proactively'", "tire Grep/Read do coordenador". Sem `"Task"` em `allowedTools`, nada disso adianta.
+- Proibir por prompt ("nunca chame `process_refund`") em vez de tirar a tool do `AgentDefinition`; ou
+  um `PostToolUse` que só **registra** a chamada já feita.
+- Todas as tools para todos os subagents "por flexibilidade".
+
+**Como cai na prova.** "O coordenador nunca delega, faz 60 Greps sozinho; `allowedTools` sem `Task`" →
+incluir `"Task"`. "O subagent de rastreio chamou `process_refund` em 2 de 500 conversas; compliance
+exige que ele não possa" → restringir as tools no `AgentDefinition` dele.
 
 ---
 
-## 4. Estratégias de decomposição: chaining vs. dinâmica
+## 6. Contexto isolado: tudo o que o subagent precisa vai no prompt
 
-**Fato-chave.**
-- **Prompt chaining:** os passos são **fixos, sequenciais e conhecidos de antemão** (extrair →
-  validar → traduzir → formatar). Previsível, fácil de testar, com gates entre os passos.
-- **Decomposição dinâmica/adaptativa:** as subtarefas **surgem do que se descobre** (investigação
-  aberta, debug de causa desconhecida, pesquisa). É o orchestrator-workers / agente.
+**Fatos de prova (1.2, 1.3).**
+- Subagents têm **contexto isolado**: **não herdam** o histórico do coordenador e **não compartilham
+  memória entre invocações** (a 2ª chamada ao mesmo subagent começa do zero).
+- O contexto vai **explícito no prompt** do `Task`: os **achados completos dos agentes anteriores**
+  (ex.: resultados da busca web **e** saídas da análise de documentos no prompt da síntese).
+- Use **formato estruturado que separa conteúdo de metadados** (URL da fonte, nome do documento,
+  página) para **preservar a atribuição** entre agentes.
 
-**Por quê.** Usar decomposição dinâmica num processo fixo é pagar imprevisibilidade e custo sem
-ganho. Usar chaining numa investigação aberta é engessar: o passo 3 não sabe que o passo 2 descobriu
-algo que muda o plano.
+| Contexto implícito (falha) | Explícito (certo) |
+|---|---|
+| "Busque fontes sobre o tema que combinamos." | Meta + escopo (revisados por pares, 2015–2024, sem preprints) + o que já foi coberto + formato de saída |
+| 2ª invocação: "Revise seu rascunho conforme os comentários." | Rascunho completo + fontes + comentários + achados originais |
+| "Escreva o resumo com os achados das etapas anteriores." | Saídas completas do explorer e da análise de dependências, coladas no prompt |
 
-**Como cai.** "Pipeline de onboarding de contratos: extrair cláusulas → classificar risco → gerar
-resumo, sempre igual" → **chaining**. "Investigar por que a conversão caiu" → **dinâmica**. Pegadinha:
-oferecer um agente autônomo com 6 subagents para o pipeline fixo.
+Cada achado separa conteúdo de metadados; a lista inteira vai **dentro de
+`content[].input.prompt`** do `tool_use` `Task` que cria a síntese (o subagent não tem outro canal):
+
+```json
+{
+  "findings": [
+    {
+      "content": {                                         // ← AQUI: o que se afirma
+        "claim": "62% dos periódicos de química da amostra cobram APC acima de US$ 2.000",
+        "excerpt": "Of the 118 chemistry journals sampled, 73 charge APCs above USD 2,000"
+      },
+      "metadata": {                                        // ← AQUI: de onde veio
+        "source_url": "https://example.org/apc-survey-2023",
+        "document": "APC Survey 2023 - Final Report",
+        "page": 14,
+        "published": "2023-11-02"
+      }
+    }
+  ]
+}
+```
+
+Orquestrando em código .NET em vez de pelo LLM, a regra é a mesma:
+
+```csharp
+public record Source(string Url, string Document, int? Page, DateOnly? Published);
+public record Finding(string Claim, string Excerpt, Source Source);
+
+string SynthesisPrompt(string goal, IReadOnlyList<Finding> web, IReadOnlyList<Finding> docs) => $"""
+    Goal: {goal}
+    <web_findings>{JsonSerializer.Serialize(web)}</web_findings>
+    <document_findings>{JsonSerializer.Serialize(docs)}</document_findings>
+    """;   // achados COMPLETOS e estruturados, não um resumo em prosa
+```
+
+**Por quê.** O isolamento é a vantagem do subagent (explora muito no próprio contexto e devolve só o
+resultado); o preço é passar o contexto explicitamente. Prosa resumida de prosa resumida perde quem
+disse o quê.
+
+**Anti-padrões que aparecem como alternativa errada.**
+- Referências ao histórico do coordenador: "o tema que combinamos", "as etapas anteriores".
+- "Dê ao subagent acesso ao log da conversa do coordenador" (ou a um store) para ele "recuperar" o
+  contexto.
+- Resumir os achados em 2–3 frases "para economizar contexto".
+- Corrigir só por prompt ("não seja genérico, cite todas as tabelas"): ele não cita o que não recebeu.
+- Pôr regras **deste pedido** no system prompt fixo do `AgentDefinition` (lá vão regras permanentes do
+  papel; o que é do pedido vai no prompt do `Task`).
+
+**Pontes:** metadados para a síntese → M10 (5.1); claim-source mappings → M11 (5.6).
+
+> **Na doc atual [volátil]:** o Claude Code tem um **"fork subagent"** que herda a conversa do pai
+> (recente, posterior ao guia). **Na prova, contexto de subagent é sempre explícito no prompt**; "o
+> subagent herda/vê a conversa do coordenador" é alternativa errada.
+
+**Como cai na prova.** "Depois de 12 turnos combinando o escopo, o coordenador delega 'busque fontes
+sobre o tema combinado' e vêm preprints fora da faixa de datas" → escopo e restrições no prompt.
 
 ---
 
-## 5. Review multi-pass e o viés do contexto de raciocínio
+## 7. Paralelismo, prompt do coordenador por metas e `fork_session`
 
-### 5.1 Revise em sessão independente
+### 7.1 Paralelo = vários `Task` numa única resposta
 
-**Fato-chave.** O modelo que **gerou** o conteúdo carrega o **contexto de raciocínio** que o levou
-àquelas decisões e tende a **não questioná-las** (viés do contexto de raciocínio). A revisão deve
-acontecer numa **sessão/instância independente**, que vê o **artefato** (código, documento), não o
-raciocínio de quem o produziu.
+**Fatos de prova (1.3).** Para rodar subagents em paralelo, o coordenador **emite várias chamadas
+`Task` numa única resposta**. Um `Task` por turno = sequencial (cada um espera o anterior; latência =
+soma).
 
-**Anti-padrões.**
-- "Agora revise o que você escreveu" **na mesma sessão** (anti-padrão nº 9 do blueprint).
-- Fork da sessão geradora para revisar (herda o mesmo viés).
-- Pedir que o mesmo agente "seja mais crítico" (instrução não remove o contexto enviesado).
+```json
+{
+  "role": "assistant",
+  "stop_reason": "tool_use",
+  "content": [
+    { "type": "tool_use", "id": "toolu_A", "name": "Task",                    // ← AQUI
+      "input": { "subagent_type": "web-search", "prompt": "Subtopic: repositories ..." } },
+    { "type": "tool_use", "id": "toolu_B", "name": "Task",                    // ← AQUI
+      "input": { "subagent_type": "web-search", "prompt": "Subtopic: APC budgets ..." } }
+  ]
+}
+```
 
-### 5.2 PR grande: passo 1 por arquivo + passo 2 de integração
+**Anti-padrões.** Um `Task` por turno; juntar N subtarefas num único `Task` (um subagent faz tudo em
+série); o coordenador fazer as consultas ele mesmo "para evitar overhead"; aumentar timeout.
 
-Num PR de 30 arquivos, uma revisão única sofre de **diluição de atenção**: achados superficiais,
-**padrão inconsistente** entre arquivos (o arquivo 3 é cobrado por algo que passa no arquivo 27) e
-**bugs entre arquivos** perdidos.
+### 7.2 Prompt do coordenador: metas e critérios de qualidade, não passo a passo
 
-| Passo | Escopo | O que procura | Como |
-|---|---|---|---|
-| **1. Local, por arquivo** | Cada arquivo isoladamente | Bugs locais, estilo, tipos, segurança, tratamento de erro | **O mesmo prompt** para todos os arquivos (consistência); dá para paralelizar |
-| **2. Integração** | O conjunto | Fluxo de dados entre módulos, contratos/interfaces, erro na fronteira, mudança de assinatura sem atualizar chamadores | **Prompt separado**, recebendo os **achados do passo 1** + o diff relevante |
+**Fatos de prova (1.3).** O prompt do coordenador (e as delegações que ele escreve) especifica **metas
+de pesquisa e critérios de qualidade**, não **instruções procedimentais passo a passo**. Isso dá
+**adaptabilidade** aos subagents quando o tema foge do roteiro.
 
-**Por quê.** Cada passo tem um foco só, o que dá atenção total ao que importa. O passo 2 não
-precisa repetir o trabalho local; ele usa o resumo do passo 1 para olhar o que nenhum arquivo
-isolado mostra.
+| Procedural (frágil) | Metas + critérios (adaptável) |
+|---|---|
+| "1. Busque no catálogo com as palavras exatas do usuário. 2. Pegue os 5 primeiros. ... 14. Formate em APA." | "Meta: panorama de X para um comitê. Critérios: cobrir cada disciplina envolvida; só fontes revisadas por pares; toda afirmação com fonte; sinalizar estatísticas conflitantes." |
 
-**Anti-padrões.**
-- Uma passada única no PR inteiro ("revise tudo com atenção").
-- Só o passo por arquivo (perde o bug que está **entre** arquivos).
-- Trocar por um modelo maior/janela maior "para caber tudo" (janela não resolve diluição de atenção).
-- Rodar dois revisores idênticos na mesma passada e "votar" como substituto do passo de integração.
+**Anti-padrões.** Acrescentar passos ao procedimento para o caso que falhou; few-shot de palavras-chave
+por caso; classificador que manda o caso difícil para outro pipeline.
 
-**Como cai.** Cenário 5 (CI): "a revisão automática de PRs grandes perde bugs que atravessam módulos
-e é inconsistente entre arquivos" → **passo por arquivo + passo de integração, em sessão
-independente da que gerou o código**.
+### 7.3 `fork_session`: ramos a partir de uma base comum
+
+**Fatos de prova (1.3; sessões em detalhe no M10).** Depois de uma análise compartilhada (a base),
+`fork_session` cria **ramos independentes** para explorar **abordagens divergentes**, sem refazer a
+análise e sem que o raciocínio de um ramo contamine o outro.
+
+```ts
+// Agent SDK: cada ramo retoma a sessão da análise e ganha um NOVO id de sessão
+const options = { resume: baselineSessionId, forkSession: true };   // ← AQUI (Python: fork_session=True)
+```
+
+O fork ramifica a **conversa**, não o filesystem. **Anti-padrões:** seguir na mesma sessão (a 2ª
+abordagem herda o raciocínio da 1ª); duas sessões novas com um resumo de um parágrafo (perdem o
+detalhe); dois subagents "contando que vejam a análise".
+
+**Como cai na prova (7.1–7.3).** "Três consultas independentes levam a soma dos tempos; o trace mostra
+um `Task` por turno" → vários `Task` na mesma resposta. "O coordenador segue 14 passos e falha em
+pedidos interdisciplinares" → metas + critérios. "Comparar dois enquadramentos a partir da mesma
+análise de 40 minutos" → `fork_session`.
 
 ---
 
-## 6. Gestão de sessão: `--resume`, `--fork-session` e recomeçar com resumo
+## 8. Estratégias de decomposição: prompt chaining × decomposição dinâmica
 
-**Fato-chave.**
-- **`--resume <sessão>`** (ou `--continue` para a mais recente) **continua** a conversa com o
-  histórico inteiro. Bom quando os **resultados de tool no histórico ainda valem**.
-- **`--fork-session`** (junto com `--resume`/`--continue`) cria um **novo ID de sessão** a partir
-  da base comum: dá para explorar dois caminhos **sem que um contamine o outro**. No Agent SDK, a
-  mesma ideia aparece como opções de retomada (`resume`) e de fork da sessão.
-- Se **arquivos/serviços mudaram** ou o contexto **derivou** (muita tentativa e erro, decisões
-  revertidas), **comece uma sessão nova com um resumo estruturado** em vez de retomar.
-- Se for retomar depois de mudanças, **diga explicitamente o que mudou** ("desde a última sessão, o
-  módulo X foi refatorado; os resultados de leitura de `x.cs` estão desatualizados"). Os resultados
-  velhos continuam no histórico, e o modelo confia neles.
-- **O que não pode se perder vai para arquivo/memória** (notas, manifesto, `NOTES.md`, memória),
-  não para o scrollback.
+**Fatos de prova (1.6).**
+- **Prompt chaining** (pipeline sequencial fixo): passos conhecidos de antemão; serve para **revisões
+  previsíveis multi-aspecto**. Padrão canônico: revisão em passos, **cada arquivo individualmente** e
+  depois um **passo de integração entre arquivos**.
+- **Decomposição dinâmica/adaptativa**: subtarefas **geradas a partir do que se descobre** em cada
+  passo; serve para **investigação aberta**. O valor do plano adaptativo é seguir a pista que surge no
+  meio do caminho.
 
-**Por quê.** O histórico é tratado como verdade. Resultados de tool velhos (o conteúdo de um
-arquivo antes do refactor) levam o modelo a editar com base em código que não existe mais.
+### 8.1 Revisão grande = passos por arquivo + passo de integração
 
-**Anti-padrões.**
-- Retomar uma sessão de 3 dias atrás depois de um rebase grande, sem avisar nada.
-- Usar a mesma sessão para testar duas abordagens alternativas (uma contamina a outra) em vez de
-  `--fork-session`.
-- Confiar que "está no histórico" para fatos críticos de longo prazo.
+| Passo | Entrada | Procura |
+|---|---|---|
+| **1. Local, por arquivo** | Um arquivo, com os mesmos critérios para todos | Bugs locais, tratamento de erro, segurança, convenções |
+| **2. Integração** | Achados do passo 1 + interfaces dos módulos alterados | Fluxo de dados entre arquivos, contratos, unidades, chamadores quebrados |
 
-**Como cai.** Cenários 2 e 4. "Ontem o Claude mapeou o módulo de pagamentos; hoje outro dev mudou
-metade dele" → **sessão nova com resumo estruturado** (ou retomar **informando o que mudou**).
-"Quero comparar duas estratégias de migração a partir da mesma análise" → **`--fork-session`**.
+**Por quê.** Uma passada única sobre muitos arquivos sofre **diluição de atenção**: profundidade
+desigual, achados contraditórios, bugs óbvios perdidos. Cada passo com um foco só recebe atenção
+total; o de integração vê o que nenhum arquivo isolado mostra.
+
+**Anti-padrões.** Passada única "com mais atenção"; modelo/janela maior (janela não resolve atenção);
+obrigar os devs a quebrar o PR; rodar 3 vezes e votar; **só** passos por arquivo (perde o bug entre
+arquivos). Ponte M09 (4.6): revisar com **instância independente** de quem gerou o código.
+
+### 8.2 Decomposição dinâmica: investigação aberta
+
+**"Adicionar testes abrangentes a um codebase legado"**: (1) **mapear a estrutura** (módulos, pontos
+de entrada, dependências); (2) **identificar áreas de alto impacto** (incidentes, dinheiro, lógica
+crítica); (3) **plano priorizado que se adapta** conforme surgem dependências (descobriu que o cálculo
+de dose usa um singleton estático → primeiro criar um ponto de injeção; o plano muda).
+
+**Anti-padrões.** Plano fixo arquivo por arquivo (ou alfabético): enche de testes de DTO e deixa o
+módulo crítico sem nada; começar a testar o primeiro módulo sem mapear; plano fixo "mais completo".
+E o inverso: comando fixo ("ler serviço → listar commits → propor fix") numa **investigação** cujo
+próximo passo depende do que aparece.
+
+> **Nota de contexto — "Building Effective Agents".** O artigo da Anthropic descreve prompt chaining,
+> routing, parallelization, orchestrator-workers e evaluator-optimizer. **Como estratégia de
+> decomposição (1.6), o guia só cobra prompt chaining e decomposição dinâmica**; orchestrator-workers e
+> paralelismo aparecem com o vocabulário do guia (coordenador-subagent, vários `Task` na mesma
+> resposta: §1–§7). Na prova, "routing layer/classificador", "segundo modelo" e "votar entre
+> execuções" são **distratores de over-engineering**. Do artigo, leve só: comece pela solução mais
+> simples que resolve.
+
+**Como cai na prova.** Cenário 5: revisão de PR com aspectos fixos → chaining (por arquivo +
+integração). Cenário 4: testes num legado → dinâmica. Cenário 2: regressão investigada com comando de
+passos fixos que não acha a causa → chaining onde cabia dinâmica. E "qual padrão para cada workflow?"
+com dois workflows lado a lado.
 
 ---
 
@@ -288,82 +379,59 @@ metade dele" → **sessão nova com resumo estruturado** (ou retomar **informand
 
 | Se... | Então... |
 |---|---|
-| Passos fixos, conhecidos de antemão | **Prompt chaining** (com gates) |
-| Entradas de categorias distintas | **Routing** |
-| Subtarefas independentes definidas por você / quer consenso | **Parallelization** (sectioning / voting) |
-| Subtarefas dependem da entrada / investigação aberta | **Orchestrator-workers** (decomposição dinâmica) |
-| Critério de qualidade claro e iteração ajuda | **Evaluator-optimizer** |
-| Dá para resolver com uma chamada/workflow | **Não** monte agente/multiagente: comece simples |
-| Subagents precisam trocar informação | **Via coordenador** (hub-and-spoke), nunca direto |
-| Consulta simples num sistema multiagente | Acione **só** os subagents necessários |
-| Relatório cobre só parte do tema | Corrigir a **decomposição do coordenador** + checar cobertura |
-| Síntese com lacunas | 2ª rodada **direcionada** às lacunas |
-| Delegar a um subagent | Prompt com **todo** o contexto explícito (isolado!) |
-| Quer subagents em paralelo | **Vários `Agent` na mesma resposta** |
-| Atribuir mensagens a subagents no Agent SDK | **`parent_tool_use_id`** |
-| Subtarefa depende de muito do que já foi discutido | **Fork** (herda conversa, compartilha cache) |
-| Tarefa delimitada / visão imparcial | **Subagent fresco** |
-| Resultado de subagent vai para síntese | **Conteúdo + metadados** (fonte, data, evidência) |
-| Revisar o que foi gerado | **Sessão independente** |
-| PR grande | **Passo 1 por arquivo** (mesmo prompt) + **passo 2 de integração** |
-| Resultados de tool ainda válidos | `--resume` |
-| Arquivos/serviços mudaram | **Sessão nova + resumo estruturado** (ou retomar dizendo o que mudou) |
-| Explorar alternativas a partir da mesma base | `--fork-session` |
-| Fato que não pode se perder | Arquivo/memória, não scrollback |
+| Subagents precisam trocar informação | **Via coordenador**, nunca direto nem por store compartilhado |
+| Consulta simples num sistema multiagente | Coordenador invoca **só** os subagents necessários |
+| Relatório preciso, mas cobre só parte do tema | **Decomposição estreita** do coordenador |
+| Subagents trazem as mesmas fontes | **Particionar** por subtema ou tipo de fonte |
+| Síntese com lacunas | **Avaliar → redelegar consultas direcionadas → re-sintetizar** |
+| Coordenador nunca delega | **`"Task"` em `allowedTools`** |
+| Subagent não pode usar certa tool | **Restringir tools no `AgentDefinition`** |
+| Delegar a um subagent | **Contexto explícito no prompt** (achados completos) |
+| Passar achados entre agentes | **Conteúdo separado de metadados** (URL, documento, página) |
+| Subtarefas independentes rodando em série | **Vários `Task` na mesma resposta** |
+| Coordenador preso a roteiro rígido | **Metas + critérios de qualidade** |
+| Abordagens divergentes da mesma análise | **`fork_session`** |
+| Revisão previsível, vários aspectos / PR grande | **Prompt chaining**: por arquivo + integração |
+| Investigação aberta / testes num legado | **Dinâmica**: mapear → alto impacto → plano adaptável |
 
 ## Glossário
 
-- **Workflow:** LLM + tools em caminhos de código predefinidos.
-- **Agent:** o LLM dirige dinamicamente o próprio processo e as tools.
-- **Augmented LLM:** LLM com retrieval, tools e memória; bloco base dos dois.
-- **Prompt chaining / routing / parallelization / orchestrator-workers / evaluator-optimizer:** os 5 padrões de workflow.
-- **Sectioning / voting:** as duas variações de parallelization (dividir vs. repetir).
-- **ACI (agent-computer interface):** a interface entre agente e tools; merece o cuidado de uma UI.
-- **Hub-and-spoke:** coordenador central que roteia toda a comunicação entre subagents.
-- **Coordenador / subagent:** quem decompõe e sintetiza / quem executa uma subtarefa com contexto próprio.
-- **Tool `Agent` (antes `Task`):** a tool que cria subagents.
-- **`AgentDefinition`:** declaração de subagent no Agent SDK (descrição, prompt, tools, modelo).
-- **`parent_tool_use_id`:** campo que liga mensagens do subagent ao `tool_use` que o criou.
-- **Fork:** subagent/sessão que herda a conversa e compartilha cache.
-- **Viés do contexto de raciocínio:** quem gerou tende a não questionar as próprias decisões.
-- **Review multi-pass:** passo local por arquivo + passo de integração.
-- **`--resume` / `--continue` / `--fork-session`:** retomar uma sessão / a mais recente / ramificar com novo ID.
+- **Hub-and-spoke:** o coordenador centraliza comunicação, erro e roteamento entre subagents.
+- **Contexto isolado:** sem herança do histórico do coordenador e sem memória entre invocações.
+- **`Task` / `AgentDefinition`:** tool que cria subagents / tipo de subagent (description, system
+  prompt, tools).
+- **`fork_session`:** ramo independente de uma sessão a partir de uma base comum.
+- **Diluição de atenção:** perda de profundidade e consistência ao revisar muitos arquivos de uma vez.
 
 ## Cola de véspera
 
-- **Workflows** (caminho em código) vs. **agents** (o LLM dirige). **Comece simples**; só complique se medir ganho.
-- **5 padrões:** chaining (passos fixos), routing (categorias), parallelization (sectioning/voting),
-  orchestrator-workers (subtarefas definidas pelo LLM), evaluator-optimizer (gera ↔ avalia).
-- **Hub-and-spoke:** coordenador decompõe, delega, **roteia tudo**, agrega, trata erro, redelega lacunas.
-  Subagents **não** se falam.
-- **Só os subagents necessários.** Refinamento: avaliar → lacunas → 2ª rodada direcionada.
-- **Cobertura parcial = decomposição estreita do coordenador** ("indústrias criativas" ≠ artes visuais).
-- **Tool `Agent`** (ex-`Task`) em `allowedTools`. **Contexto isolado → tudo explícito no prompt.**
-- **Paralelo = vários `Agent` na mesma resposta.**
-- Agent SDK: **`AgentDefinition`**; atribuição por **`parent_tool_use_id`**.
-- **Fork** herda conversa + cache; **fresco** para tarefa delimitada/visão imparcial.
-- Devolva **conteúdo + metadados** (fonte, data, evidência).
-- **Chaining** = passos fixos; **dinâmica** = subtarefas surgem das descobertas.
-- **Review em sessão independente.** PR grande: **por arquivo (mesmo prompt) + integração (prompt separado, recebe achados)**.
-- **`--resume`** se os resultados valem; mudou algo → **sessão nova com resumo** ou **diga o que mudou**;
-  **`--fork-session`** para ramos sem contaminação; crítico → **arquivo**.
+- **Hub-and-spoke:** coordenador roteia **toda** comunicação, trata erro, controla o fluxo →
+  observabilidade. Subagent falando com subagent = errado, mesmo com log.
+- **Coordenador** decompõe, delega, agrega e **escolhe quem chamar pela complexidade**. Pipeline
+  completo para tudo = errado; classificador na frente = over-engineering.
+- **Cobertura parcial com subagents corretos = decomposição estreita.** Duplicação = particionar.
+- **Refinamento:** avaliar lacunas → busca/análise com consultas direcionadas → síntese de novo.
+- **`Task`** cria subagent; **`allowedTools` inclui `"Task"`** (doc atual: `Agent`; na prova, `Task`).
+- **`AgentDefinition`** = description (seleção) + system prompt + **restrição de tools**.
+- **Contexto isolado → tudo explícito no prompt:** achados **completos**, **estruturados**
+  (conteúdo × metadados).
+- **Paralelo = vários `Task` numa única resposta.** Prompt do coordenador = **metas + critérios**.
+- **`fork_session`** = ramos divergentes da mesma base.
+- **Chaining** = passos fixos (por arquivo + integração). **Dinâmica** = investigação aberta (legado:
+  mapear → alto impacto → plano que se adapta).
 
 ## Perguntas de checagem
 
-1. **Qual a diferença entre parallelization e orchestrator-workers?**
-   Em parallelization as subtarefas são definidas de antemão pelo programador (sectioning) ou são a
-   mesma tarefa repetida (voting); em orchestrator-workers um LLM decide as subtarefas dinamicamente a
-   partir da entrada.
-2. **O relatório sobre "IA nas indústrias criativas" falou só de artes visuais, e cada subagent fez
-   bem o que recebeu. Onde está o defeito e qual a correção?**
-   Na decomposição do coordenador (estreita demais). Decompor de forma mais ampla e checar
-   explicitamente a cobertura contra o escopo antes de sintetizar.
-3. **Por que "analise o problema do cliente" é uma delegação ruim?**
-   O subagent tem contexto isolado e não vê o histórico do coordenador; precisa receber explicitamente
-   cliente, problema, dados já levantados, objetivo e formato de saída.
-4. **Como revisar um PR de 40 arquivos gerado pelo próprio Claude?**
-   Em sessão independente da que gerou; passo 1 por arquivo com o mesmo prompt; passo 2 de integração
-   com prompt separado, recebendo os achados do passo 1.
-5. **Ontem a sessão leu todo o módulo de faturamento; hoje ele foi refatorado. `--resume` ou sessão nova?**
-   Sessão nova com resumo estruturado (os resultados de leitura no histórico estão velhos); se retomar,
-   informar explicitamente o que mudou. `--fork-session` serviria para explorar alternativas, não para isso.
+1. **O relatório sobre acesso aberto só trata de custos, e cada subagent fez bem o que recebeu. Onde
+   está o defeito?** Na decomposição do coordenador, estreita demais; ampliar as dimensões, sem
+   sobreposição.
+2. **O coordenador tem `AgentDefinition`s bem escritos, mas nunca delega. O que checar primeiro?** Se
+   `"Task"` está em `allowedTools` dele.
+3. **Na 2ª invocação, a síntese ignora o rascunho que ela mesma escreveu. Por quê?** Subagents não
+   guardam memória entre invocações: rascunho, fontes e achados vão no prompt da nova chamada.
+4. **Quatro buscas independentes levam a soma dos tempos. O que o trace deve mostrar após a
+   correção?** Os quatro `tool_use` `Task` numa única resposta do coordenador.
+5. **Revisão de PR sempre igual × investigação de falha noturna?** Chaining (por arquivo + integração)
+   para a revisão; decomposição dinâmica para a investigação.
+6. **Como decompor "adicionar testes abrangentes ao sistema legado"?** Mapear a estrutura, achar as
+   áreas de alto impacto e seguir um plano priorizado que se adapta às dependências descobertas.
