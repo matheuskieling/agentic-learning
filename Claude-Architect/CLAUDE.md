@@ -87,8 +87,12 @@ em **teoria enxuta voltada à prova + muitas questões + muitos simulados**.
   um `.mcp.json`, um hook). Quando houver código de aplicação, a **linguagem-base é C# (.NET)**:
   o aluno é dev .NET. JSON/YAML/shell ficam como são (é o formato real). O Agent SDK oficial é
   Python/TypeScript: hooks e `AgentDefinition` aparecem nessa forma, com a ideia explicada.
-- **JSON sempre contextualizado:** ao citar um campo de request/response/schema, mostre o JSON com o
-  caminho completo até o campo (pedido do aluno).
+- **JSON sempre contextualizado:** ao citar um campo de request/response/schema, mostre o JSON
+  **inteiro** do request (`model`, `max_tokens`, `system`, `messages`, `tools`, `tool_choice`...) e/ou
+  da response (`content`, `stop_reason`, `usage`), com o campo marcado `// ← AQUI`. Pode encurtar o
+  miolo de um schema com `/* ... */`, mas nunca omita as chaves de topo nem mostre só um trecho
+  (`"tools": [...]`, `"tool_choice": {...}` soltos), mesmo onde o `teoria.md` usa trecho (pedido do
+  aluno: sem o JSON inteiro ele não sabe onde a propriedade fica).
 - **Linguagem dos exemplos (preferência salva):** no beat `intro` do Módulo 01, o agente lê
   `Claude-Architect/.sessions/preferencias.json`; se não existir, pergunta e grava
   `{ "linguagem": "<nome>" }`; nas retomadas, traduz ao vivo os trechos de código para ela.
