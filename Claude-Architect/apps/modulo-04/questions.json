@@ -1,261 +1,281 @@
 {
-  "titulo": "Module 04 — Quiz: Tool design",
+  "titulo": "Módulo 04 — Quiz: design de tools",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "For the model, what is the main role of a tool's `description` field?",
+      "pergunta": "Which statement about tool descriptions is correct?",
       "opcoes": [
-        "Documentation for the developers who maintain the tool; the model uses only the `name`",
-        "It's the criterion the model uses to decide whether and when to call that tool",
-        "It serves only to validate the arguments before execution",
-        "It's optional when the `input_schema` already has well-named `properties`"
+        "The model selects tools mainly by their names; the description is reference text for the developers who maintain each tool.",
+        "The description is the primary mechanism the model uses to select a tool; minimal descriptions make choices among similar tools unreliable.",
+        "The input_schema drives selection; once its property names are clear and specific, the description adds little to the model's choice of tool.",
+        "Descriptions matter only with tool_choice \"auto\"; with \"any\" the model picks a tool by the shape of its schema instead."
       ],
       "correta": 1,
-      "explicacao": "The model reads the description when choosing a tool: purpose, when to use it, input, output, edge cases, and how it differs from its neighbors.",
+      "explicacao": "Tool descriptions are the primary mechanism the model uses to decide which tool to call. When descriptions are minimal, the model lacks the context to tell similar tools apart, and selection becomes unreliable.",
       "feedbacks": [
-        "Tempting because in code a 'description' is usually a comment; but the model reads the description to decide.",
-        "Correct: the description is the selection criterion, not decoration.",
-        "Argument validation is done by the schema (and `strict`), not by the description.",
-        "Property names help, but they don't say when to use the tool or how it differs from the others."
-      ]
+        "Names help, but the model relies mainly on the description; treating it as developer documentation is how minimal descriptions end up in production.",
+        "Correct. The description is the primary selection mechanism, and minimal descriptions make selection among similar tools unreliable.",
+        "The schema constrains the arguments, but the description is what tells the model what the tool is for and when to use it.",
+        "With \"any\" the model must call some tool, and it still decides which one by reading the descriptions."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "What requirement does `strict: true` impose on a tool's `input_schema`, and what is the recommendation for fields that may be missing?",
+      "pergunta": "A logistics support agent has get_shipment (\"Gets shipment info\") and get_delivery_window (\"Gets delivery info\"). It picks the wrong one in 20% of calls. What is the most effective first step?",
       "opcoes": [
-        "Every property must have an `enum` listing its possible values",
-        "The schema must use `oneOf` for each possible type of each property",
-        "Only that the `name` follow snake_case",
-        "`additionalProperties: false` on every object; optional properties are allowed (they count toward a limit), but the recommendation is `required` + nullable"
+        "Add 5–8 few-shot examples to the system prompt that show delivery-time questions routed to get_delivery_window.",
+        "Consolidate both tools into a single get_shipment_details tool that returns tracking and delivery data together.",
+        "Add a routing layer that scans each message for delivery keywords and preselects the tool before the model runs.",
+        "Expand both descriptions with input formats, sample queries, edge cases, and when to use each one instead."
       ],
       "correta": 3,
-      "explicacao": "Strict requires `additionalProperties: false` on every object. Optional properties are allowed but count toward a total per-request limit [volatile]; in practice, prefer putting everything in `required`, with a nullable type for whatever may be missing. It also accepts only a subset of JSON Schema.",
+      "explicacao": "Minimal descriptions are the root cause, so the low-effort, high-leverage first step is to expand them with input formats, example queries, edge cases, and boundaries versus the other tool. Consolidation is a valid architectural option but more than a first step needs; few-shot examples and routing layers treat the symptom.",
       "feedbacks": [
-        "Enum is advisable, but strict doesn't require it.",
-        "`oneOf` isn't a requirement (and it isn't even among the constructs documented as supported; `anyOf` has limitations).",
-        "Naming conventions have nothing to do with strict.",
-        "Correct: a closed object is the requirement; `required` + nullable is the practical recommendation."
-      ]
+        "Few-shot examples add tokens to every request without fixing the inadequate descriptions; they fit genuinely ambiguous requests once descriptions are good.",
+        "Consolidating is a valid architectural choice, but it takes more effort than a first step warrants when the immediate problem is the descriptions.",
+        "A keyword routing layer is over-engineered and bypasses the model's language understanding.",
+        "Correct. Expanded descriptions give the model what it needs to tell the two tools apart."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "An agent confuses `get_customer` and `lookup_client`, whose descriptions are nearly identical. What is the first recommended fix?",
+      "pergunta": "A research subagent has analyze_content and analyze_document, both described as \"Analyzes the input and returns key points.\" In practice, analyze_content is used on pages fetched from the internet and analyze_document on files that users upload, yet uploaded PDFs reach analyze_content in 30% of calls. Which change follows the guide's practice for removing the overlap?",
       "opcoes": [
-        "Rewrite the descriptions to separate the purposes (or merge the two tools)",
-        "Train a classifier that picks the tool before the model receives the question",
-        "Switch to a larger model",
-        "Force `tool_choice` to the most-used tool"
+        "Rename analyze_content to extract_web_results and rewrite its description to cover internet pages only, pointing uploaded files to analyze_document.",
+        "Rename the tools to analyze_web_content and analyze_file_content and keep their shared description, since the new names already tell them apart.",
+        "Rename analyze_document to analyze_content_v2 and mark analyze_content as deprecated in its description, so the model prefers the newer tool.",
+        "Merge both into one analyze_any_content tool with a source_type parameter whose description lists internet pages and uploaded files."
       ],
       "correta": 0,
-      "explicacao": "Overlapping tools cause misrouting; the simplest fix is to separate the purposes in the description/name, or to merge them.",
+      "explicacao": "When two tools overlap, rename them and update their descriptions so each has a distinct, specific purpose. The guide's example is renaming analyze_content to extract_web_results with a web-specific description; the name and the description must both carry the boundary.",
       "feedbacks": [
-        "Correct: tackling the ambiguity at the interface is the simplest fix that works.",
-        "More complex than necessary; the ambiguity remains in the definition.",
-        "A larger model still reads two identical descriptions.",
-        "Forcing one tool breaks the cases where the other one is right."
-      ]
+        "Correct. A specific name plus a description that states its scope and points to the other tool removes the functional overlap.",
+        "Half right: better names help, but leaving the identical description keeps the overlap the model reads when it chooses; rename and rewrite together.",
+        "Versioning names says nothing about purpose; the model still cannot tell which input belongs to which tool.",
+        "Consolidation is a valid architectural option, but it is a bigger change than renaming and rewriting, and it moves the same decision into a parameter."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "The order lookup tool ran normally and found no orders for the customer. How should the result come back?",
+      "pergunta": "A generic analyze_document(document, instructions) tool is used to pull statistics, write summaries, and check claims, and its output format changes from call to call. What does the guide recommend?",
       "opcoes": [
-        "`is_error: true` with a transient category",
-        "`is_error: true` with a validation category",
-        "Success with an empty result (e.g., an empty list or `found=false`)",
-        "Don't return a `tool_result`, so the model notices the emptiness and tries another tool"
+        "Add an output_style parameter so that the agent can request one consistent format for each of the three uses.",
+        "Keep the tool and add a validator that rejects outputs in the wrong format and triggers an automatic retry.",
+        "Split it into extract_data_points, summarize_content, and verify_claim_against_source, each with a defined contract.",
+        "Expand the description of the instructions parameter with a template for each use, so that the agent fills it consistently."
       ],
       "correta": 2,
-      "explicacao": "Empty ≠ failure: the lookup ran, and 'nothing found' is valid information.",
+      "explicacao": "A generic tool that serves several purposes has no stable input/output contract. The guide recommends splitting it into purpose-specific tools, such as extract_data_points, summarize_content, and verify_claim_against_source, each with a defined input/output contract.",
       "feedbacks": [
-        "Transient is when the lookup did NOT run (timeout, 503).",
-        "The input was valid; there's nothing to correct.",
-        "Correct: an empty result is a success.",
-        "Every `tool_use` needs a matching `tool_result`."
-      ]
+        "An output_style parameter keeps one generic tool and leaves its purpose ambiguous; it is a partial fix for a missing contract.",
+        "Validating and retrying catches bad outputs after the fact but keeps a tool whose output was never defined.",
+        "Correct. Purpose-specific tools with defined input/output contracts are the guide's fix for a generic tool.",
+        "Templates in the description still leave one free-form tool, so the agent decides the purpose and format on every call."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "An error saying 'above the refund limit allowed by the policy' should be classified as:",
+      "pergunta": "Tool descriptions were rewritten and are clear, but the agent still calls run_test_suite for requests such as \"explain what this test file covers.\" The system prompt contains: \"When the user mentions tests, run run_test_suite.\" What should you do?",
       "opcoes": [
-        "Transient, retryable with backoff",
-        "Business, not retryable: explain the policy or escalate",
-        "Validation: fix the amount's format and try again",
-        "Permission: renew the token and try again"
+        "Add more detail and examples to the run_test_suite description so that it outweighs the system prompt line.",
+        "Reword the keyword-triggered line in the system prompt so that it describes when running the tests is wanted.",
+        "Add a classifier in front of the agent that blocks run_test_suite whenever the message asks for an explanation.",
+        "Keep the line and add few-shot examples of explanation requests answered without calling run_test_suite."
       ],
       "correta": 1,
-      "explicacao": "A policy violation is a business error: trying again will never succeed.",
+      "explicacao": "Keyword-sensitive instructions in the system prompt can create unintended tool associations that override well-written descriptions. Review the system prompt and reword such rules around the actual intent: run the suite when the user asks to run or verify tests.",
       "feedbacks": [
-        "Waiting doesn't change the policy; retrying here is wasteful.",
-        "Correct.",
-        "The format was correct; the problem is the business rule.",
-        "It's not a missing credential; it's a policy limit."
-      ]
+        "The descriptions are already clear; more description text cannot reliably outweigh an explicit instruction that contradicts it.",
+        "Correct. Rewording the keyword-triggered instruction stops the prompt from tying the word \"test\" to running the suite.",
+        "A classifier adds infrastructure to work around a one-line prompt problem.",
+        "Examples layered on top of a conflicting rule give the model contradictory guidance; fix the rule instead."
+      ],
+      "ts": "2.1"
     },
     {
-      "pergunta": "The search backend went down and the tool returned `[]` as if it were a success. Which anti-pattern is this?",
+      "pergunta": "An MCP tool's call to its backend times out. How should the MCP server report this so that the agent can decide what to do next?",
       "opcoes": [
-        "Silent error suppression",
-        "Generic error",
-        "Overlapping tool",
-        "Too many tools on the same agent, confusing selection"
+        "Return a tool result with isError: true whose content gives the error category, whether a retry can help, and a readable description.",
+        "Return a protocol-level error for the tools/call request, so the client learns that the tool failed before the model ever sees a result.",
+        "Return a normal result whose text starts with \"ERROR:\" and the timeout message, so the model reads the failure like any other output.",
+        "Return isError: true with the message \"Operation failed\", keeping internal details out of the agent's context while marking the failure."
       ],
       "correta": 0,
-      "explicacao": "Returning empty when the search didn't run hides the failure: the model concludes something false ('it doesn't exist').",
+      "explicacao": "In MCP, a tool execution failure is reported inside the tool result with isError: true, so the agent sees it and can reason about recovery. The content should carry structured metadata (errorCategory, isRetryable, a human-readable description) so the agent knows whether to retry, fix the input, or explain the problem.",
       "feedbacks": [
-        "Correct.",
-        "A generic error is 'Operation failed'; here no error is even signaled.",
-        "It has nothing to do with two similar tools.",
-        "It has nothing to do with the number of tools."
-      ]
+        "Correct. The isError flag marks the failure, and the structured content tells the agent how to recover.",
+        "Protocol-level errors are for problems with the request itself; a tool that ran and failed should report it in the result so the model can reason about it.",
+        "Without isError the failure looks like ordinary content, and the agent may summarize or quote the error text as if it were data.",
+        "Setting isError is right, but a generic message leaves the agent unable to tell whether a retry could succeed."
+      ],
+      "ts": "2.2"
     },
     {
-      "pergunta": "What is the guideline for the number of tools visible to an agent at decision time?",
+      "pergunta": "A refund request falls outside the refund window that the company's policy allows. How should the refund tool report this to the agent?",
       "opcoes": [
-        "Up to 50, as long as the descriptions are good",
-        "Exactly one, to avoid ambiguity",
-        "As many as fit in the context window",
-        "About 4–5"
+        "As a transient error with isRetryable: true, since the customer may share new details later in the conversation.",
+        "As a successful result carrying an internal status code, so that monitoring does not count the call as a failure.",
+        "As a validation error, so that the agent corrects the refund amount or the order date and calls the tool again.",
+        "As a business error with retriable: false and a customer-friendly explanation that the agent can pass on."
       ],
       "correta": 3,
-      "explicacao": "4–5 tools per agent; with many more than that, selection degrades, and the fix is to distribute them across specialized subagents (or use tool search).",
+      "explicacao": "A policy violation is a business error: retrying cannot change the result. Return it as non-retryable (retriable: false) with a customer-friendly explanation so that the agent can communicate the policy and offer alternatives.",
       "feedbacks": [
-        "Good descriptions don't make up for volume.",
-        "One tool per agent creates coordination overhead with no gain.",
-        "Fitting in the window doesn't mean selecting well.",
-        "Correct."
-      ]
+        "Marking a policy violation as transient and retryable wastes retries on a call that will always fail.",
+        "An internal code avoids the failure flag but gives the agent nothing to explain to the customer.",
+        "Nothing in the input is malformed; calling it validation invites the agent to resubmit a request that will be rejected again.",
+        "Correct. A business category, retriable: false, and a customer-friendly explanation let the agent stop and explain."
+      ],
+      "ts": "2.2"
     },
     {
-      "pergunta": "When is tool search with `defer_loading` appropriate?",
+      "pergunta": "Why does returning the same \"Operation failed\" message for every tool failure hurt an agent's recovery?",
       "opcoes": [
-        "Whenever more than one tool is declared, to save tokens on any request",
-        "Only when the model doesn't support `tool_choice`",
-        "With a large catalog: 10+ tools, >10k tokens of definitions, or several MCP servers",
-        "When you want to prevent the model from calling tools without removing them from the request"
+        "It hurts only when isError is missing; with the flag set, the agent already knows whether to retry.",
+        "The agent escalates every failure to a human, because a generic error is treated as a policy violation.",
+        "The agent cannot tell retryable failures from permanent ones, so it picks the wrong recovery.",
+        "The agent stops calling that tool for the rest of the session once it sees a generic failure message."
       ],
       "correta": 2,
-      "explicacao": "Tool search loads definitions on demand when the catalog is large; keep 3–5 frequently used tools non-deferred.",
+      "explicacao": "When every failure returns the same generic message, the agent cannot tell whether a retry could succeed. It ends up retrying permanent failures or abandoning transient ones. Structured metadata such as errorCategory and isRetryable prevents those wasted attempts.",
       "feedbacks": [
-        "With few tools, the search overhead isn't worth it.",
-        "It has nothing to do with `tool_choice`.",
-        "Correct.",
-        "To prevent calls, you use `tool_choice: none`."
-      ]
-    },
-    {
-      "pergunta": "Which `tool_choice` makes the model respond only in text while keeping the tools declared in the request?",
-      "opcoes": [
-        "`{\"type\": \"none\"}`",
-        "`{\"type\": \"auto\"}`",
-        "`{\"type\": \"any\"}`",
-        "Remove the `tools` array"
+        "isError says that the call failed, not what kind of failure it was; the agent still needs a category and retryability to choose a recovery.",
+        "Nothing turns a generic error into a policy violation; the real problem is that the agent cannot distinguish transient, validation, business and permission failures.",
+        "Correct. Without a category or retryability signal, the agent cannot choose the appropriate recovery.",
+        "Agents do not blacklist a tool after one generic failure; the cost is choosing the wrong recovery (retrying permanent failures, giving up on transient ones)."
       ],
-      "correta": 0,
-      "explicacao": "`none` = text only; the tools remain declared (and the cache prefix doesn't change).",
-      "feedbacks": [
-        "Correct.",
-        "`auto` lets the model decide, so it may call tools.",
-        "`any` forces it to call some tool.",
-        "Removing `tools` changes the prefix and invalidates the cache; it's not the same as `none`."
-      ]
+      "ts": "2.2"
     },
     {
-      "pergunta": "What does `disable_parallel_tool_use: true` do?",
+      "pergunta": "A customer lookup ran successfully and found no account for the email provided. A separate lookup call timed out. How should each result be returned?",
       "opcoes": [
-        "Turns off tool use in the request",
-        "Limits it to at most one tool call per response",
-        "Makes the client execute the tools sequentially, but the model still emits several",
-        "Forces the model to call exactly two tools"
+        "Both as errors with isError: true, since neither call returned an account that the agent can use.",
+        "The no-match as a successful empty result; the timeout as a transient error with isRetryable: true.",
+        "Both as successful empty results, which leaves the agent to decide whether to try either lookup again.",
+        "The no-match as a validation error so the agent asks for another email; the timeout as an empty result."
       ],
       "correta": 1,
-      "explicacao": "It limits the model to one call per response (with `any`/`tool`, exactly one).",
+      "explicacao": "A completed query with no matches is a valid empty result: it is information, not a failure. A timeout is an access failure that needs a retry decision, so it is returned as an error with a transient category and isRetryable: true.",
       "feedbacks": [
-        "To turn off tools, you use `none`.",
-        "Correct.",
-        "The restriction is on what the model emits, not on how the client executes.",
-        "No such behavior exists."
-      ]
-    },
-    {
-      "pergunta": "[volatile] On newer models, a forced `tool_choice` of `any` or `tool` returns a 400. If the goal was just to get JSON in the right format, what is the alternative?",
-      "opcoes": [
-        "Use an assistant prefill with `{`",
-        "Repeat the request until it no longer returns a 400",
-        "Structured outputs (`output_config.format` with `json_schema`)",
-        "Use `tool_choice: none` and ask in the prompt for the response to be valid JSON"
+        "Treating a valid no-match as an error makes the agent retry or escalate a query that already succeeded.",
+        "Correct. A valid empty result for the no-match, and a structured transient error for the timeout.",
+        "Returning the timeout as an empty success is silent suppression; the agent would tell the customer that no account exists.",
+        "A no-match is not invalid input, and an empty result for the timeout hides the failure."
       ],
-      "correta": 2,
-      "explicacao": "Structured outputs solve 'always JSON matching the schema'; another option is `auto` + an instruction naming the tool + `strict`.",
-      "feedbacks": [
-        "Prefill also returns a 400 on newer models.",
-        "A 400 is an invalid-request error; repeating it doesn't help.",
-        "Correct.",
-        "Asking for JSON in prose doesn't guarantee the format."
-      ]
+      "ts": "2.2"
     },
     {
-      "pergunta": "How are Anthropic-defined tools (e.g., web search) declared?",
+      "pergunta": "According to the guide, how should a search subagent handle a transient failure?",
       "opcoes": [
-        "With complete `name`, `description`, and `input_schema`",
-        "Only via an MCP server",
-        "With `strict: true` required",
-        "By `type` + `name`, without `input_schema`"
+        "Retry locally first, then send the coordinator only what it could not resolve, with what was attempted and partial results.",
+        "Send each failure to the coordinator at once, since only the coordinator may decide whether a retry is worth attempting.",
+        "Keep retrying until the source answers, and return a generic \"search unavailable\" status if the attempts run out.",
+        "Return an empty result marked as successful, so the coordinator can keep the workflow moving with the other subagents."
+      ],
+      "correta": 0,
+      "explicacao": "Subagents should recover locally from transient failures and propagate to the coordinator only what they cannot resolve, including what was attempted and any partial results. This avoids needless round trips while giving the coordinator what it needs to decide on recovery.",
+      "feedbacks": [
+        "Correct. Local recovery first; unresolved errors go up with what was attempted and the partial results.",
+        "Sending every transient blip upward adds round trips that a local retry would have avoided.",
+        "A generic \"search unavailable\" status hides the context the coordinator needs to recover.",
+        "An empty success hides the failure, so the coordinator treats missing data as a real finding."
+      ],
+      "ts": "2.2"
+    },
+    {
+      "pergunta": "Which TWO statements about distributing tools across agents are correct? Choose TWO.",
+      "opcoes": [
+        "An agent given tools outside its specialization tends to misuse them, as when a synthesis agent runs web searches.",
+        "A prompt instruction not to use certain tools works as well as removing those tools from the agent's definition.",
+        "Rewriting all descriptions fully offsets a large tool set, so the tool count matters only when the descriptions are weak.",
+        "Giving one agent about 18 tools instead of 4–5 degrades selection reliability by making every decision more complex.",
+        "An agent should hold every tool in the system so that it can handle unexpected requests without a coordinator round trip."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "Tool selection gets less reliable as an agent's tool count grows (for example, 18 instead of 4–5), and agents given tools outside their specialization tend to misuse them. Scope each agent's tools to its role.",
+      "feedbacks": [
+        "Correct. Out-of-role tools get misused, as when a synthesis agent starts running its own searches.",
+        "A prompt instruction is probabilistic; removing the tool from the agent's definition removes the option.",
+        "Good descriptions help, but they do not remove the decision complexity of a large tool set.",
+        "Correct. More tools mean more complex selection decisions and lower reliability.",
+        "Giving every agent every tool increases decision complexity and invites cross-role misuse."
+      ],
+      "ts": "2.3"
+    },
+    {
+      "pergunta": "A synthesis agent often needs quick checks of a single date or figure, and a few checks need real investigation. Today every check goes back through the coordinator to the search agent. Which design does the guide recommend?",
+      "opcoes": [
+        "Give the synthesis agent the search agent's web tools, so that each check, simple or complex, is handled without a round trip.",
+        "Keep routing the checks through the coordinator, which preserves the separation of roles at the cost of extra round trips.",
+        "Have the synthesis agent collect its checks and send them to the coordinator as one batch at the end of its pass.",
+        "Give the synthesis agent a verify_fact tool for the quick checks, and keep sending the complex ones through the coordinator."
       ],
       "correta": 3,
-      "explicacao": "Anthropic-defined tools use a versioned `type` + `name`; the model already knows the schema.",
+      "explicacao": "Agents get only the tools for their role, plus a limited cross-role tool when a specific need is frequent. The guide's example is a verify_fact tool for the synthesis agent, with complex verifications still routed through the coordinator.",
       "feedbacks": [
-        "That's the format for a custom client-side tool.",
-        "They don't depend on MCP.",
-        "Strict is for custom tools.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A server-side web search tool failed. How does this show up for your code?",
-      "opcoes": [
-        "HTTP 200, with an error object inside the result block",
-        "HTTP 500 with the tool's error message in the response body",
-        "Always HTTP 429",
-        "The response comes back empty, with no `content`"
+        "Handing over the full search toolset over-provisions the synthesis agent, which then tends to misuse tools outside its specialization.",
+        "Separation of roles matters, but routing even the frequent simple checks through the coordinator keeps the overhead the cross-role tool is meant to remove.",
+        "Batching creates blocking dependencies, because later synthesis steps may rely on facts that have not been verified yet.",
+        "Correct. A narrow tool for the frequent, simple need, while complex cases still go through the coordinator."
       ],
-      "correta": 0,
-      "explicacao": "Server-side tool errors come with HTTP 200 and the error inside the result (e.g., `max_uses_exceeded`). Checking only the HTTP status won't catch them.",
-      "feedbacks": [
-        "Correct.",
-        "Tempting because that's how APIs usually fail, but that's not the case here.",
-        "Rate limiting is something else and isn't the tool's error mechanism.",
-        "The response comes back normally, with the error inside the block."
-      ]
+      "ts": "2.3"
     },
     {
-      "pergunta": "The model emitted three `tool_use` blocks in one response and one of them failed. How should you return them?",
+      "pergunta": "An analysis agent uses a generic fetch_url tool and sometimes loads pages that are not documents, such as search pages and login screens. What change does the guide recommend?",
       "opcoes": [
-        "Three separate `user` messages, one per result, in the order each tool finished",
-        "One `user` message with only the two that succeeded",
-        "One `user` message with all three `tool_result` blocks; the failed one with `is_error: true`",
-        "Resend the request without the tool that failed, so the model doesn't keep trying it"
+        "Keep fetch_url and list the allowed document domains in the agent's system prompt.",
+        "Keep fetch_url and filter out non-document pages in a post-processing step.",
+        "Replace fetch_url with load_document, a constrained tool that validates document URLs.",
+        "Move fetch_url to the coordinator, which fetches each URL and passes on the content."
       ],
       "correta": 2,
-      "explicacao": "All `tool_result` blocks go in a single `user` message, each with its `tool_use_id`, including the one that failed.",
+      "explicacao": "Replace generic tools with constrained alternatives. The guide's example is replacing fetch_url with load_document, which validates that URLs point to documents, so the restriction lives in the tool rather than in instructions.",
       "feedbacks": [
-        "Splitting into several messages breaks the return pattern.",
-        "Every `tool_use` needs its `tool_result`.",
-        "Correct.",
-        "Changing the tools invalidates the cache and hides the failure from the model."
-      ]
+        "A domain list in the prompt is probabilistic; the generic tool still lets the agent fetch anything.",
+        "Filtering after the fetch wastes calls and drops content silently; the constrained tool prevents the bad fetch.",
+        "Correct. A constrained tool that validates document URLs removes the misuse at its source.",
+        "Moving fetching to the coordinator adds round trips and still keeps a generic fetch tool in the system."
+      ],
+      "ts": "2.3"
     },
     {
-      "pergunta": "The response came back with `stop_reason: \"pause_turn\"`. What should you do?",
+      "pergunta": "A pipeline must run extract_metadata before the enrichment tools that depend on its output. How does the guide recommend guaranteeing this order?",
       "opcoes": [
-        "Treat it as the end and show the text to the user",
-        "Resend the conversation with this assistant response so the model can continue",
-        "Increase `max_tokens` and repeat the request from scratch, since the response was cut off",
-        "Escalate to a human"
+        "Force {\"type\": \"tool\", \"name\": \"extract_metadata\"} on the first request, then run enrichment in follow-up turns.",
+        "Set tool_choice to {\"type\": \"any\"} on each request so that a tool call, most likely extract_metadata, comes first.",
+        "Add a system prompt instruction stating that extract_metadata must be called before any of the enrichment tools.",
+        "Force extract_metadata on each request in the conversation so that it stays first throughout the whole workflow."
+      ],
+      "correta": 0,
+      "explicacao": "Forced tool selection guarantees that a specific tool is called. Force extract_metadata on the first request, then process the enrichment steps in follow-up turns (for example, with \"auto\"), where the model can use the extracted metadata.",
+      "feedbacks": [
+        "Correct. Force the first call, then let the follow-up turns handle enrichment.",
+        "\"any\" guarantees a tool call but not which tool; the model could still call an enrichment tool first.",
+        "A prompt instruction is probabilistic; forced selection guarantees which tool the first call uses.",
+        "Forcing it on every request would keep the model from ever calling the enrichment tools."
+      ],
+      "ts": "2.3"
+    },
+    {
+      "pergunta": "Which statement about tool_choice is correct?",
+      "opcoes": [
+        "\"any\" lets the model call several tools in one response, while \"auto\" limits it to a single tool call per turn.",
+        "\"auto\" lets the model reply in text instead of calling a tool; \"any\" requires a tool call but lets the model choose which.",
+        "A forced {\"type\": \"tool\"} selection stays in effect on later turns until a request explicitly switches tool_choice back to \"auto\".",
+        "\"any\" guarantees which tool runs first, so it is enough to make extract_metadata run before the enrichment tools in a pipeline."
       ],
       "correta": 1,
-      "explicacao": "`pause_turn` = the server-side loop hit its iteration cap; the response is partial and must be sent back to continue.",
+      "explicacao": "With \"auto,\" the model decides whether to call a tool or reply with text. With \"any,\" it must call a tool but chooses which. A forced selection ({\"type\": \"tool\", \"name\": \"...\"}) requires that specific tool and applies only to the request in which you set it.",
       "feedbacks": [
-        "The response is partial; treating it as the end delivers an incomplete result.",
-        "Correct.",
-        "That would be the response to `max_tokens`, not to `pause_turn`.",
-        "Nothing here requires a human; it's a technical continuation."
-      ]
+        "Neither option controls how many tools are called per response; \"auto\" lets the model choose text or a tool, and \"any\" forces some tool call.",
+        "Correct. \"auto\" may return text; \"any\" must call some tool and lets the model pick it.",
+        "tool_choice is set per request; a later request uses whatever value it sends, and nothing carries over from the previous turn.",
+        "\"any\" guarantees a tool call, not which tool; to make extract_metadata run first, force it by name on the first request."
+      ],
+      "ts": "2.3"
     }
   ]
 }

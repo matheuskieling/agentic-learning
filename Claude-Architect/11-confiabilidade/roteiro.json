@@ -1,119 +1,136 @@
 {
   "modulo": "11",
-  "titulo": "Confiabilidade: escalonamento, propagação de erro, revisão humana, proveniência, guardrails e evals",
+  "titulo": "Propagação de erro, revisão humana e proveniência",
   "beats": [
     {
       "id": "intro",
       "fase": "teoria",
-      "titulo": "Abertura — como o sistema se comporta quando erra ou não sabe",
+      "titulo": "Abertura: quando algo falha ou diverge, quem fica sabendo?",
       "pontos": [
         "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e traduza ao vivo os trechos de código C# para a linguagem salva",
-        "Task statements: 5.2 (escalonamento), 5.3 (propagação de erro), 5.5 (revisão humana), 5.6 (proveniência), mais guardrails e evals em nível de arquitetura",
-        "Confiável não é 'nunca erra': é escalar na hora certa, não esconder falha, saber a fonte de cada afirmação, revisar onde está o risco e medir antes de mudar",
-        "Cai com força nos Cenários 1 (suporte), 3 (pesquisa multiagente) e 6 (extração)",
-        "Último módulo: depois dele vêm os simulados"
+        "TS do módulo: 5.3 (propagação de erro em multiagente), 5.5 (revisão humana e calibração de confiança), 5.6 (proveniência e incerteza na síntese multifonte), todos os bullets",
+        "Fio condutor: o coordenador só recupera o erro que enxerga em detalhe; o revisor só pega o erro que alguém mandou olhar; o leitor só confia no que rastreia até a fonte",
+        "Cai com força nos Cenários 3 (pesquisa multiagente) e 6 (extração estruturada); também nos Cenários 1 (suporte) e 4 (produtividade do dev)",
+        "Pontes: o formato do erro na tool (isError, errorCategory, isRetryable) foi no M04; escalonamento de atendimento (5.2) foi no M06, aqui só aparece na tabela das 'três caras da confiança'",
+        "Guardrails e evals ficam de fora: o guia não tem TS para eles",
+        "Último módulo de conteúdo: depois vêm os bancos por cenário e os simulados"
       ],
-      "checkpoint": "Pergunte ao aluno qual ele acha que é o pior tipo de falha num agente: errar alto ou errar em silêncio. Confirme que está pronto",
+      "checkpoint": "Pergunte ao aluno qual falha é pior num agente: a que derruba o run inteiro ou a que devolve um resultado vazio como se estivesse tudo certo. Guarde a resposta para o t2 e confirme que pode continuar",
       "ref": "11-confiabilidade/teoria.md"
     },
     {
       "id": "t1",
       "fase": "teoria",
-      "titulo": "Escalonamento: quando escalar e quando NÃO",
+      "titulo": "Erro estruturado: tipo, tentado, parcial, alternativas",
       "pontos": [
-        "Escale de imediato: pedido explícito de humano, lacuna ou exceção de política, ausência de progresso após tentativas razoáveis",
-        "Não escale por: sentimento, confiança autodeclarada (mal calibrada), tamanho da conversa",
-        "Sentimento ≠ complexidade: furioso com cobrança de 5 dólares → resolva; calmo pedindo exceção de política → escale",
-        "Gatilho crítico (ex.: limite de valor) em código: PreToolUse bloqueia process_refund e encaminha",
-        "Anti-padrões como alternativa: classificador de sentimento, 'escale se estiver pouco confiante', 'escale após 15 turnos'"
+        "5.3-K1/S1: o subagent que não conclui devolve tipo de falha, o que foi tentado, resultado parcial e alternativas possíveis",
+        "Com isso o coordenador escolhe: retentar com consulta modificada, tentar outra fonte, ou seguir com o parcial e anotar a lacuna",
+        "5.3-K3: status genérico ('search unavailable', 'analysis failed') esconde exatamente essas peças",
+        "Mostre o JSON: a saída do subagent volta como tool_result do Task no próximo request do coordenador (messages[...].content[0]), com failure.type marcado",
+        "Pegadinha da oficial Q8: 'retry com backoff e, esgotado, status genérico'. O retry local está certo; o defeito é o status genérico no fim",
+        "Outros distratores: stack trace cru ao coordenador; re-delegar a tarefa inteira a cada falha",
+        "Nota volátil: a doc atual chama a tool de Agent; na prova é Task"
       ],
-      "checkpoint": "Dê os dois clientes (furioso com frete de 12 BRL coberto; calmo pedindo reembolso fora da janela) e pergunte quem escala e por quê",
-      "ref": "11-confiabilidade/teoria.md#1-escalonamento-quando-escalar-e-quando-não"
+      "checkpoint": "Em inglês: \"A document analysis subagent finished 13 of 19 papers; the other 6 failed with 503 after retries. What should its result to the coordinator contain?\" Esperado: as 13 análises + tipo de falha + o que tentou (IDs, retries) + alternativas; não um status genérico nem os 13 como se fossem tudo",
+      "ref": "11-confiabilidade/teoria.md#1-erro-estruturado-o-que-o-coordenador-precisa-para-decidir"
     },
     {
       "id": "t2",
       "fase": "teoria",
-      "titulo": "Desambiguação de cliente e handoff estruturado",
+      "titulo": "Falha de acesso × vazio válido; supressão × abortar",
       "pontos": [
-        "Vários clientes compatíveis na busca → peça identificador adicional; nunca chute nem pegue o primeiro",
-        "Agir sobre o cliente errado é incidente de privacidade e financeiro",
-        "O humano normalmente não lê o transcript: handoff é resumo estruturado",
-        "Campos: cliente (verificado?), problema, pedido do cliente, ações tomadas, motivo do escalonamento, causa raiz provável, ação recomendada, valor",
-        "Anti-padrão: 'anexe a transcrição inteira para não perder nada'"
+        "5.3-K2/S2: timeout/503/sem permissão = a consulta não rodou (decisão de retry); HTTP 200 com zero = rodou e não achou (é achado, não se retenta)",
+        "O relatório de erro precisa distinguir os dois; na tool MCP é o isError (M04)",
+        "Mostre o C#: catch (TimeoutException) devolvendo lista vazia (supressão silenciosa) × PolicySearchResult.AccessFailure estruturado",
+        "5.3-K4: supressão silenciosa e abortar o workflow inteiro são AMBOS anti-padrões; o certo é seguir com o que deu certo e reportar a falha com contexto",
+        "Volte à resposta do aluno no intro: as duas falhas são ruins, por motivos opostos",
+        "Como cai: 'o relatório diz que não há estudos/políticas sobre X, mas existem' com timeouts nos logs; no Cenário 1, 'o pedido não existe' quando o backend caiu"
       ],
-      "checkpoint": "Peça ao aluno os campos mínimos de um handoff para um caso de cobrança duplicada acima do limite",
-      "ref": "11-confiabilidade/teoria.md#2-desambiguação-e-handoff-estruturado"
+      "checkpoint": "Em inglês: \"A teammate proposes wrapping each subagent in try/catch that returns an empty list on failure, because today one failure aborts the whole run. How do you evaluate it?\" Esperado: rejeitar as duas coisas; continuar com os demais e reportar a falha com tipo e o que foi tentado",
+      "ref": "11-confiabilidade/teoria.md#2-falha-de-acesso--resultado-vazio-válido"
     },
     {
       "id": "t3",
       "fase": "teoria",
-      "titulo": "Propagação de erro estruturada; vazio ≠ falha",
+      "titulo": "Recuperação local e anotações de cobertura",
       "pontos": [
-        "Erro com contexto: categoria, retentável, retry-after, serviço, ação tentada, resultado parcial, alternativas",
-        "Subagent recupera transitórios localmente (retry com backoff) e só propaga o que não resolveu",
-        "Não aborte o workflow: continue com o parcial, anote a lacuna, ofereça alternativa",
-        "Vazio ≠ falha: 200 com [] = nada encontrado; timeout/503 = não rodou. catch → [] é supressão silenciosa",
-        "Categorias: transitório → retry; validação → corrigir e tentar; negócio → explicar/escalar; permissão → escalar",
-        "Mostre o contraste em C#: catch que devolve lista vazia vs. SearchResult.Failure estruturado"
+        "5.3-S3: o subagent retenta o transitório localmente (backoff) e só propaga o que não resolveu, com o que tentou e o parcial; permissão/negócio sobe direto, sem retry",
+        "Mostre o pseudocódigo C#-like do subagent de garantia (SDK oficial é Python/TS)",
+        "Distratores: centralizar todo retry no coordenador (multiplica latência, perde o parcial); escalar para humano a cada falha",
+        "5.3-S4: a síntese traz anotações de cobertura: o que está bem sustentado × que áreas têm lacuna por fonte indisponível. Mostre o JSON coverage[].status = 'gap'",
+        "Distratores de cobertura: aviso genérico 'pode estar incompleto' (não diz onde); preencher a lacuna com conhecimento geral; segurar o relatório até tudo voltar"
       ],
-      "checkpoint": "Pergunte o que o coordenador conclui se o subagent de busca devolve lista vazia após um timeout, e como corrigir",
-      "ref": "11-confiabilidade/teoria.md#3-propagação-de-erro-estruturada"
+      "checkpoint": "Em inglês: \"An agent writes a legacy-system dossier from code, a wiki MCP server, and a ticket MCP server. The wiki server was down for the whole run. Should it publish?\" Esperado: publicar com anotações de cobertura dizendo quais seções estão sustentadas e quais têm lacuna por causa da wiki",
+      "ref": "11-confiabilidade/teoria.md#3-recuperação-local-e-os-dois-anti-padrões-opostos"
     },
     {
       "id": "t4",
       "fase": "teoria",
-      "titulo": "Revisão humana: amostragem por risco, confiança calibrada, métrica por segmento",
+      "titulo": "Métrica agregada esconde segmento",
       "pontos": [
-        "Amostragem estratificada por risco (ex.: 20% alto, 10% médio, 5% baixo), não uniforme; irreversível pode exigir 100%",
-        "Confiança por campo, calibrada contra conjunto rotulado; sem calibração não significa nada",
-        "97% de acurácia agregada pode esconder 45% em notas manuscritas: quebre por tipo de documento e campo",
-        "Anti-padrões: amostra uniforme, confiança crua como gatilho, desligar revisão com base no agregado"
+        "5.5-K1: 97% de acurácia agregada pode esconder desempenho ruim num tipo de documento ou campo",
+        "5.5-K4/S2: antes de automatizar as de alta confiança ou reduzir a revisão, meça por tipo de documento e por campo; automatize só o segmento que bate a meta sozinho",
+        "Mostre a tabela: agregado 97,6% com o campo dependent_birth_date em 78%",
+        "Distratores: 'aumente a amostra uniforme' (mede melhor o mesmo agregado); 'meta mais alta' ou 'média móvel' (ainda agregado); 'automatize primeiro os tipos de maior volume'"
       ],
-      "checkpoint": "Pergunte o que o aluno exigiria antes de aprovar 'desligar a revisão humana porque a acurácia é 97%'",
-      "ref": "11-confiabilidade/teoria.md#4-revisão-humana-onde-colocar-o-olho-humano"
+      "checkpoint": "Em inglês: \"Overall accuracy on high-confidence extractions is 98.6%, above the 97% target. The PM wants to turn off review next sprint. What do you require first?\" Esperado: acurácia por tipo de documento e por campo; automatizar só os segmentos que batem a meta",
+      "ref": "11-confiabilidade/teoria.md#5-métrica-agregada-esconde-segmento-valide-por-tipo-e-campo"
     },
     {
       "id": "t5",
       "fase": "teoria",
-      "titulo": "Proveniência: afirmação → fonte, conflitos, datas e rótulos de certeza",
+      "titulo": "Confiança por campo, calibrada, roteando a revisão",
       "pontos": [
-        "Cada afirmação carrega local da evidência, URL/documento, data de publicação, tipo de fonte; subagents separam conteúdo de metadados",
-        "Conflito: anote os valores com as fontes; não escolha um em silêncio nem tire média",
-        "Dados temporais: registre 'dados de', publicação e coleta; períodos diferentes não são contradição",
-        "Rótulos: consolidado / contestado / fonte única; preserve ressalvas",
-        "Formato conforme o conteúdo: tabela para financeiro, cronologia para eventos",
-        "Pegadinha do Cenário 3: 'use a fonte mais recente' ou 'faça a média'"
+        "5.5-K3/S3: o modelo emite confiança por campo; os limiares são calibrados num conjunto de validação rotulado, por campo",
+        "Mostre o request: tools[0].input_schema.properties.start_date.properties.confidence, e para onde vai o resultado (fila de revisão × folha de pagamento)",
+        "Mostre o C# de calibração: o menor limiar cujo conjunto acima dele erra no máximo X%",
+        "5.5-S4: para humano vai a confiança baixa OU a fonte ambígua/contraditória (conflict_detected); a fila prioriza a capacidade limitada dos revisores, não a ordem de chegada",
+        "Quadro das três caras da confiança: filtrar achados por confiança (4.1) = errado; escalar atendimento por confiança/sentimento (5.2) = errado; confiança por campo calibrada para rotear revisão (5.5/4.6) = CERTO",
+        "Nunca marque 'a confiança do modelo não serve': para rotear revisão, calibrada, ela serve"
       ],
-      "checkpoint": "Dê duas fontes com 24% e 38% e pergunte o que a síntese deve fazer (incluindo checar as datas)",
-      "ref": "11-confiabilidade/teoria.md#5-proveniência-da-informação"
+      "checkpoint": "Em inglês: \"An engineer proposes one 0.85 threshold for all 22 fields because the scores looked fine on 30 hand-checked contracts. You have 1,200 labeled contracts. Evaluate.\" Esperado: manter a confiança por campo e calibrar o limiar de cada campo no conjunto rotulado",
+      "ref": "11-confiabilidade/teoria.md#6-confiança-por-campo-calibrada-para-rotear-revisão-humana"
     },
     {
       "id": "t6",
       "fase": "teoria",
-      "titulo": "Guardrails em nível de arquitetura",
+      "titulo": "Amostragem aleatória estratificada das extrações de ALTA confiança",
       "pontos": [
-        "Crítico em código determinístico; prompt é best-effort",
-        "Camadas: entrada (validação, PII, injection), ação (PreToolUse, least privilege), saída (schema + semântica), humano (aprovação do irreversível)",
-        "Conteúdo externo é dado, não instrução",
-        "Falhar fechado em ação crítica: se a verificação não roda, a ação não acontece",
-        "Anti-padrões: 'NUNCA' em maiúsculas no prompt como única proteção; segundo LLM onde uma regra de código resolve; todas as tools para todos os agentes"
+        "5.5-K2/S1: o que passa do limiar vai direto ao sistema e ninguém olha; sorteie uma amostra aleatória dessas extrações, estratificada (tipo, campo, template, faixa de confiança), e revise",
+        "Dois objetivos: medir a taxa de erro contínua do que é auto-aprovado e detectar padrões de erro novos (template novo, layout que mudou)",
+        "Não confunda com '20% alto risco / 10% médio / 5% baixo' (taxa de revisão por faixa de risco): isso não é a amostragem estratificada do guia",
+        "Distratores: monitorar só as correções dos revisores (que só veem baixa confiança); amostra uniforme de tudo; esperar reclamação de cliente"
       ],
-      "checkpoint": "Pergunte onde o aluno colocaria a regra 'só reembolsar com identidade verificada' e por quê",
-      "ref": "11-confiabilidade/teoria.md#6-guardrails-em-nível-de-arquitetura"
+      "checkpoint": "Em inglês: \"A dashboard built from reviewer corrections shows a stable 1.2% error rate, yet an audit finds 18% wrong dates among auto-posted extractions with confidence of at least 0.95. Why was this missed?\" Esperado: ninguém amostrava as extrações de alta confiança",
+      "ref": "11-confiabilidade/teoria.md#7-amostragem-aleatória-estratificada-das-extrações-de-alta-confiança"
     },
     {
       "id": "t7",
       "fase": "teoria",
-      "titulo": "Evals: conjunto rotulado, medir por segmento, mudanças guiadas por métrica",
+      "titulo": "Proveniência: claim-source mappings",
       "pontos": [
-        "Conjunto de teste rotulado, representativo do tráfego real e com casos de borda/adversariais",
-        "Medir por segmento (tipo de documento, intenção, campo); o agregado esconde regressões",
-        "Processo: linha de base → uma mudança por vez → comparar por segmento → manter como regressão (inclusive ao migrar de modelo)",
-        "Graders: determinístico quando der; LLM-as-judge com rubrica explícita calibrada contra humanos; avaliar comportamento do agente (tool certa, escalou quando devia e não escalou quando não devia)",
-        "Anti-padrões: testar 3 casos à mão; mudar várias coisas de uma vez; usar os exemplos few-shot como teste"
+        "5.6-K1: a atribuição se perde quando os achados são comprimidos em prosa sem mapeamento afirmação → fonte",
+        "5.6-S1: subagents emitem claim-source mappings estruturados (URL/documento, trecho, página, datas)",
+        "5.6-K2: a síntese preserva e mescla: a mesma afirmação de três fontes vira uma afirmação com três fontes",
+        "Mostre o JSON findings[].sources[] e o caminho: tool_result do Task → coordenador → prompt da síntese",
+        "Distratores: 'peça à síntese que cite'; resumir cada subagent num parágrafo; votar citações entre execuções; dar verify_fact para re-achar fontes que já existiam"
       ],
-      "checkpoint": "Pergunte como o aluno provaria que um novo critério de escalonamento não piorou o agente",
-      "ref": "11-confiabilidade/teoria.md#7-avaliação-evals-medir-antes-de-mexer"
+      "checkpoint": "Em inglês: \"11 of 42 report claims cite the wrong study or none, yet each claim appears in a source the subagents read. Subagent summaries are accurate prose. What is happening?\" Esperado: a atribuição se perdeu na compressão; subagents devem emitir claim-source mappings que a síntese preserva",
+      "ref": "11-confiabilidade/teoria.md#8-proveniência-mapeamento-afirmação--fonte"
+    },
+    {
+      "id": "t8",
+      "fase": "teoria",
+      "titulo": "Conflitos, datas e o formato do relatório",
+      "pontos": [
+        "5.6-K3: estatísticas conflitantes de fontes críveis → anotar o conflito com atribuição; não escolher (mais recente, média, amostra maior)",
+        "5.6-S3: o subagent de análise termina a análise com os valores anotados; o coordenador reconcilia antes da síntese (não para no meio, não escolhe, não pula o coordenador)",
+        "5.6-K4/S4: datas de publicação e de coleta nas saídas estruturadas; 11,3% (2019) × 14,8% (2025) não é contradição",
+        "5.6-S2: relatório com seções de achados bem estabelecidos × contestados, preservando as caracterizações das fontes ('preliminar', 'n=48') e o contexto metodológico",
+        "5.6-S5: renderize por tipo: financeiro em tabela, notícias em prosa, achados técnicos em lista estruturada; nada de formato uniforme"
+      ],
+      "checkpoint": "Em inglês: \"Two credible studies report 12% and 21% for the same measure and period. What should the document analysis subagent do?\" Esperado: terminar a análise com os dois valores anotados e as fontes, e deixar o coordenador reconciliar antes da síntese",
+      "ref": "11-confiabilidade/teoria.md#9-conflitos-entre-fontes-e-dados-temporais"
     },
     {
       "id": "q1",
@@ -121,7 +138,7 @@
       "titulo": "Quiz do módulo",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "15 questões curtas sobre escalonamento, erros, revisão humana, proveniência, guardrails e evals",
+        "15 questões de fixação: erro estruturado, falha × vazio, recuperação local, cobertura, segmentação, confiança calibrada, amostragem das de alta confiança, claim-source, conflitos, datas e formato",
         "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-11/questions.json",
@@ -134,23 +151,24 @@
       "titulo": "Prova do módulo",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "20 questões em estilo cenário do exame, feedback por alternativa, algumas de múltipla resposta (Choose TWO)",
+        "20 questões em estilo cenário do exame (Cenários 3, 6, 1 e 4), feedback por alternativa, 3 de múltipla resposta (Choose TWO)",
+        "Depois de cada resposta, explique por que cada errada é tentadora e qual anti-padrão ela representa",
         "Aprovação 70%; abaixo disso, revise as seções correspondentes antes dos simulados"
       ],
       "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-11/questions.json --id prova",
-      "checkpoint": "Se passou, proponha começar os simulados; se não, revise os pontos errados com a tabela de decisão",
+      "checkpoint": "Se passou, proponha seguir para os bancos por cenário; se não, revise os pontos errados com a tabela de decisão",
       "ref": "Claude-Architect/provas/modulo-11/questions.json"
     },
     {
       "id": "fim",
       "fase": "fechamento",
-      "titulo": "Fechamento do Módulo 11 e do conteúdo teórico — rumo aos simulados",
+      "titulo": "Fechamento do Módulo 11 e do conteúdo: rumo aos bancos por cenário e simulados",
       "pontos": [
-        "Recap: escalar por critério objetivo (não sentimento/autoconfiança), handoff estruturado, erro estruturado e vazio ≠ falha, revisão estratificada e calibrada, proveniência com conflitos anotados, crítico em código, medir antes de mexer",
+        "Recap: erro estruturado (tipo, tentado, parcial, alternativas); falha de acesso ≠ vazio válido; nem suprimir, nem abortar; anotações de cobertura; validar por tipo e campo; confiança por campo calibrada para rotear revisão; amostra estratificada das de alta confiança; claim-source mappings; conflito anotado e reconciliado pelo coordenador; datas; consolidado × contestado; formato por tipo",
         "Fim dos 11 módulos. Agora o foco é treinar no formato do exame (ver Claude-Architect/simulados/CLAUDE.md)",
-        "Passo 1: bancos por cenário, um de cada vez — python3 engine/session.py start Claude-Architect/simulados/cenarios/cenario-1.json --id cenario (depois cenario-2 ... cenario-6)",
-        "Passo 2: simulado completo — python3 engine/session.py start Claude-Architect/simulados/simulado-1.json --id simulado (60 questões, 120 min, corte 72%)",
-        "Antes de cada simulado, releia as 'Colas de véspera' dos módulos com pior desempenho"
+        "Passo 1: bancos por cenário, um de cada vez: python3 engine/session.py start Claude-Architect/simulados/cenarios/cenario-1.json --id cenario (depois cenario-2 ... cenario-6)",
+        "Passo 2: simulados completos, sempre com --no-shuffle (blocos de 15 por cenário, como no exame): python3 engine/session.py start Claude-Architect/simulados/simulado-1.json --id simulado --no-shuffle (60 questões, 120 min, corte 72%); depois simulado-2 ... simulado-5 (o 5 é o simulado final)",
+        "Antes de cada simulado, releia as 'Colas de véspera' dos módulos com pior desempenho. Portões de prontidão (simulados/CLAUDE.md): ≥ 80% em pelo menos 3 simulados diferentes no tempo, nenhum domínio abaixo de 70% no último e o simulado 5 feito sem ter visto as questões"
       ],
       "checkpoint": "Pergunte se o aluno quer começar já pelo banco do Cenário 1 ou parar por aqui",
       "ref": "Claude-Architect/simulados/CLAUDE.md"

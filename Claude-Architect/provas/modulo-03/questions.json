@@ -1,361 +1,441 @@
 {
-  "titulo": "Module 03 — Exam: structured output, validation with retry, and the Batch API",
+  "titulo": "Módulo 03 — Prova (estilo exame)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Structured Data Extraction scenario: a pipeline asks the model to 'respond only with JSON' and parses the response. On 4% of documents the parse fails because there is text before the JSON or a field is missing. What is the BEST fix?",
+      "pergunta": "A travel agency extracts nightly rate sheets from 2,300 partner hotels. The synchronous version let the model call lookup_property_code (which queries the agency's property database) and then call record_rates with the resolved code. After the job moved to the Message Batches API, 38% of results end with stop_reason \"tool_use\" on lookup_property_code and contain no record_rates call. Rates are loaded into pricing within three days, so latency is not a concern. Which TWO changes fix this while keeping batch pricing? Choose TWO.",
       "opcoes": [
-        "Use structured outputs (output_config.format with the extraction's JSON schema)",
-        "Extract the JSON with a regex that looks for the first '{' and the last '}'",
-        "Repeat the instruction 'ONLY JSON' at the beginning and at the end of the prompt",
-        "Prefill the assistant turn with '{'"
+        "Resolve property codes in code before submission and put the candidate codes in every request's prompt, so the model only needs to call record_rates.",
+        "Set tool_choice to \"any\" on every batch request, so that the model is required to finish with a tool call instead of stopping partway through.",
+        "Enable strict mode on lookup_property_code, so that the batch processor receives valid arguments and can run the lookup before the model calls record_rates.",
+        "Raise max_tokens on every batch request, so that the model has enough room to finish both the lookup and the record_rates call within a single response.",
+        "Run the returned lookup calls in your own code, then submit a second batch carrying the history plus each tool_result, so the model can call record_rates."
       ],
-      "correta": 0,
-      "explicacao": "Structured outputs guarantees a response that conforms to the schema; the other options are patches or are invalid on newer models.",
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "A batch request is a single model call: when the response ends in tool_use, nothing executes the tool and returns its result inside that request. You either remove the need for the mid-request tool (resolve the codes first and put them in the prompt) or split the work into rounds, where your code runs the tool and a new request carries the tool_result. Raising max_tokens, forcing a tool or enabling strict mode do not give the batch a way to run tools.",
       "feedbacks": [
-        "Correct.",
-        "A fragile patch: it handles the surrounding text, not the missing field.",
-        "Emphasis gives no structural guarantee.",
-        "Prefill returns 400 on newer models and doesn't guarantee the schema."
-      ]
+        "Correct. Pre-fetching the lookup data turns the task into a single-turn extraction, which is exactly what a batch request can do.",
+        "\"any\" guarantees that the model calls some tool, and it already does: it calls lookup_property_code. The problem is that the batch cannot execute that call and return the result within the request.",
+        "Strict mode guarantees that the arguments match the schema; it does not make the batch execute tools. Nothing in the Message Batches API runs your lookup mid-request.",
+        "Tempting because truncated output is a common batch issue, but these responses end with stop_reason \"tool_use\", not \"max_tokens\". The model stopped because it requested a tool that nothing executes inside a batch request.",
+        "Correct. Each round is its own request: your code runs the tool between rounds, and the next batch carries the tool_result. It is slower, but latency is not a concern here."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-K3"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: the extractor used a record_invoice tool with tool_choice: {type: tool, name: record_invoice} only to get JSON. After migrating to a newer model, every call returns 400. What should be done?",
+      "pergunta": "A hospital network's CI pipeline posts Claude review findings on pull requests for its EHR integration services. Findings come back through a report_findings tool with a strict JSON schema (file, line_start, line_end, severity, issue). Since the switch to tool use, schema validation failures dropped to zero, so the team removed the post-processing checks. Now 6% of findings point to files that are not in the PR's diff or have line_end before line_start, and the bot posts them anyway. What is the flaw in this implementation?",
       "opcoes": [
-        "Switch to tool_choice: {type: any}",
-        "Revert to the previous model",
-        "Use structured outputs with the same schema",
-        "Remove the schema and validate the text with try/catch, repeating the call if it fails"
-      ],
-      "correta": 2,
-      "explicacao": "On newer models, forced any/tool returns 400; when forcing existed only to get JSON, structured outputs is the replacement.",
-      "feedbacks": [
-        "any is also forced and also returns 400.",
-        "Avoids the problem without solving it; there is a direct replacement.",
-        "Correct.",
-        "Loses the structural guarantee."
-      ]
-    },
-    {
-      "pergunta": "Customer Support scenario: the agent calls create_ticket in a tool loop. Sometimes it sends extra fields, or sends the priority field as a free-form string instead of one of the accepted values, and the backend rejects it. What is the BEST fix?",
-      "opcoes": [
-        "Validate in the backend and return 'Operation failed' to the model",
-        "Enable strict: true on the tool, with an enum on priority and additionalProperties: false",
-        "Replace the tool with structured outputs on the final response",
-        "Add a list of the allowed fields to the prompt"
-      ],
-      "correta": 1,
-      "explicacao": "In a tool loop, strict guarantees arguments that follow the schema exactly.",
-      "feedbacks": [
-        "A generic error (anti-pattern), and it doesn't prevent the problem.",
-        "Correct.",
-        "Structured outputs formats the response, not the arguments of an action in the middle of the loop.",
-        "The prompt helps, but it doesn't guarantee anything."
-      ]
-    },
-    {
-      "pergunta": "A dev turned on strict: true for a tool whose schema has 5 properties, only 3 of them in required, and doesn't declare additionalProperties. The data for 2 of those properties sometimes doesn't exist in the source. Which adjustment is the most appropriate?",
-      "opcoes": [
-        "None: strict infers the rest",
-        "Remove required from all properties, so that strict treats everything as optional",
-        "Add minimum/maximum to the numeric fields",
-        "Declare additionalProperties: false and, preferably, put everything in required, with nullable where data may be missing"
-      ],
-      "correta": 3,
-      "explicacao": "additionalProperties: false is mandatory for strict. Optional properties are allowed (they count toward a limit), but required + nullable makes the absence explicit.",
-      "feedbacks": [
-        "Strict doesn't infer anything; additionalProperties: false is mandatory.",
-        "It doesn't address the missing requirement, and it multiplies optional properties, which count toward a limit and leave the absence ambiguous.",
-        "Numeric constraints aren't supported by strict (400 on the raw schema).",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: with strict enabled, 100% of the invoices validate against the schema. The audit found 2% with a total that differs from the sum of the line items. What is the BEST action?",
-      "opcoes": [
-        "Add a description to the schema: 'the total must be the sum of the items'",
-        "Replace strict with structured outputs",
-        "Validate the sum in code and resend with the specific error (values and suspect item)",
-        "Accept it, since the schema validated"
+        "The schema types line numbers as number instead of integer, so strict mode cannot reject the ranges whose line_end comes before line_start.",
+        "A single pass reviews every file in the PR, so attention is diluted and the model misplaces line references in the larger diffs.",
+        "The team treats schema conformance as correctness; diff membership and line order are semantic checks that code must run and report on retry.",
+        "The bot posts every finding it receives; asking for a confidence score and posting only high-confidence findings would drop the bad references."
       ],
       "correta": 2,
-      "explicacao": "Schema ≠ semantics: business rules are validated in code and feed the retry.",
+      "explicacao": "Tool use with a strict schema removes syntax errors, but it cannot express that a path must belong to this PR's diff or that line_end must not precede line_start. Those are semantic rules, so the pipeline must keep validating in code and send specific errors back on retry. Removing post-processing because schema failures reached zero confuses syntax validity with correctness.",
       "feedbacks": [
-        "A description in the schema is only guidance; it doesn't guarantee the rule.",
-        "Both guarantee format, not semantics.",
-        "Correct.",
-        "Confuses conformance with correctness."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: many invoices don't include the purchase order number. The schema has purchase_order as a required string, and the model fills in plausible made-up values. What is the fix?",
-      "opcoes": [
-        "Make purchase_order nullable (few-shot: missing = null)",
-        "Remove the field from the schema",
-        "Add a retry until the field comes back filled in, with a limit of 3 attempts",
-        "Instruct the model to 'not make things up'"
+        "Changing number to integer tightens the type, but no JSON Schema type can express an ordering between two fields. The out-of-order ranges are a semantic error that only code can catch.",
+        "Per-file passes are the right fix for attention dilution, but nothing here points to uneven depth across files. The errors are invalid references that a validator would reject outright.",
+        "Correct. Schema conformance is not semantic correctness; the removed checks were the only layer that could catch these errors.",
+        "Self-reported confidence is not a reliable filter here, and invalid references can be reported with high confidence. A deterministic check against the diff catches all of them."
       ],
-      "correta": 0,
-      "explicacao": "A required, non-nullable field forces the model to invent; nullable allows the honest output.",
-      "feedbacks": [
-        "Correct.",
-        "Loses the data when it does exist.",
-        "Retry doesn't create missing data; it reinforces the fabrication.",
-        "An instruction doesn't remove the pressure from the schema."
-      ]
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K4"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: the contract_type field has enum [purchase, sale, lease]. Loan-for-use (commodatum) contracts are coming out as 'lease', distorting reports. What adjustment?",
+      "pergunta": "In a hospital network's CI pipeline, a step sends every changed artifact to Claude for a structured risk report. Three tools are defined: report_schema_migration, report_hl7_mapping_change and report_api_contract_change. File names are inconsistent, so the step cannot tell the artifact type in advance. tool_choice is set to \"auto\". In about 5% of runs, the response ends with stop_reason \"end_turn\" and a paragraph such as \"This looks like a mapping update; the main risk is...\", and the step fails. Which statement about this behavior is correct?",
       "opcoes": [
-        "Add 'unclear' to the enum",
-        "Remove the enum and accept free text",
-        "Add few-shot with lease examples so the model learns the boundary",
-        "Add 'other' to the enum + a nullable detail field"
+        "Under \"auto\" the model has to call a tool whenever tools are defined, so the prose replies mean the three tool descriptions overlap and need rewriting.",
+        "Under \"auto\" a text reply is allowed; setting tool_choice to \"any\" requires a call to one of the three tools while still letting the model pick which.",
+        "The prose replies show the model cannot decide between schemas; forcing report_schema_migration on every call would guarantee a parseable report.",
+        "Text replies are expected under \"auto\", and a system prompt rule saying the reply must always be one of the three tool calls makes the output deterministic."
+      ],
+      "correta": 1,
+      "explicacao": "With tool_choice \"auto\", the model may answer in text instead of calling a tool, which is what the 5% of prose replies are. When several extraction schemas exist and the artifact type is unknown, \"any\" guarantees a tool call while leaving the choice of schema to the model. Forcing one specific tool would fill the wrong schema for most artifacts, and a prompt rule is still probabilistic.",
+      "feedbacks": [
+        "\"auto\" does not require a tool call; text is a valid response under it. Clearer descriptions can help selection, but they do not remove the option to answer in prose.",
+        "Correct. \"any\" removes the text option and keeps the model's choice among the three report tools.",
+        "Forcing a single tool guarantees a call, but to the wrong schema whenever the artifact is a mapping or API change, so the model would fill migration fields it does not have.",
+        "The first half is right, but a prompt rule only lowers the rate of prose replies. tool_choice is the setting that makes a tool call guaranteed."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S2"
+    },
+    {
+      "pergunta": "A travel agency extracts group-booking contracts from partner hotels. Validation fails on cancellation_penalty_schedule for 9% of contracts: the field comes back null or with tiers that appear nowhere in the contract text. In those contracts, the clause reads \"Cancellation penalties as per Annex C of the Master Services Agreement\". Only the booking contract is sent to the model. An engineer proposes raising the retry limit from 2 to 5 and appending the validation error to each retry, because that fixed date-format failures last quarter. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: retry with error feedback is the standard fix for validation failures, and more attempts give the model more chances to locate the schedule.",
+        "Adopt it, but send the extra retries through the Message Batches API, so that the additional attempts for this one field cost half as much to run.",
+        "Reject it, and make the field required with a non-null type instead, so that the model is pushed to produce a schedule on its very first attempt.",
+        "Reject it: the schedule exists only in an annex that is never sent, so retries cannot succeed; return null and flag it, or provide the annex."
       ],
       "correta": 3,
-      "explicacao": "'other' + detail avoids forcing a wrong category and preserves the information.",
+      "explicacao": "Retry with error feedback works when the information is in the source and the output is malformed, like last quarter's date formats. Here the schedule lives in an external document that the model never receives, so every retry can only return null or invent tiers. The fix is to stop retrying and route the record (null plus a review flag) or add the annex to the input.",
       "feedbacks": [
-        "'unclear' is for an ambiguous source; a loan-for-use contract is clear, it just isn't on the list.",
-        "Loses standardization and the structural guarantee.",
-        "Lease examples don't teach where to put loan-for-use contracts.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: on poor scans, it's impossible to tell whether the contract was signed. The signed field is a boolean, and in those cases the model answers true or false at random. What is the best way to model it?",
-      "opcoes": [
-        "Keep the boolean and ask the model to be conservative",
-        "Use an enum [signed, not_signed, unclear]",
-        "Make the field a free-form string",
-        "Remove the field and manually check every contract"
+        "Tempting because retry with feedback is the right tool for format and structure errors. It cannot recover information that is absent from the input; more attempts only produce more invented tiers.",
+        "Cheaper retries are still retries that cannot succeed. The cost of each attempt is not the problem; the missing annex is.",
+        "Making the field non-null removes the model's only honest answer and pushes it to fabricate a schedule, which is the failure already seen in the invented tiers.",
+        "Correct. The data is in a document the model never sees; null plus review, or supplying the annex, are the only options that can work."
       ],
-      "correta": 1,
-      "explicacao": "'unclear' avoids guessing when the source doesn't allow a decision, and lets you route those cases to review.",
-      "feedbacks": [
-        "Vague; it still forces a binary guess.",
-        "Correct.",
-        "Loses structure and standardization.",
-        "Disproportionate: only the illegible ones need review."
-      ]
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-S2"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: the team turned on strict for a tool whose schema defines quantity with minimum: 1 and zip_code with maxLength: 9. The requests started returning 400. What is the BEST action?",
+      "pergunta": "A travel agency classifies supplier documents with document_type, an enum of hotel_confirmation, airline_ticket, car_rental_voucher and insurance_certificate. New partners now send rail passes and cruise vouchers, and some faxed documents are too blurred to identify. Today the model forces these into the nearest value, and 4% of documents are routed to the wrong booking queue. The routing service can add rules for new enum values but cannot process free-text categories. What is the most effective fix given these constraints?",
       "opcoes": [
-        "Turn off strict, since it's incompatible with the schema",
-        "Open a ticket: it's an API bug",
-        "Remove those constraints from the schema (or let the SDK helper move them into the description) and validate them in code",
-        "Replace the tool with an assistant prefill containing the partial JSON"
-      ],
-      "correta": 2,
-      "explicacao": "minimum and maxLength aren't supported by strict: in the raw schema they return 400. Remove them from the schema (SDK helpers do this and validate locally) and enforce the rule in your code.",
-      "feedbacks": [
-        "Loses the format guarantee just to keep constraints the API wouldn't even enforce.",
-        "Documented behavior: an unsupported feature in a raw schema returns 400.",
-        "Correct.",
-        "Prefill returns 400 on newer models and doesn't guarantee the schema."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: the retry loop sends 'The extraction failed validation. Try again.' and the correction rate on the 2nd attempt is only 10%. What is the BEST improvement?",
-      "opcoes": [
-        "Increase the number of attempts to 5",
-        "Include the specific errors (field, rule, values)",
-        "Switch to a larger model only on retries, keeping the smaller one on the first attempt",
-        "Increase effort only on retries"
-      ],
-      "correta": 1,
-      "explicacao": "Specific errors tell the model what to fix and where; a generic message produces the same response.",
-      "feedbacks": [
-        "More attempts without information repeat the error.",
-        "Correct.",
-        "More expensive, without addressing the lack of information in the feedback.",
-        "More reasoning without knowing what's wrong helps little."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: the delivery_date field fails validation (it is required by the business). After 3 retries with a specific error, it is still empty or made up. Analysis shows that these documents simply don't state the date. What should be done?",
-      "opcoes": [
-        "Accept null in the field and route the document to the human review queue",
-        "Raise the retry limit to 10",
-        "Fill it in with the issue date as a default",
-        "Instruct the model to estimate the date based on the usual lead time"
+        "Add \"other\" plus a document_type_detail string for unlisted types and \"unclear\" for unreadable scans, so both can be routed to a review queue.",
+        "Replace the enum with a free-text document_type field, so that the model can describe any new supplier format accurately and in its own words.",
+        "Add rail_pass and cruise_voucher to the enum now, so that they route correctly, and extend the enum again whenever a new format shows up.",
+        "Add few-shot examples that map cruise vouchers and rail passes to their closest existing values, so that the classification becomes consistent."
       ],
       "correta": 0,
-      "explicacao": "Retry doesn't recover information missing from the source; the honest answer is null and, if the business requires it, review.",
+      "explicacao": "A closed enum forces the model to pick a listed value even when none fits, so new types and unreadable scans get misrouted. Adding \"other\" with a detail string handles unlisted categories and \"unclear\" handles ambiguous inputs, and both remain enum values the routing service can act on. Free text breaks the routing constraint, and extending the enum after each failure leaves the next new type misrouted.",
       "feedbacks": [
-        "Correct.",
-        "More retries, same absence: it only increases cost and the chance of fabrication.",
-        "Fabricated data that looks genuine.",
-        "Explicitly induces hallucination."
-      ]
+        "Correct. The enum stays routable, and the model gets honest answers for both unlisted and unreadable documents.",
+        "Free text would let the model describe anything, but the routing service cannot process free-text categories, so it violates the stated constraint.",
+        "Adding the two known types helps today, but it does nothing for blurred scans, and the next new format will be misrouted again until someone notices.",
+        "Consistency is not correctness: the examples would teach the model to misclassify these documents the same way every time."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S5"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: during a peak, a corrupted document stayed in a retry loop for hours, generating a high cost. The code only exits the loop when validation passes. What is the correct design?",
+      "pergunta": "A hospital network's CI review bot returns findings through a tool. A validator checks that each finding's line falls inside a changed hunk and that its rule_id exists in the team's 140-rule catalog; both the diff and the catalog are already in the prompt. When validation fails, the pipeline sends the same request again with the message \"Output invalid. Please try again.\" Only 15% of failed reviews pass on the second attempt, and the rest fail with the same errors. What is the most effective first step?",
       "opcoes": [
-        "Remove validation for corrupted documents",
-        "Increase the API timeout",
-        "Save the last result, even if invalid, after 1 hour, marking it as 'pending'",
-        "Cap the attempts and, once they are exhausted, fail explicitly"
+        "Raise the retry limit from 2 to 4 attempts, since each extra attempt gives the model another independent chance to return findings that pass validation.",
+        "Send the retries to a larger model and keep the current model for first attempts, so that only the reviews that failed pay for the more capable one.",
+        "Ask the model in the system prompt to check its findings against the diff and the catalog before calling the tool, so that errors are caught on the first try.",
+        "Replace the generic message with the validator's specific errors (finding, field, bad value, allowed values) and the failed output, so the model knows what to fix."
       ],
       "correta": 3,
-      "explicacao": "The cap is a backstop; once it is exhausted, fail explicitly, never saving invalid data or silently discarding it.",
+      "explicacao": "A generic retry message gives the model nothing to correct, so it repeats the same mistakes. Retry with error feedback appends the specific validation errors, together with the failed output, so the model knows exactly which finding and field to fix. More attempts, a larger model or a self-check instruction all leave the model guessing about what went wrong.",
       "feedbacks": [
-        "Lets invalid data through.",
-        "Doesn't solve the endless loop.",
-        "Saves invalid data as if it were good.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "CI scenario: a security scanner built on Claude produces findings that the devs frequently dismiss. The team wants to know which kinds of patterns produce useful findings and which get dismissed, in order to refine the prompt. Which output change helps?",
-      "opcoes": [
-        "Add a confidence field from 0 to 100 and automatically discard findings below 60",
-        "Generate a free-text report at the end",
-        "A detected_pattern field on each finding, measured per pattern",
-        "Reduce the number of findings per PR"
+        "More attempts with the same uninformative message tend to produce the same errors, as the 85% repeat failures already show.",
+        "A larger model might do slightly better, but it is still retrying without knowing what failed. Fix the feedback before paying for a bigger model.",
+        "A self-check instruction may reduce errors a little, but it is probabilistic and does not help once a finding has failed. The validator already knows the exact errors.",
+        "Correct. Specific errors plus the failed output turn a blind retry into a targeted correction."
       ],
-      "correta": 2,
-      "explicacao": "detected_pattern lets you measure per pattern and refine or turn off the noisy ones.",
-      "feedbacks": [
-        "Self-reported confidence is poorly calibrated and doesn't identify the pattern.",
-        "Free text isn't measurable.",
-        "Correct.",
-        "Cuts without knowing what is noise."
-      ]
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K1"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: the audit team wants to identify invoices in which the printed total diverges from the line items (a supplier error). Today the model extracts only total and sometimes 'corrects' the value on its own. What is the best way to model it?",
+      "pergunta": "A hospital network's PR pipeline gives Claude three tools: extract_change_metadata (affected services and whether patient data is touched), lookup_service_owner and check_phi_policy. Both enrichment tools need the service names that extract_change_metadata returns. In 7% of runs the model calls check_phi_policy first, with guessed service names. The team is choosing between (A) a system prompt rule to always call extract_change_metadata first and (B) configuring tool_choice. Which design should they adopt?",
       "opcoes": [
-        "Extract declared_total and computed_items_sum, and compare them in code",
-        "Instruct the model to always recalculate the total",
-        "Extract only the items and calculate the total in code, ignoring the printed one",
-        "Ask the model for a boolean field 'looks_correct'"
+        "Design A, since a clear ordering rule keeps tool_choice on \"auto\" and still lets the model skip the metadata step on documentation-only PRs.",
+        "Design B: force {\"type\": \"tool\", \"name\": \"extract_change_metadata\"} on the first request so the order is guaranteed, then use \"auto\" later.",
+        "Design B, keeping the forced extract_change_metadata choice on every turn of the run, so that enrichment tools are never called before metadata.",
+        "Design B with tool_choice set to \"any\" on the first request, since it guarantees a tool call while letting the model pick the most useful one."
+      ],
+      "correta": 1,
+      "explicacao": "When one extraction must run before enrichment, forcing that specific tool on the first request guarantees the order, and later turns go back to \"auto\" so the model can call the enrichment tools with the real service names. A prompt rule still fails some percentage of the time. Forcing on every turn would make the model call extract_change_metadata again and again, and \"any\" guarantees a call but not which one.",
+      "feedbacks": [
+        "A prompt rule is exactly what fails in 7% of runs today: instructions are followed probabilistically, and this order needs a guarantee.",
+        "Correct. Forced choice guarantees the first call; \"auto\" afterward lets the enrichment proceed with real data.",
+        "Forcing the same tool on every turn guarantees that the model calls extract_change_metadata each time, so lookup_service_owner and check_phi_policy never run.",
+        "\"any\" guarantees that some tool is called, and check_phi_policy is one of them, so the ordering failure could still happen."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S3"
+    },
+    {
+      "pergunta": "A hospital network's platform team runs two Claude workloads, both on the Message Batches API since finance asked for the discount. (1) A release readiness check runs when an engineer opens a deployment request for an HL7 interface change; the deployment pipeline waits for its result, and the requirement is a verdict within 15 minutes. (2) A weekly scan of all 140 repositories flags logging calls that may write patient data and is reviewed every Monday. Last month, release checks blocked deployments for up to 11 hours. What should you change to meet the 15-minute requirement while keeping costs down?",
+      "opcoes": [
+        "Move the release readiness check to synchronous API calls so it returns within minutes, and keep the weekly logging scan on the Message Batches API.",
+        "Keep the release check on batch, but submit each deployment's check as its own one-request batch so that it is never queued behind large batches.",
+        "Keep the release check on batch, but pre-submit it when the PR merges, hours before the deployment request opens, so the verdict is usually ready.",
+        "Move both workloads to synchronous calls, and scan only the repositories that changed during the week, so that the weekly scan costs less to run."
       ],
       "correta": 0,
-      "explicacao": "Declared + computed exposes the discrepancy instead of hiding it.",
+      "explicacao": "The Message Batches API offers no latency SLA and can take up to 24 hours, so it cannot back a check that a deployment pipeline waits on. Matching each workload to its latency need means synchronous calls for the blocking release check and batch for the weekly scan, which nobody waits on. Smaller batches or early submission do not create a latency guarantee, and moving everything to synchronous calls gives up the discount where it is safe to use.",
       "feedbacks": [
-        "Correct.",
-        "Hides the discrepancy the audit wants to find.",
-        "Loses the declared value; there is no way to detect the discrepancy.",
-        "An opaque, unverifiable judgment."
-      ]
+        "Correct. The blocking check gets synchronous latency; the latency-tolerant weekly scan keeps the 50% discount.",
+        "Batch size does not buy latency: even a one-request batch has no guaranteed completion time within the 24-hour window.",
+        "Pre-submitting makes the verdict usually ready, but \"usually\" is not a guarantee. A late batch, or a change made after the merge, still blocks the deployment.",
+        "This meets the 15-minute requirement, but it drops the batch discount on the one workload that tolerates latency, which conflicts with keeping costs down."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-S1"
     },
     {
-      "pergunta": "CI scenario: the automated PR review is expensive. An engineer proposes sending the reviews through the Batch API to save 50%. The review is a required check before merge. What is the assessment?",
+      "pergunta": "A travel agency extracts hotel confirmations from suppliers in 30 countries. Every response is a tool_use call that passes the strict schema (check_in_date: string described as \"YYYY-MM-DD\", total_price: number, currency: string). The prompt only says \"Extract the booking details.\" Reconciliation shows that 11% of European bookings have day and month swapped (05/04/2026 stored as May 4) and that amounts like \"1.250,00\" are stored as 1.25. What is the most likely root cause?",
       "opcoes": [
-        "Good idea: 50% savings with no loss of quality",
-        "Inappropriate for the gate (up to 24h, no SLA); suitable for a nightly sweep",
-        "Good idea, as long as the batch has only one request per PR",
-        "Inappropriate because the Batch API doesn't support structured output in batch requests"
+        "The schema fixes output types but not how to read the source; the prompt has no normalization rules for date order and decimal separators by country.",
+        "The date and price fields lack format: date and numeric pattern constraints, which strict mode needs in order to parse locale-specific source values.",
+        "The confirmations are long, and dates and prices on later pages are lost to lost-in-the-middle effects, which scrambles the values that are extracted.",
+        "Strict mode converts the source strings to the declared types, and that conversion of values like 05/04/2026 and 1.250,00 swaps and shrinks them."
+      ],
+      "correta": 0,
+      "explicacao": "Strict schemas guarantee the shape and type of the output, not the interpretation of ambiguous source formats. Without normalization rules in the prompt (for example, read numeric dates as DD/MM unless the supplier is in the US, and treat the comma as the decimal separator in European amounts), the model guesses conventions and gets some of them wrong. The fix is to add those rules alongside the strict schema.",
+      "feedbacks": [
+        "Correct. Types are enforced, interpretation is not; normalization rules in the prompt tell the model how to read each source convention.",
+        "A date format or pattern constraint only fixes the output shape, and the values already come out as valid YYYY-MM-DD strings and numbers. Whether 05/04 means April or May is still a guess.",
+        "Lost-in-the-middle causes omissions in long inputs, not a consistent pattern of swapped day and month that follows the supplier's country.",
+        "Strict mode does not parse or convert source text; the model generates the values. The swap happens when the model interprets the source without rules."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S6"
+    },
+    {
+      "pergunta": "A hospital network's CI design document for nightly regression-test generation reads: \"Each night at 23:00 we submit one request per changed module to the Message Batches API. Each request is single-turn: module source in, test file out, matched by custom_id. Results are guaranteed by 07:00, when the QA team starts. Using batch halves the cost compared with synchronous calls.\" Which part of this design is flawed?",
+      "opcoes": [
+        "Nightly test generation is a blocking workload, because QA depends on it every morning, so it has to use synchronous calls instead of the batch API.",
+        "It assumes an 8-hour completion guarantee; batches can take up to 24 hours with no latency SLA, so the 07:00 deadline is not actually guaranteed.",
+        "Matching by custom_id is unnecessary, because batch results come back in submission order, so the position in the results file identifies each module.",
+        "Single-turn requests are the flaw; test generation needs the model to run the tests between turns, which the batch API supports through tool calls."
       ],
       "correta": 1,
-      "explicacao": "Batch has no SLA and can take up to 24h; it isn't suitable for a blocking step.",
+      "explicacao": "The Message Batches API processes within a window of up to 24 hours and offers no latency SLA, so a design that relies on results being ready eight hours after submission can miss its deadline. Nightly test generation is a good fit for batch, single-turn requests with custom_id matching are correct, and the 50% saving is real; only the completion guarantee is wrong. If 07:00 is a hard deadline, the work must be submitted at least 24 hours earlier or run synchronously.",
       "feedbacks": [
-        "Ignores latency: the PR would sit blocked for hours.",
-        "Correct.",
-        "Batch size doesn't create an SLA.",
-        "The reason is wrong: batch works with structured output; the problem is latency."
-      ]
-    },
-    {
-      "pergunta": "Structured Data Extraction scenario: the company needs to extract 50,000 historical contracts by the end of the week. The prompt was written yesterday and hasn't been tested on real documents yet. What is the most appropriate plan?",
-      "opcoes": [
-        "Send all 50,000 to the batch now, to save time",
-        "Process all 50,000 synchronously, in parallel",
-        "Send 50 batches of 1,000 and fix the prompt between them as errors show up",
-        "Refine the prompt on a synchronous sample, then run the volume through batch"
+        "Nightly test generation is the textbook latency-tolerant batch workload: nobody waits on an individual request. The flaw is the promised completion time, not the choice of batch.",
+        "Correct. The batch window is up to 24 hours with no SLA; \"guaranteed by 07:00\" is not something the API offers.",
+        "Batch results are not guaranteed to come back in submission order, which is exactly why custom_id is used. The design's matching is correct.",
+        "Batch requests cannot execute tools mid-request, so the single-turn design is the right one. The flaw is the timing assumption, not the request shape."
       ],
-      "correta": 3,
-      "explicacao": "Refine on a sample before the volume; after that, batch is ideal (no minute-level urgency, 50% cheaper).",
-      "feedbacks": [
-        "Risks paying for 50,000 extractions with a flawed prompt.",
-        "Pays double with no need for real time.",
-        "Uses the volume as a lab: slow and expensive.",
-        "Correct."
-      ]
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-K1"
     },
     {
-      "pergunta": "Structured Data Extraction scenario: in a nightly batch, the prompt lets the model call the lookup_supplier tool to enrich the extraction. Many results come back incomplete, ending in a tool_use with no response. What is the cause and the fix?",
+      "pergunta": "For every PR, a hospital network's CI pipeline has Claude fill a change_record tool (jira_ticket, risk_level, rollback_plan) from the PR description and diff. A validator rejects bad ticket formats (\"eng 4471\" instead of \"ENG-4471\") and, for PRs that touch the medication-dosing service, an empty rollback_plan. Retries with specific errors fix 94% of ticket-format failures on the first retry. For 6% of dosing PRs, rollback_plan stays empty or, after three retries, reads \"Revert the deployment\", although the template's rollback section was left blank. Which statement about this behavior is correct?",
       "opcoes": [
-        "A timeout bug; increase max_tokens",
-        "Batch doesn't run a multi-turn tool loop; put the data in the request or go synchronous",
-        "strict: true was missing on the lookup_supplier tool, so the arguments came out invalid and the call was aborted",
-        "The custom_id values are duplicated"
+        "Both failure types should respond to retries the same way; the rollback failures show that the error message is not specific enough and should quote the template.",
+        "Retries fix ticket formats because the right value is in the PR; the rollback plan is absent from the source, so retries can only yield invented text.",
+        "The generic rollback text shows the model lacks examples; adding few-shot examples of good rollback plans would make the retry outputs specific enough.",
+        "The rollback failures show the validator is too strict for this field; it should accept any non-empty text so that the pipeline stops retrying."
       ],
       "correta": 1,
-      "explicacao": "Each batch request is a single call; nobody returns the tool_result inside the batch.",
+      "explicacao": "Retry with error feedback works when the correct value exists in the source and only the format or structure is wrong, as with the ticket IDs. When the information is simply absent, as with a blank rollback section, each retry pressures the model to fill the field, and the result is invented text like \"Revert the deployment\". The right handling is to stop retrying, mark the field as missing and route the PR back to its author or a reviewer.",
       "feedbacks": [
-        "It isn't truncation: the stop_reason would be tool_use.",
-        "Correct.",
-        "strict validates arguments; it doesn't create the loop that batch lacks.",
-        "Duplicate custom_id values don't explain a tool_use with no response."
-      ]
+        "The error message is not the problem; no wording can make the model find a rollback plan that the PR never states.",
+        "Correct. Format errors are recoverable because the data is there; absent data is not, and retries turn into fabrication.",
+        "Examples of good plans would make the invented text look more convincing, not more true. The plan has to come from the PR author.",
+        "Accepting any non-empty text would let the fabricated plan pass validation silently, on the service where a real rollback plan matters most."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K2"
     },
     {
-      "pergunta": "Regarding structured output, which TWO statements are correct? (Choose TWO.)",
+      "pergunta": "A travel agency extracts airline schedule-change notices (flight number, old and new departure times, affected booking references). The current prompt says \"Return only JSON matching this schema\" with the schema pasted in, and the code parses the response text; 3.5% of notices fail because of code fences, trailing commentary or missing commas. The team is moving to tool-based extraction. Which TWO steps implement it correctly? Choose TWO.",
       "opcoes": [
-        "Conformance to the schema doesn't guarantee that the values are semantically correct",
-        "With strict: true, minimum and maxLength become guaranteed by the API",
-        "The top-level output_format parameter is the recommended path for structured outputs",
-        "To use strict, every object in the schema needs additionalProperties: false",
-        "A closed enum without 'other' is the best way to avoid wrong classifications"
+        "Define a record_schedule_change tool whose input_schema is the target JSON schema, and send it in the tools array of every extraction request.",
+        "Send the extracted values back to the model in a tool_result block for it to confirm them before the pipeline stores the final record.",
+        "Describe the record in the tool's output schema, and read the structured data from the tool_result block that the API sends back to you.",
+        "Read the extracted record from the input field of the tool_use content block in the response, instead of parsing the response's text blocks.",
+        "Keep the JSON instructions in the prompt and add the tool only as a fallback that the model can call when it is unsure about the output format."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Schema ≠ semantics; strict requires additionalProperties: false on every object.",
+      "explicacao": "Tool-based extraction defines a tool whose input_schema is the desired output, and the structured data arrives as the input of the tool_use block in the model's response. There is nothing to execute and no tool_result to wait for: the tool call itself is the product. Keeping the tool as an optional fallback reintroduces the text path that is causing the parse failures.",
       "feedbacks": [
-        "Correct.",
-        "Numeric and length constraints aren't supported by strict (400 on the raw schema).",
-        "Top-level output_format is deprecated; use output_config.format.",
-        "Correct.",
-        "A closed enum forces a wrong choice when the category isn't on the list."
-      ]
+        "Correct. The input_schema is what constrains the structured output.",
+        "A tool_result round trip is how the agentic loop returns real tool outputs. For extraction, the tool_use input is already the final record, so the extra turn adds cost without adding a guarantee.",
+        "Tools are defined with an input_schema, and the API never sends you a tool_result; your code would send one. The structured data is in the tool_use block.",
+        "Correct. The record is in tool_use.input; no text parsing is needed.",
+        "As an optional fallback, the model can keep answering in text, so the 3.5% of parse failures would remain. The tool should be the output path, with tool_choice guaranteeing the call."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S1"
     },
     {
-      "pergunta": "You are designing an extractor's validation loop. Which TWO practices are correct? (Choose TWO.)",
+      "pergunta": "A travel agency's extraction system also flags anomalies in airline invoices (fare above the contracted rate, duplicate segment, tax code mismatch and others), and finance analysts accept or dismiss each flag with one button. Analysts dismiss 41% of flags, and the team wants to know which kinds of anomaly cause most dismissals so it can fix the prompt. Analysts will not fill in any extra fields. What is the most effective fix given these constraints?",
       "opcoes": [
-        "Repeat until validation passes, with no limit",
-        "Use the same generic message on every retry so as not to bias the model",
-        "Validate the schema and also semantic rules (sums, impossible dates, contradictions between fields)",
-        "Keep retrying when the required field doesn't exist in the source",
-        "When the limit is exhausted, fail explicitly and route to review"
+        "Have the model attach a confidence score to each flag and hide flags under 0.7 until the dismissal rate falls below 20%, then tune the threshold.",
+        "Ask analysts to pick a reason from a short list each time they dismiss a flag, and review those reasons monthly to adjust the prompt wording.",
+        "Run a second Claude instance over each week's dismissed flags to summarize, in free text, the most common reasons they were false positives.",
+        "Add a detected_pattern field naming the rule that produced each flag, then aggregate the accept and dismiss events by that pattern."
       ],
-      "corretas": [
-        2,
-        4
-      ],
-      "explicacao": "Validate form and meaning; use a cap as a backstop and fail explicitly at the end.",
+      "correta": 3,
+      "explicacao": "A detected_pattern field records which rule or construct triggered each flag, so the existing accept and dismiss events can be grouped by pattern without any extra work from analysts. High-dismissal patterns then show where the prompt's criteria need work. Confidence thresholds hide flags without explaining them, asking analysts for reasons breaks the constraint, and free-text summaries are hard to analyze systematically.",
       "feedbacks": [
-        "A loop with no limit: uncontrolled cost.",
-        "A generic message doesn't say what to fix.",
-        "Correct.",
-        "Retry doesn't recover missing information.",
-        "Correct."
-      ]
+        "Filtering by self-reported confidence hides flags without telling you which kinds of anomaly are wrong, and it can hide valid flags too.",
+        "A reason picker would produce useful data, but the team stated that analysts will not fill in extra fields; it moves the analysis burden onto them.",
+        "A weekly free-text summary is harder to track over time than structured counts, and it adds a second model where a single field would do.",
+        "Correct. The pattern field plus the existing button gives per-pattern dismissal rates with no extra analyst effort."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K3"
     },
     {
-      "pergunta": "A team runs its weekly report extraction through the Batch API. Which TWO practices are correct? (Choose TWO.)",
+      "pergunta": "A travel agency extracts group-fare invoices from airlines. When validation fails (for example, fare_breakdown items that do not sum to the stated total, or a passenger_count that differs from the number of names), the retry sends a new request containing only the validation errors and the instruction \"Fix these fields.\" Only 30% of retries pass, and some return records in which every field except the corrected ones is empty. What is the most effective first step?",
       "opcoes": [
-        "Read the results as soon as the batch is created, in the order of the input file",
-        "Poll processing_status until ended and match each result by its custom_id",
-        "On seeing a few errored results, resubmit the entire batch",
-        "Also use the batch for the managers' real-time query dashboard",
-        "Resubmit only the custom_id values with an errored or expired result"
+        "Make the retry include the original invoice, the failed extraction and the specific validation errors, so the model corrects against the source.",
+        "Send the validation errors as the system prompt of a fresh request, so that the earlier failed output does not bias the model's next correction attempt.",
+        "Resend the original extraction request unchanged up to three times, since the validator already logs every error for later analysis.",
+        "Add few-shot examples of correctly summed group fares to the retry request, so that the model learns how fare line items relate to the stated total."
+      ],
+      "correta": 0,
+      "explicacao": "A self-correction request needs the original document, the failed extraction and the specific errors: without the document the model cannot re-read the source, and without the failed extraction it rebuilds the record from nothing, which is why the other fields come back empty. Adding the missing context is the first step. A fresh prompt, an unchanged retry or extra examples all leave out at least one of these three ingredients.",
+      "feedbacks": [
+        "Correct. All three ingredients let the model fix the flagged fields against the source and keep the rest of the record.",
+        "Avoiding bias sounds reasonable, but the request still lacks the invoice, so the model cannot check the fares against the source.",
+        "An unchanged retry gives the model no information about what failed; logging errors helps later analysis but not this correction.",
+        "Examples show what a correct total looks like, but without the invoice the model still cannot see which fare item it missed."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-S1"
+    },
+    {
+      "pergunta": "A hospital network's CI bot fills a change_summary tool for every PR. linked_incident_id is required and typed as a string, but only about 30% of PRs reference an incident. On the others, the bot writes plausible IDs such as \"INC-20431\" that do not exist, and the on-call dashboard links to them. Design A makes linked_incident_id nullable and tells the model to return null when no incident is referenced. Design B keeps the field as is, checks each ID against the incident tracker and retries with the error. Which approach should the team take?",
+      "opcoes": [
+        "Design A, because a nullable field gives the model a valid way to say that no incident is linked, so it no longer invents an ID to satisfy the schema.",
+        "Design B, because checking against the incident tracker catches every invented ID, and the retry error tells the model exactly which value was wrong.",
+        "Design B, plus a prompt instruction to output only incident IDs that appear verbatim in the PR, so that the retries converge on a real value.",
+        "Neither; remove linked_incident_id from the schema, so that nothing can be invented, and have reviewers look up incidents manually for each PR."
+      ],
+      "correta": 0,
+      "explicacao": "When the source often lacks a value, a required non-null field forces the model to produce something, and it fabricates a plausible ID. Making the field nullable (optional) gives it an honest answer for the 70% of PRs without an incident. Validation against the tracker is still useful as an extra check, but retries cannot produce an ID that the PR never mentions.",
+      "feedbacks": [
+        "Correct. The schema now allows the true answer, so there is no pressure to fabricate.",
+        "The tracker check would catch invented IDs, but the retry cannot succeed for PRs that have no incident; the field still demands a string, so the model keeps guessing.",
+        "The instruction helps, but as long as the field is required and non-null, a PR without an incident leaves the model with no valid answer to give.",
+        "Dropping the field loses useful data for the 30% of PRs that do reference an incident and shifts the work to reviewers."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S4"
+    },
+    {
+      "pergunta": "A hospital network runs four Claude workloads synchronously: (1) per-PR test generation whose output is a required status check before merge; (2) nightly regeneration of edge-case tests for the claims-adjudication module; (3) a weekly audit of logging patterns across all repositories; (4) an on-call assistant that explains failing deployments to engineers in chat. Finance wants lower API costs without delaying anything a person is waiting on. What should you change?",
+      "opcoes": [
+        "Move workloads 1, 2 and 3 to the Message Batches API, since all three are test or audit jobs that run with no person in the conversation.",
+        "Move only workload 3 to the Message Batches API, since test generation of any kind should stay synchronous so that failures surface promptly.",
+        "Move workloads 2 and 3 to the Message Batches API, and keep workloads 1 and 4 synchronous, because someone is waiting on their results.",
+        "Move workloads 2, 3 and 4 to the Message Batches API, and keep only workload 1 synchronous, because the assistant is outside the merge path."
+      ],
+      "correta": 2,
+      "explicacao": "Batch processing fits non-blocking, latency-tolerant work such as nightly test generation and weekly audits, and its 50% saving applies there without delaying anyone. The per-PR test check blocks the merge and the on-call assistant is interactive, so both need synchronous calls. Classifying by job type (tests, audits) instead of by whether someone is waiting leads to the wrong split.",
+      "feedbacks": [
+        "Workload 1 is a required check before merge, so developers wait on it; with up to 24 hours and no SLA, batch would block merges.",
+        "Nightly test generation is a classic batch workload: nobody waits on it overnight. Keeping it synchronous gives up savings for no benefit.",
+        "Correct. Only the latency-tolerant jobs move to batch; the blocking and interactive ones stay synchronous.",
+        "The on-call assistant is not in the merge path, but an engineer is waiting in chat for each answer, which makes it latency-sensitive."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-K2"
+    },
+    {
+      "pergunta": "A travel agency is designing the extraction schema for corporate travel requests, which arrive as emails and PDFs from 200 client companies. traveler_name appears on every request, cost_center on about 60%, and a frequent-flyer number on some. trip_purpose is used for reporting; most requests fit client_meeting, conference, internal or training, but clients also write purposes such as \"site inspection\" or \"relocation\". Which TWO schema decisions are appropriate? Choose TWO.",
+      "opcoes": [
+        "Mark every field as required with a non-null type, so that the extraction never drops a field the downstream booking system expects to receive.",
+        "Add \"other\" to the trip_purpose enum, with a trip_purpose_detail string that keeps the client's own wording when \"other\" is chosen.",
+        "Make trip_purpose a free-text string, so that any purpose a client writes can be captured exactly, without future changes to the schema.",
+        "Restrict trip_purpose to the four known values, so that reports stay clean, and map any other purpose to the closest of the four afterward.",
+        "Keep traveler_name required, and make cost_center and the frequent-flyer number nullable, since many requests do not include them."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Poll until ended, match by custom_id, and resubmit only what failed.",
+      "explicacao": "Required, non-null fields should be reserved for information that is always present; cost_center and the frequent-flyer number are often missing, so making them nullable stops the model from fabricating values. For trip_purpose, an enum with \"other\" plus a detail string keeps the reporting categories usable while capturing purposes outside the list. Free text loses the categories, and mapping to the closest value hides real purposes.",
       "feedbacks": [
-        "Results are ready only at the end, and they arrive out of order.",
-        "Correct.",
-        "Reprocesses successes and doubles the cost unnecessarily.",
-        "Real time doesn't fit with batch (up to 24h, no SLA).",
-        "Correct."
-      ]
+        "Requiring non-null values for fields that are often absent pushes the model to fabricate cost centers and frequent-flyer numbers to satisfy the schema.",
+        "Correct. \"other\" plus a detail string keeps the enum extensible without losing the client's wording.",
+        "Free text captures every purpose but breaks reporting, which needs a fixed set of categories to count by.",
+        "Mapping \"relocation\" to the closest value silently misreports it; the reports would look clean but be wrong.",
+        "Correct. Required where the data is always present, nullable where the source often lacks it."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-K4"
+    },
+    {
+      "pergunta": "A travel agency's contract with a corporate client says every uploaded supplier invoice must be extracted and posted to the client's expense system within 36 hours. Invoices are queued as they arrive; a scheduler submits one Message Batches API batch per day at 01:00, results are polled every 30 minutes, and validation and posting take about an hour. An audit finds that some invoices were posted more than 40 hours after upload. What is the flaw in this design?",
+      "opcoes": [
+        "Polling every 30 minutes wastes time after the batch ends; polling every minute would recover enough slack to keep every invoice under 36 hours.",
+        "Large daily batches take longer to process, so splitting each day's queue into several smaller batches submitted at 01:00 would meet the limit.",
+        "One daily submission lets an invoice wait up to 24 hours before processing; with up to 24 hours of batch time, it must submit about every 8 hours.",
+        "Batch processing cannot meet a contractual deadline, because it has no latency SLA, so this workload has to move entirely to synchronous calls."
+      ],
+      "correta": 2,
+      "explicacao": "The worst case for a batch pipeline is the wait until the next submission, plus up to 24 hours of processing, plus post-processing. With one submission a day, an invoice that arrives just after 01:00 can take about 24 + 24 + 1.5 hours, far beyond 36. Submitting every 8 hours bounds the worst case at about 33.5 hours, leaves slack, and keeps the batch discount.",
+      "feedbacks": [
+        "Faster polling saves at most half an hour, while the daily submission adds up to 24 hours of waiting. The arithmetic does not close.",
+        "Batch size does not change the processing window, and smaller batches submitted at the same 01:00 still leave late arrivals waiting up to 24 hours.",
+        "Correct. Submission frequency must be chosen so that window + 24 hours + post-processing fits inside the SLA.",
+        "Batch has no latency SLA, but its processing window is bounded at 24 hours, so a 36-hour commitment can be met by choosing the submission frequency."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-S2"
+    },
+    {
+      "pergunta": "A travel agency submitted 18,000 hotel contracts for extraction through the Message Batches API, each request with a custom_id equal to the contract ID. The batch ended with 17,604 succeeded and 396 errored. For 371 of the errored requests, the error says the prompt is too long; these are master agreements of 300+ pages with annexes. The other 25 failed with a transient server error. Which statement about how to handle this result is correct?",
+      "opcoes": [
+        "Errored requests may share a hidden cause with the ones that succeeded, so the safest course is to resubmit all 18,000 and use only the fresh results.",
+        "The context errors will clear once the service is less loaded, so all 396 errored requests should be resubmitted unchanged in the next batch.",
+        "The errored results cannot be matched to their contracts, because results come back out of order, so the batch should be rerun with sequential IDs.",
+        "Only the 396 failed custom_ids need another pass: split the 371 oversized contracts into chunks first, and resend the 25 server errors as they were."
+      ],
+      "correta": 3,
+      "explicacao": "custom_id identifies exactly which requests failed, so only those need to be resubmitted. Each failure type needs its own handling: requests that exceeded the context limit will fail again unless the documents are split into chunks, while transient server errors can be resent unchanged. Resubmitting everything pays again for 17,604 results that already succeeded.",
+      "feedbacks": [
+        "There is no sign that the succeeded results are wrong; rerunning all 18,000 doubles the cost to fix 2% of the batch.",
+        "Load explains the 25 server errors, but the 371 context errors come from document size; unchanged, they will fail again.",
+        "custom_id is exactly what makes out-of-order results matchable; here it already equals the contract ID.",
+        "Correct. Resubmit only the failed custom_ids, with chunking where the context was exceeded."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-S3"
+    },
+    {
+      "pergunta": "A hospital network's CI review bot returns, through a report_review tool, a findings array (each finding with a severity) and a summary_counts object with critical, major and minor totals that feeds a quality dashboard. Strict mode is off, and the tool has never produced malformed JSON. An audit finds that in 8% of PRs summary_counts does not match the severities in the findings array. A teammate proposes enabling strict mode on the tool to eliminate these mismatches. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: strict mode applies the schema exactly, which includes keeping summary_counts consistent with the severities listed in the findings.",
+        "Adopt it, and also add minimum: 0 to each count, so that strict mode can reject any summary count that does not match the findings array.",
+        "Reject it as the fix: strict mode prevents syntax and type errors, not counts that disagree with the findings; derive or check the counts in code.",
+        "Reject it: the mismatches mean the schema is too large, so move summary_counts into a second tool call made after the findings are recorded."
+      ],
+      "correta": 2,
+      "explicacao": "Strict schemas eliminate syntax and type errors, but they cannot express a rule that one field must equal a count over another; that is a semantic error. The reliable fix is to compute summary_counts from the findings in code, or to validate the two against each other and retry with the specific error. Enabling strict mode is harmless, but it will not change the 8%.",
+      "feedbacks": [
+        "Strict mode guarantees that the output matches the schema's structure and types; consistency between fields is not something JSON Schema expresses.",
+        "minimum: 0 only rejects negative numbers; a count of 3 that should be 2 still passes.",
+        "Correct. This is a semantic error; code should compute the counts, or validate them and feed the error back.",
+        "A second call could still disagree with the findings; splitting the output does not add any check that the counts are right."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-K3"
     }
   ]
 }

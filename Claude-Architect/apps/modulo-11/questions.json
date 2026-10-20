@@ -1,261 +1,281 @@
 {
-  "titulo": "Module 11 — Quiz: reliability, provenance, guardrails, and evals",
+  "titulo": "Módulo 11 — Quiz: propagação de erro, revisão humana e proveniência",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "In the middle of a support interaction, the customer writes: 'I want to talk to a person'. Their problem is simple, and the agent would probably solve it in two more turns. What should the agent do?",
+      "pergunta": "A subagent in a multi-agent research system hits a failure it cannot resolve on its own. What should it send back so that the coordinator can make an intelligent recovery decision?",
       "opcoes": [
-        "Try to resolve it one more time and escalate only if that fails",
-        "Ask whether they're sure, explaining that the agent can solve it",
-        "Escalate immediately, with a structured handoff",
-        "Ignore the request and continue the flow, since the case is simple"
+        "A short status such as \"search unavailable\" plus the retry count, so the coordinator knows recovery was already tried.",
+        "The full stack trace and the raw HTTP response, so the coordinator has every low-level detail needed to diagnose it.",
+        "The failure type, what was attempted, any partial results, and possible alternatives, so the coordinator can choose.",
+        "An empty result set marked as successful, so the coordinator can continue the workflow without stopping on one failure."
       ],
       "correta": 2,
-      "explicacao": "An explicit request for a human is an immediate escalation trigger.",
+      "explicacao": "Structured error context (failure type, attempted query, partial results, alternative approaches) lets the coordinator decide whether to retry with a modified query, try another source, or proceed with partial results. Generic statuses hide that context, raw traces add volume without decision-relevant structure, and empty-as-success hides the failure entirely.",
       "feedbacks": [
-        "Tempting for efficiency's sake, but it disregards the explicit request.",
-        "Insisting on retaining the customer goes against the escalation trigger.",
-        "Correct.",
-        "Ignoring the request is the worst path."
-      ]
+        "A generic status, even with a retry count, hides what failed, what was tried, and what was already obtained, so the coordinator cannot choose a targeted recovery.",
+        "Low-level detail is not decision context; the coordinator needs to know the failure type, the attempt, the partial results, and the options.",
+        "Correct. These four pieces are what enable intelligent coordinator recovery.",
+        "Marking a failure as success is silent suppression; the coordinator would treat missing data as a real finding."
+      ],
+      "ts": "5.3"
     },
     {
-      "pergunta": "A furious customer, writing in all caps, complains about a duplicate charge of 5 dollars that is covered by the refund policy. What should the agent do?",
+      "pergunta": "A subagent's query to a claims database returns HTTP 200 with zero matching records. A second query, to a different system, times out. Which statement is correct?",
       "opcoes": [
-        "Process the refund; sentiment is not an escalation criterion",
-        "Escalate, because the customer is angry and a human has a better chance of retaining the customer",
-        "Escalate after three all-caps messages",
-        "Ask the customer to calm down before continuing"
+        "The first is a valid empty result to report as a finding; the second is an access failure that needs a retry decision.",
+        "Both should be reported as failures, since neither query produced any data that the coordinator can pass on to synthesis.",
+        "Both should be reported as empty results, since in either case the coordinator has no records to work with for now.",
+        "The first needs a retry decision, since empty responses are often transient; the second is a valid result showing no data."
       ],
       "correta": 0,
-      "explicacao": "Sentiment ≠ complexity. A simple case covered by the policy: resolve it.",
+      "explicacao": "A successful query with no matches is a valid empty result: it tells the coordinator something real. A timeout is an access failure: the query never ran, so the coordinator must decide whether to retry, use another source, or note a gap. Error reporting must keep the two distinct.",
       "feedbacks": [
-        "Correct.",
-        "Escalating based on sentiment is an anti-pattern: it floods the human queue with simple cases.",
-        "It's still escalating based on sentiment.",
-        "It doesn't solve the problem and makes the experience worse."
-      ]
+        "Correct. Distinguishing access failures from valid empty results lets the coordinator make the appropriate decision for each.",
+        "Treating a successful no-match query as a failure triggers pointless retries and discards a legitimate finding.",
+        "Reporting the timeout as empty is silent suppression; the coordinator would conclude that no records exist when it simply does not know.",
+        "This reverses the two cases: HTTP 200 with zero matches is a completed query, while the timeout is the one that never ran."
+      ],
+      "ts": "5.3"
     },
     {
-      "pergunta": "A proposal suggests escalating whenever the model responds that it is less than 70% confident in its own answer. What is the problem?",
+      "pergunta": "Which pair of behaviors are both anti-patterns in error propagation across a multi-agent system?",
       "opcoes": [
-        "The threshold should be 90%, because 70% lets too many wrong answers through without review",
-        "The model can't report numbers",
-        "None; it's the recommended practice",
-        "Self-reported confidence is poorly calibrated; it's not a reliable signal for escalation"
+        "Returning empty results marked as success when a call fails, and ending the whole workflow when one subagent fails.",
+        "Returning empty results marked as success when a call fails, and retrying transient failures inside the subagent.",
+        "Ending the whole workflow when one subagent fails, and returning partial results along with what was attempted.",
+        "Reporting a valid empty result from a successful query as a success, and ending the workflow when one subagent fails."
+      ],
+      "correta": 0,
+      "explicacao": "Silent suppression (empty results presented as success) and terminating the entire workflow on a single failure are the two opposite anti-patterns. The recommended behavior sits between them: continue with what succeeded and propagate the failure with structured context.",
+      "feedbacks": [
+        "Correct. Suppressing errors and aborting on a single failure are both anti-patterns.",
+        "Local retry of transient failures inside the subagent is the recommended practice, so this pair mixes one anti-pattern with a good practice.",
+        "Returning partial results with what was attempted is exactly what enables coordinator recovery; only the first half of this pair is an anti-pattern.",
+        "A successful query with no matches is correctly reported as a valid empty result; only the second half of this pair is an anti-pattern."
+      ],
+      "ts": "5.3"
+    },
+    {
+      "pergunta": "A subagent receives a brief 503 response from an external API that usually recovers within seconds. What is the recommended handling?",
+      "opcoes": [
+        "Propagate the error to the coordinator at once, so all retry decisions are made in a single, central place.",
+        "Return an empty result to the coordinator, so the workflow keeps moving while the API service recovers.",
+        "Hand the task to a human operator, since an external API failure is outside what the agent can resolve.",
+        "Retry locally with backoff, and propagate only if it stays unresolved, with the attempts and partial results."
       ],
       "correta": 3,
-      "explicacao": "Use objective triggers (explicit request, policy gap, lack of progress), not verbal self-confidence.",
+      "explicacao": "Subagents should implement local recovery for transient failures and only propagate errors they cannot resolve, including what was attempted and any partial results. That avoids costly full re-delegations by the coordinator and keeps the information the coordinator needs when escalation is necessary.",
       "feedbacks": [
-        "Changing the threshold doesn't fix a poorly calibrated signal.",
-        "The model does report numbers; the problem is that they don't reflect its accuracy rate.",
-        "It's one of the classic anti-patterns.",
-        "Correct."
-      ]
+        "Centralizing every retry in the coordinator makes it re-run whole delegations for errors the subagent could fix cheaply.",
+        "Returning empty results hides the failure; downstream agents would treat missing data as a real finding.",
+        "A brief 503 is recoverable by the system itself; escalating it to a person wastes human capacity.",
+        "Correct. Recover transient failures locally and propagate only unresolved errors with their context."
+      ],
+      "ts": "5.3"
     },
     {
-      "pergunta": "A customer search by name returns three 'Ana Lima' records. What should the agent do?",
+      "pergunta": "In a multi-agent research system, what do coverage annotations in the synthesis output indicate?",
       "opcoes": [
-        "Pick the customer with the most recent order, who is statistically the most likely to be getting in touch",
-        "Ask for an additional identifier (order number, email) to disambiguate",
-        "Escalate to a human",
-        "Pick the first one on the list"
+        "A confidence percentage for each sentence of the report, based on the model's own assessment of its accuracy.",
+        "Which findings are well supported and which topic areas have gaps because some sources were unavailable.",
+        "The full list of sources consulted by every subagent, appended at the end of the report as a bibliography.",
+        "The share of the original research question that was answered, given as one percentage for the whole report."
       ],
       "correta": 1,
-      "explicacao": "With multiple matches, ask for an identifier. Don't guess.",
+      "explicacao": "Coverage annotations tell readers where the report is well supported and which topic areas have gaps due to unavailable sources. They are how a failure the coordinator chose not to recover becomes an explicit, located gap instead of a silent one.",
       "feedbacks": [
-        "A heuristic that is still a guess; there's a risk of acting on the wrong customer.",
-        "Correct.",
-        "Disambiguation is trivial for the agent; escalating is unnecessary.",
-        "Pure guessing."
-      ]
+        "Per-sentence confidence is a different mechanism and does not say which areas lack sources.",
+        "Correct. Coverage annotations separate well-supported findings from gaps caused by unavailable sources.",
+        "A bibliography lists what was consulted, not where the coverage is thin or missing.",
+        "A single percentage does not say which topic areas are missing, so readers cannot tell where to be careful."
+      ],
+      "ts": "5.3"
     },
     {
-      "pergunta": "When escalating, what should the human receive?",
+      "pergunta": "An extraction pipeline reports 97% accuracy overall. What should be done before reducing human review?",
       "opcoes": [
-        "The complete conversation transcript, so the human has all the context without losing any details",
-        "A structured summary: customer, problem, actions, reason, recommendation, amount",
-        "Only the customer ID",
-        "A free-text message summarizing the tone of the conversation"
+        "Increase the uniform review sample, so the 97% overall figure is measured with a narrower margin of error.",
+        "Switch to a larger model and confirm that overall accuracy rises above 97% before review is reduced at all.",
+        "Break accuracy down by document type and by field, and confirm consistent performance in every segment.",
+        "Compare the 97% with the accuracy of human data-entry staff, and reduce review if the model is no worse."
+      ],
+      "correta": 2,
+      "explicacao": "Aggregate accuracy can mask poor performance on specific document types or fields. Before automating high-confidence extractions or reducing review, validate accuracy by document type and field segment and confirm that every segment performs consistently.",
+      "feedbacks": [
+        "A larger uniform sample measures the same aggregate more precisely; it still hides a weak segment.",
+        "A higher aggregate is still an aggregate; a small segment can stay far below target after the model change.",
+        "Correct. Segment-level validation shows whether each document type and field is ready for less review.",
+        "Comparing two aggregates says nothing about whether a specific document type or field is underperforming."
+      ],
+      "ts": "5.5"
+    },
+    {
+      "pergunta": "What is the purpose of stratified random sampling of high-confidence extractions?",
+      "opcoes": [
+        "To assign review rates by risk tier, for example reviewing 20% of high-risk, 10% of medium and 5% of low-risk cases.",
+        "To decide which of the low-confidence extractions reviewers should check first when the queue exceeds capacity.",
+        "To replace confidence-based routing with an unbiased random queue that reviewers work through every day.",
+        "To keep measuring the error rate of extractions that skip review and to detect new error patterns as they emerge."
+      ],
+      "correta": 3,
+      "explicacao": "Extractions above the confidence threshold skip review, so their errors go unseen unless someone samples them. A random sample stratified by segment (document type, field, template), reviewed by people, measures their ongoing error rate and reveals novel error patterns such as a new template.",
+      "feedbacks": [
+        "Risk-tiered review rates are a different idea; stratified sampling of high-confidence extractions is a measurement of the auto-approved set.",
+        "Prioritizing low-confidence items is about routing limited capacity, not about measuring errors in what skips review.",
+        "The sample complements confidence-based routing; it does not replace it.",
+        "Correct. It measures the error rate of what skips review and surfaces novel error patterns."
+      ],
+      "ts": "5.5"
+    },
+    {
+      "pergunta": "How should review thresholds for field-level confidence scores be set?",
+      "opcoes": [
+        "Use one threshold such as 0.9 for every field, since a single cut-off keeps routing simple for reviewers.",
+        "Calibrate each field's threshold on a labeled validation set, by comparing scores with actual accuracy.",
+        "Calibrate each field's scores against the model's own stated certainty, so that borderline fields are caught.",
+        "Average the confidence of all fields in a document, and route the document when the average is below 0.9."
       ],
       "correta": 1,
-      "explicacao": "The human usually doesn't read the transcript; they need an actionable, structured summary.",
+      "explicacao": "Raw model confidence becomes a reliable routing signal once it is calibrated against a labeled validation set: for each field, check how accuracy varies with the score and set the threshold that meets the error target. Fields behave differently, so thresholds are set per field.",
       "feedbacks": [
-        "Complete, but not actionable; the human won't read it.",
-        "Correct.",
-        "It's missing the problem, the actions, and the reason.",
-        "Free text about tone doesn't help anyone decide."
-      ]
-    },
-    {
-      "pergunta": "The inventory API timed out and the tool returned an empty product list. What is the problem?",
-      "opcoes": [
-        "None: an empty list is the safe response, because it keeps the agent from making up products that aren't in stock",
-        "The timeout should be longer",
-        "The tool should throw an exception with no details",
-        "Silent suppression: the agent will conclude 'out of stock' without the query ever having run"
+        "One uncalibrated threshold ignores that some fields are reliable at 0.8 while others still err at 0.95.",
+        "Correct. Calibrating per-field thresholds on labeled data turns scores into a reliable routing signal.",
+        "Comparing the scores with the model's own stated certainty checks them against themselves; calibration needs labeled ground truth.",
+        "Averaging hides a weak field behind strong ones, which is exactly what field-level scores are meant to expose."
       ],
-      "correta": 3,
-      "explicacao": "Empty ≠ failure. Empty list = it queried and found nothing. Timeout = it doesn't know. That needs to be a structured error.",
-      "feedbacks": [
-        "That's exactly the silent-suppression anti-pattern.",
-        "It might help, but it doesn't resolve the confusion between empty and failure.",
-        "A generic error with no context is another anti-pattern.",
-        "Correct."
-      ]
+      "ts": "5.5"
     },
     {
-      "pergunta": "A rule says: 'only call process_refund after verifying the customer's identity'. What is the most reliable way to guarantee this?",
+      "pergunta": "A document extraction team has limited reviewer capacity. Which TWO kinds of extractions should be routed to human review? Choose TWO.",
       "opcoes": [
-        "A prerequisite in code (e.g., a PreToolUse hook that blocks the call without verification)",
-        "Write the rule in capital letters in the system prompt",
-        "Add three few-shot examples that always show identity verification before the refund",
-        "Ask the model to confirm it has verified before calling"
+        "Extractions in which a field's confidence falls below the threshold calibrated for that field on labeled data.",
+        "Extractions from documents with ambiguous or contradictory content, such as two different employee start dates.",
+        "Extractions from a high-accuracy document type where every field scored above its calibrated threshold.",
+        "Extractions from the customer that sends the highest volume of documents, since its errors affect the most records.",
+        "Extractions from documents longer than ten pages, since long documents are more likely to contain some error."
+      ],
+      "corretas": [
+        0,
+        1
+      ],
+      "explicacao": "Human review should go where errors are likely: fields with low calibrated confidence and documents whose source content is ambiguous or contradictory. Prioritizing these cases makes the best use of limited reviewer capacity.",
+      "feedbacks": [
+        "Correct. Low calibrated confidence is a recommended routing signal for human review.",
+        "Correct. Ambiguous or contradictory sources should go to a person even when confidence is high.",
+        "These are the extractions least likely to be wrong; they belong in the sampled auto-approved set, not the review queue.",
+        "Volume is not an error signal; this sends many correct extractions to reviewers.",
+        "Length alone is a weak proxy; it spends reviewer time on documents that may be extracted perfectly."
+      ],
+      "ts": "5.5"
+    },
+    {
+      "pergunta": "Which use of model confidence is consistent with recommended practice?",
+      "opcoes": [
+        "Field-level scores calibrated on a labeled set, used to route extracted fields to human review.",
+        "Self-reported scores below 60%, used to escalate support conversations to a human agent.",
+        "A \"report only high-confidence findings\" instruction, used instead of explicit review criteria.",
+        "Scores calibrated by voting across three runs, used to select the final extracted value."
       ],
       "correta": 0,
-      "explicacao": "A critical (financial/security) rule is enforced in deterministic code; a prompt is best-effort.",
+      "explicacao": "Calibrated field-level confidence is the recommended signal for routing human review of extractions. Self-reported confidence is an unreliable escalation trigger for support cases, and confidence-based filtering is weaker than explicit categorical criteria for review findings.",
       "feedbacks": [
-        "Correct.",
-        "A prompt is probabilistic, with a nonzero failure rate.",
-        "It helps the behavior, but doesn't guarantee it.",
-        "Self-declaration isn't verification."
-      ]
-    },
-    {
-      "pergunta": "In a research pipeline with 5 subagents, the financial-data subagent failed permanently. What should the coordinator do?",
-      "opcoes": [
-        "Abort the entire research task and report a failure, so as not to deliver an incomplete report to the end user",
-        "Ignore the failure and not mention financial data",
-        "Proceed with the other 4, note the gap, and offer alternatives",
-        "Repeat the entire research task from the beginning"
+        "Correct. Calibrated, field-level confidence routes review attention where errors are likely.",
+        "Self-reported confidence is a poor proxy for case complexity, so it is not a reliable escalation trigger for support conversations.",
+        "Vague confidence filters do not improve precision the way explicit, categorical review criteria do.",
+        "Voting across runs does not calibrate anything; consistent answers can still be consistently wrong."
       ],
-      "correta": 2,
-      "explicacao": "Don't abort the workflow over one step: continue with the partial result, note the gap, and offer an alternative.",
-      "feedbacks": [
-        "It throws away the good work of the other subagents.",
-        "Hiding the gap is silent suppression.",
-        "Correct.",
-        "Wasteful; and the permanent failure will probably recur."
-      ]
+      "ts": "5.5"
     },
     {
-      "pergunta": "A tool returns: errorCategory 'business', 'account frozen by court order', isRetryable false. What should the agent do?",
+      "pergunta": "Why do multi-agent research reports often lose source attribution?",
       "opcoes": [
-        "Retry with exponential backoff, since blocks of this kind are usually temporary",
-        "Fix the parameters and try again",
-        "Return 'Operation failed' to the customer",
-        "Don't retry; explain the situation according to the policy and/or escalate"
+        "The synthesis agent's context window is too small to hold every source document it was given.",
+        "The synthesis agent has no web search tool, so it is unable to look up the citations on its own.",
+        "Subagents consult too many sources, so the synthesis agent cannot fit all of them into the report.",
+        "Findings are compressed into summaries without claim-source mappings, so the links are lost."
       ],
       "correta": 3,
-      "explicacao": "A business error isn't retryable: explain the policy or escalate.",
+      "explicacao": "Attribution is lost during summarization when findings are compressed without preserving claim-source mappings. Subagents should emit structured mappings (source URL, document name, relevant excerpt) that downstream agents preserve and merge.",
       "feedbacks": [
-        "Retry is for transient errors.",
-        "Fixing the input is for validation errors.",
-        "A generic message hides the diagnosis.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "Which sampling strategy for human review is recommended?",
-      "opcoes": [
-        "A uniform 5% of everything",
-        "Review only what the model flags as uncertain, concentrating human effort where the model itself has doubts",
-        "Stratified by risk (more review on high-value items, less on low-risk ones)",
-        "Review only when the customer complains"
+        "Context size is not the cause here; even a large context loses attribution if sources were never mapped to claims.",
+        "Re-finding citations by search addresses a different problem and can attach the wrong source.",
+        "The number of sources is not the issue; the missing claim-to-source structure is.",
+        "Correct. Without claim-source mappings, compression loses which source supports which claim."
       ],
-      "correta": 2,
-      "explicacao": "Risk-stratified sampling concentrates human attention where errors cost the most.",
-      "feedbacks": [
-        "Uniform sampling wastes review on low-risk items and undersamples high-risk ones.",
-        "Without calibration, self-reported uncertainty isn't reliable.",
-        "Correct.",
-        "Reactive; silent errors are never seen."
-      ]
+      "ts": "5.6"
     },
     {
-      "pergunta": "For an extraction's per-field confidence to be usable for routing review, it must be:",
+      "pergunta": "Two credible sources report different values for the same statistic, population, and period. What should the synthesis do?",
       "opcoes": [
-        "Above 0.9 on every field",
-        "Calibrated against a labeled set (0.9 ≈ 90% accuracy)",
-        "Generated by a second model, independent of the one that did the extraction, to avoid bias",
-        "A single score for the entire document"
+        "Report the average of the two values, and note both sources in a footnote.",
+        "Report both values, each annotated with its source, and flag the conflict.",
+        "Report the value from the source with the larger sample, and omit the other.",
+        "Report the value from the more recently published source, and cite it."
       ],
       "correta": 1,
-      "explicacao": "Confidence only means something if it's calibrated against labeled data; and it should be per field.",
+      "explicacao": "Conflicting statistics from credible sources should be annotated with source attribution rather than resolved by arbitrarily selecting or averaging values. The reader, or the coordinator, then sees the disagreement and its origins.",
       "feedbacks": [
-        "A high threshold without calibration means nothing.",
-        "Correct.",
-        "Another model doesn't calibrate anything by itself.",
-        "A per-document score hides the problematic field."
-      ]
-    },
-    {
-      "pergunta": "The extraction has 97% overall accuracy. What should you do before reducing human review?",
-      "opcoes": [
-        "Break down accuracy by document type and by field",
-        "Nothing; 97% is excellent",
-        "Increase the size of the uniform sample to have more statistical confidence in the number",
-        "Switch to a larger model"
+        "An average is a number no source reported, and it hides the disagreement.",
+        "Correct. Annotate the conflict with attribution instead of picking a value.",
+        "Choosing by sample size silently discards a credible value and hides the conflict.",
+        "Recency is an arbitrary tiebreaker when both sources cover the same period."
       ],
-      "correta": 0,
-      "explicacao": "An aggregate metric hides failures by type (e.g., 45% on handwritten documents).",
-      "feedbacks": [
-        "Correct.",
-        "That's the classic aggregate trap.",
-        "A larger uniform sample still measures the aggregate.",
-        "Changing the model without measuring by segment is tinkering without a diagnosis."
-      ]
+      "ts": "5.6"
     },
     {
-      "pergunta": "Two sources from the same period report different values for the same indicator. What should the synthesis do?",
+      "pergunta": "Why should subagents include publication or data collection dates in their structured outputs?",
       "opcoes": [
-        "Record both values with their sources and mark the indicator as contested",
-        "Use the average of the two",
-        "Use the most recently published source, which tends to reflect the most current methodology",
-        "Omit the indicator to avoid confusion"
-      ],
-      "correta": 0,
-      "explicacao": "A conflict is annotated with its sources, never resolved silently or by averaging.",
-      "feedbacks": [
-        "Correct.",
-        "An average invents a number that no source stated.",
-        "Choosing silently hides the divergence.",
-        "Omitting is also hiding."
-      ]
-    },
-    {
-      "pergunta": "One report cites '8.1% unemployment' (2024 data) and another '6.9%' (2026 data). How should this be handled?",
-      "opcoes": [
-        "Mark it as a conflict between sources and tell the reader the numbers aren't reliable",
-        "Discard the older one without mentioning it",
-        "Present both with their reference dates: different periods, not a contradiction",
-        "Take the average"
+        "So that the synthesis can discard older sources and keep only the most current values.",
+        "So that the report can list its citations in chronological order for easier reading.",
+        "So that differences between periods are not misread as contradictions between sources.",
+        "So that the coordinator can compute a freshness score and filter out low-scoring sources."
       ],
       "correta": 2,
-      "explicacao": "Time-based data: record the 'data as of' date. Numbers from different periods aren't a contradiction.",
+      "explicacao": "Dates let downstream agents interpret values correctly over time: two figures from different years may describe a trend, not a conflict. Without them, temporal differences are misinterpreted as contradictions.",
       "feedbacks": [
-        "Without looking at the dates, it creates a false conflict.",
-        "It loses information and the time series.",
-        "Correct.",
-        "Averaging different periods makes no sense."
-      ]
+        "Discarding older sources throws away valid data, such as the baseline of a trend.",
+        "Ordering citations is cosmetic; the purpose is correct temporal interpretation.",
+        "Correct. Dates prevent temporal differences from being misread as contradictions.",
+        "Filtering by freshness discards information instead of interpreting it in time."
+      ],
+      "ts": "5.6"
     },
     {
-      "pergunta": "The team wants to improve the extraction prompt. Which process is recommended?",
+      "pergunta": "A document analysis subagent finds two credible studies with conflicting values for the same measure. What is the recommended handling?",
       "opcoes": [
-        "Manually test 3 documents and ship it if it looks better",
-        "Change the prompt, examples, and model all at once to save time, and measure the combined effect at the end",
-        "Measure only overall accuracy before and after",
-        "A baseline on a labeled set, one change at a time, comparison by segment"
+        "Finish the analysis with both values included and annotated, and let the coordinator decide how to reconcile before synthesis.",
+        "Choose the value from the more credible study, record the other in a comment, and finish the analysis using the chosen value.",
+        "Stop the analysis and return the conflict to the user, so that the right value is chosen before any further work is done.",
+        "Pass both studies straight to the synthesis agent, which reconciles conflicts while it writes the text of the final report."
       ],
-      "correta": 3,
-      "explicacao": "Metric-driven changes: baseline, one change at a time, comparison by segment, with the set kept as a regression suite.",
+      "correta": 0,
+      "explicacao": "The analysis subagent should complete its work with conflicting values explicitly annotated, and the coordinator decides how to reconcile them before passing results to synthesis. This keeps progress moving and puts the decision where the overall context is.",
       "feedbacks": [
-        "A small, subjective sample; 'it improved' becomes a matter of opinion.",
-        "It's impossible to attribute the effect to each change.",
-        "The overall number hides per-segment regressions.",
-        "Correct."
-      ]
+        "Correct. Complete the analysis, annotate the conflict, and let the coordinator reconcile before synthesis.",
+        "Picking a value inside the subagent is an arbitrary resolution by the wrong agent and hides the conflict.",
+        "Stopping the analysis stalls the work; the conflict can be annotated and handled by the coordinator.",
+        "Bypassing the coordinator skips the reconciliation step, and synthesis may silently pick one value."
+      ],
+      "ts": "5.6"
+    },
+    {
+      "pergunta": "How should a research synthesis present financial data, news coverage, and technical findings?",
+      "opcoes": [
+        "Financial data as prose with inline figures, news as a bulleted list, and technical findings as tables.",
+        "Financial data as tables, news as prose, and technical findings as structured lists, by content type.",
+        "Financial data as tables, news as structured lists, and technical findings as prose paragraphs.",
+        "All three as a single uniform structured list, so that every section can be compared consistently."
+      ],
+      "correta": 1,
+      "explicacao": "Different content types should be rendered appropriately: financial data as tables, news as prose, and technical findings as structured lists, rather than converting everything to one format.",
+      "feedbacks": [
+        "Inline figures in prose make financial comparisons hard to read, and news loses its narrative context as bullets.",
+        "Correct. Each content type gets the format in which it is easiest to read and compare.",
+        "News needs prose for context, and technical findings are easier to scan as a structured list.",
+        "A uniform format forces tables and narratives into a shape that suits neither."
+      ],
+      "ts": "5.6"
     }
   ]
 }

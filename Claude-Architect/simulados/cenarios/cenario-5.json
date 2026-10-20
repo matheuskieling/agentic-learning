@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 5 — Claude Code for Continuous Integration",
-  "aprovacao": 72,
+  "titulo": "Cenário 5 — Claude Code for Continuous Integration (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 5,
-      "dominio": "D3",
-      "pergunta": "Orbital Logística runs Claude Code in the GitHub Actions pipelines of its monorepo to review pull requests and generate tests.\n\nThe first review job was written as `claude \"Review this PR's diff and list problems\"`. The job hangs until it hits the 60-minute timeout, without producing any output. What is the fix?",
+      "pergunta": "Northvale Energy runs Claude Code in its CI pipeline to review pull requests, generate tests and propose fixes for failing builds in its smart-meter ingestion service. For fixes, a single `claude -p` call writes the change and is then told to 'review your own diff critically before finishing'. Over three months, engineers found subtle daylight-saving-time bugs in 6 merged fixes that this review had approved. Enabling extended thinking for the call and adding 'assume your first attempt is wrong' made no measurable difference. What is the most likely root cause?",
       "opcoes": [
-        "Increase the job timeout to 120 minutes, because large diffs take a long time to analyze.",
-        "Run in non-interactive mode with `-p` (`--print`), which processes the prompt, prints the result, and exits.",
-        "Add `--permission-mode bypassPermissions`, so the agent never stops waiting for tool approval during the job.",
-        "Pipe `yes |` before the command, automatically answering any interactive question."
+        "The review instruction comes after a long generation, so it sits in the middle of the context where attention is weakest, and moving it to the start would fix it.",
+        "The review happens in the same context that produced the fix, so the model keeps its generation reasoning and rarely questions its own decisions.",
+        "The review prompt has no explicit criteria for time handling; adding daylight-saving checks would let the same call catch these bugs reliably.",
+        "The job uses `-p`, which skips the deeper analysis available in interactive sessions, so subtle defects are caught only when an engineer reviews locally."
       ],
       "correta": 1,
-      "explicacao": "Without `-p`, Claude Code opens the interactive session and waits for input indefinitely. `-p` is the primitive for use in scripts and CI.",
+      "explicacao": "A model reviewing its own output in the same session retains the reasoning that produced it, so it tends to confirm its decisions instead of questioning them. Stronger self-review wording and extended thinking do not remove that bias, which matches what the team observed. An independent instance that sees only the diff and the requirement, without the generator's reasoning, is more effective at catching subtle issues.",
       "feedbacks": [
-        "Treats the symptom: in interactive mode the process will never finish on its own, whatever the timeout.",
-        "Correct: the process hangs because it's in interactive mode; `-p` solves it.",
-        "Tempting because permission prompts also hang, but the session would remain interactive; besides, bypass isn't the right posture for CI.",
-        "A hack that doesn't make the session non-interactive and may approve unwanted actions."
-      ]
+        "Position effects matter for long inputs, but the instruction sits at the end, where attention is strong. The issue is who reviews, not where the instruction is placed.",
+        "Correct. Same-session self-review inherits the generator's reasoning, which is why stronger wording and extended thinking did not help.",
+        "Explicit criteria improve reviews in general, but they would not remove the bias of reviewing one's own work, and DST bugs are only one of many classes the review must catch.",
+        "`-p` only makes the run non-interactive; it does not reduce the depth of analysis. The weakness is the self-review design."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.6",
+      "bullet": "4.6-K2"
     },
     {
-      "cenario": 5,
-      "dominio": "D3",
-      "pergunta": "At Orbital Logística, the Claude Code review job runs with `-p`, and the next pipeline step posts each finding as a line comment on the PR.\n\nToday that step extracts the findings from free text with regular expressions and breaks whenever the wording changes. What is the best solution?",
+      "pergunta": "Northvale Energy's CI pipeline runs Claude Code to generate test cases from the requirement spec linked in each pull request. The prompt contains one worked example: a spec with a numbered 'Acceptance Criteria' section and the tests derived from it. Older specs put criteria inside narrative paragraphs or a tariff table, and cite grid-code clauses either inline or in an appendix. For those specs, 38% of runs report 'no acceptance criteria found' or miss the appendix clauses. What is the main flaw in this setup?",
       "opcoes": [
-        "Reinforce in the prompt: \"respond ONLY with valid JSON, with no text before or after\".",
-        "Switch to `--output-format stream-json`, which already delivers each finding as a separate object.",
-        "Use `--output-format json` with `--json-schema` describing the findings and consume the validated JSON.",
-        "Add a second call to Claude that converts the first call's free text into JSON before the posting step."
+        "Specs should be converted to the numbered template before the job runs, so that each input has exactly the same structure as the one worked example.",
+        "The job should process each spec section in a separate call, so that criteria in paragraphs and tables get the same attention as a dedicated list.",
+        "The single example shows only one spec layout, so the model has not seen how criteria in prose, tables or appendix citations should be handled.",
+        "The prompt does not state that each spec contains acceptance criteria, which lets the model answer that none exist instead of searching the spec harder."
       ],
       "correta": 2,
-      "explicacao": "For machine consumption, use JSON output with a schema: the result comes back structured and conforming to the format the next step expects.",
+      "explicacao": "Few-shot examples teach the model how to handle the input variations it will meet. With one example built on a tidy numbered section, the model has no demonstration of criteria embedded in paragraphs, tables or appendix references, so it misses them or concludes there are none. Adding a few examples that cover these structures addresses the root cause without changing the specs or the pipeline.",
       "feedbacks": [
-        "An improvement, but still probabilistic: a prompt instruction doesn't guarantee format.",
-        "`stream-json` emits execution events (messages, tool calls) as a stream; it doesn't structure the review content into the fields the step needs.",
-        "Correct: structured output with a schema eliminates fragile parsing.",
-        "More cost and one more point of failure to solve something the invocation itself solves with a schema."
-      ]
+        "Rewriting every spec shifts the burden to authors and does nothing for the many legacy specs; the generator should handle varied structures itself.",
+        "Splitting by section adds calls and breaks links between sections, such as a criterion that cites an appendix clause, and the model still has no example of non-list criteria.",
+        "Correct. Examples that cover varied document structures let the model find criteria wherever they appear.",
+        "Telling the model that criteria always exist pushes it to invent them when a spec really lacks them, trading misses for fabrication."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.2",
+      "bullet": "4.2-S4"
     },
     {
+      "pergunta": "Northvale Energy's CI runs a nightly Message Batches job that generates test cases for every file changed that day and posts them as comments on the originating pull requests. Each request's `custom_id` is its index (`req-0`, `req-1`, ...), and a file mapping each index to its PR and file is kept in the runner's temp folder. One night the runner was recycled before the results arrived, and 640 results could not be attributed. A teammate says results come back in submission order anyway. Which statement about this situation is correct?",
+      "opcoes": [
+        "The teammate is right: results return in submission order, so the job can rebuild the mapping by listing the day's changed files in the same order as before.",
+        "The results are lost, because a batch's output can only be retrieved by the process that submitted it, so the job must now resubmit the 640 requests.",
+        "The job should use synchronous calls for this workload, since only synchronous responses can be tied to their request without extra bookkeeping.",
+        "Results may arrive in any order and are identified only by their `custom_id`, so the ID itself should encode the PR and file, not point to a separate map."
+      ],
+      "correta": 3,
+      "explicacao": "Each batch result is returned with its `custom_id`, the field meant to correlate requests and responses; results are not guaranteed to follow submission order. Making the `custom_id` self-describing, for example `pr-4182:src/meter/Reader.java`, lets any process attribute results without auxiliary state. The nightly job is latency-tolerant, so batch processing itself remains the right fit.",
+      "feedbacks": [
+        "Batch results are not guaranteed to come back in submission order, so rebuilding the mapping by position can attach tests to the wrong files.",
+        "Batch results are retrieved through the API by batch ID and are not tied to the submitting process; the problem is that the IDs carry no meaning.",
+        "A nightly, non-blocking job is a good fit for batch processing; giving up the 50% savings is unnecessary when `custom_id` solves correlation.",
+        "Correct. `custom_id` is how results are correlated with requests, so it should carry the PR and file identity itself."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-K4"
+    },
+    {
+      "pergunta": "Northvale Energy's CI pipeline invokes a project skill, `generate-tests`, defined in `.claude/skills/generate-tests/SKILL.md`, to add test cases to each pull request. In 3 of about 400 runs last month, the skill used Edit to change production code so that a failing test would pass, and once it ran a Bash command that deleted a fixture directory. A lead proposes adding `allowed-tools: Read, Grep, Glob, Write` to the skill's frontmatter. How should you evaluate this proposal?",
+      "opcoes": [
+        "Reject it: tool limits belong in the job's prompt, where an instruction such as 'do not modify production code' covers each skill the job may invoke.",
+        "Reject it: frontmatter only describes a skill to its users, so the restriction has to be enforced by reviewers checking each generated diff before merge.",
+        "Accept it, but also add `context: fork`, because the tool restriction only takes effect when the skill runs in its own isolated sub-agent context.",
+        "Accept it: `allowed-tools` restricts the skill to the listed tools while it runs, so it can read code and write tests but cannot use Bash or Edit."
+      ],
+      "correta": 3,
+      "explicacao": "The `allowed-tools` frontmatter field limits which tools a skill can use while it executes. Restricting `generate-tests` to reading and writing files removes Bash and Edit, the two tools behind the destructive runs, without relying on the model to obey an instruction. `context: fork` is a separate option that isolates a skill's output from the main session and is not needed for the restriction.",
+      "feedbacks": [
+        "A prompt instruction is probabilistic; 3 failures in 400 runs is exactly the kind of non-zero rate that a tool restriction removes.",
+        "`allowed-tools` is a real configuration control, not a description, and leaning on reviewers to catch destructive actions shifts the burden onto humans.",
+        "`context: fork` isolates the skill's context from the main session; it is independent of `allowed-tools`, which works on its own.",
+        "Correct. `allowed-tools` restricts the skill's tool access during execution, removing Bash and Edit from what it can do."
+      ],
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "Orbital Logística wants the CI review job to run without human intervention, without hanging on permission requests, without being able to modify the repository, and without running indefinitely.\n\nWhich two configurations meet these requirements? (Choose TWO.)",
-      "opcoes": [
-        "A prompt instruction: \"do not edit any file and finish as quickly as possible\".",
-        "`--allowedTools` allowing only the read tools (Read, Grep, Glob) and the project's specific test command.",
-        "A GitHub token with administrator permission, so the agent never runs into a lack of access.",
-        "`--max-turns` with a limit compatible with the typical size of a review, as a safety ceiling.",
-        "`--permission-mode bypassPermissions`, so no tool asks for approval."
-      ],
-      "corretas": [
-        1,
-        3
-      ],
-      "explicacao": "In CI, restrict the tools explicitly (least privilege, no permission prompts for what is allowed) and use `--max-turns` as a backstop against endless execution.",
-      "feedbacks": [
-        "A critical rule in the prompt is probabilistic; it doesn't prevent edits or guarantee termination.",
-        "Correct: allows what's needed without prompts and prevents edits deterministically.",
-        "Violates least privilege and widens the possible damage from a wrong action.",
-        "Correct: a turn ceiling is a valid backstop (not the primary termination mechanism, which remains the task's natural completion).",
-        "Removes the prompts, but also all the controls: the agent could edit or execute anything."
-      ]
+      "ts": "3.2",
+      "bullet": "3.2-S3"
     },
     {
-      "cenario": 5,
-      "dominio": "D1",
-      "pergunta": "At Orbital Logística, the review job uses `claude -p --output-format json --max-turns 25`. The next step approves the PR check when the list of findings is empty.\n\nOn a very large PR, the run hits the turn limit before finishing and the result comes back with no findings. The check turns green. How should the pipeline handle this case?",
+      "pergunta": "Northvale Energy's CI runs Claude Code to review each pull request to its outage-management service. It posts about 14 comments per PR, and engineers dismiss 71% of them; most dismissed comments concern naming, line length, 'consider extracting a method' or the team's standard `withGridRetry` wrapper. The few bug and security findings are usually right but get dismissed along with the rest. The team needs a fix this sprint that does not risk losing those real findings. What is the most effective fix?",
       "opcoes": [
-        "Search the result text for words like \"LGTM\" or \"approved\" to decide the check status.",
-        "Automatically rerun with the same limit until it finishes without hitting it, as many times as needed, and only then publish the check status.",
-        "Check the status/subtype of the JSON result and, if the run did not finish normally, mark the check as failed or inconclusive, never as approved.",
-        "Treat the absence of findings as approval, since the agent analyzed what it could within the limit."
+        "Tell the reviewer to report only findings it is highly confident about and to stay conservative, so that low-value comments are filtered out before posting.",
+        "Have the reviewer attach a confidence score to each finding and post only those above 0.8, so that the pipeline drops uncertain comments automatically.",
+        "Rewrite the review prompt to list what to report (bugs, security, data loss) and what to skip (style, naming, the documented `withGridRetry` pattern).",
+        "Cap the review at the five most important comments per PR, so that engineers see a short list and are less likely to dismiss the findings that matter."
       ],
       "correta": 2,
-      "explicacao": "An interrupted run is not an empty success. The pipeline must look at the result's structured status (just as you look at `stop_reason` in a loop) and propagate the failure instead of silencing it.",
+      "explicacao": "Precision improves when the prompt defines which categories of issues to report and which to skip, not when the model is asked to filter by its own confidence. Naming the low-value categories and the team's accepted `withGridRetry` pattern removes most of the noise while keeping bugs and security in scope. Restoring precision also restores trust in the accurate findings that are currently dismissed with the rest.",
       "feedbacks": [
-        "Deciding termination by reading natural language is an anti-pattern; use the structured status field.",
-        "Unbounded retry may never converge on a PR that is too large; the problem calls for explicit handling (and perhaps multi-pass review).",
-        "Correct: distinguishes \"nothing found\" from \"didn't finish\" and avoids silent approval.",
-        "It's the anti-pattern of treating failure as empty: the review simply didn't happen in full."
-      ]
+        "'Be conservative' and 'high confidence only' are general instructions that do not tell the model which kinds of comments are unwanted, so precision barely moves.",
+        "A confidence cut-off filters by how sure the model is, not by whether the issue matters: confident style nitpicks pass and uncertain real bugs may be dropped.",
+        "Correct. Explicit report-versus-skip criteria target the noisy categories directly without dropping real findings.",
+        "An arbitrary cap can cut real bugs on busy PRs and still leaves style comments among the five; it limits volume, not relevance."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.1",
+      "bullet": "4.1-S1"
     },
     {
-      "cenario": 5,
-      "dominio": "D3",
-      "pergunta": "Orbital Logística's developers want to mention `@claude` in pull request comments to ask for explanations and small fixes, with minimal in-house infrastructure to maintain.\n\nWhich approach best meets this need?",
+      "pergunta": "Northvale Energy's CI pipeline runs Claude Code with `-p` to generate unit tests for each pull request to its billing service. Reviewers reject about half of the generated tests: many only check getters or assert that a mock was called, and most build meter readings by hand instead of using the shared `MeterReadingFactory` and `TariffFixtures` helpers. The repository's CLAUDE.md describes the architecture but says nothing about testing. What is the most effective first step?",
       "opcoes": [
-        "Ask each developer to run Claude Code locally and paste the response into the PR.",
-        "Build an in-house webhook server that receives GitHub events and calls `claude -p` for each mention, with full control over the flow.",
-        "Use the managed GitHub Actions integration (`claude-code-action`), configured in the repository's workflow.",
-        "Schedule a job every 10 minutes that reads all new comments and sends a batch to the Batch API."
+        "Add a second CI step in which another Claude instance scores each generated test and deletes those below a threshold, so only valuable tests reach the PR.",
+        "Add a one-line instruction to the job's prompt, 'write meaningful tests and reuse existing helpers', so the guidance stays outside the repository.",
+        "Document in the project CLAUDE.md the team's testing standards, what makes a test valuable and the available fixtures, so CI runs load that context.",
+        "Add the paths of the two fixture helpers to the job's prompt and require each test file to import them, so that hand-built readings disappear."
       ],
       "correta": 2,
-      "explicacao": "For the standard case of interacting with PRs/issues on GitHub, the managed integration solves it with less maintenance. `-p` is the primitive when you need full control.",
+      "explicacao": "CI-invoked Claude Code loads the project CLAUDE.md, which makes it the natural place to give test generation its context: testing standards, what makes a test valuable and which fixtures exist. With that information the generator stops producing trivial tests and reuses the shared helpers. Filtering bad tests afterwards or adding vague instructions treats the symptom instead of the missing context.",
       "feedbacks": [
-        "Automates nothing and doesn't meet the request for integration in the PR.",
-        "Works, but it's more complex than necessary; it reinvents what the managed integration already offers.",
-        "Correct: meets the requirement with the simplest ready-made solution.",
-        "The Batch API has a window of up to 24h and isn't meant for interaction; the response to a mention needs to be fast."
-      ]
-    },
-    {
+        "A scoring pass adds cost and complexity to discard output that better context would have prevented; it should not be the first step.",
+        "'Meaningful' and 'existing helpers' are too vague: the model still does not know which tests the team values or which fixtures exist.",
+        "Correct. Documenting testing standards, value criteria and fixtures in CLAUDE.md gives CI test generation the context it lacks.",
+        "This fixes the fixture half of the problem, but the trivial getter and mock tests remain, and forcing imports into every file adds unused dependencies."
+      ],
       "cenario": 5,
       "dominio": "D3",
-      "pergunta": "An Orbital Logística pipeline has two steps: a `claude -p` session generates a bug fix and then the same session is resumed with `--resume` and receives the request \"now critically review the code you wrote\".\n\nThe review step almost never flags problems, but humans find several afterward. What is the best change?",
+      "ts": "3.6",
+      "bullet": "3.6-S5"
+    },
+    {
+      "pergunta": "Northvale Energy's CI review job emits findings through `--output-format json` with a `--json-schema` whose required fields include `file`, `line`, `severity`, `issue`, `cwe_id` and `ticket_ref`. Most findings are not security issues and most PRs link no ticket, yet every finding arrives with both fields filled. An audit showed that 62% of `cwe_id` values did not fit the issue and many `ticket_ref` values point to tickets that do not exist. Which schema design is best?",
       "opcoes": [
-        "Increase the review step's `effort`, so the model reasons more deeply about each of the decisions made in the code it just wrote itself.",
-        "Do the review in an independent invocation (new session, without the generation history), receiving only the diff and the review criteria.",
-        "Run the review twice in a row in the same session and merge the findings.",
-        "Keep the same session, but reinforce in the prompt: \"be extremely critical and find at least three problems\"."
+        "Keep both fields required and add the instruction 'use N/A when the field does not apply', so that downstream parsers still receive a string value in each field.",
+        "Make `cwe_id` and `ticket_ref` optional and nullable, so that the model can return null when a finding has no weakness class or the PR links no ticket.",
+        "Remove `cwe_id` and `ticket_ref` from the schema and have engineers fill them in during triage, so that the review no longer has to produce these values.",
+        "Restrict `cwe_id` to an enum of the 25 most common CWE IDs and `ticket_ref` to a ticket-number pattern, so the schema rejects values that are not well formed."
       ],
       "correta": 1,
-      "explicacao": "Whoever generated the code carries the reasoning context that justified the decisions and tends not to question them. Review must happen in an independent session.",
+      "explicacao": "When a schema requires a field that the source often cannot supply, the model fills it with plausible inventions to satisfy the schema. Making those fields optional and nullable lets the model say 'not applicable' honestly, which removes the pressure to fabricate. Format constraints and placeholder conventions do not address that pressure.",
       "feedbacks": [
-        "More effort in the same session remains biased by the reasoning that produced the code.",
-        "Correct: eliminates the bias from the generation's reasoning context.",
-        "Repeating in the same context repeats the same bias.",
-        "Forcing a quota of problems generates false positives and doesn't remove the bias of the session that wrote the code."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D1",
-      "pergunta": "Orbital Logística receives refactoring PRs with 40 to 60 files. The current review job passes the entire diff to Claude in a single call.\n\nThe reviews of these PRs are inconsistent: some files get detailed analysis, others none, and bugs involving two modules go unnoticed. Which review architecture solves this?",
-      "opcoes": [
-        "Use a model with a larger context window, so the entire diff fits comfortably in a single call.",
-        "Add to the prompt: \"review all files with the same level of detail and attention to cross-module bugs\".",
-        "Split the diff into fixed batches of 10 files, review each batch, and concatenate the results.",
-        "Multi-pass review: one pass per file with the same local-analysis prompt, followed by an integration pass that receives the findings and examines the interactions between files."
+        "A sentinel string is still a required slot and does not remove the pressure to produce a value; nullable fields are the standard way to represent absence.",
+        "Correct. Optional, nullable fields let the model return null instead of fabricating a value to satisfy the schema.",
+        "This loses useful data for the security findings that do have a CWE and pushes the work onto engineers instead of fixing the schema.",
+        "Well-formed fabrications pass these checks: an invented ticket can match the pattern, and a wrong CWE can still be in the list."
       ],
-      "correta": 3,
-      "explicacao": "On a large PR, a single pass dilutes attention. The per-file pass ensures consistent local analysis; the integration pass covers data flow and contracts between modules.",
-      "feedbacks": [
-        "Fitting in the window doesn't solve attention dilution; a larger context still suffers from lost in the middle.",
-        "An instruction doesn't change the structural limitation of a single call over an enormous diff.",
-        "Improves local analysis, but arbitrary batches without an integration pass still miss cross-file bugs.",
-        "Correct: addresses both attention dilution and cross-file bugs."
-      ]
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S4"
     },
     {
-      "cenario": 5,
-      "dominio": "D1",
-      "pergunta": "Orbital Logística implemented multi-pass review: each file in the PR is analyzed in a separate call, and then the integration pass runs.\n\nWhat should the integration pass receive as input to be effective?",
+      "pergunta": "Northvale Energy's CI review job posts one summary comment on each pull request. Its prompt says: 'For each finding, give the location, the issue, its severity and a suggested fix.' In practice findings vary widely: some say only 'possible null dereference' with no line number, others run to three paragraphs, and fixes range from a code snippet to 'consider handling this'. Engineers want every finding in the same compact, actionable shape. What should the team change?",
       "opcoes": [
-        "The structured findings from the per-file passes and the changes to interfaces and contracts between modules, with the instruction to focus on data flow and errors at the boundaries.",
-        "The same prompt as the per-file passes, now applied to all the files together.",
-        "Only the full PR diff, without the per-file findings, so the analysis isn't influenced.",
-        "Only the PR description written by the author, which summarizes the intent of the change."
+        "Expand the instruction into a detailed paragraph that defines each of the four parts and its maximum length, so the model knows exactly what each part holds.",
+        "Add two or three example findings to the prompt, each showing the location, issue, severity and a concrete fix in the exact shape engineers want.",
+        "Post-process the summary with a formatter that splits each finding into the four parts and drops any finding in which a part cannot be found.",
+        "Ask the model to rate how actionable each finding is and post only those it rates highly, so that vague findings do not reach the pull request."
+      ],
+      "correta": 1,
+      "explicacao": "When detailed instructions still produce inconsistent output, few-shot examples are the most effective way to show the exact format and level of detail expected. Two or three findings with a precise location, a one-line issue, a severity and a concrete fix give the model a pattern to reproduce on every PR. Longer instructions, filters or self-ratings do not show it what a good finding looks like.",
+      "feedbacks": [
+        "The prompt already lists the four parts; more prose about them tends to be interpreted just as inconsistently.",
+        "Correct. A few examples in the target shape are the most reliable way to get consistent, actionable findings.",
+        "Dropping findings that lack a part discards real issues, and parsing free text after the fact is brittle.",
+        "Self-rated actionability filters output without improving it, and real bugs that happen to be written vaguely would be dropped."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.2",
+      "bullet": "4.2-S2"
+    },
+    {
+      "pergunta": "Northvale Energy's CI review prompt for its SCADA adapter code includes three few-shot examples, all real bugs in which swallowed exceptions lost data. The adapters also use an intentional fallback pattern: catch a telemetry timeout, increment a metric and continue. The diffs show each catch block in full, yet the reviewer flags about 30 of these a week. After the team added 'ignore TelemetryTimeout catches' to the prompt, those flags stopped, but the reviewer began flagging an identical new `HeartbeatTimeout` catch. What is the most likely root cause?",
+      "opcoes": [
+        "All the examples are real bugs, with none showing why the acceptable pattern is fine, so the model has no basis for telling the two apart in new code.",
+        "The ignore rule names only one exception type, and the model applies such rules literally, so the root cause is an incomplete list of timeout types.",
+        "The review sees only the changed lines, so it cannot tell that each catch increments a metric and judges every catch block without its surrounding code.",
+        "The swallowed-exception category is inherently noisy in adapter code, and categories this noisy cannot be improved through the prompt at all."
       ],
       "correta": 0,
-      "explicacao": "The integration pass receives the local findings and focuses on what only shows up between files: data flow, contracts, and error handling at the boundaries.",
+      "explicacao": "Few-shot examples that contrast genuine issues with acceptable look-alikes teach the model the reasoning behind the distinction, so it can generalize to patterns no one listed. Here every example is a real bug, and the only guidance about the acceptable pattern is a rule naming one exception type. Adding examples of the fallback catch, with an explanation of why it is fine, would cover `HeartbeatTimeout` and future variants.",
       "feedbacks": [
-        "Correct: gives the integration pass the right material and a different focus from the local passes.",
-        "Repeating the local analysis at scale reproduces the single-pass failure; the integration pass needs a different prompt.",
-        "Goes back to the original problem: one call over the entire diff, without focus, with diluted attention.",
-        "The author's intent is useful as context, but on its own it doesn't make it possible to find bugs in the code."
-      ]
-    },
-    {
+        "Correct. Examples that distinguish acceptable patterns from real issues let the model generalize instead of matching listed cases.",
+        "Listing more exception types fixes today's cases and fails on the next new one; the gap is the missing contrast, not the length of the list.",
+        "The diffs show each catch block in full, including the metric increment, so the model can see the code; what it lacks is a reason to accept it.",
+        "Noisy categories can be improved with better criteria and examples; disabling one is a temporary measure, and nothing here shows that prompting cannot work."
+      ],
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "Orbital Logística is reviewing its uses of Claude in CI to reduce cost. The Batch API costs 50% less, but processes within up to 24 hours, with no SLA.\n\nWhich two workloads are good candidates to migrate to the Batch API? (Choose TWO.)",
-      "opcoes": [
-        "The nightly security audit that analyzes the monorepo's 3,000 files and publishes a report in the morning.",
-        "The mandatory review check that blocks the merge until it receives the result.",
-        "The agent that fixes broken tests by reading files and running the suite over several rounds.",
-        "The interactive debugging of a broken build, done by an on-call developer.",
-        "The weekly technical debt report generated from all the modules."
-      ],
-      "corretas": [
-        0,
-        4
-      ],
-      "explicacao": "Batch is for bulk work with no urgency (nightly, weekly). It isn't for a blocking step, real-time interaction, or a multi-turn tool loop.",
-      "feedbacks": [
-        "Correct: nightly bulk work tolerates the batch window.",
-        "A blocking pre-merge check can't wait up to 24h with no SLA; it needs to be synchronous.",
-        "A batch request doesn't support a multi-turn tool loop; this agent needs to run synchronously.",
-        "Interactive debugging requires an immediate response.",
-        "Correct: a periodic report with no urgency is the typical use case."
-      ]
+      "ts": "4.2",
+      "bullet": "4.2-S3"
     },
     {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "Orbital Logística's nightly audit sends a batch with one request per file. The script that processes the results matches each result to its file by its position in the submitted list.\n\nThe morning report has started attributing vulnerabilities to the wrong files. What is the fix?",
+      "pergunta": "Northvale Energy's CI runs a Claude Code review on every push to an open pull request. Each run is a fresh `claude -p` call that receives the full PR diff and the review criteria, and every finding is posted as a new inline comment. One PR with six pushes collected 53 comments, 31 of which restated earlier comments in different words, and engineers could no longer tell which issues were still open. What is the flaw in this design?",
       "opcoes": [
-        "Sort the results by each request's completion time before matching them to the file list, reproducing the original submission order.",
-        "Replace the batch with sequential synchronous calls, which preserve order.",
-        "Send a separate batch for each file, guaranteeing one-to-one correspondence.",
-        "Give each request a `custom_id` that identifies the file (e.g., its path or hash) and match the results by that field."
-      ],
-      "correta": 3,
-      "explicacao": "Batch results may arrive out of submission order. Matching must be done by `custom_id`.",
-      "feedbacks": [
-        "Completion order also has no relation to submission order; the problem remains.",
-        "Gives up the 50% discount and the batch's scale to solve a correlation problem.",
-        "Works, but creates thousands of batches to work around something `custom_id` solves.",
-        "Correct: `custom_id` is the designed mechanism for matching requests and results."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "Orbital Logística's nightly batch has 3,000 requests. In the morning, 2,880 are `succeeded`, 90 are `errored`, and 30 are `expired`.\n\nWhat is the correct action to complete the audit?",
-      "opcoes": [
-        "Migrate the entire audit to synchronous calls, since the batch has proven unreliable.",
-        "Ignore the 120 requests, since 96% coverage is enough for a nightly report.",
-        "Resubmit the entire batch, to ensure all results come from the same run.",
-        "Resubmit in a new batch only the 120 requests that failed or expired, identified by their `custom_id`, after checking the cause of the errors."
-      ],
-      "correta": 3,
-      "explicacao": "Reprocess only the `custom_id`s that failed; resubmitting everything costs double with no gain. Checking the cause of the errors avoids repeating a validation failure.",
-      "feedbacks": [
-        "A disproportionate reaction: partial failures are expected and handled by selective resubmission.",
-        "Silences a gap: unaudited files create a false sense of coverage.",
-        "Pays again for 2,880 results that are already done.",
-        "Correct: cheap and complete, with diagnosis before resubmission."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "Orbital Logística tried to move to the nightly batch an analysis in which, for each file, Claude calls a tool to read the imported files before concluding.\n\nThe results come back with a pending `tool_use` and no conclusion. How should this workload be redesigned for the batch?",
-      "opcoes": [
-        "Pre-collect in code the necessary content (the file and its relevant imports) and send it all in each request, so the analysis finishes in a single response.",
-        "Use `tool_choice` to force the model to never call tools inside the batch.",
-        "Poll the batch status more frequently to return the tool results in time.",
-        "Configure the batch to automatically execute the tools and continue the conversation until `end_turn`."
+        "Each run starts without the earlier findings, so it cannot limit itself to issues that are new or still unaddressed and re-posts the rest in new wording.",
+        "Each run reviews the full PR instead of only the latest push, so it re-examines code that it has already reviewed and comments on that code again.",
+        "The job posts findings as inline comments instead of one summary comment edited in place, so repeated findings pile up across the PR's pushes.",
+        "The job should resume the previous review session with `--resume`, since a resumed session automatically skips findings it has already reported."
       ],
       "correta": 0,
-      "explicacao": "A batch request doesn't run a multi-turn tool loop. Either the full context goes in the request, or the workload must run as a synchronous agent.",
+      "explicacao": "When a review is re-run after new commits, it should receive the prior findings and be told to report only issues that are new or still unaddressed. Without that context, each fresh run rediscovers the same issues and phrases them differently, flooding the PR with duplicates. Narrowing the diff or changing how comments are displayed does not give the reviewer the knowledge it lacks.",
       "feedbacks": [
-        "Correct: turns the task into a single-turn one, compatible with the batch.",
-        "Preventing the tool doesn't solve it: the model would still lack the imports it needs to conclude.",
-        "Polling doesn't allow injecting a `tool_result` into a batch request that has already been processed.",
-        "No such client-side tool loop execution exists inside the batch."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "Each Orbital Logística review sends Claude ~30,000 tokens of coding guidelines and tool definitions, followed by the diff. The system prompt starts with `Build #{BUILD_ID} - {timestamp}` and then contains the guidelines, with a `cache_control` breakpoint at their end.\n\nThe team expected to save with prompt caching, but `usage.cache_read_input_tokens` is always zero. What is the cause and the fix?",
-      "opcoes": [
-        "The default TTL is too short; switching to the 1-hour cache solves it, since the builds are spaced apart.",
-        "The guidelines are too large for the cache; they must be reduced to below the minimum.",
-        "A single breakpoint isn't enough for 30,000 tokens; you must use all four available breakpoints.",
-        "The ID and timestamp at the start change the prefix on every run; move them after the last breakpoint (or into the user message), leaving the stable content first."
+        "Correct. Including prior findings and asking only for new or still-unaddressed issues prevents duplicate comments.",
+        "Reviewing only the latest push misses issues that span pushes and still cannot say which earlier findings remain open.",
+        "A single summary comment hides the clutter but still restates the same issues on every run, because the reviewer still lacks the prior findings.",
+        "Resuming carries old context, but nothing makes it skip reported issues automatically, and the earlier session's view of the code is outdated."
       ],
-      "correta": 3,
-      "explicacao": "The cache matches the exact prefix (tools → system → messages). Any variable byte before the breakpoint invalidates everything. Stable content first, volatile content after.",
-      "feedbacks": [
-        "With the prefix changing on every build, no TTL helps: the cache never matches.",
-        "Inverts the rule: there's a minimum size for caching (below it nothing is cached), not a maximum in this range.",
-        "More breakpoints don't fix a prefix that changes right at the start.",
-        "Correct: removes the silent invalidator from the prefix."
-      ]
+      "cenario": 5,
+      "dominio": "D3",
+      "ts": "3.6",
+      "bullet": "3.6-S3"
     },
     {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "After fixing the system prompt, Orbital Logística still sees `cache_read_input_tokens` fluctuating between zero and the expected value in the CI reviews.\n\nWhich two pipeline practices may be silently invalidating the cache? (Choose TWO.)",
+      "pergunta": "Northvale Energy added a CI job that generates unit tests for each merge request in its smart-meter service: `git diff origin/main... | claude \"Generate unit tests for these changes\"`. The job produces no output and is killed at its 60-minute timeout on every run. An older review job in the same pipeline, which uses `claude -p`, finishes in about 4 minutes. Which statements are correct? Choose TWO.",
       "opcoes": [
-        "The PR diff is placed in the user message, after the cache breakpoint.",
-        "The guidelines live in a versioned file and only change when the team updates the coding standard.",
-        "The tool definitions are built from a dictionary without stable ordering, and the order varies between runs.",
-        "The repository ID and the branch name are interpolated into the system prompt before the guidelines.",
-        "The `cache_control` breakpoint is at the end of the guidelines block, which is identical in every run."
+        "Piping the diff on stdin already makes Claude Code non-interactive, so the hang must come from a permission prompt that needs a CI-specific setting.",
+        "Setting an environment variable such as `CLAUDE_NONINTERACTIVE=1` on the runner makes Claude Code skip its interactive prompts in pipelines.",
+        "Running `claude -p \"Generate unit tests for these changes\"` with the same piped diff processes the prompt, prints the result and exits.",
+        "Adding `--output-format json` makes the run non-interactive, since structured output mode does not wait for input from the user.",
+        "Without `-p` (`--print`), Claude Code starts an interactive session that waits for input no one will provide, so the job hangs until it times out."
       ],
       "corretas": [
         2,
-        3
+        4
       ],
-      "explicacao": "Silent invalidators: non-deterministic ordering of tools/keys, variable values (IDs, branch, timestamp) in the prefix, tools that vary per request. Volatile content after the breakpoint doesn't hurt.",
+      "explicacao": "The `-p` (`--print`) flag is the documented way to run Claude Code non-interactively: it processes the prompt, including piped input, prints the result and exits. Without it, Claude Code starts an interactive session and waits for input that never comes in CI, which is why this job hangs while the older `-p` job finishes. Environment variables and output formats are not substitutes for `-p`.",
       "feedbacks": [
-        "That's the right way: volatile content after the breakpoint doesn't invalidate the cached prefix.",
-        "An occasional, intentional change creates a new cache; it doesn't explain the fluctuation between runs.",
-        "Correct: tools are part of the prefix; a different order is a different prefix.",
-        "Correct: values that vary between runs at the start of the system prompt change the prefix.",
-        "This is the recommended placement: the breakpoint at the end of the stable content."
-      ]
+        "Piped input does not switch modes on its own; the difference between the two jobs is the `-p` flag, not permissions.",
+        "No such variable makes Claude Code non-interactive; `-p` is the mechanism.",
+        "Correct. `claude -p` with piped input runs non-interactively, prints the result and exits.",
+        "`--output-format` controls how print-mode output is formatted; it is used together with `-p`, not instead of it.",
+        "Correct. Without `-p`, Claude Code runs interactively and waits for input, which never arrives in a pipeline."
+      ],
+      "cenario": 5,
+      "dominio": "D3",
+      "ts": "3.6",
+      "bullet": "3.6-S1"
     },
     {
-      "cenario": 5,
-      "dominio": "D4",
-      "pergunta": "Orbital Logística's automated review classifies findings into four categories: security, bugs, performance, and style. The style category generates many false positives.\n\nThe developers have started ignoring all the bot's comments, including the security ones, which are usually correct. What is the best strategy?",
+      "pergunta": "Northvale Energy's CI review labels each finding critical, major or minor, and any critical finding blocks the merge. Over one month, the same kind of problem, an unvalidated meter ID reaching a SQL query builder, was labeled critical in 9 PRs and minor in 7, and engineers began overriding the block. A lead proposes defining each severity level in the prompt with explicit criteria plus a concrete code example from the team's own codebase. How should you evaluate this proposal?",
       "opcoes": [
-        "Add a second model that reviews the first one's findings and discards those that look like false positives.",
-        "Temporarily turn off the style category, rewrite its criteria with what counts, what doesn't, and boundary examples, and turn it back on after measuring.",
-        "Add to the prompt \"be conservative when flagging style issues\".",
-        "Publish only the findings for which the model declares confidence above 90%."
+        "Reject it: severity is a judgment call, so the better fix is to run the review three times and keep the label that at least two of the runs agree on.",
+        "Accept it: explicit criteria plus a concrete code example per level give the model a stable reference, which is what consistent labels need.",
+        "Accept it for the critical level only, since that level blocks merges, and leave major and minor to the model's judgment to keep the prompt short.",
+        "Reject it: codebase examples would make the reviewer match only those exact snippets, so explicit definitions without code are the safer choice."
       ],
       "correta": 1,
-      "explicacao": "A noisy category erodes trust in the good ones. Turn it off, refine it with explicit criteria and boundary examples, and only then turn it back on.",
+      "explicacao": "Inconsistent severity comes from undefined boundaries between levels. Explicit criteria for each level, each illustrated with a concrete code example, give the model a stable reference, so the same kind of problem gets the same label across PRs. Voting across runs or defining only one level leaves the boundaries vague.",
       "feedbacks": [
-        "More complex than necessary; the exam prefers explicit criteria before a second model to check the first.",
-        "Correct: restores trust immediately and fixes the cause with explicit criteria.",
-        "A vague instruction produces inconsistent results; \"conservative\" doesn't define what counts.",
-        "Self-reported confidence is poorly calibrated; it isn't a reliable filter."
-      ]
-    },
-    {
+        "Voting adds cost and only averages an unstable judgment; the levels remain undefined, so the majority label can still flip between PRs.",
+        "Correct. Severity criteria with a concrete code example per level are the recipe for consistent classification.",
+        "The boundary between critical and major is exactly what needs defining; leaving the lower levels vague keeps misclassification across that boundary.",
+        "Well-chosen examples illustrate the criteria and help the model generalize; definitions without examples are what produced the inconsistency."
+      ],
       "cenario": 5,
       "dominio": "D4",
-      "pergunta": "In Orbital Logística's automated review, similar problems receive different severities in different PRs (the same empty `catch` becomes \"low\" in one PR and \"high\" in another).\n\nWhich prompt change tends to give more consistency?",
+      "ts": "4.1",
+      "bullet": "4.1-S3"
+    },
+    {
+      "pergunta": "Northvale Energy's CI runs Claude Code for pull request reviews and test generation, and both rely on the repository's root CLAUDE.md. That file has grown to 1,900 lines mixing testing conventions, API conventions, deployment runbooks and review criteria. Three teams edit it, it causes merge conflicts almost every week, and nobody is sure which sections are current. The guidance must stay in version control and keep loading in CI runs. What is the most effective fix?",
       "opcoes": [
-        "Instruct \"use your good judgment as a senior engineer to define the severity\".",
-        "Run the review three times and use the most frequent severity.",
-        "Include 2 to 4 examples of boundary cases, each with the snippet, the severity, and the reasoning.",
-        "Include 40 real examples of previous findings with their severities, to cover as many situations as possible."
+        "Split the file into focused topic files in `.claude/rules/`, such as `testing.md`, `api-conventions.md` and `deployment.md`, each owned by the relevant team.",
+        "Move each team's sections into its members' user-level `~/.claude/CLAUDE.md`, so that the teams stop editing one shared file and conflicts disappear.",
+        "Keep the single file but add a table of contents and a named owner for each section, so the teams can find and maintain the current guidance more easily.",
+        "Convert each section into a skill under `.claude/skills/`, so that CI loads only the sections a job needs when it explicitly invokes the matching skill."
+      ],
+      "correta": 0,
+      "explicacao": "`.claude/rules/` lets a team replace a monolithic CLAUDE.md with focused, topic-specific files that stay in version control and load like project instructions. Separate files map to separate owners, which ends most merge conflicts and makes stale guidance easier to spot. User-level files are not shared, and skills load only on demand.",
+      "feedbacks": [
+        "Correct. Topic files in `.claude/rules/` keep the guidance versioned and loaded while making each area easier to own and maintain.",
+        "User-level files are not shared through version control and are not present on CI runners, so CI would lose the guidance.",
+        "A table of contents helps navigation, but one 1,900-line file edited by three teams still conflicts and stays hard to maintain.",
+        "Skills load only when invoked, but testing and review conventions should apply to every relevant run; on-demand loading risks jobs running without them."
+      ],
+      "cenario": 5,
+      "dominio": "D3",
+      "ts": "3.1",
+      "bullet": "3.1-S3"
+    },
+    {
+      "pergunta": "Northvale Energy's CI generates test cases for each pull request, and the same `claude -p` session then audits its own tests against the linked requirement, marking each one 'verifies requirement' or 'weak'. It marks 97% as verifying. When QA sampled 200 of those tests, 41 only asserted whatever the new code currently returns, including two outputs that contradicted the requirement. What is the most effective first step?",
+      "opcoes": [
+        "Run the audit in a separate session that gets the requirement and the tests but not the generation context, so it judges them without the generator's assumptions.",
+        "Keep the audit in the same session but tell it to assume each test is weak until proven otherwise, so that the model applies a stricter standard to its own work.",
+        "Enable extended thinking for the audit step, so that the model reasons longer about each test before deciding whether it truly verifies the requirement.",
+        "Have the audit add a confidence to each verdict and send each verdict below 0.9 to QA, so that tests the model is unsure about get human attention."
+      ],
+      "correta": 0,
+      "explicacao": "A model auditing tests in the session that wrote them keeps the reasoning that produced them, so it tends to confirm that they verify the requirement. A separate session without that context judges the tests against the requirement itself and is much more likely to notice assertions that merely mirror the current code. Stricter wording or longer reasoning in the same session does not remove the bias.",
+      "feedbacks": [
+        "Correct. A separate session without the generation context avoids the self-review bias that inflated the 97%.",
+        "The model still carries its generation reasoning; stricter wording does little against a bias it cannot see in itself.",
+        "Extended thinking gives the same biased reviewer more time; an independent instance is more effective than longer self-review.",
+        "Routing by confidence can help when scores are calibrated per finding, but this reviewer is confidently wrong about its own tests, so the low-confidence bucket would miss them."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.6",
+      "bullet": "4.6-K1"
+    },
+    {
+      "pergunta": "Northvale Energy's CI uses Claude Code to fix builds broken by dependency upgrades: one session edits the code until the tests pass, and then the same session reviews its diff before a PR is opened. Engineers later found that 1 in 9 of these PRs quietly changed rounding in tariff calculations, and the review step had approved every one of them, each time repeating the generator's own justification. Which changes would best improve the review? Choose TWO.",
+      "opcoes": [
+        "Resume the generating session with `--resume` for the review step, so that the reviewer has full context on why each change was made.",
+        "Give the reviewer the diff, the test output and the review criteria, but not the generator's explanation of why the change is correct.",
+        "Add 'be your own harshest critic' to the generation prompt, so the model reviews each change as it writes it and fewer defects reach review.",
+        "Run two independent review passes in the generating session and report only the issues both passes find, so that reported defects are more trustworthy.",
+        "Run the review in a second, independent Claude Code instance that starts without any of the generating session's reasoning."
+      ],
+      "corretas": [
+        1,
+        4
+      ],
+      "explicacao": "The review approved the rounding changes because it reasoned from the generator's justification. A second, independent instance reviews the diff on its own terms, and keeping the generator's explanation out of its inputs prevents that reasoning from leaking back in. Self-critique instructions, resumed sessions and repeated self-review all keep the same bias.",
+      "feedbacks": [
+        "Resuming the generator's session is what made the review repeat its justification; full context here means inheriting the bias.",
+        "Correct. Withholding the generator's rationale keeps the independent reviewer from adopting the same reasoning.",
+        "Self-critique during generation is still self-review in the same context, with the same blind spots.",
+        "Repeating a biased review and requiring agreement suppresses inconsistent findings, making subtle issues even less likely to surface.",
+        "Correct. A separate instance without the generator's reasoning context is better at catching subtle changes such as rounding."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.6",
+      "bullet": "4.6-S1"
+    },
+    {
+      "pergunta": "Northvale Energy's CI review posts structured findings (`file`, `line`, `severity`, `message`) as inline PR comments, and engineers resolve each one as 'fixed' or 'dismissed'. Last quarter 38% of findings were dismissed, but the team cannot tell whether the dismissals cluster around particular kinds of code, so it does not know which review instructions to improve. Which changes best enable that analysis? Choose TWO.",
+      "opcoes": [
+        "Record each finding's outcome, fixed or dismissed, together with the kind of code that triggered it, so dismissal rates can be compared per construct.",
+        "Add a confidence score to each finding, so that dismissed findings can be traced back to the reviewer's uncertainty at the moment it raised them.",
+        "Add a `detected_pattern` field to each finding naming the code construct that triggered it, such as `unchecked-optional` or `raw-sql-concat`.",
+        "Ask engineers to write a free-text reason each time they dismiss a finding, so the team can read why each of the comments was rejected.",
+        "Add a `detected_pattern` field and automatically suppress any pattern dismissed twice in a row, so the reviewer stops raising findings engineers reject."
+      ],
+      "corretas": [
+        0,
+        2
+      ],
+      "explicacao": "To improve review instructions, the team needs to know which code constructs produce findings that engineers reject. A `detected_pattern` field records the trigger of each finding, and joining it with the fixed or dismissed outcome turns dismissals into per-pattern false-positive rates. Confidence scores and free-text reasons do not identify the triggering construct, and auto-suppressing patterns skips the analysis altogether.",
+      "feedbacks": [
+        "Correct. Pairing each outcome with the construct that triggered it shows which kinds of code produce the most dismissals.",
+        "Confidence describes how sure the model was, not what kind of code it flagged, so it cannot show which instructions produce false positives.",
+        "Correct. `detected_pattern` records which construct triggered the finding, which is the key to analyzing dismissal patterns.",
+        "Free-text reasons add work for engineers and are hard to aggregate; they do not reliably identify the triggering construct.",
+        "Auto-suppression acts before any analysis: it hides findings, including real bugs in that pattern, instead of revealing which instructions need work."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-S3"
+    },
+    {
+      "pergunta": "Northvale Energy's CI review prompt for its customer-facing usage API includes the instruction 'Check that the OpenAPI descriptions are accurate.' On a typical PR it posts 8–12 comments about wording, tense and missing examples, which engineers dismiss. Meanwhile it missed a change after which the description still said readings were returned in kWh while the code now returned Wh, which broke two partner integrations. What is the most likely root cause?",
+      "opcoes": [
+        "The OpenAPI file and the handler code are in separate files, and the review analyzes files one at a time, so it cannot compare descriptions with behavior.",
+        "The model was not confident enough about the unit change to report it, so the prompt should ask it to report only findings it is highly confident about.",
+        "The many wording comments compete for attention, so a cap on comments per PR would leave room for the unit mismatch to be reported by the reviewer.",
+        "'Accurate' is left undefined, so the model applies a broad notion of it; the prompt should flag descriptions only when they contradict the code's actual behavior."
+      ],
+      "correta": 3,
+      "explicacao": "A vague instruction such as 'check that descriptions are accurate' lets the model decide what accuracy means, and it gravitates toward wording and style. An explicit criterion, such as flagging a description only when it contradicts what the code actually does, focuses the review on mismatches like kWh versus Wh and removes the noise. Here the explicit criterion improves both precision and recall.",
+      "feedbacks": [
+        "The reviewer clearly read the descriptions, since it commented on their wording; the problem is what it was asked to look for, not how the files were split.",
+        "Asking for high-confidence findings is a general instruction that does not define what to look for; it would cut noise and real issues alike.",
+        "A cap limits volume without changing what the model looks for, so the top comments could still be about wording.",
+        "Correct. Replacing 'accurate' with an explicit contradiction criterion focuses the review on real behavioral mismatches."
+      ],
+      "cenario": 5,
+      "dominio": "D4",
+      "ts": "4.1",
+      "bullet": "4.1-K1"
+    },
+    {
+      "pergunta": "Northvale Energy's CI generates unit tests with Claude Code. The test conventions live in `.claude/rules/testing.md` with the frontmatter `paths: [\"tests/**/*\"]`. Tests generated in the legacy root `tests/` folder follow the conventions, but tests generated in the 14 service projects, such as `services/billing/Billing.Tests/TariffTests.cs`, ignore them. What is the flaw in this configuration?",
+      "opcoes": [
+        "Path-scoped rules load only in interactive sessions, so CI runs with `-p` need the conventions copied into the root CLAUDE.md before they can see them.",
+        "A directory-level CLAUDE.md should be added to each of the 14 test projects, so that each project carries the conventions right next to its tests.",
+        "The `paths` field accepts directory names rather than glob patterns, so it should list each of the 15 test directories by its full path instead.",
+        "The glob matches by location, so it covers only the root `tests/` folder; a file-type glob such as `**/*Tests.cs` matches test files anywhere."
+      ],
+      "correta": 3,
+      "explicacao": "Path-specific rules load when Claude works on files matching their `paths` globs. A directory-based glob like `tests/**/*` matches only that folder, while a file-type glob such as `**/*Tests.cs` applies the conventions to test files wherever they live. Glob-pattern rules are preferred over per-directory CLAUDE.md files when the files are spread across the codebase.",
+      "feedbacks": [
+        "The root `tests/` folder gets the conventions in the same CI runs, so the rule does load; it simply does not match the service projects.",
+        "Fourteen copies of the same conventions drift apart over time, while a single glob-based rule covers test files wherever they are.",
+        "`paths` takes glob patterns, and a list of directories would break as soon as the next service project appears, while a file-type glob covers new ones.",
+        "Correct. A file-type glob applies the test conventions regardless of directory."
+      ],
+      "cenario": 5,
+      "dominio": "D3",
+      "ts": "3.3",
+      "bullet": "3.3-S2"
+    },
+    {
+      "pergunta": "Northvale Energy ran two weekly CI experiments to raise test coverage in its 15-year-old outage-management system. Run A asked Claude Code to 'add comprehensive tests to the repository' and produced 310 tests, mostly on string and date utilities. Run B first mapped the modules, ranked them by business impact and change frequency, then worked through a plan; when it found that the restoration scheduler depended on a static clock, it added a seam before testing it. Which statement about these results is correct?",
+      "opcoes": [
+        "Run B did better mainly because it ran for longer; given the same time budget, Run A's single broad request would have reached the same high-impact modules.",
+        "Run A failed because the request was too large for one context; splitting the repository alphabetically into equal batches would have matched Run B.",
+        "Run B mapped structure and impact before writing tests and adapted its plan to what it found, which suits an open-ended task better than one broad request.",
+        "Run B should become a fixed pipeline that repeats the same module order each week, so that each run is predictable and easy to compare with the previous one."
       ],
       "correta": 2,
-      "explicacao": "Few-shot with a few varied examples, each with its reasoning, teaches the criterion in a generalizable way. Combine it with explicit criteria per severity.",
+      "explicacao": "Open-ended tasks such as adding tests to a legacy codebase work best when decomposed adaptively: map the structure, identify high-impact areas, build a prioritized plan, and adjust it as dependencies like the static clock are discovered. A single broad request drifts toward the easiest targets. Freezing Run B into a fixed sequence would lose the adaptivity that made it work.",
       "feedbacks": [
-        "\"Good judgment\" is the opposite of an explicit criterion; it's the source of the inconsistency.",
-        "Voting reduces variance, but doesn't define the criterion; it triples the cost without fixing the cause.",
-        "Correct: examples with reasoning on ambiguous cases are the right use of few-shot.",
-        "Too many examples are expensive, encourage rote memorization, and tend to repeat the common cases instead of the boundaries."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D3",
-      "pergunta": "Orbital Logística wants the CI review to follow exactly the same conventions the developers use locally with Claude Code (architecture, testing patterns, error handling).\n\nWhat is the simplest and most sustainable way to ensure this?",
-      "opcoes": [
-        "Keep the conventions in the project's `CLAUDE.md`, versioned in the repository; `claude -p` in the CI checkout loads the same file as the developers.",
-        "Copy the conventions into an `--append-system-prompt` in the CI workflow, ensuring the review always receives them, and keep them in sync with CLAUDE.md.",
-        "Create a `~/.claude/CLAUDE.md` in the CI runner image with the conventions.",
-        "Paste the conventions into the job's prompt text on every run."
+        "Time was not the difference; without prioritization, more time mostly yields more tests on easy utilities.",
+        "Alphabetical batches are a fixed split that ignores impact and dependencies, so they would still spend effort on low-value code.",
+        "Correct. Mapping, prioritizing and adapting the plan as dependencies appear is the right decomposition for open-ended work.",
+        "A fixed pipeline suits predictable work; coverage work in legacy code changes as each run reveals new dependencies."
       ],
-      "correta": 0,
-      "explicacao": "CLI, IDE, and CI use the same engine: the project CLAUDE.md applies on every surface. A single source of truth avoids drift.",
-      "feedbacks": [
-        "Correct: a single source, versioned alongside the code.",
-        "Duplicates the source of truth; the two copies will diverge. `--append-system-prompt` is for CI-specific instructions.",
-        "Lives outside the repository and diverges from what the developers use; it's the runner's user configuration, not the team's.",
-        "Same duplication, now in the workflow; manual maintenance that is prone to drift."
-      ]
-    },
-    {
-      "cenario": 5,
-      "dominio": "D3",
-      "pergunta": "In Orbital Logística's CI, the review job needs instructions that only apply there: \"don't propose fixes, only point out findings\" and \"ignore generated files in `/generated`\".\n\nHow do you add these instructions without losing Claude Code's default behavior and without affecting the developers?",
-      "opcoes": [
-        "Create a `SessionStart` hook that deletes the `/generated` folder before each session.",
-        "Pass the instructions with `--append-system-prompt` in the job's invocation.",
-        "Replace the entire system prompt with `--system-prompt` containing only these two rules.",
-        "Add the rules to the project's `CLAUDE.md`, so they also apply in CI."
-      ],
-      "correta": 1,
-      "explicacao": "`--append-system-prompt` adds instructions to the default prompt without replacing it. CI-only rules stay in the CI invocation.",
-      "feedbacks": [
-        "Deleting files from the checkout is an unnecessary side effect and doesn't address the rule about not proposing fixes.",
-        "Correct: adds what's needed while keeping the default behavior.",
-        "Replacing discards Claude Code's default instructions, which changes the agent's behavior in unexpected ways.",
-        "It would affect the developers locally, who often specifically want Claude to propose fixes."
-      ]
-    },
-    {
       "cenario": 5,
       "dominio": "D1",
-      "pergunta": "Orbital Logística has auto-merge for dependency PRs. The policy says: never merge if Claude's review flags a critical-severity finding.\n\nToday that rule lives only in the prompt (\"if there is a critical finding, do not approve\"), and a PR with a critical vulnerability was merged. How do you enforce the rule?",
-      "opcoes": [
-        "Emit schema-validated JSON with each finding's severity and block the merge in a deterministic pipeline step if there is a critical finding.",
-        "Reinforce the prompt with capital letters and repeat the rule at the beginning and the end.",
-        "Give the agent permission to run `gh pr merge` and instruct it to merge only after checking, finding by finding, that none of them has critical severity.",
-        "Block the merge only when the model declares low confidence in its own analysis."
-      ],
-      "correta": 0,
-      "explicacao": "A rule with security consequences belongs in deterministic code. The model produces structured data; the pipeline decides.",
-      "feedbacks": [
-        "Correct: the critical decision moves out of the prompt and into a deterministic check.",
-        "Still probabilistic; prompt reinforcement reduces, but doesn't eliminate, the failure rate.",
-        "Puts the critical decision in the hands of the model, which is exactly what failed.",
-        "Self-reported confidence is poorly calibrated and has no relation to the presence of critical findings."
-      ]
+      "ts": "1.6",
+      "bullet": "1.6-S3"
     },
     {
-      "cenario": 5,
-      "dominio": "D5",
-      "pergunta": "Orbital Logística's review runs four subagents in parallel (security, bugs, performance, tests) and a coordinator consolidates them. On a recent PR, the security subagent timed out.\n\nThe report posted on the PR said \"Security: no findings\". How should the system have behaved?",
+      "pergunta": "Northvale Energy's CI review job runs `claude -p --output-format json`, and the posting step reads the model's answer from that JSON output, expecting a list of findings with `path`, `line`, `severity` and `body`. About 1 run in 12 breaks the step: keys such as `level` instead of `severity`, or a Markdown list instead of JSON. A teammate proposes adding `--json-schema` with the findings schema to the same command. How should you evaluate this proposal?",
       "opcoes": [
-        "The subagent tries to recover locally (retry with backoff); if the failure persists, it returns a structured error and the coordinator publishes the partial report marking security as \"not analyzed\" and the check as inconclusive.",
-        "The coordinator should have aborted the entire review and published nothing until all subagents completed.",
-        "The coordinator should have omitted the security section from the report, since there are no findings to show.",
-        "The subagent should have returned an empty list, but the coordinator should rerun the entire review next time."
+        "Accept it: `--output-format json` alone only wraps the run's answer in a JSON envelope, while `--json-schema` makes the findings conform to the expected schema.",
+        "Reject it: the job already uses `--output-format json`, so the output is valid JSON, and the posting step should simply map `level` to `severity` when it appears.",
+        "Reject it: a stricter instruction in the prompt, such as 'reply only with JSON using exactly these keys', fixes the drift without adding another CLI flag.",
+        "Accept it, but drop `--output-format json`, since the two flags conflict and `--json-schema` already produces a structured JSON response on its own."
       ],
       "correta": 0,
-      "explicacao": "Failure ≠ empty. Recover transient errors locally; what can't be resolved is propagated with context, and the partial result goes ahead with the gap made explicit.",
+      "explicacao": "`--output-format json` makes Claude Code return machine-readable output about the run, but the model's answer inside it is still free-form. Adding `--json-schema` makes the findings themselves conform to a schema, which is what the posting step needs to turn each finding into an inline PR comment. The two flags are meant to be used together in CI.",
       "feedbacks": [
-        "Correct: recovers what it can, propagates what it can't, and doesn't hide the gap.",
-        "Aborting everything because of one step wastes the valid findings of the other three subagents.",
-        "Omitting it hides the gap; the reader concludes that security was reviewed.",
-        "An empty list as success is the anti-pattern of silent error suppression."
-      ]
+        "Correct. `--output-format json` with `--json-schema` produces machine-parseable findings that match the schema the step expects.",
+        "Valid JSON around the answer does not make the answer follow the schema; key mapping patches one symptom while Markdown answers still break the step.",
+        "Prompt instructions make the right shape more likely but cannot guarantee it, and a drift rate of 1 in 12 needs a guarantee.",
+        "The two flags are complementary and used together to produce structured CI output; dropping one is not required."
+      ],
+      "cenario": 5,
+      "dominio": "D3",
+      "ts": "3.6",
+      "bullet": "3.6-K2"
     }
   ]
 }

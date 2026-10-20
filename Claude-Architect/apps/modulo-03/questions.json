@@ -1,266 +1,281 @@
 {
-  "titulo": "Module 03 — Quiz: structured output, validation with retry, and the Batch API",
+  "titulo": "Módulo 03 — Quiz: saída estruturada, retry e Batch API",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Which current Messages API parameter makes the RESPONSE follow a JSON schema?",
+      "pergunta": "Which approach does the exam guide describe as the most reliable way to get output that is guaranteed to follow a JSON schema?",
       "opcoes": [
-        "output_format at the top level of the request, alongside model",
-        "response_format",
-        "tool_choice: {type: json}",
-        "output_config.format with json_schema"
-      ],
-      "correta": 3,
-      "explicacao": "Structured outputs use output_config.format; the top-level output_format is deprecated.",
-      "feedbacks": [
-        "Incorrect: deprecated.",
-        "Incorrect: that's not the parameter name in the Messages API.",
-        "Incorrect: no such tool_choice type exists.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "What requirement must the schema meet in order to use strict: true?",
-      "opcoes": [
-        "Have at least one field of type string",
-        "additionalProperties: false on every object",
-        "Use only numeric types",
-        "Declare minimum and maximum on every numeric field in the schema"
-      ],
-      "correta": 1,
-      "explicacao": "Strict requires closed objects (additionalProperties: false). Optional properties are allowed but count toward a limit; the recommendation is required + nullable.",
-      "feedbacks": [
-        "Incorrect: there's no type requirement.",
-        "Correct.",
-        "Incorrect: any basic type is supported.",
-        "Incorrect: numeric ranges aren't even guaranteed by strict."
-      ]
-    },
-    {
-      "pergunta": "In extraction via tool use, what is the extracted JSON?",
-      "opcoes": [
-        "The input of the tool_use block the model generates",
-        "The content of the tool_result you send back",
-        "The free text after the tool_use",
-        "The response's usage field"
-      ],
-      "correta": 0,
-      "explicacao": "The tool exists only as a schema: the tool_use input is the structured data.",
-      "feedbacks": [
-        "Correct.",
-        "Incorrect: tool_result is what you would send back after executing a tool.",
-        "Incorrect: free text has no format guarantee.",
-        "Incorrect: usage is the token count."
-      ]
-    },
-    {
-      "pergunta": "On a newer model, tool_choice: {type: tool, name: extract} returns a 400. Which alternative is recommended if the tool existed only to obtain JSON?",
-      "opcoes": [
-        "tool_choice: {type: any}",
-        "An assistant prefill with '{'",
-        "Structured outputs via output_config.format",
-        "Remove the schema and ask for JSON in the text"
+        "A system prompt with explicit instructions to return only JSON, with the full schema and one complete example of a valid response included.",
+        "Few-shot examples of valid JSON responses in varied formats, so that the model learns the expected structure across inputs.",
+        "An extraction tool whose input_schema is the target schema, with the extracted data read from the tool_use block.",
+        "Free-text output read by a tolerant JSON parser, with an automatic retry whenever the parser reports a syntax error."
       ],
       "correta": 2,
-      "explicacao": "On newer models, forced any/tool returns a 400; structured outputs are the substitute when the goal was only JSON.",
+      "explicacao": "Tool use with a JSON schema is the most reliable approach for schema-compliant structured output, because the schema constrains the tool input and eliminates JSON syntax errors. Instructions and examples improve consistency but remain probabilistic, and parse-and-retry only reacts to failures after they happen.",
       "feedbacks": [
-        "Incorrect: any is also forced and also returns a 400.",
-        "Incorrect: prefill also returns a 400 on newer models.",
-        "Correct.",
-        "Incorrect: it loses the format guarantee."
-      ]
-    },
-    {
-      "pergunta": "The strict schema validates every output, but the sum of the line items doesn't match the total on 3% of the invoices. What does this show?",
-      "opcoes": [
-        "That strict is turned off",
-        "That max_tokens needs to be increased",
-        "Schema ≠ semantics: validate the sum in code",
-        "That the model needs a lower temperature to add up accurately"
+        "Instructions plus an example help, but compliance is still probabilistic; some responses will include extra text or broken syntax.",
+        "Few-shot examples improve format consistency, but they do not guarantee valid syntax.",
+        "Correct. The schema constrains the tool input, and the data comes from tool_use.input.",
+        "A tolerant parser and retries treat the symptom after the fact and add cost; they do not prevent the errors."
       ],
-      "correta": 2,
-      "explicacao": "A schema guarantees type and format; business rules (sums, dates) are validated in your code.",
-      "feedbacks": [
-        "Incorrect: the format is correct; the problem is semantic.",
-        "Incorrect: there's no truncation.",
-        "Correct.",
-        "Incorrect: temperature isn't the problem (and it's rejected on newer models)."
-      ]
+      "ts": "4.3"
     },
     {
-      "pergunta": "The document sometimes has no due date, and the model makes one up. Which schema adjustment helps?",
+      "pergunta": "Which statement correctly describes the three tool_choice options?",
       "opcoes": [
-        "Make the due_date field nullable",
-        "Remove due_date from required without strict",
-        "Add format: date",
-        "Add an enum with possible dates"
+        "\"auto\" lets the model reply in text; \"any\" requires a call to a tool of the model's choice; a forced tool requires that named tool.",
+        "\"auto\" requires a tool call whenever tools are defined; \"any\" lets the model reply in text; a forced tool requires that specific tool.",
+        "\"auto\" lets the model reply in text; \"any\" requires the model to call every defined tool once; a forced tool requires that tool.",
+        "\"auto\" lets the model reply in text; \"any\" requires a tool call; a forced tool makes the named tool preferred but still optional."
       ],
       "correta": 0,
-      "explicacao": "A nullable field gives the model an honest way out (null) instead of forcing it to make something up.",
+      "explicacao": "\"auto\" means the model may call a tool or answer in text. \"any\" means it must call a tool but chooses which one, and forced selection ({\"type\": \"tool\", \"name\": ...}) means it must call that specific tool.",
       "feedbacks": [
-        "Correct.",
-        "Incorrect: without strict you lose the format guarantee, and an optional field doesn't prevent fabrication. Prefer required + nullable.",
-        "Incorrect: format guarantees the format; it doesn't prevent fabrication.",
-        "Incorrect: it makes no sense for dates."
-      ]
+        "Correct. auto = may answer in text, any = must call some tool, forced = must call the named tool.",
+        "This swaps auto and any. Under auto, text is allowed; under any, a tool call is required.",
+        "\"any\" requires one tool call of the model's choice, not a call to every tool.",
+        "A forced tool is not a preference: the model must call that tool."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "An expense classification has a closed enum [travel, food, software]. Rental expenses are being classified as 'software'. Which schema pattern solves this?",
+      "pergunta": "A pipeline receives documents that may be invoices, receipts or contracts and has one extraction tool for each. The document type is not known in advance, and some responses come back as prose. Which tool_choice setting fits best?",
       "opcoes": [
-        "Make the category field a free-form string",
-        "Add 'unclear' to the enum",
-        "Remove the enum and use few-shot",
-        "Add 'other' to the enum plus a detail field"
+        "{\"type\": \"auto\"}, with an explicit system prompt rule saying that every reply must be a call to one of the extraction tools.",
+        "{\"type\": \"tool\", \"name\": \"extract_invoice\"}, since invoices are the most common document type in the pipeline.",
+        "{\"type\": \"auto\"} on the first request, then {\"type\": \"any\"} only when the first response comes back as prose.",
+        "{\"type\": \"any\"}, so that the model must call one of the extraction tools while still choosing which one fits."
       ],
       "correta": 3,
-      "explicacao": "An enum with 'other' + detail avoids forcing a wrong category and preserves the information.",
+      "explicacao": "When several extraction schemas exist and the document type is unknown, tool_choice \"any\" guarantees structured output because the model must call a tool, while it still selects the right schema. Forcing one tool would apply the wrong schema to other document types, and a prompt rule under \"auto\" remains probabilistic.",
       "feedbacks": [
-        "Incorrect: it loses the standardization of the known categories.",
-        "Incorrect: 'unclear' is for an ambiguous source; here the category is clear, it's just not on the list.",
-        "Incorrect: it loses the structural guarantee.",
-        "Correct."
-      ]
+        "A prompt rule lowers the rate of prose replies but does not guarantee a tool call; tool_choice is the guarantee.",
+        "Forcing the invoice tool would make the model fill invoice fields for receipts and contracts.",
+        "This works eventually but pays for a wasted first request every time prose comes back; \"any\" prevents it from the start.",
+        "Correct. \"any\" guarantees a tool call and leaves the schema choice to the model."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "When should you use the value 'unclear' in an enum?",
+      "pergunta": "Enrichment tools in your pipeline need the identifiers that extract_metadata returns, but the model sometimes calls them first. How do you guarantee that extract_metadata runs first?",
       "opcoes": [
-        "When the category exists but isn't on the list",
-        "When the source is ambiguous or illegible",
-        "When the field is numeric",
-        "Always, as a default value"
+        "Set tool_choice to {\"type\": \"any\"} on the first request, so that the model's first action is always a tool call.",
+        "Force {\"type\": \"tool\", \"name\": \"extract_metadata\"} on the first request, then handle enrichment in later turns.",
+        "Force {\"type\": \"tool\", \"name\": \"extract_metadata\"} on every request of the run, so the order can never change.",
+        "Add an explicit system prompt rule stating that extract_metadata must always be called before any of the enrichment tools."
       ],
       "correta": 1,
-      "explicacao": "'unclear' avoids guessing when the source doesn't allow a decision.",
+      "explicacao": "Forcing a specific tool on the first request guarantees that the extraction runs before enrichment; the following steps happen in later turns, typically with tool_choice back on \"auto\". \"any\" guarantees a call but not which tool, forcing on every turn blocks enrichment entirely, and a prompt rule is probabilistic.",
       "feedbacks": [
-        "Incorrect: that case calls for 'other' + detail.",
-        "Correct.",
-        "Incorrect: it's an enum of categories, not numbers.",
-        "Incorrect: making it the default would hide decidable cases."
-      ]
+        "\"any\" guarantees some tool call, which could still be an enrichment tool.",
+        "Correct. Forced on the first request, then later turns handle enrichment.",
+        "If every request forces extract_metadata, the model can never call the enrichment tools.",
+        "A prompt rule is followed most of the time, not always; this order needs a guarantee."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "Which of these constraints does strict mode NOT support, so it must be validated in your code?",
+      "pergunta": "Many purchase orders in your input have no delivery address, but the schema marks delivery_address as a required string. What typically happens, and what is the fix?",
       "opcoes": [
-        "minimum: 0 on a numeric field",
-        "An enum of allowed values",
-        "additionalProperties: false",
-        "string vs. number type"
+        "The model invents plausible addresses to satisfy the schema; make the field nullable so it can return null when the address is absent.",
+        "The API rejects the responses that lack an address; make the field optional so that the API stops returning schema validation errors.",
+        "The model copies the billing address into the field; add a field description saying that the delivery address must differ from billing.",
+        "The model returns an empty string, which breaks the downstream parser; give the field a default value such as \"UNKNOWN\" in the schema."
       ],
       "correta": 0,
-      "explicacao": "Numeric ranges (as well as string length, arrays beyond minItems 0/1, and recursion) aren't supported: in a raw schema they return a 400; the SDK helpers move them into the description and validate locally.",
+      "explicacao": "A required, non-null field forces the model to produce a value even when the source has none, so it fabricates one. Making the field optional or nullable gives the model a valid way to report that the information is absent.",
       "feedbacks": [
-        "Correct.",
-        "Incorrect: enum is supported.",
-        "Incorrect: it is required and supported.",
-        "Incorrect: basic types are guaranteed."
-      ]
-    },
-    {
-      "pergunta": "Which retry message is the most effective in a validation loop?",
-      "opcoes": [
-        "'The JSON is invalid. Try again.'",
-        "'Review your answer more carefully and check every field before responding.'",
-        "'Error 422.'",
-        "'total 1250.00 ≠ sum of items 1205.00 (item 3?)'"
+        "Correct. A nullable field lets the model say 'not present' instead of fabricating.",
+        "The API does not reject the response; the model fills the field with something to satisfy the schema, which is the real problem.",
+        "Copying the billing address is one form of fabrication, but a description does not remove the pressure to fill a required field.",
+        "The usual failure is an invented value, not an empty one. A sentinel string is also weaker than null, since downstream code can mistake it for real data."
       ],
-      "correta": 3,
-      "explicacao": "Specific errors (what and where) give the model something to fix.",
-      "feedbacks": [
-        "Incorrect: generic; it tends to produce the same response.",
-        "Incorrect: vague.",
-        "Incorrect: a code with no context (the generic-error anti-pattern).",
-        "Correct."
-      ]
+      "ts": "4.3"
     },
     {
-      "pergunta": "The service recipient's CNPJ field still comes back wrong after 3 retries, and the document doesn't contain the CNPJ. What should you do?",
+      "pergunta": "In an expense classification schema, when should the model use \"unclear\" rather than \"other\" with a detail string?",
       "opcoes": [
-        "Raise the limit to 10 retries",
-        "Change the prompt to 'find the CNPJ at all costs'",
-        "null in the field + human review, if the business requires it",
-        "Fill it in with the service provider's CNPJ"
+        "When the expense belongs to a category that is not on the list, such as a coworking rental in a schema without a rental value.",
+        "When the expense fits a listed category but its amount is unusual, so that the record is flagged for a review by the finance team.",
+        "When the source is ambiguous or illegible and the category cannot be determined, as with a receipt whose description has faded.",
+        "When the model's confidence in its choice is below a threshold, so that low-confidence classifications go to a separate bucket."
       ],
       "correta": 2,
-      "explicacao": "Retry doesn't recover information that is missing from the source; insisting only leads to fabrication.",
+      "explicacao": "\"other\" plus a detail string is for a category that is clear but not on the list; the detail keeps the real value. \"unclear\" is for cases where the source does not allow a decision, such as ambiguous or illegible text, so the model does not guess.",
       "feedbacks": [
-        "Incorrect: more attempts, same missing data.",
-        "Incorrect: it induces hallucination.",
-        "Correct.",
-        "Incorrect: fabricated/wrong data."
-      ]
+        "That case is \"other\" with a detail string: the category is clear, just not listed.",
+        "An unusual amount is a validation or review concern, not a classification ambiguity.",
+        "Correct. \"unclear\" is for sources that cannot support a decision.",
+        "\"unclear\" describes the source, not a confidence threshold; the model uses it when the document itself is ambiguous."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "Why extract both the stated total and the calculated sum of the line items?",
+      "pergunta": "Hotel confirmations arrive with dates such as 05/04/2026, \"5 April 2026\" and 2026-04-05. The tool schema is strict and describes the date field as YYYY-MM-DD, yet some dates come out with day and month swapped. What should you add?",
       "opcoes": [
-        "To save tokens",
-        "To detect discrepancies instead of hiding them",
-        "Because strict requires duplicate fields to validate numbers",
-        "So the Batch API can match the results"
+        "A format: date constraint on the field, so that strict mode rejects any date string that is not written as valid ISO 8601.",
+        "Normalization rules in the prompt, such as reading numeric dates as DD/MM unless the supplier is in the US, next to the schema.",
+        "A post-processing step that swaps day and month whenever the day is 12 or lower, since those are the only ambiguous dates.",
+        "A second extraction pass that re-reads each date and keeps the value only when both passes agree on the same interpretation."
       ],
       "correta": 1,
-      "explicacao": "Stated + calculated exposes inconsistencies in the document or in the extraction.",
+      "explicacao": "The strict schema guarantees the output format, but not how ambiguous source formats are interpreted. Normalization rules in the prompt, alongside the schema, tell the model how to read each convention, which removes the guess.",
       "feedbacks": [
-        "Incorrect: it costs a bit more, not less.",
-        "Correct.",
-        "Incorrect: there's no such requirement.",
-        "Incorrect: the batch matches by custom_id."
-      ]
+        "The outputs are already valid ISO dates; the problem is which date they represent, which a format constraint cannot decide.",
+        "Correct. Rules for reading source formats go in the prompt, together with the strict schema.",
+        "Swapping blindly would also corrupt correct US-format dates; the code does not know each source's convention.",
+        "Two passes without rules can agree on the same wrong interpretation; agreement is not correctness."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "Which statement about the Batch API is correct?",
+      "pergunta": "Extraction uses tool use with a strict schema, and every output is schema-valid. An audit still finds invoices whose line items do not add up to the total, and a check-out date stored in the check-in field. Which statement is correct?",
       "opcoes": [
-        "It guarantees a response within 1 hour",
-        "It returns results in the same order as the requests",
-        "It supports a multi-turn tool loop within a request",
-        "~50% cheaper, up to 24h, no SLA"
+        "These errors mean strict mode is not actually active, because a strict schema rejects outputs whose values are inconsistent.",
+        "These errors come from JSON syntax problems that the parser repaired silently, which shifted values between neighboring fields.",
+        "These errors can be prevented by adding minimum and maximum constraints to the amount and date fields of the strict schema.",
+        "These are semantic errors, which strict schemas do not prevent; they need validation in code, with the errors fed back on retry."
       ],
       "correta": 3,
-      "explicacao": "50% discount, up to 24h, no SLA; results come back out of order; no multi-turn tool use.",
+      "explicacao": "Strict schemas via tool use eliminate syntax errors, but not semantic ones such as totals that do not sum or values placed in the wrong field. Those require validation logic in code, and the specific errors can drive a retry.",
       "feedbacks": [
-        "Incorrect: there's no SLA; it can take up to 24h.",
-        "Incorrect: out of order → match by custom_id.",
-        "Incorrect: each request is a single call.",
-        "Correct."
-      ]
+        "Strict mode enforces structure and types, not consistency between values.",
+        "Tool use eliminates syntax errors; there is nothing for a parser to repair here.",
+        "Range constraints cannot express that items sum to the total or that a date belongs in another field.",
+        "Correct. Schema-valid is not the same as correct; semantic checks belong in code."
+      ],
+      "ts": "4.3"
     },
     {
-      "pergunta": "Which use of the Batch API is APPROPRIATE?",
+      "pergunta": "An extraction fails semantic validation. What should the follow-up request to the model contain?",
       "opcoes": [
-        "Overnight analysis of the day's 200,000 tickets",
-        "A mandatory check before merging a PR",
-        "Responding to the customer in the support chat",
-        "Interactive debugging of a prompt"
+        "The original document, the failed extraction and the specific validation errors, so the model can correct the record against the source.",
+        "Only the specific validation errors and an instruction to fix them, so the model is not biased by its earlier failed attempt at the record.",
+        "The original document and a generic note that validation failed, so the model reviews every field instead of only the ones that were flagged.",
+        "The extraction that failed and the full validator source code, so that the model can see every rule and re-check all the fields by itself."
       ],
       "correta": 0,
-      "explicacao": "Batch is for volume with nobody waiting.",
+      "explicacao": "A self-correction request should include the original document, the failed extraction and the specific validation errors. The document lets the model re-read the source, the failed extraction shows what to keep, and the errors say exactly what to fix.",
       "feedbacks": [
-        "Correct.",
-        "Incorrect: a blocking step; the PR could wait up to 24h.",
-        "Incorrect: real time.",
-        "Incorrect: interactive work requires a fast response."
-      ]
+        "Correct. These three ingredients make the retry targeted.",
+        "Without the document, the model cannot check the source and may guess or rebuild the whole record.",
+        "A generic note gives the model nothing specific to fix, so the same errors tend to reappear.",
+        "Without the document, the model cannot verify any value; validator code is not a substitute for the source."
+      ],
+      "ts": "4.4"
     },
     {
-      "pergunta": "A batch of 10,000 requests has finished: 9,700 succeeded, 250 errored, and 50 expired. Which TWO actions are correct? (Choose TWO.)",
+      "pergunta": "Which validation failure is MOST likely to be fixed by a retry with specific error feedback?",
       "opcoes": [
-        "Resubmit the entire batch to ensure consistency",
-        "Match each result to its source document by custom_id",
-        "Resubmit only the custom_ids that errored or expired",
-        "Match the results by the order of the lines in the input file",
-        "Discard the failed ones, since 97% is a good rate"
+        "A contract's renewal_terms field fails because the terms are only in a separate framework agreement that is not sent.",
+        "An invoice's purchase_order field fails because the supplier never printed a purchase order number on the invoice.",
+        "A booking's amount field fails because the model returned \"EUR 1.250,00\" as a string instead of the number 1250.00.",
+        "A visa form's signature_date field fails because the date area of the scan is completely blank on the submitted form."
+      ],
+      "correta": 2,
+      "explicacao": "Retries succeed when the information is in the source and the output has a format or structural error, like an amount returned as a string. They cannot work when the data is absent from the document or lives in an external document that was not provided.",
+      "feedbacks": [
+        "The terms exist only in a document the model never sees; retries can only invent them.",
+        "The value is absent from the source; a retry pressures the model to fabricate one.",
+        "Correct. The value is in the source; only the format is wrong, which feedback can fix.",
+        "A blank area means there is nothing to extract; this needs null plus review, not retries."
+      ],
+      "ts": "4.4"
+    },
+    {
+      "pergunta": "An invoice extraction schema includes stated_total, calculated_total and a conflict_detected boolean. What is the purpose of this design?",
+      "opcoes": [
+        "To let the model replace the printed total with its own sum, so that only one corrected total reaches the accounting system.",
+        "To surface discrepancies between the printed total and the sum of items, and to flag documents that contradict themselves.",
+        "To give strict mode a pair of fields it can compare, so that the API rejects any response whose two totals do not match.",
+        "To measure the model's arithmetic accuracy over time, so the team can decide when to move extraction to a larger model."
+      ],
+      "correta": 1,
+      "explicacao": "Extracting the stated total and the calculated total side by side makes discrepancies visible instead of letting them be corrected or hidden silently. conflict_detected marks source data that is inconsistent, so the record can be routed to review rather than retried.",
+      "feedbacks": [
+        "Replacing the printed total hides supplier errors; the point is to keep both values.",
+        "Correct. Both totals make discrepancies visible, and conflict_detected flags inconsistent sources.",
+        "The API does not compare field values; your code does.",
+        "The fields serve per-document data quality, not model benchmarking."
+      ],
+      "ts": "4.4"
+    },
+    {
+      "pergunta": "Developers dismiss many findings from an automated code review. Why add a detected_pattern field to each structured finding?",
+      "opcoes": [
+        "So the review can suppress any finding whose pattern was dismissed before, which removes repeat false positives automatically.",
+        "So developers can search PR comments by pattern name, which makes it faster to dismiss findings they already know are noise.",
+        "So the model can compare each new finding with earlier ones of the same pattern, which raises its confidence before reporting.",
+        "So dismissals can be grouped by the code construct that triggered them, which shows which patterns produce false positives."
+      ],
+      "correta": 3,
+      "explicacao": "detected_pattern records which code construct triggered each finding. Grouping accept and dismiss events by pattern turns dismissals into data, showing which patterns need better criteria or examples.",
+      "feedbacks": [
+        "Auto-suppressing by past dismissals would also hide real issues of that pattern; the field is for analysis, not suppression.",
+        "Searchability is a side effect; the purpose is systematic analysis of false positives.",
+        "The field feeds the team's feedback loop, not the model's confidence.",
+        "Correct. It enables per-pattern dismissal analysis."
+      ],
+      "ts": "4.4"
+    },
+    {
+      "pergunta": "Which TWO statements about the Message Batches API are correct? Choose TWO.",
+      "opcoes": [
+        "Small batches are processed with priority and finish within an hour, which makes them suitable for blocking pre-merge checks.",
+        "Requests must not include a tools array, so extraction through tool_use is not possible inside a batch request at all.",
+        "A request can call a tool mid-request, and the batch resumes it when your code posts the tool result back to the batch.",
+        "It fits nightly test generation but not a blocking pre-merge check, since it has no latency SLA within its 24-hour window.",
+        "Each request carries a custom_id, which is how results are matched to requests, since they may not come back in order."
       ],
       "corretas": [
-        1,
-        2
+        3,
+        4
       ],
-      "explicacao": "Results come back out of order (match by custom_id), and only the failed ones are resubmitted.",
+      "explicacao": "The Message Batches API gives 50% savings, with processing that can take up to 24 hours and no latency SLA, so it suits latency-tolerant work like nightly test generation and not blocking checks. Results are correlated through custom_id. It does not support multi-turn tool calling within a request, but a single-turn tool_use extraction works.",
       "feedbacks": [
-        "Incorrect: it wastes money reprocessing 9,700 successes.",
-        "Correct.",
-        "Correct.",
-        "Incorrect: results arrive out of order.",
-        "Incorrect: silently discarding means losing data (error suppression)."
-      ]
+        "There is no priority or latency guarantee for small batches; any batch can take up to 24 hours.",
+        "Tools can be included; tool_use extraction works because the tool input is the result and nothing has to be executed.",
+        "Batch requests cannot execute tools mid-request and resume; a tool step needs a new request.",
+        "Correct. Latency-tolerant work fits batch; blocking checks do not.",
+        "Correct. custom_id correlates requests and results."
+      ],
+      "ts": "4.5"
+    },
+    {
+      "pergunta": "Documents arrive around the clock, the client requires results within 30 hours of arrival, and a batch can take up to 24 hours to process. Which submission schedule guarantees the deadline at batch pricing?",
+      "opcoes": [
+        "Submit a batch every 4 hours, so that the worst case is about 4 hours of waiting plus 24 hours of processing, with slack left over.",
+        "Submit one batch every night at midnight, so that all of the day's documents are processed together in a single large batch run.",
+        "Submit a batch every 12 hours, so that each document waits at most half a day before processing starts in the next batch run.",
+        "Submit a batch whenever 5,000 documents have accumulated, so that each batch is large enough to justify the scheduling overhead."
+      ],
+      "correta": 0,
+      "explicacao": "The worst case is the wait until the next submission plus up to 24 hours of processing, and it must fit inside the SLA with some slack. Every 4 hours gives 4 + 24 = 28 hours; a nightly batch gives up to 48, every 12 hours gives up to 36, and a count-based trigger has no upper bound on waiting.",
+      "feedbacks": [
+        "Correct. 4 + 24 = 28 hours, leaving 2 hours for polling and validation.",
+        "A document that arrives just after midnight waits about 24 hours and then up to 24 more: up to 48 hours.",
+        "12 + 24 = 36 hours in the worst case, which exceeds the 30-hour requirement.",
+        "On a slow day, documents could wait indefinitely for the 5,000th to arrive; a count trigger gives no time bound."
+      ],
+      "ts": "4.5"
+    },
+    {
+      "pergunta": "A team must extract 120,000 historical contracts with a prompt that was written this week and has not yet been run on real documents. What is the best plan?",
+      "opcoes": [
+        "Submit all 120,000 now through the Message Batches API, since the 50% saving makes any later resubmissions cheap enough to absorb easily.",
+        "Refine the prompt on a representative sample first, then submit the full volume, so that most documents succeed on the first pass.",
+        "Submit the volume in 12 batches of 10,000 and adjust the prompt between batches as errors appear in the results of earlier ones.",
+        "Process all 120,000 with synchronous calls in parallel, so that prompt errors show up immediately and can be fixed during the same run."
+      ],
+      "correta": 1,
+      "explicacao": "Refining the prompt on a sample set before batch-processing a large volume maximizes the first-pass success rate and avoids paying for iterative resubmissions. Discovering prompt problems inside the full run is the expensive way to iterate.",
+      "feedbacks": [
+        "Even at half price, resubmitting a large share of 120,000 documents is waste that a small sample would have avoided.",
+        "Correct. Iterate cheaply on a sample, then run the volume.",
+        "Fixing the prompt between batches means earlier batches ran with a worse prompt and may need to be redone.",
+        "Synchronous calls give up the batch discount and still iterate on the full volume instead of a sample."
+      ],
+      "ts": "4.5"
     }
   ]
 }

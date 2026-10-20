@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 4 — Developer Productivity with Claude",
-  "aprovacao": 72,
+  "titulo": "Cenário 4 — Developer Productivity with Claude (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos has a legacy .NET monorepo of ~2 million lines. A newly hired developer uses Claude Code to understand the code.\n\nShe asks: \"Find out where and how a refund request is processed, from the endpoint to the database\". Which exploration strategy should the agent follow?",
+      "pergunta": "Corvane Pharma is building a developer-productivity agent with the Claude Agent SDK, and the agent loads the monorepo's root and package-level CLAUDE.md files as standing instructions. When it generates endpoint boilerplate in `batch-records/`, it applies the GxP audit-trail standards kept in `docs/standards/gxp-audit.md`. In `trials/`, it follows that package's naming rules but generates endpoints with no audit-trail fields, and when asked, it says it was given no audit standards. `batch-records/CLAUDE.md` contains the line `@../docs/standards/gxp-audit.md`; `trials/CLAUDE.md` says 'For audit trails, follow the rules in docs/standards/gxp-audit.md.' What is the most likely root cause?",
       "opcoes": [
-        "Ask the developer to paste into the chat the files she thinks are relevant, since the agent doesn't know the repository structure.",
-        "First read the entire `src/` directory in alphabetical order and build a mental index, and only then look for the refund flow.",
-        "Use Glob to list every `.cs` file in the Payments domain and read each one with Read before answering, ensuring no part of the refund flow is left out of the analysis.",
-        "Use Grep to find the entry points (e.g., the refund controller/route), read those files with Read, and follow the dependencies with further Grep calls, reading only what the path requires."
-      ],
-      "correta": 3,
-      "explicacao": "The incremental exploration pattern is: Grep for the entry points → Read → follow imports/calls with Grep → Read. It builds understanding on demand and preserves the context window.",
-      "feedbacks": [
-        "Tempting because it seems safe, but it wastes the built-in tools: the agent can locate the code on its own with Grep/Glob, and the developer may not even know which files matter.",
-        "Same trap of loading everything up front: alphabetical order has nothing to do with the refund flow and consumes context without focus.",
-        "Tempting because it seems \"complete\", but it's the anti-pattern of reading everything up front: it fills the context with irrelevant files and degrades answer quality.",
-        "Correct: search-driven incremental exploration, reading only what's needed to follow the flow."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "In the Lumen Pagamentos monorepo, database migrations are scattered across several projects, always in files whose names end in `_Migration.cs`.\n\nA developer asks Claude Code to list all of these migration files. Which built-in tool is the right choice for this step?",
-      "opcoes": [
-        "Read on the root directory, so the agent sees the folder tree and identifies the files.",
-        "Agent with a general-purpose subagent, because any search in a large repository should be delegated.",
-        "Glob with a pattern like `**/*_Migration.cs`, because the search is by file name/path.",
-        "Grep for the term `Migration`, because it scans the content of every file in the repository."
+        "The `trials/` file is a directory-level CLAUDE.md, which the agent consults for files it reads but not for files it creates, so the audit rule is skipped.",
+        "The standards file is too long to load next to the package's own rules, so the agent keeps the short naming rules and drops the longer audit document.",
+        "Only `batch-records/CLAUDE.md` uses `@import` syntax, which pulls the file's content into context; the sentence in `trials/CLAUDE.md` names the file but never loads it.",
+        "The audit rule in `trials/CLAUDE.md` conflicts with the root CLAUDE.md, and the agent resolves such conflicts by keeping the root-level instruction over the package-level one."
       ],
       "correta": 2,
-      "explicacao": "Glob finds files by name/path pattern; Grep searches inside the content. When the criterion is the file name, Glob is direct and cheap.",
+      "explicacao": "An `@path` import is how a CLAUDE.md pulls another file's content into context, which keeps each package's CLAUDE.md modular while sharing common standards. A sentence that merely mentions a path is plain text: the agent sees the instruction but not the standards themselves, which is why `trials/` follows its inline naming rules yet knows nothing about audit trails. Replacing the sentence with an `@import` of the standards file fixes it.",
       "feedbacks": [
-        "Read reads files; it doesn't list trees recursively. It isn't the tool for discovering files by pattern.",
-        "Delegating to a subagent makes sense for voluminous, noisy searches, but here a single Glob call solves it; delegating would be complexity with no gain.",
-        "Correct: the criterion is the file name, exactly what Glob handles.",
-        "Tempting because Grep is the \"default\" search, but it searches content: it would return every class, using directive, and comment that mentions Migration, not just the migration files."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos uses Claude Code for small fixes in the reconciliation service, a 1,800-line C# file.\n\nThe agent tries to replace `return null;` with `return Result.Empty;` in a specific method, but the Edit tool fails, reporting that the snippet is not unique in the file. What is the correct next action?",
-      "opcoes": [
-        "Read the code around the method and retry the Edit with an expanded `old_string` (method signature or neighboring lines) that identifies a single occurrence.",
-        "Retry the same Edit a few times, since the failure may have been transient.",
-        "Use Write to rewrite the entire file with the change applied, based on what the agent remembers of the content, which avoids Edit's uniqueness problem once and for all.",
-        "Run `sed -i 's/return null;/return Result.Empty;/'` via Bash, which doesn't require uniqueness and solves it in one line."
+        "Tempting because directory-level files load contextually, but `trials/CLAUDE.md` is clearly loaded: its naming rules are applied during generation. What differs is how the audit file is referenced.",
+        "Tempting because long context can crowd out instructions, but `batch-records/` loads the very same document without trouble. The audit rules are missing in `trials/` because that file never imports them.",
+        "Correct. `@import` brings the standards file's content into context; a prose mention of the path does not.",
+        "Instruction conflicts do cause inconsistent behavior, but nothing in the root file is about audit trails, and the agent says it received no audit standards at all, which points to a missing import."
       ],
-      "correta": 0,
-      "explicacao": "Edit replaces exact text and requires the snippet to be unique. The fix is to expand the snippet with enough context (or read the file and rewrite it in a controlled way).",
-      "feedbacks": [
-        "Correct: giving `old_string` enough context makes the edit unique and precise.",
-        "It isn't a transient error: it's an input validation error. Repeating the same call fails the same way; the input must be corrected.",
-        "Rewriting 1,800 lines \"from memory\" without having read the file is a recipe for losing code; rewriting is only acceptable after reading the whole file.",
-        "Tempting for its convenience, but sed replaces ALL occurrences in the file, changing methods that shouldn't change."
-      ]
+      "cenario": 4,
+      "dominio": "D3",
+      "ts": "3.1",
+      "bullet": "3.1-K3"
     },
     {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, automates repetitive upgrades: a coordinator assigns one service at a time to a `migrator` subagent, which edits files and runs the build through Bash. On any failure the subagent returns `{\"status\": \"error\", \"message\": \"Migration failed for <service>\"}`. Last week the coordinator marked 6 of 31 services as 'incompatible with the new logging library'. Engineers later found that 4 of them had failed only because the internal package registry timed out, after most of their files had already been migrated. What is the main flaw in this design?",
+      "opcoes": [
+        "Any subagent failure should stop the whole run, so that an engineer can inspect the repository before the coordinator draws conclusions about compatibility.",
+        "The subagent should retry the build with backoff and, if it keeps failing, report the service as skipped so that the remaining services keep moving.",
+        "The coordinator should re-run each failed service from a clean checkout, so that partially migrated files do not get mixed with the original code.",
+        "The error has no failure type, no record of the command attempted and no partial results, so the coordinator cannot tell a registry timeout from any real incompatibility."
+      ],
+      "correta": 3,
+      "explicacao": "A coordinator can recover intelligently only when the subagent reports what kind of failure occurred, what it attempted, what it had already completed and which alternatives exist. Here a transient registry timeout and a genuine incompatibility produce the same generic message, so the coordinator draws the wrong conclusion and discards migrated work. A structured error such as `{failure_type: 'transient', attempted: 'mvn package', completed: ['core', 'api'], alternatives: ['retry after the registry recovers']}` lets it retry or resume instead.",
+      "feedbacks": [
+        "Terminating the whole workflow on a single failure is an anti-pattern: 25 services were fine, and the four registry timeouts only needed a retry. Stopping everything also gives the coordinator no better information.",
+        "Local retry for transient failures is good practice, but ending with a generic 'skipped' status repeats the core problem: the coordinator still cannot tell why the service failed or what was already migrated.",
+        "Starting from a clean checkout throws away the work that had succeeded and still leaves the coordinator guessing at the cause, so the same misclassification would happen on the next run.",
+        "Correct. Structured error context (type, attempted command, partial results, alternatives) is what lets the coordinator choose to retry, resume or report a real incompatibility."
+      ],
       "cenario": 4,
       "dominio": "D5",
-      "pergunta": "A Lumen Pagamentos developer has spent three hours in a Claude Code session mapping the fraud-prevention module, with dozens of searches and file reads.\n\nThe answers have started to get vague (\"this probably uses the typical Repository pattern\") and the agent has forgotten classes it had found itself. Which two measures address the cause? (Choose TWO.)",
+      "ts": "5.3",
+      "bullet": "5.3-S1"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, connects to an MCP server that queries the legacy LIMS test database so engineers can understand old data flows. Results sometimes include trial subject identifiers, so the team registered a PostToolUse hook that replaces any value matching `SUBJ-\\d{6}` with `[REDACTED]`. Server logs show the server returned 214 raw identifiers last week, yet no agent answer or reasoning trace contains one. An engineer suspects the hook only cleans the transcript after the model has already seen the raw values. Which statement about this behavior is correct?",
       "opcoes": [
-        "Load all the fraud-prevention module files at once, to eliminate the need for new searches.",
-        "Record the findings (classes, flows, decisions) in a notes file in the repository and have the agent consult it, so they survive compaction.",
-        "Increase the session's `max_tokens` so the answers become detailed again.",
-        "Delegate the voluminous searches to an Explore subagent, which returns only the conclusion instead of dumping the entire result into the main conversation.",
-        "Add the instruction \"never forget what you've already discovered in this session\" to CLAUDE.md."
+        "The engineer is right: PostToolUse runs after the model has consumed the result, so it can clean what is logged and displayed but not what the model reasons over.",
+        "The redaction works only because the server marks those results with `isError`, which makes the SDK pass them through the hook before they reach the model.",
+        "PostToolUse fires only for built-in tools such as Read and Bash, so MCP results bypass the hook and the redaction must be happening inside the MCP server.",
+        "PostToolUse intercepts the tool result after the tool runs and before the model processes it, so the model only ever reasons over the redacted version."
+      ],
+      "correta": 3,
+      "explicacao": "A PostToolUse hook sits between tool execution and the model: it receives the tool's output and can transform it before that output is added to the conversation. That is why the server logs show raw identifiers while nothing the model produces contains them. The same interception point is used to normalize formats or trim fields returned by MCP tools before the agent reasons over them.",
+      "feedbacks": [
+        "This reverses the order. The hook acts on the result before it is appended to the conversation, so the model never receives the raw identifiers in the first place.",
+        "`isError` signals a failed tool call and has nothing to do with whether hooks run. These were successful results, processed by PostToolUse because the hook matches the tool.",
+        "Tempting because built-in tools are the classic example, but PostToolUse also applies to MCP tool results; normalizing data from MCP tools is a standard use. The server logs show it returns raw values.",
+        "Correct. PostToolUse transforms the tool result before the model processes it, which is why raw identifiers appear in server logs but never in the agent's reasoning."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.5",
+      "bullet": "1.5-K1"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, supports both plan mode and direct execution. An engineer asks it to replace the LIMS's 12-year-old SFTP file-drop integration with laboratory instruments. Two approaches are on the table: a message queue, which needs new broker infrastructure, or a REST ingestion API behind the existing gateway. Either one touches about 30 files in four modules. A teammate proposes direct execution: 'git makes rollback cheap, so let the agent pick an approach and we will review the diff.' How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: reviewing the final diff gives the same safety as planning, and git makes a wrong architectural choice cheap to undo before anything gets merged to main.",
+        "Reject it: choosing between approaches with different infrastructure needs is an architectural decision, so plan mode should explore and settle the design first.",
+        "Accept it, but split the work into four direct-execution runs, one per module, so that each diff stays small enough for the team to review carefully.",
+        "Reject it: changes spanning four modules should be written by engineers by hand, with the agent limited to answering questions about the existing code."
+      ],
+      "correta": 1,
+      "explicacao": "Plan mode is meant for tasks with architectural implications, multiple valid approaches and multi-file changes: here the agent must compare two integrations with different infrastructure requirements before touching about 30 files. Exploring and agreeing on the design first prevents costly rework; once the approach is chosen, direct execution can implement it. Letting the agent pick an approach mid-edit buries the most important decision inside a large diff.",
+      "feedbacks": [
+        "A diff review happens after the cost is paid: by then the agent has committed to one integration and edited 30 files. Rollback restores the code, not the time, and the team never compared the approaches.",
+        "Correct. A choice between integration approaches with different infrastructure needs is what plan mode is for; direct execution can follow once the design is agreed.",
+        "Smaller diffs help review, but splitting by module still leaves the agent to choose the architecture implicitly, possibly differently in each run. The decision must come before the work is divided.",
+        "This pushes the work back onto engineers instead of using the agent well. Large architectural changes call for plan mode, not for abandoning the agent."
+      ],
+      "cenario": 4,
+      "dominio": "D3",
+      "ts": "3.4",
+      "bullet": "3.4-S1"
+    },
+    {
+      "pergunta": "Corvane Pharma engineers use the team's Agent SDK productivity agent to generate boilerplate for new LIMS modules. Reviewing a generated stability-sample module, an engineer finds four problems: the entity stores sample times as local time, the mapper converts to UTC twice, the audit-trail test asserts on the doubly converted value, and one log message has a typo. When she asked for the entity fix alone, the mapper and the test broke in new ways, and the next fix broke the entity again. What is the most effective way to proceed?",
+      "opcoes": [
+        "Keep fixing one problem per message, but ask the agent to run the full test suite after each fix, so that any regression is caught as soon as it appears.",
+        "Regenerate the whole module from scratch with a longer prompt that lists all four problems, so that no fragment of the faulty version survives.",
+        "Describe all three time-handling problems together in one detailed message, since their fixes interact, and fix the unrelated log typo on its own.",
+        "Ask the agent to fix the audit-trail test first, since tests define the expected behavior, then let it adjust the entity and mapper until that test passes."
+      ],
+      "correta": 2,
+      "explicacao": "When fixes interact, sequential iteration makes each change undo the previous one: the entity, the mapper and the test all encode the same timestamp contract. Describing the interacting problems together in one detailed message lets the agent change them consistently, while an independent issue such as the log typo is better handled separately. Matching the iteration style to whether problems interact is the key decision.",
+      "feedbacks": [
+        "Running tests after each step detects regressions but does not prevent them: the three time problems are still fixed one at a time against an inconsistent contract, which is the loop she is already in.",
+        "Regenerating discards the parts that were fine and gives no guarantee that the new version handles time correctly; it rewrites too early instead of fixing the interacting issues together.",
+        "Correct. Interacting problems belong in one detailed message so the fixes stay consistent; the independent typo can be fixed separately.",
+        "Test-driven iteration works when the tests are right, but this test asserts the doubly converted value. Making the code pass it would lock the bug in."
+      ],
+      "cenario": 4,
+      "dominio": "D3",
+      "ts": "3.5",
+      "bullet": "3.5-K4"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, automates repetitive edits across the monorepo. Code under `validated/` belongs to GxP-validated systems, and policy requires a change request before any file there is modified. The system prompt says: 'Before writing to validated/, call open_change_request and put its ID in the commit message.' An audit of 900 runs found 31 in which the agent edited validated files without a change request, mostly small follow-up fixes late in long sessions. What is the most effective first step?",
+      "opcoes": [
+        "Move the change-request rule to the top of the system prompt in capital letters and repeat it in the Write and Edit tool descriptions, so it stays salient.",
+        "Add a PreToolUse hook that blocks the Write and Edit tools on `validated/` paths until open_change_request has returned an ID in the current session.",
+        "Add few-shot examples of late-session follow-up fixes in which the agent calls open_change_request first, so that the model learns to follow this exact pattern.",
+        "Add a git post-commit hook that finds validated files committed without a change-request ID and reverts those commits, so violations do not persist."
+      ],
+      "correta": 1,
+      "explicacao": "When compliance must be guaranteed, prompt instructions alone leave a non-zero failure rate, as the 31 violations show. A PreToolUse hook enforces the order programmatically: Write and Edit on `validated/` are blocked until a change request exists, however long the session runs. Prompt wording and examples can still help the agent plan, but they cannot be the control.",
+      "feedbacks": [
+        "Making the instruction louder is still prompt-based guidance: it may lower the failure rate but cannot guarantee the order, and the policy needs a guarantee.",
+        "Correct. A programmatic prerequisite blocks the edit itself until the change request exists, which a prompt cannot guarantee.",
+        "Few-shot examples improve consistency but remain probabilistic; the agent can still skip the step in a situation the examples did not cover.",
+        "This is a hook, but it fires after the edit and commit, while policy requires the change request before modification. Reverting afterwards detects violations; it does not enforce the order."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.4",
+      "bullet": "1.4-K1"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, needs three new integrations: the company's GitHub organization, its Confluence wiki, and an in-house validation-evidence system that records which test runs support each GxP requirement. One engineer proposes writing a single custom MCP server that wraps all three APIs, 'so we control every tool description and error format'. Others suggest different splits. Which design is the best choice?",
+      "opcoes": [
+        "Build the single custom server as proposed, since owning each tool lets the team keep descriptions and error formats consistent across the three systems.",
+        "Skip MCP for GitHub and Confluence and let the agent call their REST APIs with curl through Bash, building a custom server only for validation evidence.",
+        "Use community servers for GitHub and Confluence and reach validation evidence through a generic SQL MCP server, so that the team writes no server code.",
+        "Use existing community MCP servers for GitHub and Confluence, and build a custom server only for the in-house validation-evidence workflow."
+      ],
+      "correta": 3,
+      "explicacao": "For standard integrations such as GitHub and Confluence, existing community MCP servers already provide maintained tools, so writing your own duplicates effort and maintenance. Custom servers are best reserved for team-specific workflows like the in-house validation-evidence system, where no existing server understands the domain. This mix gets the agent working fastest while keeping custom code where it adds value.",
+      "feedbacks": [
+        "Consistency is a real benefit, but rebuilding GitHub and Confluence integrations that community servers already provide costs time and ongoing maintenance for little gain.",
+        "Raw curl through Bash gives the agent no tool descriptions, schemas or structured errors, so it trades a ready-made integration for a fragile one.",
+        "A generic SQL server exposes tables, not the team's workflow, so the agent would have to guess how evidence links to requirements. Team-specific workflows are what custom servers are for.",
+        "Correct. Use community servers for standard integrations and build custom ones only for team-specific workflows."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-S4"
+    },
+    {
+      "pergunta": "At Corvane Pharma, engineers building the Agent SDK productivity tools use Claude Code to investigate the legacy LIMS before automating parts of it. One engineer is running three investigations over several days: sample lifecycle, label printing and instrument imports. Each morning she starts a new session and pastes her notes, and the agent re-reads 40–60 files it had already analyzed, although none of that code has changed. She wants each investigation to pick up exactly where it stopped, with its earlier analysis intact. What should she change?",
+      "opcoes": [
+        "Give each investigation its own session name and continue it with `--resume <session-name>`, so that the matching conversation returns with all its analysis.",
+        "Keep one long session for all three investigations and run `/compact` each evening, so that a single conversation carries every finding forward.",
+        "Write each day's findings to a scratchpad file and start a fresh session that reads it, so that only the essential conclusions carry over into each new day.",
+        "Run `fork_session` from yesterday's session each morning, so that each investigation branches from a shared baseline without mixing their contexts."
+      ],
+      "correta": 0,
+      "explicacao": "Named session resumption with `--resume <session-name>` restores a specific prior conversation, including the analysis already done. Because the code has not changed, that prior context is still valid, so resuming beats re-exploring. Starting fresh with a summary is the right choice only when earlier tool results have gone stale.",
+      "feedbacks": [
+        "Correct. Named sessions plus `--resume` continue each investigation where it stopped, which suits context that is still valid.",
+        "Mixing three investigations in one session blurs their findings, and `/compact` replaces the history with a summary, losing the detailed analysis she wants to keep.",
+        "A summary in a fresh session is the right move when prior results are stale; here the code is unchanged, so it discards valid context the agent would have to rebuild.",
+        "`fork_session` creates divergent branches from a shared baseline to compare approaches; it does not keep three separate investigations going."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-K1"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, explains legacy systems with a fixed four-step pipeline: Glob the module's source files, summarize each file, summarize the module's tests, then write an overview. For the pharmacovigilance intake module, the overview says case routing 'is driven by rules loaded from the ROUTING_RULES table and config/routing-2009.xml', but cannot say what any rule does or which of 17 stored procedures apply them. Engineers had to trace that by hand. What is the most likely root cause?",
+      "opcoes": [
+        "The fixed pipeline cannot add subtasks based on what it discovers, so leads such as the table and the XML file are noted but never investigated.",
+        "The per-file summaries are too short, so the details of the routing rules are lost before the overview step can combine them into an explanation.",
+        "The Glob pattern only matches source files, so the XML file and the stored procedures fall outside the set of files the pipeline was told to read.",
+        "The overview runs in the same context as all the per-file summaries, so attention dilution makes it skip the parts of the module that matter most."
+      ],
+      "correta": 0,
+      "explicacao": "Open-ended investigation of a legacy system needs an adaptive plan that creates new subtasks from what each step uncovers. A fixed pipeline can only execute its predetermined steps, so when the router points to a table, an XML file and stored procedures, nothing follows those leads. Prompt chaining suits predictable multi-aspect work; exploring unknown code calls for dynamic decomposition.",
+      "feedbacks": [
+        "Correct. Only an adaptive investigation plan turns discoveries such as the table and the XML file into new subtasks.",
+        "The overview did receive the details: it names both the table and the XML file. The gap is that no step ever looked into them.",
+        "Widening the Glob would add the XML file, but the procedures live in the database and the pipeline still would not know which rules matter. The real limit is that the steps are fixed in advance.",
+        "Attention dilution affects large single passes, but the overview reported the leads accurately. Nothing in the pipeline was designed to investigate them."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K3"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent uses a coordinator that spawns exploration subagents through the Task tool. To map where sample status changes in the LIMS, the coordinator sent: '1. Glob lims/sample/**/*.java. 2. Read the first 10 results. 3. Grep those files for setStatus. 4. Return the matching classes.' The subagent returned 6 classes. Engineers later found 9 more status transitions: in Kotlin files, in a SQL trigger and in a class that calls `updateState`. Every step had been executed as written. What is the flaw in this design?",
+      "opcoes": [
+        "The subagent did not receive the coordinator's conversation history, so it could not know that status changes may also happen outside the Java code.",
+        "The subagent's tools should include Bash, so that it can run a full-text search over Kotlin, SQL and other file types in the repository, not just Java.",
+        "The prompt dictates a fixed procedure instead of the goal and what a complete answer must cover, so the subagent could not adapt when the code turned out to differ.",
+        "The coordinator should have spawned one subagent per file type in parallel, so that the Java, Kotlin and SQL searches would run independently."
+      ],
+      "correta": 2,
+      "explicacao": "Coordinator prompts should state the research goal and the quality criteria for a complete answer, for example every status transition in any language, with file and line, and gaps flagged. A step-by-step recipe turns the subagent into a script runner: it obeyed every step, and the steps were wrong for this codebase. Goal-based prompts let subagents adapt their search when they meet Kotlin, SQL or differently named methods.",
+      "feedbacks": [
+        "Subagents do need context passed explicitly, but the coordinator did not know about the Kotlin or SQL code either. The problem is that the prompt fixed the method instead of the goal.",
+        "Grep already searches any file type; the subagent did not lack a tool, it was told to Grep only 10 Java files for one method name.",
+        "Correct. Stating the goal and completeness criteria instead of a fixed procedure lets the subagent adapt to what it finds.",
+        "The coordinator could not have known in advance that Kotlin and SQL were involved, and parallel subagents with recipe-style prompts would still miss `updateState`."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S4"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, helps engineers map the legacy batch-record system. In version 1, a single agent ran every Grep and Read itself; after about 90 minutes its answers drifted toward 'typical repository patterns' instead of the classes it had found earlier. In version 2, the main agent sends specific questions such as 'find every caller of BatchRelease.approve' to subagents through the Task tool and keeps only their summaries; after 90 minutes its answers still cite specific classes. Which statement about this difference is correct?",
+      "opcoes": [
+        "Version 2 works because subagents share the main agent's memory, so each finding is stored once and later questions can reuse it without new searches.",
+        "The verbose search and file output stays in each subagent's isolated context and only summaries return, so the main agent keeps room for the big picture.",
+        "Version 2 works mainly because the questions run in parallel, which shortens each session enough that the main agent does not reach the point where quality drops.",
+        "Version 1 would match version 2 with a model that has a larger context window, since the drift came from the window being too small for this system."
+      ],
+      "correta": 1,
+      "explicacao": "Delegating specific questions to subagents isolates the verbose exploration output (hundreds of Grep hits and file contents) in their own contexts, while the main agent receives compact summaries and keeps coordinating at a high level. In version 1 that raw output accumulated in a single context until the model degraded into generic answers. Subagent delegation is a main lever against context degradation during large codebase exploration.",
+      "feedbacks": [
+        "Subagents run with isolated context and do not share memory with the main agent; the benefit comes precisely from keeping their verbose work out of the main context.",
+        "Correct. Subagents absorb the verbose output and return summaries, so the main agent's context stays focused on high-level understanding.",
+        "Parallelism can cut wall-clock time, but the main agent ran for the same 90 minutes in both versions. What changed is what accumulated in its context.",
+        "A larger window delays the problem but does not remove it: the context still fills with raw output, and long inputs still suffer degraded attention."
+      ],
+      "cenario": 4,
+      "dominio": "D5",
+      "ts": "5.4",
+      "bullet": "5.4-S1"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, loads the repository's CLAUDE.md files and its project skills in `.claude/skills/`. The team has written a 380-line, nine-step procedure for scaffolding a new GxP-compliant service, used about twice a month. An engineer proposes pasting it into the root CLAUDE.md, next to universal rules such as 'all timestamps are UTC' and 'never log subject identifiers', 'so the agent always knows it'. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: CLAUDE.md is the one file the agent always reads, so it is the only place that ensures the procedure is followed whenever a service is scaffolded.",
+        "Reject it: package the procedure as a skill that is invoked on demand, and keep CLAUDE.md for universal standards that apply to every session.",
+        "Reject it: split the procedure into nine `.claude/rules/` files, one per step, so that each step loads only when the agent edits files matching its pattern.",
+        "Accept it, but move it into a directory-level CLAUDE.md inside the templates folder, so that it loads only when the agent is working in that folder."
+      ],
+      "correta": 1,
+      "explicacao": "CLAUDE.md is always loaded, so it should hold standards that apply to every session, such as UTC timestamps and logging rules. A long, task-specific workflow used twice a month belongs in a skill, invoked on demand when someone scaffolds a service. Putting it in CLAUDE.md would spend context on every unrelated task without making it any more available when it is needed.",
+      "feedbacks": [
+        "A skill is available whenever it is invoked, so CLAUDE.md is not the only way. Loading 380 lines into every session for a twice-a-month task wastes context on all the other work.",
+        "Correct. Skills fit on-demand, task-specific workflows; CLAUDE.md fits always-applicable standards.",
+        "Path-scoped rules fit conventions tied to file types or locations. A sequential procedure split into nine pattern-triggered files would load in fragments and lose its order.",
+        "Scaffolding creates a new service elsewhere in the repository, so a file tied to the templates folder may never load at the right moment. The workflow is task-driven, not location-driven."
+      ],
+      "cenario": 4,
+      "dominio": "D3",
+      "ts": "3.2",
+      "bullet": "3.2-S5"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent uses a coordinator that splits engineering questions into subtasks for subagents. Asked to assess the impact of retiring the legacy LIMS reporting module, it created two subtasks: 'find Java callers of ReportService' and 'list report templates'. Both subagents did their work well, and the final answer said retirement was safe. In staging, a nightly data-warehouse ETL, three scheduled export jobs and a QA spreadsheet that pulls report URLs all broke. Which conclusions follow? Choose TWO.",
+      "opcoes": [
+        "The coordinator should first list every kind of consumer, such as jobs, ETL and external tools, then assign and check each one before concluding.",
+        "Grep-based search is unreliable for impact analysis, so the subagents should read every file in the repository instead of searching for callers.",
+        "The subagents' summaries were too short, so their findings about the ETL and the scheduled jobs were lost before the coordinator combined them.",
+        "The coordinator's decomposition covered only in-repo Java callers and templates, so whole classes of consumers were never assigned to any subagent.",
+        "The subagents should have noticed the missing consumers and widened their own scope, so their prompts need an instruction to search beyond the assigned task."
+      ],
+      "corretas": [
+        0,
+        3
+      ],
+      "explicacao": "The subagents did exactly what they were asked; the gap lies in what they were asked. A decomposition that is too narrow leaves whole areas of a broad question uncovered, so the coordinator should enumerate the categories the question spans before delegating and verify coverage of each. Blaming downstream agents for not exceeding their assignment misplaces the fault.",
+      "feedbacks": [
+        "Correct. Enumerating consumer categories before delegating, then checking each, is how a coordinator avoids overly narrow decomposition.",
+        "Reading every file is costly and would still be limited to the repository; the ETL, jobs and spreadsheet were never part of any subagent's assignment.",
+        "There were no such findings to lose: no subagent was asked to look at the ETL or the scheduled jobs.",
+        "Correct. The coordinator's narrow decomposition left the ETL, jobs and external tools without any subagent assigned.",
+        "Asking subagents to roam beyond their tasks creates overlap and unpredictable scope. Coverage is the coordinator's job when it decomposes the question."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-K4"
+    },
+    {
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, has an MCP tool `search_change_history` whose description explains in detail that it returns change-control records, validation status and approvers for any module. The agent's system prompt also says: 'When the user asks about history, run git log through Bash.' For 41 of 50 logged questions such as 'what is the validation history of the dosing module?', the agent ran git log and answered from commit messages. Which actions best address this? Choose TWO.",
+      "opcoes": [
+        "Add more example queries to the `search_change_history` description, so that it outweighs the instruction about history in the system prompt.",
+        "Review the system prompt for other keyword-triggered instructions that tie words such as 'history' or 'search' to one specific tool.",
+        "Remove Bash from the agent's tools, so that git log can no longer be chosen when engineers ask questions about a module's history.",
+        "Rewrite the 'history' instruction to explain when git log fits and when the change-control tool fits, instead of keying on any single word.",
+        "Force `search_change_history` with tool_choice whenever a message contains 'validation', so the right tool is the one that runs first."
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "Generic answers and forgetfulness are signs of degradation from a full context. Mitigations: scratchpad files that survive compression, and subagents that explore in an isolated context and return only the summary.",
+      "explicacao": "The tool description is already good; the system prompt's keyword rule ('history' means git log) overrides it. Keyword-sensitive instructions create unintended tool associations, so the fix is to rewrite that rule around the actual distinction and to audit the prompt for similar rules. Adding description text or routing by other keywords leaves the conflict in place.",
       "feedbacks": [
-        "Makes the problem worse: it's the anti-pattern of reading everything up front, which fills the context even more.",
-        "Correct: state persisted outside the scrollback isn't lost on `/compact` or as the context scrolls.",
-        "Tempting, but `max_tokens` limits the output size; the problem is the saturated input window, not the response size.",
-        "Correct: Explore runs in its own context; the main session receives only the summary and stops growing.",
-        "A prompt instruction doesn't create memory; the model doesn't \"remember\" more because it's told to remember."
-      ]
-    },
-    {
+        "The description is already detailed; more examples would still compete with an explicit system-prompt rule that names a different tool.",
+        "Correct. Auditing the system prompt for keyword-sensitive instructions finds other rules that may override good tool descriptions.",
+        "Bash is needed for builds and other automation, and git log is the right tool for commit history. Removing it breaks valid uses instead of fixing the conflicting rule.",
+        "Correct. Replacing the keyword trigger with the real distinction lets the descriptions and the prompt point the same way.",
+        "This swaps one keyword rule for another and forces a tool even when 'validation' appears in an unrelated question."
+      ],
       "cenario": 4,
       "dominio": "D2",
-      "pergunta": "Lumen Pagamentos built an internal MCP server, `tickets`, that exposes the company's ticketing system. Every developer who clones the monorepo should have it available in Claude Code.\n\nHow should the platform team configure the server?",
-      "opcoes": [
-        "With project scope: an entry in `.mcp.json` at the repository root, versioned in git, with the credential referenced via an environment variable.",
-        "With local scope (the `claude mcp add` default), which saves the configuration for this project and makes it available to anyone who clones the repository.",
-        "In the `.claude/settings.local.json` file, which is the place for project-specific MCP configuration.",
-        "With user scope on each machine, so the server shows up in all of each developer's projects."
-      ],
-      "correta": 0,
-      "explicacao": "Project scope (`.mcp.json` at the root) is the one shared via git. Local is yours only, in this project (in `~/.claude.json`), and user applies to all your projects but is also not shared.",
-      "feedbacks": [
-        "Correct: a versioned `.mcp.json` is the mechanism for sharing servers with the team, with secrets kept out of the file.",
-        "Classic trick: local scope is private to your machine (it lives in `~/.claude.json`); whoever clones the repo gets nothing.",
-        "Naming trick: MCP's \"local\" scope is not `settings.local.json`, which is a personal, gitignored settings file.",
-        "Works for each developer individually, but requires manual setup on each machine and doesn't travel with the repository; it isn't team sharing."
-      ]
+      "ts": "2.1",
+      "bullet": "2.1-S4"
     },
     {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos' versioned `.mcp.json` configures the remote server `service-catalog`. A security audit found an API token written literally in the `headers` field.\n\nWhat is the appropriate fix, while keeping the server shared with the team?",
+      "pergunta": "At Corvane Pharma, an engineer prototyping a boilerplate generator for the team's developer-productivity tools wrote a small agentic loop on the Messages API before porting it to the Claude Agent SDK. When `stop_reason` is \"tool_use\", the loop runs the tool, then sends a new request containing the original user message plus the latest tool result. In tests, the agent repeats the same Grep up to four times and generates classes that ignore files it had already read. Which statements are correct? Choose TWO.",
       "opcoes": [
-        "Add `.mcp.json` to `.gitignore`, so the file containing the token is no longer versioned.",
-        "Replace the literal value with `${CATALOG_TOKEN}` in `headers`, letting each developer (and CI) provide the environment variable, and revoke the exposed token.",
-        "Encode the token in Base64 in the file, so it isn't readable in code reviews.",
-        "Keep the token, but add an instruction to CLAUDE.md for the agent to never display the contents of `.mcp.json`."
-      ],
-      "correta": 1,
-      "explicacao": "`.mcp.json` supports variable expansion (`${VAR}`, `${VAR:-default}`). Secrets live in the environment, never as literals in the versioned file; the leaked token must be revoked.",
-      "feedbacks": [
-        "Tempting, but it breaks sharing: the server disappears for the team, and the token remains in the git history.",
-        "Correct: variable expansion keeps the file shareable and takes the secret out of git.",
-        "Base64 is encoding, not encryption; anyone can decode it. A false sense of security.",
-        "Prompt-based control doesn't protect a secret: the token remains in the repository, visible to anyone with git access."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "A Lumen Pagamentos developer added the internal documentation remote server to `.mcp.json` with the entry `\"docs\": { \"url\": \"https://mcp.lumen.internal/docs\" }`.\n\nWhen Claude Code opens, the `docs` server fails to start, even though the URL responds normally in the browser. What is the most likely cause and the fix?",
-      "opcoes": [
-        "The correct transport for remote servers is SSE; just declare `\"type\": \"sse\"`.",
-        "Remote servers only work in user scope; the entry needs to be moved out of `.mcp.json`.",
-        "The default startup timeout is too short for remote servers on the corporate network; it must be increased via an environment variable before opening Claude Code.",
-        "Without `type`, the entry is interpreted as a stdio server; you must declare `\"type\": \"http\"` for the Streamable HTTP transport."
-      ],
-      "correta": 3,
-      "explicacao": "An entry without `type` falls back to the stdio default and fails. Remote servers must declare the type; Streamable HTTP (`http`) is the current remote transport, and SSE is legacy.",
-      "feedbacks": [
-        "Tempting because SSE is also remote, but it's the legacy transport; the recommended one for a new remote server is Streamable HTTP.",
-        "No such restriction exists: remote servers work in any scope, including project.",
-        "Addresses the wrong symptom: the process doesn't even attempt the HTTP connection, because the entry was read as stdio.",
-        "Correct: declaring the remote `type` resolves the configuration trap."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos' `deploy-status` MCP server requires tokens issued by the corporate SSO, valid for 30 minutes. Developers get a new token by running the internal CLI `lumen-auth token`.\n\nHow do you configure this server's authentication in Claude Code without forcing anyone to edit a configuration file every half hour?",
-      "opcoes": [
-        "Put the token in `headers` as a static value and create an automatic reminder so each developer updates the configuration file whenever the token expires.",
-        "Switch the server to stdio, because local transports don't need authentication.",
-        "Ask in CLAUDE.md for the agent to run `lumen-auth token` via Bash and paste the result into the tool calls.",
-        "Use `headersHelper` pointing to a command that runs `lumen-auth token` and returns the headers, generating a fresh credential on each connection."
-      ],
-      "correta": 3,
-      "explicacao": "A short-lived credential on an MCP server is handled with `headersHelper`, a command that generates the headers dynamically. A static token only works for long-lived credentials.",
-      "feedbacks": [
-        "A static token in `headers` is fine for long-lived credentials; with 30-minute validity it becomes a constant source of authentication failures.",
-        "Changing the transport doesn't change the backend's requirement: the service still demands the SSO token.",
-        "Puts a credential in the model's context and relies on the prompt for something that should be mechanical; fragile and insecure.",
-        "Correct: the helper fetches a fresh credential without exposing a secret in a file or depending on the model."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos' internal agent (Agent SDK) was connected to 12 internal MCP servers, totaling about 180 tools. The definitions take up more than 40,000 tokens before the user's first message.\n\nThe developers notice that the agent frequently picks the wrong tools and that the cost per session has risen sharply. What is the best change?",
-      "opcoes": [
-        "Put a lightweight classifier in front of the agent that picks, on each request, only the tools relevant to the question and sends the model a reduced `tools` array that differs per message.",
-        "Enable tool search with `defer_loading` on the catalog, keeping 3–5 frequently used tools always loaded, so the model discovers the rest on demand.",
-        "Shorten the descriptions of all 180 tools to one line each, reducing the definition tokens.",
-        "Remove half of the MCP servers based on which ones were configured most recently."
-      ],
-      "correta": 1,
-      "explicacao": "With a large catalog (many tools, definitions above ~10k tokens, multiple servers), tool search loads definitions on demand: the model sees few tools when deciding, the initial context shrinks, and the prompt cache is preserved.",
-      "feedbacks": [
-        "More complex than necessary, and it would still change the `tools` array on every request, invalidating the prompt cache.",
-        "Correct: this is the typical use case for tool search, with a few frequently used tools not deferred.",
-        "Tempting because it reduces tokens, but short descriptions worsen selection: the description is the tool's selection criterion.",
-        "Arbitrary cut: it may remove essential servers and doesn't address the cause (all definitions loaded at once)."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "A Lumen Pagamentos MCP server exposes two tools: `search_docs` (\"searches documentation\") and `search_knowledge` (\"searches internal knowledge\"). The first queries the engineering wiki; the second, the ADRs (architecture decision records).\n\nWhen a developer asks \"why did we choose Kafka over RabbitMQ?\", the agent almost always queries the wiki and doesn't find the answer. What is the simplest fix that solves it?",
-      "opcoes": [
-        "Include in the system prompt 30 example questions mapped to the correct tool.",
-        "Enable `disable_parallel_tool_use` to force the agent to choose more carefully, one tool at a time.",
-        "Add an intent classifier in front of the agent that decides which of the two tools should be called.",
-        "Rewrite names and descriptions to separate the purposes (e.g., `search_adrs` for \"architecture decisions and their rationale\"), stating when to use each one and how they differ."
-      ],
-      "correta": 3,
-      "explicacao": "Overlapping tools with vague descriptions cause misrouting. The description is the selection criterion; names and descriptions that differentiate the purpose fix it with the smallest change.",
-      "feedbacks": [
-        "Too many examples in the prompt are expensive and fragile, and they don't fix the ambiguity that lives in the tool definitions.",
-        "Unrelated to the problem: limiting parallelism doesn't help the model distinguish two tools with nearly identical descriptions.",
-        "Works, but it's more complex than necessary; the exam prefers improving the description before creating a routing classifier.",
-        "Correct: fixes the cause (ambiguous descriptions) with the simplest change."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D2",
-      "pergunta": "Lumen Pagamentos has about 400 microservices. The internal agent uses the MCP tools `list_services` and `get_service` to discover each service's owners, dependencies, and runbooks.\n\nThe logs show the agent making dozens of \"blind\" exploratory calls on every question, just to find out what exists in the catalog. Which change to the MCP server best addresses the problem?",
-      "opcoes": [
-        "Instruct in the system prompt: \"make at most three catalog calls per question\".",
-        "Expose the service catalog as MCP resources (read-only, browsable content).",
-        "Create a `get_all_services` tool that returns all 400 services with every field in a single call.",
-        "Increase the agent's turn limit so it has room to complete the exploration."
-      ],
-      "correta": 1,
-      "explicacao": "Resources give the client a browsable catalog of read-only content, which reduces blind exploratory calls. Tools are for operations and targeted lookups.",
-      "feedbacks": [
-        "A prompt-based limit is probabilistic and gives the agent no other way to learn the catalog; it will answer with less information.",
-        "Correct: resources are the right primitive for a read-only catalog the agent needs to know.",
-        "Trades many calls for one giant response that floods the context; the ideal is to return only what's relevant.",
-        "Treats the symptom: more turns only allow more blind exploration, at higher cost."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D3",
-      "pergunta": "Lumen Pagamentos wants to standardize how Claude Code works in the monorepo. There are conventions the whole team must follow (layers, error pattern, test names) and personal preferences of some developers (language of explanations, level of detail).\n\nWhich two decisions about where to put these instructions are correct? (Choose TWO.)",
-      "opcoes": [
-        "Team conventions in the project's `CLAUDE.md` (repo root), versioned in git.",
-        "Team conventions in each developer's `~/.claude/CLAUDE.md`, copied manually by everyone.",
-        "Team conventions in auto memory (`MEMORY.md`), which Claude Code loads at the start of the session.",
-        "Personal preferences in the project's `CLAUDE.md`, in a separate block per developer.",
-        "Each developer's personal preferences in `CLAUDE.local.md` (gitignored) or in the user's `~/.claude/CLAUDE.md`."
+        "Every tool result must be appended to the conversation after the assistant turn that requested it, so the model can see what it did and what came back.",
+        "Because the loop drops earlier tool calls and results, the model has no record of its previous searches, which explains the repeated Grep calls.",
+        "Instead of resending earlier turns, the loop should replace them after each iteration with a short summary, so requests stay small and focused.",
+        "The tool results are probably too verbose; trimming each Grep and Read result to its first 20 lines would stop the model from repeating its searches.",
+        "The repeated calls show the loop needs a fixed iteration cap, since the model cannot judge by itself when it has explored enough of the code."
       ],
       "corretas": [
         0,
-        4
+        1
       ],
-      "explicacao": "The project CLAUDE.md is versioned and shared by the team. Personal preferences go in `CLAUDE.local.md` (gitignored) or in the user's CLAUDE.md.",
+      "explicacao": "The Messages API is stateless: the model knows only what is in the request. The loop must append the assistant's tool_use turn and the matching tool result to the conversation history and send that full history on each iteration, so the model can reason about what it already tried. Dropping earlier turns makes it repeat searches and forget files it has read.",
       "feedbacks": [
-        "Correct: the project file is the channel for shared conventions.",
-        "Tempting because it works on each person's machine, but it isn't versioned: it drifts between developers and doesn't reach whoever joins the team.",
-        "Auto memory is local to each developer's machine; it isn't the mechanism for versioned team conventions.",
-        "Mixes personal scope into the shared file: everyone ends up loading other people's preferences.",
-        "Correct: personal scope shouldn't pollute the team file."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D3",
-      "pergunta": "Lumen Pagamentos' integration tests are spread across dozens of `IntegrationTests/` folders inside various projects, and new projects appear every month. They follow their own conventions (fixtures, test containers, method names).\n\nHow do you ensure Claude Code applies these conventions whenever it touches integration tests, without duplicating instructions?",
-      "opcoes": [
-        "Write the conventions in the prompt of every request involving tests.",
-        "Create a `CLAUDE.md` inside each `IntegrationTests/` folder, with the same content.",
-        "Create a file in `.claude/rules/` with `paths:` frontmatter using a glob like `**/IntegrationTests/**`, which loads only when matching files are touched.",
-        "Put the conventions in an `/integration-tests` skill that the developer must remember to invoke before asking for tests."
+        "Correct. Appending each tool result after the turn that requested it is how the model incorporates new information into its next decision.",
+        "Correct. With earlier calls and results dropped, the model cannot know it already ran that Grep or read those files.",
+        "Replacing turns with summaries discards the exact results and file contents the generator needs, and the model loses the record of which calls it already made.",
+        "Trimming verbose results helps the context budget, but the model repeats searches because it never sees its earlier calls; shorter results would not bring them back.",
+        "An iteration cap would only cut the loop short; the repeats come from missing history, and caps are not a sound primary stopping mechanism."
       ],
-      "correta": 2,
-      "explicacao": "A convention that spans directories goes in a single file in `.claude/rules/` with a `paths:` glob: it covers future folders and loads only when relevant.",
-      "feedbacks": [
-        "Repetitive and prone to being forgotten; it's exactly what persistent configuration avoids.",
-        "Duplicates content across dozens of files that diverge over time, and new folders are born without the rule.",
-        "Correct: a path-scoped rule, with no duplication and valid for folders that don't exist yet.",
-        "Depends on the developer remembering to invoke it; a convention that must always apply can't be a manual opt-in."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D3",
-      "pergunta": "Lumen Pagamentos decided to replace log4net with Serilog. log4net is used in 63 projects, with different configurations and wrappers in each one.\n\nA developer will lead the migration with Claude Code. How should they start?",
-      "opcoes": [
-        "In `acceptEdits` mode, asking the agent to migrate project by project, applying the edits automatically and running each project's tests at the end, to gain speed.",
-        "In plan mode: the agent explores the usages, proposes the approach (wrappers, configuration, migration order), and only edits after the plan is approved.",
-        "With `bypassPermissions`, so the long migration runs without interruptions while the developer does something else.",
-        "Asking for direct execution on the first project and manually replicating the same diff in the other 62."
-      ],
-      "correta": 1,
-      "explicacao": "A multi-file change, with architectural decisions and several possible approaches, is the classic case for plan mode: explore, plan, approve, and only then edit.",
-      "feedbacks": [
-        "Skips the step of understanding the variety of usages; mass automatic edits without a plan tend to be inconsistent.",
-        "Correct: large scope and approach decisions call for an approved plan before the edits.",
-        "`bypassPermissions` isn't routine for a long, uncontained task; it removes precisely the checkpoints of a risky change.",
-        "The projects have different configurations and wrappers; replicating one diff ignores that variation."
-      ]
-    },
-    {
-      "cenario": 4,
-      "dominio": "D3",
-      "pergunta": "The Lumen Pagamentos platform team wants a \"legacy archaeologist\": a reusable subagent that investigates old code and explains business rules, without ever modifying files.\n\nWhat is the most appropriate way to create this subagent?",
-      "opcoes": [
-        "Define a custom subagent in `.claude/agents/` (markdown with frontmatter) with `tools` restricted to Read, Grep, and Glob and a system prompt focused on the investigation.",
-        "Create a skill with `disable-model-invocation: true` containing the investigation instructions.",
-        "Use the built-in Plan subagent and ask it each time to explain business rules instead of planning.",
-        "Write in the project's CLAUDE.md: \"when investigating legacy code, never edit files\", and use the general-purpose subagent."
-      ],
-      "correta": 0,
-      "explicacao": "Custom subagents live in `.claude/agents/`, and the tool restriction in the frontmatter is deterministic. Restricting via a prompt instruction is only best-effort.",
-      "feedbacks": [
-        "Correct: reusable, versionable, and with the tool restriction enforced by configuration.",
-        "A skill with `disable-model-invocation` only prevents automatic loading; it doesn't create an isolated agent with restricted tools.",
-        "Plan is read-only, but it has a different purpose; the team wants a reusable agent with its own prompt, which calls for a custom definition.",
-        "Tempting for its simplicity, but forbidding edits via the prompt is probabilistic; the general-purpose subagent still has write tools."
-      ]
-    },
-    {
       "cenario": 4,
       "dominio": "D1",
-      "pergunta": "Yesterday, a Lumen Pagamentos developer spent the afternoon investigating a rounding bug in a Claude Code session. Overnight, another team merged a refactor that renamed and moved most of the files she had investigated.\n\nToday she wants to continue the investigation. What is the best way to resume?",
-      "opcoes": [
-        "Open a new session with a structured summary of yesterday's findings and let the agent re-explore the current code.",
-        "Use `--resume` on yesterday's session and continue where she left off, since all the reasoning and evidence are in the history.",
-        "Use `--fork-session` from yesterday's session, because the fork reloads the current state of the files.",
-        "Use `--resume` and ask the agent to trust the previous tool results to save context."
-      ],
-      "correta": 0,
-      "explicacao": "`--resume` is good when the tool results are still valid. If files have changed a lot, the history is full of stale reads; it's better to start fresh with a structured summary.",
-      "feedbacks": [
-        "Correct: preserves the useful knowledge without dragging along reads of files that no longer exist.",
-        "Tempting, but the history has stale paths and content; the agent tends to reason about code that has changed.",
-        "A fork creates a new ID from the same history; it doesn't refresh anything. The old results are still there.",
-        "Worst of the options: it instructs the agent to use precisely the reads that have become stale."
-      ]
+      "ts": "1.1",
+      "bullet": "1.1-K2"
     },
     {
-      "cenario": 4,
-      "dominio": "D1",
-      "pergunta": "A Lumen Pagamentos developer explored the billing module in a Claude Code session and now has two possible refactoring approaches: extracting a domain service or introducing a handler pipeline.\n\nHe wants to try both approaches from the same exploration baseline, without one contaminating the other. What should he do?",
+      "pergunta": "Corvane Pharma's developer-productivity agent has a coordinator and three subagents: an explorer (Read, Grep, Glob), a generator (Read, Write, Edit) and a runner (Bash). Before writing boilerplate, the generator must check whether a class or file name already exists; this happens in 70% of tasks, and each check goes through the coordinator to the explorer, adding about 25 seconds. Deeper questions, such as tracing a dependency chain, are rare. The team wants fewer round trips without the generator running builds or broad investigations. What should they change?",
       "opcoes": [
-        "Use `/clear` and redo the entire exploration before each approach.",
-        "Stay in the same session, implementing the first approach and then asking it to \"forget\" and do the second.",
-        "Resume the session with `--fork-session` for each approach, creating two branches with new IDs from the same history.",
-        "Open two terminals with `--resume` pointing to the same session and pursue one approach in each, reusing the same exploration history in both."
+        "Give the generator the explorer's full tool set, so that it can answer any code question by itself and the coordinator no longer has to route exploration requests.",
+        "Merge the explorer and the generator into one subagent with Read, Write, Edit, Grep and Glob, so that exploration and generation share a single context.",
+        "Give the generator a scoped `name_exists` tool for the frequent collision check, and keep routing all deeper questions through the coordinator to the explorer.",
+        "Have the explorer list every class and file name at the start of each task and pass it to the generator, so that name checks never need a tool call."
       ],
       "correta": 2,
-      "explicacao": "`--fork-session` creates a new session ID from a common base: the branches share the exploration and don't contaminate each other.",
+      "explicacao": "Scoped tool access gives each agent only the tools its role needs, plus narrow cross-role tools for high-frequency needs. A `name_exists` check covers the 70% case directly, while the rarer, complex investigations still go through the coordinator to the explorer. This removes most round trips without turning the generator into a general-purpose agent.",
       "feedbacks": [
-        "Works, but wastes all the exploration already done; the fork reuses that base.",
-        "Asking it to forget doesn't remove the context: the first approach keeps influencing the second.",
-        "Correct: this is exactly the fork's use case.",
-        "Resuming the same ID in parallel mixes the two lines in the same session; that's what the fork avoids."
-      ]
+        "Full exploration tools invite the generator to run broad investigations, which the team wants to avoid, and more tools make tool selection less reliable.",
+        "Merging roles removes the specialization that keeps each agent's tool set small and focused, and exploration output would crowd the generator's context.",
+        "Correct. A narrow cross-role tool handles the frequent check, while complex cases keep flowing through the coordinator.",
+        "Pre-listing every name in a large monorepo floods the generator's context and goes stale as soon as new files are created; it is speculative pre-fetching."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-K3"
     },
     {
-      "cenario": 4,
-      "dominio": "D1",
-      "pergunta": "Lumen Pagamentos' internal agent has a coordinator that talks with the developer and delegates investigations to exploration subagents.\n\nAfter 20 minutes of conversation about a connection leak in the boleto service, the coordinator delegates: \"Investigate the problem we discussed and bring back the cause\". The subagent returns with a generic analysis of connection pools. What is the fix?",
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, answers questions such as 'how does a sample get released in the LIMS?'. Session logs show that it starts with a Glob for `lims/**/*.java` (2,300 files) and then calls Read on the files in path order. After about 140 files the context fills up, earlier details are compacted, and the final answer describes a generic approval flow that omits `ReleaseGate`, the class that enforces QA sign-off. What is the most likely root cause?",
       "opcoes": [
-        "Have the coordinator include in the subagent's prompt everything it needs: service, symptom, observed metrics, files already ruled out, and the expected response format.",
-        "Give the subagent access to all of the coordinator's tools, so it can discover the context on its own.",
-        "Replace the subagent with a larger model, which is better at deducing what was discussed.",
-        "Increase the subagent's maximum number of turns, so it investigates in more depth."
+        "The agent reads files wholesale instead of using Grep to find the release entry points and then reading only the files those entry points lead to.",
+        "Glob returns files in path order, so the important ones come late; sorting the Glob results by modification date would surface the relevant files much sooner.",
+        "The context window is too small for a module of 2,300 files; a model with a larger window would hold the whole module at once and so find `ReleaseGate`.",
+        "The agent should load files in batches with `cat` through Bash, which fits far more content into context than individual Read calls do."
       ],
       "correta": 0,
-      "explicacao": "The subagent has an isolated context: it doesn't inherit the coordinator's conversation. Everything that matters must be made explicit in the delegation prompt.",
+      "explicacao": "Effective codebase exploration is incremental: Grep for entry points such as `releaseSample` or 'QA sign-off', then Read those files and follow their imports and calls. Reading files upfront in path order fills the context with irrelevant code long before reaching the classes that matter. Grep finds content and Glob finds paths; neither should be a prelude to reading everything.",
       "feedbacks": [
-        "Correct: the failure is in the context handoff, and the fix is to make the context explicit.",
-        "More tools don't give access to the conversation history; the subagent still doesn't know what was discussed.",
-        "No model can deduce a conversation it never received; it's a context problem, not a capability one.",
-        "More turns make the subagent investigate more, but without knowing what; it remains in the dark."
-      ]
+        "Correct. Starting with Grep to find entry points and then following imports with Read builds understanding without flooding the context.",
+        "A different order is still a guess: the agent would keep reading unrelated files, and recently modified files are not necessarily the relevant ones.",
+        "Even a larger window would fill with mostly irrelevant code, and long inputs suffer degraded attention. The strategy, not the window, is the problem.",
+        "`cat` output consumes context just like Read; batching changes nothing about reading the wrong files upfront."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.5",
+      "bullet": "2.5-S4"
     },
     {
-      "cenario": 4,
-      "dominio": "D5",
-      "pergunta": "Lumen Pagamentos' `ci-logs` MCP server has the `get_build_logs` tool, which returns the complete raw build log (often 30,000 to 40,000 tokens).\n\nAfter two or three calls, the investigation session becomes slow and expensive, and Claude Code starts emitting large MCP output warnings. What is the best fix?",
+      "pergunta": "Corvane Pharma's developer-productivity agent uses a custom MCP server, `lims-db`, whose `run_readonly_query` tool lets engineers inspect legacy schemas. When a query fails, the server catches the exception and returns a normal tool result whose text is the database message, for example `permission denied for schema qa_private`. In one session, the agent reported that `qa_private.deviations` 'has a single text column' and then generated a repository class for that table. What is the flaw in the server's implementation?",
       "opcoes": [
-        "Instruct the agent to ignore the irrelevant log lines when reading the result.",
-        "Increase `MAX_MCP_OUTPUT_TOKENS` so the full log is never truncated.",
-        "Change the tool to return only what's relevant (the failed step, error lines, and a final excerpt), with parameters to paginate or filter when more is needed.",
-        "Run `/compact` after every call to `get_build_logs`."
+        "The server should let the exception escape so that the MCP connection fails and the agent stops before it generates code from bad data.",
+        "The server should return an empty result set when a query fails, so that the agent does not mistake the database message for column data.",
+        "The tool description should tell the agent to treat results that start with an error keyword as failures, so the model can filter those out itself.",
+        "Failures come back as ordinary results without the `isError` flag, so the agent has no reliable signal that the call failed and reads the message as data."
       ],
-      "correta": 2,
-      "explicacao": "Tool output consumes context. The fix is to cut at the source: return only the relevant fields and excerpts, with filters and pagination for when more is needed.",
+      "correta": 3,
+      "explicacao": "MCP tools report failures by setting `isError: true` on the result, ideally with structured details such as the error category and whether a retry makes sense. Without the flag, an error message looks exactly like a successful result, so the agent treated 'permission denied' as table content. Flagging the error lets the agent recognize the failure and choose to report it, try another schema or ask for access.",
       "feedbacks": [
-        "The model can only ignore what has already entered the context; the tokens have already been consumed and paid for.",
-        "Tempting because it eliminates the warning, but it lets even more tokens in; it worsens the degradation.",
-        "Correct: reduces the context cost at the source, without losing on-demand access to the detail.",
-        "A palliative and expensive remedy: it repeatedly compacts a problem that originates in the size of the tool's output."
-      ]
+        "Crashing the connection aborts the whole session over one failed query and gives the agent nothing to reason about; a flagged error lets it recover.",
+        "An empty result looks like a successful query that matched nothing, which hides the permission problem: that is silent suppression of the error.",
+        "Asking the model to parse error wording is fragile and probabilistic; the protocol already provides a dedicated flag for this signal.",
+        "Correct. Without `isError`, the agent cannot tell a failed call from a successful one and treats the error text as data."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-K1"
     },
     {
-      "cenario": 4,
-      "dominio": "D5",
-      "pergunta": "Lumen Pagamentos uses the internal agent to map dependencies across the entire monorepo, a multi-day task split between a coordinator and per-area subagents. Yesterday the process crashed mid-run.\n\nThe team wants a failure like this not to force a restart from scratch. Which two practices meet this goal? (Choose TWO.)",
+      "pergunta": "Corvane Pharma's developer-productivity agent, built on the Claude Agent SDK, is configured with three MCP servers: `lims-db`, `change-control` and `confluence`. An engineer asks why a validated LIMS table changed last spring. In a single response, the agent calls `search_requests` from the change-control server and `describe_table` from the lims-db server, then cites a Confluence design page. A teammate expected the agent to work with one server at a time and asks whether a routing layer is involved. Which statement about this behavior is correct?",
       "opcoes": [
-        "Shrink the task to fit in a single short session, eliminating the need to resume.",
-        "Rely on `--resume` of the coordinator's session, whose complete history contains all the results.",
-        "The coordinator maintains a progress manifest in a known location (completed areas, pending areas, result paths), updated at each step.",
-        "Each subagent writes its findings to a file in the agreed location, and on resume the coordinator reads those files instead of re-running the completed areas.",
-        "Use a model with a larger context window, so the coordinator keeps all the results in memory."
+        "The tools of every configured MCP server are discovered when the agent connects and offered together, so the model can use several servers' tools in one turn.",
+        "The SDK activates one MCP server per turn based on the user's wording, and both servers were used here only because the question named both systems.",
+        "There must be a coordinator routing each request to a per-server subagent, since an agent can only hold a connection to one MCP server at a time.",
+        "MCP servers are connected lazily on the first call to one of their tools, so the Confluence server started only after the agent chose to cite the page."
       ],
-      "corretas": [
-        2,
-        3
-      ],
-      "explicacao": "For long-running work, state should live in files in a known location, with a coordinator manifest that allows resuming after a crash, without depending on the scrollback.",
+      "correta": 0,
+      "explicacao": "When the agent starts, it connects to every configured MCP server and discovers their tools, which are then available simultaneously alongside the built-in tools. No routing layer is needed: in each turn the model picks among all available tools, guided by their descriptions. This is also why clear, distinct descriptions matter more as servers are added.",
       "feedbacks": [
-        "Doesn't meet the requirement: the mapping is intrinsically long; shrinking the scope only hides the problem.",
-        "Tempting, but the history may be incomplete at the point of the crash and it's bloated; whatever must not be lost goes into a file.",
-        "Correct: the manifest says exactly where to resume.",
-        "Correct: persisted findings survive the crash and avoid redoing work.",
-        "A larger window doesn't survive a process crash, and a huge context degrades (lost in the middle)."
-      ]
+        "Correct. All configured servers' tools are discovered at connection time and available to the agent at once.",
+        "There is no per-turn activation by wording; every configured server's tools are available in every turn.",
+        "A single agent can connect to many MCP servers at once; per-server subagents are a design choice, not a requirement.",
+        "Tools are discovered when the agent connects, not lazily; the Confluence tools were already available before the agent decided to use them."
+      ],
+      "cenario": 4,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K3"
+    },
+    {
+      "pergunta": "At Corvane Pharma, engineers building the Agent SDK productivity tools use Claude Code to map the legacy LIMS before automating parts of it. One engineer has a named session, `audit-trail-map`, in which the agent analyzed 48 files over two days. Since then, a merged pull request changed 3 of those files: `AuditWriter.java`, `AuditEvent.java` and one migration script. She proposes resuming with `--resume audit-trail-map` and first telling the agent which three files changed and how. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: most of the earlier analysis is still valid, and naming the changed files lets the agent re-analyze just those instead of trusting stale results.",
+        "Accept the resume but skip the note: the agent re-reads files whenever it needs them, so its earlier findings about those files will refresh themselves automatically.",
+        "Reject it: resuming on top of stale tool results is unreliable, so she should start a new session and inject a structured summary of the earlier findings.",
+        "Reject it: she should run `fork_session` from the old session, so that the changed files are analyzed in a branch that cannot affect the original."
+      ],
+      "correta": 0,
+      "explicacao": "Resuming is the right choice when prior context is mostly valid, as here with 45 of 48 files unchanged. The agent does not know the code changed, though, so telling it exactly which files changed lets it re-analyze them in a targeted way instead of reasoning from stale tool results or re-exploring everything. Starting fresh with an injected summary is the better choice when most earlier tool results are stale.",
+      "feedbacks": [
+        "Correct. Resume when context is mostly valid, and point the agent at the specific changed files for targeted re-analysis.",
+        "The agent has no reason to re-read files it believes it has already analyzed; without the note, it keeps reasoning from the old contents.",
+        "That is the right move when most prior results are stale, but only 3 of 48 files changed here, so discarding the session wastes valid analysis.",
+        "`fork_session` is for exploring divergent approaches from a shared baseline; it does not tell the agent which files changed."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.7",
+      "bullet": "1.7-K3"
     }
   ]
 }

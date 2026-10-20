@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 1 — Customer Support Resolution Agent",
-  "aprovacao": 72,
+  "titulo": "Cenário 1 — Customer Support Resolution Agent (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe system prompt says \"always verify the customer's identity with get_customer before any refund\". Even so, an audit found that about 3% of process_refund calls happened without prior verification. What is the BEST fix?",
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Last week, in 6% of tracking inquiries the agent told customers that no shipment exists for their order and closed the case. Re-running the same lookups an hour later found the shipment in almost every one of those cases, and the incidents cluster in windows when the carrier gateway's error dashboard shows spikes. What is the most likely root cause?",
       "opcoes": [
-        "Reinforce the instruction in the system prompt with capital letters, repeat it at the end of the prompt, and include the compliance rationale, since the model follows rules better when it understands them.",
-        "A PreToolUse hook that denies process_refund until the session has a recorded identity verification.",
-        "Add three few-shot examples showing the get_customer → process_refund sequence in refund conversations.",
-        "Create a second model that reviews each conversation after it closes and flags refunds made without verification."
-      ],
-      "correta": 1,
-      "explicacao": "A critical rule (financial, security, compliance) belongs in code: a PreToolUse hook that denies process_refund until identity is verified. Prompts and few-shot examples are only for what can be best-effort.",
-      "feedbacks": [
-        "Tempting because it usually lowers the error rate, but prompts are probabilistic: the failure still has a non-zero probability. Anti-pattern: a critical business rule enforced by prompt alone.",
-        "Correct. A rule with financial consequences requires deterministic enforcement. The hook always blocks, regardless of what the model decides, and the returned reason lets the agent self-correct (verify first, then refund).",
-        "Few-shot improves the average pattern, but it is still probabilistic guidance. For a financial and compliance rule, 'almost always' is not enough.",
-        "It detects the problem only after the money is gone, and it adds complexity. This is auditing, not prevention. The block has to happen before the tool executes."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer writes in all caps, furious, because he was charged a R$ 8 late fee. Company policy allows late fees of up to R$ 15 to be reversed automatically on the first occurrence, and this is his first time. The customer has not asked to talk to a human. What should the agent do?",
-      "opcoes": [
-        "Escalate immediately with escalate_to_human, since very angry customers tend to be better served by people and the risk of losing the customer is high.",
-        "Ask the model to estimate its own confidence from 0 to 1 and escalate if it falls below 0.8.",
-        "Offer a discount coupon instead of the reversal, to calm the customer down without touching the charge.",
-        "Acknowledge the frustration, apply the reversal provided for in the policy, and confirm the resolution."
-      ],
-      "correta": 3,
-      "explicacao": "Angry customer with a simple issue covered by policy: resolve it. Escalation is based on an explicit request for a human, a policy exception/gap, or lack of progress, not on sentiment.",
-      "feedbacks": [
-        "Tempting because it seems empathetic, but it is the anti-pattern of escalating based on sentiment. The case is simple and resolvable; the escalation trigger is an explicit request, a policy gap, or lack of progress.",
-        "Anti-pattern: the model's self-reported confidence is poorly calibrated and does not indicate whether the case is covered by policy.",
-        "It targets the wrong symptom (the customer's mood) and ignores the policy that actually solves the problem. It also invents an action the policy does not provide for.",
-        "Correct. Sentiment is not complexity: the case is fully covered by policy and the agent has the tool to resolve it. Escalating here only hurts the first-contact metric and the experience."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe customer identifies himself as \"Carlos Souza\", and get_customer returns three records with that name, in different cities. The customer wants to cancel an order. What is the agent's BEST next action?",
-      "opcoes": [
-        "Ask for an additional identifier (email or order number) and repeat the search.",
-        "Select the record with the most recent purchase, since it is the most likely to be linked to a cancellation.",
-        "Escalate to a human, because identity ambiguity is outside the agent's scope.",
-        "List the three records with address and phone number so the customer can choose which one is theirs."
+        "lookup_order reports gateway failures in the same shape as a successful search with no matches, so the agent cannot tell an outage from an order that does not exist.",
+        "The system prompt does not tell the agent to retry lookup_order after an empty result, so it gives up after the first response instead of searching again.",
+        "lookup_order's description does not document the order-number format, so during incidents the agent passes malformed identifiers the backend cannot match.",
+        "The agent's context grows too long during busy periods, so it loses the order number from earlier turns and searches with a truncated identifier."
       ],
       "correta": 0,
-      "explicacao": "Multiple customers match the search: ask for an identifier to disambiguate. Don't guess, don't expose other customers' data, and don't escalate what can be resolved with one question.",
+      "explicacao": "Lookups that come back empty during gateway error spikes and succeed when repeated show that access failures are being reported as valid empty results. When an outage looks like 'no matches', the agent has no reason to retry or escalate and confidently tells the customer the order does not exist. Tools must distinguish access failures (with retry-relevant metadata) from successful queries that found nothing, so the agent can decide correctly.",
       "feedbacks": [
-        "Correct. With multiple results, the agent should disambiguate using a piece of data the customer has, without guessing. It is cheap and avoids acting on the wrong account.",
-        "Tempting because of the 'most likely' heuristic, but it is a guess that could cancel someone else's order. Acting on the wrong account is a security and privacy risk.",
-        "Unnecessary escalation: the agent can resolve the ambiguity on its own with one question. Escalating here drags down first-contact resolution.",
-        "It resolves the ambiguity, but it exposes third parties' personal data. The customer is the one who confirms identity, by providing a piece of data only they have."
-      ]
+        "Correct. A failure disguised as an empty result removes the signal the agent needs to choose between retrying, escalating, and answering 'not found'.",
+        "Tempting, because a retry would often succeed here. But retrying every empty result also wastes calls on orders that genuinely do not exist; the defect is that the tool does not say which kind of empty this is.",
+        "Plausible for misroutes in general, but the same identifiers succeed an hour later, which rules out a format problem and points to the upstream failure.",
+        "Context loss can corrupt identifiers in long sessions, but it would not line up with carrier gateway error spikes or disappear when the same lookup is simply repeated."
+      ],
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.3",
+      "bullet": "5.3-S2"
     },
     {
-      "cenario": 1,
-      "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nWhen the order system times out, the lookup_order tool catches the exception and returns {\"orders\": []}. At those moments, the agent has been telling customers that it \"found no orders under your name\". Which change fixes the problem at the source?",
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) has a returns-only variant whose agentic loop an engineer wrote by hand:\n\nfor turn in range(12):\n    resp = client.messages.create(model=MODEL, tools=TOOLS, messages=messages)\n    messages.append({\"role\": \"assistant\", \"content\": resp.content})\n    text = \" \".join(b.text for b in resp.content if b.type == \"text\")\n    if \"submitted\" in text.lower() or \"anything else\" in text.lower():\n        break\n    messages.append({\"role\": \"user\", \"content\": run_tools(resp.content)})\n\nIn 4% of return conversations, no process_refund execution appears in the logs, although the last model response contained a process_refund tool_use block. These conversations ended after 3 or 4 iterations. What is the flaw?",
       "opcoes": [
-        "Instruct the agent, in the system prompt, to be suspicious of empty lists and always repeat the query once before answering.",
-        "Catch the exception and return the message \"Operation failed\" with status 500, so the agent at least knows something went wrong and informs the customer.",
-        "Return a structured error (isError, errorCategory \"transient\", isRetryable: true) instead of an empty list.",
-        "Increase the timeout of the call to the order system from 5 to 30 seconds."
+        "Tool results go back in a separate user-role message instead of inside the assistant's own turn, so the model cannot link each result to the call that produced it.",
+        "The 12-iteration cap is too low for multi-item returns, so complex conversations reach the limit before the refund step and then end without ever having run it.",
+        "The loop stops on phrases in the assistant's text, not on stop_reason, so a response saying \"submitted\" that also requests a tool exits before the tool runs.",
+        "The loop never checks for stop_reason \"max_tokens\", so a response cut off mid-generation is treated as complete and the refund step is skipped."
       ],
       "correta": 2,
-      "explicacao": "Anti-pattern: silent suppression (an empty list reported as success when the backend is down). The tool should return a structured error with a category and a retryable indication, separating 'empty' from 'failed'.",
+      "explicacao": "The termination test inspects the assistant's text for phrases instead of stop_reason. When a response contains both text ('submitted') and a tool_use block, stop_reason is 'tool_use', but the phrase match exits before the tool runs. The loop should continue while stop_reason is 'tool_use' and end on 'end_turn'; natural-language signals, assistant text, and iteration caps are not reliable primary stopping mechanisms.",
       "feedbacks": [
-        "It works around the symptom in the wrong place: the model still doesn't know whether the empty list is real or a failure, and repeating legitimate searches that have no results wastes calls.",
-        "Better than silencing it, but it is the generic-error anti-pattern: without a category, without knowing whether it is retryable, and without context on what was attempted, the model cannot plan the recovery.",
-        "Correct. Empty is information ('nothing found'); a timeout means the search didn't run. The structured error lets the model distinguish the cases, retry, or inform the customer honestly.",
-        "It reduces how often the problem happens but doesn't eliminate it: when the timeout does happen, the failure is still disguised as 'no orders'."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer requests a R$ 2,300 refund. process_refund responds with an error saying the amount exceeds the R$ 1,000 limit for automatic refunds, and the agent keeps calling the tool again, sometimes splitting the amount into smaller installments. How should the tool's error response be designed?",
-      "opcoes": [
-        "As a transient error with retry-after, so the agent tries again later.",
-        "As a validation error, flagging the amount field as invalid, so the agent corrects the input and resubmits the request with an amount within the allowed limit.",
-        "No changes to the tool; just limit the agent to three process_refund calls per conversation.",
-        "As a business error: errorCategory \"business\", isRetryable: false, and the policy rule explained."
+        "Returning tool results in a user-role message is the correct protocol, so this is not the flaw; results are linked to calls through their tool_use IDs.",
+        "A cap as the primary stop is an anti-pattern, but these conversations ended after 3–4 iterations, far below 12, so the cap is not what cut them short.",
+        "Correct. Phrase matching on text ignores stop_reason; a response can say 'submitted' and still be waiting for its tool call to run.",
+        "Handling max_tokens matters, but the failing responses contained a complete process_refund tool_use block, so truncation does not explain the skipped call."
       ],
-      "correta": 3,
-      "explicacao": "Business errors (policy limits) are non-retryable: explain the policy or escalate. The error category guides the agent's recovery strategy.",
-      "feedbacks": [
-        "Wrong category: the limit won't change over time. Misclassifying the error induces exactly the retry loop you want to avoid.",
-        "Tempting because the problem 'seems' to be the amount, but it encourages the agent to split the refund to get around the policy, which is precisely the undesired behavior.",
-        "An arbitrary limit as the primary mechanism: it cuts the loop, but it doesn't give the model the information to explain the policy or escalate correctly.",
-        "Correct. A policy error is not retryable; the category and isRetryable: false tell the model that insisting won't help, and the description lets it explain or escalate (a policy exception is an escalation trigger)."
-      ]
-    },
-    {
       "cenario": 1,
       "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe agent loop was written like this: if the model's response contains a text block, the conversation ends and the text is sent to the customer. In several cases, the customer receives \"I'll check the status of your order\" and nothing else. What is the cause, and what is the fix?",
-      "opcoes": [
-        "The response contained text and tool_use; the loop should follow stop_reason, ending only on \"end_turn\".",
-        "The model is ending early; the fix is to instruct it to never write text before calling a tool.",
-        "The loop should search the text for closing phrases such as \"done\" or \"resolved\" and only end when one of them appears, keeping the rest of the code the same.",
-        "max_tokens is too low and cuts off the response; increasing it solves the problem."
-      ],
-      "correta": 0,
-      "explicacao": "Drive the loop by stop_reason: tool_use → execute and return tool_result; end_turn → finish. Text in content does not signal the end.",
-      "feedbacks": [
-        "Correct. content can mix text and tool_use; having text doesn't mean it's finished. stop_reason is the loop's control signal.",
-        "It attacks the model's normal behavior instead of the loop bug. Text before tool_use is legitimate; what's wrong is the code that interprets text as the end.",
-        "Classic anti-pattern: ending the loop by parsing natural language. It is fragile and still ignores the structured signal that exists for this purpose.",
-        "A max_tokens cutoff would show up as stop_reason \"max_tokens\", not as short text followed by tool_use. Wrong diagnosis."
-      ]
+      "ts": "1.1",
+      "bullet": "1.1-S3"
     },
     {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. For \"marked delivered but not received\" claims the agent is inconsistent: on near-identical cases it sometimes issues a refund at once, sometimes calls lookup_order to check the proof-of-delivery photo, and sometimes escalates. The system prompt already has 10 few-shot examples, each a clear-cut request (a damaged parcel, a wrong address) followed only by the final tool call. Which statement about this behavior is correct?",
+      "opcoes": [
+        "The example set is too small; adding 20–30 more clear-cut examples (damaged parcels, wrong addresses, late deliveries) will cover enough variations for the model to match these claims.",
+        "Few-shot examples cannot steer tool selection; a choice like this needs a routing rule that maps each request category, such as delivered-not-received, to one fixed tool.",
+        "The inconsistency is ordinary run-to-run variation; running each claim twice and keeping the action both runs agree on would make the decision deterministic without prompt changes.",
+        "The examples show only easy cases and final actions; 2–4 examples of this ambiguous case that explain why one action beat the alternatives would give the model a basis."
+      ],
+      "correta": 3,
+      "explicacao": "The existing examples demonstrate only easy cases with no reasoning, so the model has no guidance for the case that is actually ambiguous. Two to four targeted few-shot examples for this scenario, showing why one action was chosen over the plausible alternatives, let the model generalize the judgment instead of matching surface patterns.",
+      "feedbacks": [
+        "More examples of easy cases add tokens without teaching the judgment the ambiguous case needs; volume is not the gap.",
+        "Few-shot examples are an effective way to show tool selection for ambiguous requests; a fixed routing rule would also ignore the evidence (proof photo, history) that should drive the choice.",
+        "Voting between runs can hide variance but gives the model no decision rule; two runs can agree on the wrong action.",
+        "Correct. Targeted examples that show the reasoning (check proof of delivery before refunding, escalate when evidence conflicts) let the model handle similar ambiguous claims."
+      ],
+      "cenario": 1,
+      "dominio": "D4",
+      "ts": "4.2",
+      "bullet": "4.2-S1"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Today a programmatic gate blocks process_refund until get_customer returns a verified customer ID. A product manager proposes removing the gate because, in a 2,000-conversation test with a strengthened system prompt (\"You MUST verify identity before any refund\"), the agent verified first in 99.6% of refund cases, and the gate is extra code to maintain. How should you evaluate this proposal?",
+      "opcoes": [
+        "Keep the gate: 99.6% still means about 8 unverified refunds per 2,000 conversations, and only enforcement in the call path removes that failure rate for a financial operation.",
+        "Accept the proposal if a larger test of 20,000 conversations confirms compliance above 99.5%, since that sample size would show the prompt is reliable enough to depend on in production.",
+        "Accept the proposal and add few-shot examples of verification before refunds to the prompt, which closes the small gap the instruction alone still leaves.",
+        "Replace the gate with a programmatic nightly audit that reverses refunds issued without verification, reaching the same outcome with less code in the request path."
+      ],
+      "correta": 0,
+      "explicacao": "When compliance must be deterministic, as with identity verification before refunds, prompt instructions alone keep a non-zero failure rate, even at 99.6%. A programmatic prerequisite blocks the downstream call until the verified ID exists, so the failure cannot occur. The cost of maintaining a small gate is far lower than the cost of unverified refunds.",
+      "feedbacks": [
+        "Correct. Financial operations that require verification need deterministic enforcement; a prompt has a non-zero failure rate however strongly it is worded.",
+        "A larger sample measures the failure rate more precisely but does not remove it; the requirement is that unverified refunds never execute, not that they are rare.",
+        "Few-shot examples improve compliance probabilistically, which still leaves a non-zero failure rate for money leaving the company.",
+        "A nightly audit acts after the money is gone and depends on reversals succeeding; a preventive gate stops the call before it happens."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.4",
+      "bullet": "1.4-K2"
+    },
+    {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) resolves only 64% of cases on first contact. Its system prompt says only: \"Escalate when a case is complex or the customer seems unhappy.\" Transcripts show two near-identical claims for a parcel left at the wrong address: one was reshipped by the agent, the other escalated after the customer typed in capital letters. Meanwhile, a request to waive a customs-duty charge, which policy does not cover, was handled with no human involved. The team has two weeks and no labeled ticket history. What is the most effective fix?",
+      "opcoes": [
+        "Escalate every claim above $250 and let the agent resolve everything below that amount, so the decision is deterministic instead of depending on the model's judgment.",
+        "Add a sentiment check that escalates as soon as the customer's messages turn negative, since an unhappy customer is already one of the triggers the prompt states.",
+        "Escalate whenever the agent needs more than three tool calls on a case, using the number of calls as a measurable proxy for complexity.",
+        "Replace the vague rule with explicit escalation criteria (policy gaps, requests for a human, no progress) and few-shot examples of escalate versus resolve."
+      ],
+      "correta": 3,
+      "explicacao": "'Complex or unhappy' gives the agent no usable boundary, so similar cases diverge and a policy gap goes unescalated. Explicit escalation criteria (policy exceptions or gaps, explicit human requests, inability to progress) with few-shot examples of escalate versus resolve fix the decision boundary directly. It fits the two-week constraint and needs no labeled data or new infrastructure.",
+      "feedbacks": [
+        "A fixed amount is deterministic, but amount does not measure what needs a human: the customs waiver may be small and still outside policy, while a large misdelivery is routine.",
+        "Sentiment is an unreliable proxy for complexity; it is what escalated the routine reshipment typed in capital letters.",
+        "Tool-call count reflects investigation work, not whether policy allows the agent to act; a policy-gap request can need one call and a routine case several.",
+        "Correct. Unclear decision boundaries are the root cause; explicit criteria with contrasting examples are the proportionate first fix."
+      ],
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nIn long sessions (40+ turns), the history is summarized automatically to fit in the window. An audit noticed that, after summarization, the agent sometimes cites the wrong order amount (R$ 129 instead of R$ 192) or mixes up the order number. What is the BEST fix?",
+      "ts": "5.2",
+      "bullet": "5.2-S1"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Freight customers often raise several shipments in one conversation. Each lookup_order result has about 60 fields, including every hub scan and GPS ping, while support decisions use about six of them. By the tenth turn of a three-shipment dispute the context exceeds 45k tokens, and the agent starts to overlook the delivery window the customer stated at the start. What is the most effective first step?",
       "opcoes": [
-        "Switch to a model with a larger context window, eliminating the need to summarize and keeping the entire original conversation history available on every turn.",
-        "A persistent block of case facts (IDs, amounts, dates, status) that is never summarized and is re-injected on every turn.",
-        "Ask the summarizer to \"be more careful with numbers\".",
-        "Automatically end the conversation after 30 turns and ask the customer to open a new ticket."
+        "Move the agent to a model with a larger context window, so that multi-shipment conversations stay well below the limit even as their lookup results keep accumulating.",
+        "Trim each lookup_order result to the fields support decisions use (status, promised and delivered dates, charges, return eligibility) before it enters context.",
+        "Summarize the conversation every five turns, so that earlier lookup_order results are compressed into short notes together with the dialogue.",
+        "Add a system-prompt instruction telling the agent to ignore scan and GPS fields when it reasons about a claim, so it focuses on relevant ones."
       ],
       "correta": 1,
-      "explicacao": "Summaries lose exact values, IDs, dates, and percentages. The fix is a persistent CASE FACTS block that is never summarized.",
+      "explicacao": "Tool results accumulate in context and consume tokens out of proportion to their relevance: here about 90% of each lookup is noise for the decision. Trimming verbose tool output to the relevant fields before it accumulates keeps the context small and the customer's early statements in focus.",
       "feedbacks": [
-        "It postpones the problem and increases the cost of every turn; long conversations still degrade (lost in the middle). It doesn't guarantee the accuracy of the numbers.",
-        "Correct. Summaries lose precisely the exact values, IDs, and dates. A case facts block that is never summarized preserves what cannot be paraphrased.",
-        "A vague, probabilistic criterion. The critical facts still go through paraphrasing, which is the source of the error.",
-        "It harms the customer and the first-contact resolution goal, and conversation length is not a valid criterion for closing or escalating."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nHuman support agents complain that, when they receive an escalated case, they have to read the entire conversation to understand what happened, and many don't even have access to the full transcript in their tool. What should the agent send along with escalate_to_human?",
-      "opcoes": [
-        "The full conversation transcript, so the human agent has all the context available.",
-        "A short sentence with the reason for the escalation, so as not to overload the human agent.",
-        "A structured summary: customer, issue, order and amount, root cause, actions taken, and recommended action.",
-        "The customer's sentiment score and the model's confidence, so the human agent can prioritize the queue."
+        "A larger window postpones the limit but keeps the irrelevant tokens in context, and attention to the customer's early statements still degrades.",
+        "Correct. Trimming at the source keeps only the fields the decisions need, so lookups stop crowding out the conversation.",
+        "Progressive summarization risks condensing exactly the dates and amounts the agent needs into vague notes, and verbose results still pile up between summaries.",
+        "The instruction does not remove the tokens; the irrelevant fields still fill the context and dilute attention."
       ],
-      "correta": 2,
-      "explicacao": "A human handoff requires a structured summary: customer, issue, order, root cause, actions taken, reason for the blocker, recommended action, and amount.",
-      "feedbacks": [
-        "Tempting because it is 'complete', but it is exactly what causes rework, and the human agent may not even have a place to read it. It doesn't highlight the cause, the actions taken, or the next action.",
-        "Too short: it lacks identity, amounts, actions already taken, and a recommendation; the human agent would have to reconstruct the case.",
-        "Correct. The human usually doesn't see the transcript; the handoff needs to be self-contained and structured so they can act without rework.",
-        "Metrics of little use for resolving the case (and self-reported confidence is poorly calibrated). It doesn't say what happened or what to do."
-      ]
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-K3"
     },
     {
-      "cenario": 1,
-      "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe MCP server exposes lookup_order (\"retrieves order information\") and get_shipment (\"retrieves order and delivery information\"). For tracking questions, the agent picks the wrong tool in about 30% of cases. What is the first fix to try?",
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) handles billing disputes that can run for days, and older turns are summarized because long disputes exceeded the context budget. After a summarization, the agent quoted a disputed surcharge as \"about $40\" instead of $43.80 and mixed up which of two invoices was contested. Design 1: instruct the summarizer to keep all numbers, dates, and invoice IDs verbatim. Design 2: extract invoice numbers, amounts, dates, and statuses into a case-facts block, updated after each tool call and included in every prompt outside the summarized history. Which assessment is correct?",
       "opcoes": [
-        "Rewrite the descriptions to separate their purposes and say when to use each one (or merge the two tools).",
-        "Put an intent classifier in front of the agent, trained on labeled conversations, that decides which of the two tools should be used for each question.",
-        "Add to the system prompt a list of keywords that point to each tool.",
-        "Force tool_choice to get_shipment whenever the customer's message mentions \"delivery\"."
+        "Design 2, because facts kept outside the summarized history never pass through compression, so no later summary can round, merge, or drop them.",
+        "Design 1, because it protects the same facts with no extra state to maintain, and the summarizer already sees each number it has to keep.",
+        "Neither is needed: drop summarization and send the complete conversation history in every request, so that no transactional fact is ever compressed.",
+        "Design 2 works only if the case-facts block sits in the middle of the prompt, between the summary and the latest turns, where the model weighs it most."
       ],
       "correta": 0,
-      "explicacao": "Vague, overlapping descriptions cause wrong selection. The first fix is to improve/differentiate the descriptions (or merge the tools); external classifiers are unnecessary complexity.",
+      "explicacao": "Progressive summarization tends to condense amounts, dates, and identifiers into vague text. Keeping transactional facts in a persistent case-facts block, included in each prompt outside the summarized history, protects them from every compression round, whereas an instruction to the summarizer is still probabilistic.",
       "feedbacks": [
-        "Correct. The description is the tool-selection criterion. Overlapping tools with nearly identical descriptions cause misrouting; the simplest fix is to differentiate them (or unify them).",
-        "It works, but it is more complex than necessary. The exam's tiebreaker rule: a better description before a routing classifier.",
-        "A fragile patch in the wrong place; selection information should be in the tool definition itself, which the model consults at decision time.",
-        "It shifts the decision to an external keyword rule (a decision tree outside the model) and fails when 'delivery' appears in another context."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nAs the project expanded, the single agent grew to 18 tools (CRM, billing, logistics, knowledge base, coupons, loyalty...). Tool selection got visibly worse, even after the team reviewed all the descriptions. Which architecture solves this best?",
-      "opcoes": [
-        "Sort the tools alphabetically and number them in the system prompt to make selection easier.",
-        "Increase max_tokens and enable a higher reasoning effort so the model thinks harder about the selection.",
-        "Combine the 18 tools into a single generic execute_action tool with an action parameter, reducing the number of tools the model needs to consider to just one.",
-        "Split into specialized subagents with 4–5 tools each, coordinated by an agent that delegates according to the case."
+        "Correct. Facts held outside the summarized history cannot be rounded or merged by summarization; the instruction-only design can still slip.",
+        "Instructions to the summarizer help but remain probabilistic; the rounding of $43.80 to 'about $40' is exactly the progressive-summarization risk.",
+        "Complete history matters for coherence, but summarization exists here because long disputes exceeded the context budget; removing it brings that problem back.",
+        "The middle of a long input is where information is most often missed (lost in the middle); key facts belong in a clearly marked block, not buried mid-prompt."
       ],
-      "correta": 3,
-      "explicacao": "Guideline: 4–5 tools per agent at decision time. With 18 tools, split into specialized subagents; better descriptions alone are not enough.",
-      "feedbacks": [
-        "It doesn't reduce the number of options at decision time; it's cosmetic.",
-        "It targets the wrong symptom: the problem is too many overlapping options, not a lack of output space.",
-        "It hides the complexity inside a parameter, loses the specific descriptions, and makes input validation worse. Selection is still hard, just less visible now.",
-        "Correct. With many visible tools, selection degrades, and improving descriptions alone is not enough. Specialized agents keep few tools at decision time."
-      ]
+      "cenario": 1,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-S1"
     },
     {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is listing the agent's rules to decide which ones go in code (hooks) and which can stay in the system prompt. Which TWO rules should be enforced deterministically? (Choose TWO.)",
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. When it reviews a customer's invoices, the agent also flags suspected billing errors for the billing team, which reports that 55% of flags are false alarms. After \"Only flag an invoice when you are highly confident it is wrong\" was added to the prompt, the false-alarm rate moved only to 51%. The billing team needs at least 80% of flags to be real errors. What should you change?",
       "opcoes": [
-        "Refunds above R$ 1,000 can only be executed after a supervisor's approval.",
-        "The agent should address the customer by first name and keep a friendly tone.",
-        "When it makes sense, the agent may suggest products related to the customer's order.",
-        "Full card numbers must never reach the model or appear in the history.",
-        "The agent should end the conversation by asking whether it can help with anything else."
+        "Raise the bar further: \"Flag only when you are at least 95% confident; when in doubt, do not flag,\" so borderline invoices stop reaching the team.",
+        "Have the agent attach a confidence score to each flag and forward only flags scored above 0.8, so the team receives only the most certain cases.",
+        "Define what to flag (a surcharge with no matching service event, a duplicated charge) and what to skip (differences the published tariff explains).",
+        "Add context: \"Be conservative; the billing team is small and false alarms cost them hours,\" so the model understands why precision matters."
+      ],
+      "correta": 2,
+      "explicacao": "General instructions such as 'only flag when highly confident' or 'be conservative' barely change precision, as the 55%→51% result shows. Specific categorical criteria that say which discrepancies to report and which to skip give the model a concrete test to apply to each invoice.",
+      "feedbacks": [
+        "A stronger confidence threshold is still a vague instruction; the previous attempt already showed this kind of wording barely moves precision.",
+        "Filtering by self-reported confidence replaces criteria with the model's own uncertainty; it never tells the model what counts as a billing error.",
+        "Correct. Categorical criteria for what to report versus skip improve precision where confidence or caution instructions do not.",
+        "Explaining the cost is useful context, but 'be conservative' is the kind of general instruction that fails to improve precision."
+      ],
+      "cenario": 1,
+      "dominio": "D4",
+      "ts": "4.1",
+      "bullet": "4.1-K2"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Compliance now requires that process_refund never runs unless get_customer has returned a verified customer ID in the session and lookup_order has confirmed that the order belongs to that customer. Last month, 9 refunds were issued against orders of a different customer with the same surname. Which TWO implementation choices meet this requirement? Choose TWO.",
+      "opcoes": [
+        "Add a hook that intercepts process_refund calls and blocks them unless session state holds a verified ID from get_customer.",
+        "Have process_refund check on the server that the order's owner matches the session's verified ID, and return an error otherwise.",
+        "Add few-shot examples that show get_customer, then lookup_order, then process_refund in typical refund conversations.",
+        "Add an explicit rule to the system prompt, written in capitals, stating that refunds require a verified identity and a confirmed owner.",
+        "Add a PostToolUse hook that logs the customer ID of every refund, so that mismatches show up in a daily compliance report."
       ],
       "corretas": [
         0,
-        3
+        1
       ],
-      "explicacao": "Rules with financial, security, or compliance consequences go in code (hooks/validation). Style and optional behaviors stay in the prompt.",
+      "explicacao": "The requirement is a hard prerequisite on a financial operation, so it needs enforcement in the call path. Intercepting process_refund until a verified ID exists, and checking order ownership on the server, both make the wrong refund impossible rather than unlikely. Prompt rules, examples, and after-the-fact logging leave a non-zero failure rate.",
       "feedbacks": [
-        "Correct. Financial consequence: a PreToolUse hook on process_refund denies the call without approval, no matter what the model decides.",
-        "A style preference: best-effort, it fits perfectly in the system prompt.",
-        "Optional, low-risk behavior; prompt guidance is sufficient.",
-        "Correct. A security/compliance requirement: a PostToolUse hook (or the tool itself) masks the data before it enters the context.",
-        "An experience rule with no financial or security consequence; it doesn't justify enforcement in code."
-      ]
+        "Correct. A programmatic prerequisite blocks the refund until verification has completed, which a prompt cannot guarantee.",
+        "Correct. A server-side ownership check is a deterministic gate: the refund cannot execute against an order that belongs to someone else.",
+        "Few-shot examples improve the usual ordering but do not block the cases where the model deviates, which is where the 9 bad refunds came from.",
+        "Capitals and stronger wording still rely on probabilistic compliance; the requirement is that the call never runs without verification.",
+        "This hook only records what happened; the refunds would still be issued and discovered later, so it detects rather than prevents."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.4",
+      "bullet": "1.4-S1"
     },
     {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) handles tracking questions, address changes, billing disputes, and returns, often several in one conversation. An architect proposes replacing the agent's model-driven tool selection with a fixed decision tree: always get_customer, then lookup_order, then process_refund if eligible, otherwise escalate_to_human. Which TWO statements about this proposal are correct? Choose TWO.",
+      "opcoes": [
+        "A fixed tree covers only the paths its authors anticipated, so a return that becomes a billing dispute falls outside it, while the model adapts.",
+        "With model-driven selection, Claude picks the next tool from what earlier results revealed, such as skipping lookup_order for an email change.",
+        "Model-driven selection requires tool_choice set to \"any\"; with \"auto\", the model cannot decide on its own which tool to call next.",
+        "Model-driven selection makes prerequisite gates unnecessary, because the model reasons about which tool has to come first before it calls anything.",
+        "The fixed tree behaves like the model-driven loop as long as each tool result is appended to the conversation history before the next step runs."
+      ],
+      "corretas": [
+        0,
+        1
+      ],
+      "explicacao": "In model-driven decision-making, Claude reasons over the context and prior tool results to decide which tool to call next, so it adapts when a request changes or needs fewer steps. A pre-configured tree runs the same sequence whatever the results show. Critical ordering such as verification before refunds is still enforced programmatically; that complements model-driven selection rather than replacing it.",
+      "feedbacks": [
+        "Correct. Pre-configured trees are rigid; multi-concern conversations that change direction are where model-driven decisions pay off.",
+        "Correct. In the agentic loop, the model decides the next tool (or none) from the context and earlier results.",
+        "With \"auto\" the model decides whether and which tool to call; \"any\" only forces some tool call and is not what enables model-driven selection.",
+        "Model-driven choices are probabilistic; critical ordering such as verification before refunds still needs a programmatic gate.",
+        "Appending results lets the model reason, but a fixed tree ignores that reasoning: the sequence is set in advance whatever the results show."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.1",
+      "bullet": "1.1-K3"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. The agent delegates shipment investigations to a subagent that queries three carrier tracking APIs. One carrier API returns HTTP 503 on about 7% of calls, and nearly all of those succeed on a second attempt. Today the subagent returns each 503 to the main agent at once; the main agent then re-delegates the whole investigation, adding about 40 seconds, and sometimes tells the customer that tracking is unavailable. Which statement about this behavior is correct?",
+      "opcoes": [
+        "The design is right as it stands: the main agent owns the conversation, so it should make the retry decision for every call the subagent makes.",
+        "The subagent should drop the failing carrier and return the other two carriers' results as a complete answer, since partial data beats an error.",
+        "The fix belongs in the main agent's prompt: telling it to wait and re-delegate only once would remove most of the added latency.",
+        "The subagent should retry the 503 locally and pass up only failures it cannot resolve, along with the results it did get and what it attempted."
+      ],
+      "correta": 3,
+      "explicacao": "Transient failures such as an intermittent 503 are best recovered where they occur. The subagent should retry locally and propagate to the main agent only errors it cannot resolve, together with partial results and what was attempted, so the main agent can decide without repeating the whole investigation.",
+      "feedbacks": [
+        "Centralizing every retry makes the main agent handle routine noise and repeat whole investigations; transient failures belong to local recovery.",
+        "Returning partial data as a complete answer silently suppresses the failure; the main agent would not know one carrier's data is missing.",
+        "Tuning the re-delegation treats the symptom; the failure is still propagated before any local recovery has been tried.",
+        "Correct. Local recovery for transient failures, escalating only unresolved errors with partial results and attempts, removes the extra round trips."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-S3"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Policy says refunds above $500 need a human. The rule lives only in the system prompt, and an audit found 11 refunds between $520 and $1,900 last month. An engineer proposes an Agent SDK hook that intercepts outgoing process_refund calls, blocks any above $500, and returns a message telling the agent to hand the case to escalate_to_human with the case details. How should you evaluate this proposal?",
+      "opcoes": [
+        "Reject it: restating the $500 limit in the system prompt with examples of escalated refunds gets the same guarantee without adding code to the agent.",
+        "Adopt it, but let the hook lower the refund to $500 and allow the call through, so the customer is paid at once and a human reviews the rest.",
+        "Adopt it: intercepting the call guarantees no refund above $500 executes, and the redirect to escalate_to_human keeps the case moving.",
+        "Adopt it as monitoring only: let the calls through, log each violation, and alert a supervisor who can reverse the refund within the hour."
+      ],
+      "correta": 2,
+      "explicacao": "A business rule that must always hold should be enforced by a hook that intercepts the outgoing tool call, not by prompt text that the audit already shows failing. Blocking the call and redirecting to escalate_to_human gives a deterministic guarantee and an alternative workflow, so the customer's case still moves forward.",
+      "feedbacks": [
+        "The audit already shows the prompt-only rule failing 11 times a month; more prompt text keeps compliance probabilistic.",
+        "Issuing a partial refund automatically is itself a decision the policy reserves for a human above $500.",
+        "Correct. A tool call interception hook enforces the rule deterministically and redirects to the alternative workflow, human escalation.",
+        "Logging and later reversal is detective, not preventive; the money still goes out and the customer experience suffers when it is clawed back."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.5",
+      "bullet": "1.5-S2"
+    },
+    {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) also uses a generic MCP tool, manage_shipment(action, params), where action is \"reroute\", \"hold\", \"update_contact\", or \"claim_damage\" and params is a free-form object. In 14% of calls the agent sends params that belong to a different action, such as an address object for a hold. The MCP server team can change tool definitions this sprint but cannot change the backend services behind them. What is the most effective fix?",
+      "opcoes": [
+        "Expand manage_shipment's description to list every action with its required params and two example calls, so the agent sees each combination.",
+        "When manage_shipment returns a validation error, have the agent call it again with the error message appended, so it corrects the params.",
+        "Add a classifier that selects the action value before each call, so the agent only has to fill in params for an action already chosen.",
+        "Split manage_shipment into reroute_shipment, hold_shipment, update_delivery_contact, and file_damage_claim, each with its own typed input schema."
+      ],
+      "correta": 3,
+      "explicacao": "A generic tool with a free-form params object has no contract tying each action to its inputs, so mismatched parameters remain easy to send. Splitting it into purpose-specific tools with defined input and output contracts makes each action's parameters explicit, and the new tools can wrap the same backend services, which meets the constraint.",
+      "feedbacks": [
+        "A richer description helps, but one tool with free-form params still has no contract per action, so the mismatch stays possible.",
+        "Retry with error feedback recovers some calls after the fact, but the generic interface keeps inviting wrong params on every call.",
+        "A separate classifier adds infrastructure to compensate for a tool that should not be generic in the first place.",
+        "Correct. Purpose-specific tools with typed schemas make parameters explicit, and they can call the same backend services."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-S3"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Every lookup_order result includes the recipient's full phone number and address. Regulation requires that these details never reach a caller who is not the verified account holder. The system prompt says \"Do not disclose recipient contact details to unverified callers,\" yet in a red-team test the agent revealed them in 3 of 200 attempts. What is the most effective first step?",
+      "opcoes": [
+        "Add few-shot examples of the agent declining to share recipient contact details with unverified callers, including attempts that use social pressure.",
+        "Repeat the instruction at the start and end of the system prompt and in lookup_order's description, so it stays salient in long conversations.",
+        "Add a PostToolUse hook that masks contact fields in lookup_order results unless the session holds a verified ID, so the model never sees them.",
+        "Add an independent reviewer model that checks each outgoing reply for contact details and rewrites the reply before it reaches the caller."
+      ],
+      "correta": 2,
+      "explicacao": "Prompt instructions give probabilistic compliance, and 3 of 200 is the residual failure they leave. A hook gives a deterministic guarantee: if a PostToolUse hook masks the fields for unverified sessions, the data never enters the model's context and cannot be disclosed.",
+      "feedbacks": [
+        "Examples raise compliance but keep it probabilistic; a residual failure like 3 of 200 is what prompts cannot eliminate.",
+        "Placement and repetition improve salience, not guarantees; the data is still in context and can still leak.",
+        "Correct. Keeping the data out of the context for unverified callers turns a probabilistic rule into a guaranteed one.",
+        "A second model is itself probabilistic and adds latency and cost; the deterministic fix is to keep the data out of the context."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.5",
+      "bullet": "1.5-K3"
+    },
+    {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) also has a track_parcel tool for carrier tracking numbers, yet it often passes those numbers to lookup_order, which accepts only Velora order numbers, and then tells customers the order was not found. Two descriptions for lookup_order are proposed. Draft 1: \"Looks up an order by its ID.\" Draft 2 adds the accepted format (VL- followed by 8 digits), example requests, the edge case that carrier tracking numbers belong to track_parcel, and that orders older than 18 months are archived. Which choice is best?",
+      "opcoes": [
+        "Draft 2, because the accepted format, example requests, and when track_parcel applies give the model the boundary between the two tools that it lacks.",
+        "Draft 1, because short descriptions cost fewer tokens on every request, and the model can learn the ID format from the not-found results.",
+        "Draft 2, but with the edge cases moved into the system prompt, since the model ranks system-prompt instructions above tool descriptions.",
+        "Neither; add input validation that rejects malformed IDs in lookup_order, since a validation error teaches the model the format on retry."
+      ],
+      "correta": 0,
+      "explicacao": "Tool descriptions are the primary mechanism the model uses to select tools. Including input formats, example queries, edge cases, and an explicit boundary with the similar tool (track_parcel) gives the model what it needs to route tracking numbers correctly.",
+      "feedbacks": [
+        "Correct. Input formats, examples, edge cases, and boundaries in the description are what prevent this misrouting.",
+        "Learning from not-found results is exactly what is failing: the agent reads them as genuine misses and tells customers so.",
+        "The boundary belongs in the description of the tool being chosen; moving it away weakens selection rather than strengthening it.",
+        "Validation helps after a wrong call, but a format error does not tell the model that track_parcel is the right tool."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-K2"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. Customers reach the agent through a web chat where they are already logged in, so their customer ID is known when the session opens. The team wants every session to start with a get_customer call so the agent has account context before it chooses other tools. With tool_choice set to \"auto\", 18% of first turns are a text greeting or a lookup_order call instead. What should you change?",
+      "opcoes": [
+        "Set tool_choice to {\"type\": \"tool\", \"name\": \"get_customer\"} on the first request only, then go back to \"auto\".",
+        "Set tool_choice to \"any\" for the whole conversation, so the model must call a tool on every turn instead of answering with plain text.",
+        "Keep tool_choice at \"auto\" and add an explicit system-prompt rule: \"Your first action in every session must be a get_customer call.\"",
+        "Force {\"type\": \"tool\", \"name\": \"get_customer\"} on every turn, so account context is refreshed before any other tool is used."
+      ],
+      "correta": 0,
+      "explicacao": "Forced tool selection guarantees that a specific tool is called first. Applying it only to the first request and returning to \"auto\" afterwards lets the agent process the following steps in later turns, choosing lookup_order, process_refund, or a text reply as needed.",
+      "feedbacks": [
+        "Correct. Force the first call, then let the model choose the next steps in follow-up turns.",
+        "\"any\" guarantees some tool call, not get_customer specifically, and requiring a tool on every turn prevents normal replies to the customer.",
+        "A prompt rule is probabilistic; the 18% miss rate is what instructions alone produce.",
+        "Forcing the same tool on every turn would loop on get_customer and block other tools and replies; forcing belongs on the first step only."
+      ],
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S4"
+    },
+    {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) is reviewed after a rise in abandoned chats. When customers write \"I want to talk to a person\" or \"agent please\", the agent first calls get_customer and lookup_order and proposes a solution; 38% of those customers abandon the chat. The system prompt says: \"Always try to resolve the issue before escalating. Escalate only if you cannot resolve it.\" What is the most likely root cause?",
+      "opcoes": [
+        "escalate_to_human has a vague one-line description, so the agent does not recognize that the tool applies when a customer explicitly asks for a person.",
+        "The prompt applies \"resolve first\" to explicit requests for a human too; those should be honored at once, unlike frustrated customers who did not ask.",
+        "The agent has no sentiment detection, so it does not notice how frustrated these customers are and keeps investigating instead of escalating.",
+        "The agent's confidence in resolving these cases is too high, so it overestimates its ability to help and delays the escalation it should make."
+      ],
+      "correta": 1,
+      "explicacao": "An explicit request for a human is an immediate escalation trigger and should be honored without first investigating. Offering to resolve fits a different case: a frustrated customer with a straightforward issue who has not asked for a person. The prompt collapses both into 'resolve first'.",
+      "feedbacks": [
+        "A vague description can cause misrouting, but the prompt explicitly tells the agent to try resolving first, which explains the behavior directly.",
+        "Correct. Explicit requests for a human are honored immediately; offering to resolve is for straightforward issues where no person was requested.",
+        "Sentiment is an unreliable escalation proxy, and these customers stated their preference outright, so no inference about frustration is needed.",
+        "Self-reported confidence is not a reliable proxy, and the agent is following its instructions rather than overestimating itself."
+      ],
       "cenario": 1,
       "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is defining explicit criteria for the agent to call escalate_to_human immediately. Which TWO signals justify immediate escalation? (Choose TWO.)",
+      "ts": "5.2",
+      "bullet": "5.2-K2"
+    },
+    {
+      "pergunta": "Velora Logistics runs a customer support agent built with the Claude Agent SDK; it resolves returns, billing disputes, and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), targeting 80%+ first-contact resolution. The agent delegates policy questions to a subagent that searches the claims-policy library and returns its findings as one prose paragraph, such as \"Late deliveries qualify for a refund within 30 days, and storage fees are waived on first occurrence...\". The main agent quotes these findings to customers and in escalation handoffs. Reviewers cannot tell which document or section each statement came from, and twice the agent quoted a rule from the superseded 2023 policy as current. What is the flaw in this design?",
       "opcoes": [
-        "Sentiment analysis classifies the customer's message as very negative.",
-        "The customer explicitly asks to talk to a person.",
-        "The model reports a confidence of 0.4 in its own answer.",
-        "The conversation has exceeded 25 messages.",
-        "The customer requests a refund past the deadline for a reason the policy does not cover, requiring an exception."
+        "The subagent searches too many documents; limiting it to the single most relevant policy document per question would prevent conflicting statements.",
+        "The subagent merges findings into prose, dropping each statement's document, section, and effective date instead of returning them as fields.",
+        "The main agent does not reread the policy documents before quoting them, so it relies on the subagent's interpretation instead of the original text.",
+        "The subagent's prompt does not ask for customer-ready wording, so the main agent rewrites the text before sending it and loses details on the way."
+      ],
+      "correta": 1,
+      "explicacao": "When findings pass between agents as merged prose, the metadata that supports attribution (document name, section, effective date) is lost. Structured outputs that keep each excerpt separate from its source metadata let the main agent cite the right document and notice superseded rules.",
+      "feedbacks": [
+        "Narrowing the search may hide relevant rules and still returns unattributed prose; the defect is how findings are passed, not how many documents are searched.",
+        "Correct. Separating content from metadata in a structured format preserves attribution across the handoff.",
+        "Rereading everything in the main agent defeats the purpose of delegation and fills its context; attribution should travel with the findings.",
+        "Tone is a different concern; the defect is that each statement's source is discarded before it reaches the main agent."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S2"
+    },
+    {
+      "pergunta": "Velora Logistics' support agent (Claude Agent SDK; MCP tools get_customer, lookup_order, process_refund, escalate_to_human; target of 80%+ first-contact resolution) receives {\"isError\": true, \"content\": \"Refund failed\"} from process_refund for every failure. Logs show the agent retrying 3 to 5 times on refunds rejected because the 60-day claim window has expired, while giving up after one attempt when the payment gateway timed out. Which TWO changes to the error responses address this? Choose TWO.",
+      "opcoes": [
+        "Return policy rejections as successful results with a \"denied\" status, so the agent stops treating them as failures.",
+        "Add an errorCategory to each error, such as \"transient\" for gateway timeouts and \"business\" for an expired claim window.",
+        "Add an isRetryable boolean, false for policy rejections, plus a customer-friendly explanation the agent can relay.",
+        "Return the same error for every failure and let the agent's loop apply exponential backoff to any failed call, up to five times.",
+        "Include the backend's raw exception message and stack trace in the error content, so the agent sees the underlying cause."
       ],
       "corretas": [
         1,
-        4
+        2
       ],
-      "explicacao": "Escalate immediately when the customer asks for a human, when there is a policy gap/exception, or when there is no progress after reasonable attempts. Don't escalate based on sentiment, self-reported confidence, or conversation length.",
+      "explicacao": "A uniform error forces the agent to guess, so it retries rejections that can never succeed and abandons failures that would. Structured metadata (errorCategory plus an isRetryable flag, with a customer-friendly explanation for business rules) tells the agent which errors are worth retrying and what to say to the customer.",
       "feedbacks": [
-        "Anti-pattern: escalating based on sentiment. An irritated customer with a simple case should be handled by the agent.",
-        "Correct. An explicit request for a human is an immediate trigger; insisting on resolving it goes against the customer's wishes.",
-        "Anti-pattern: self-reported confidence is poorly calibrated and is not a reliable trigger.",
-        "Conversation length does not by itself indicate complexity or lack of progress; it is not an escalation criterion.",
-        "Correct. A policy gap or exception is outside the agent's authority: escalate with a structured handoff."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe model started emitting two lookup_order tool_use blocks in the same response (two of the customer's orders). The loop code sends each tool_result in a separate user message, and the API started rejecting the conversation. How should the loop return the results?",
-      "opcoes": [
-        "In a single user message with just one tool_result that concatenates both responses.",
-        "In a single user message with both tool_result blocks, each with the exact tool_use_id of its call.",
-        "Turn off parallel use with disable_parallel_tool_use: true, so the model calls one tool per response and the current loop keeps working without changes.",
-        "Execute only the first call and ask the model to repeat the second one on the next turn."
+        "Disguising a rejection as a success removes the failure signal; the agent may report the refund as done or try other paths blindly.",
+        "Correct. A category lets the agent choose the recovery: retry transient failures, explain business rejections.",
+        "Correct. An explicit retryable flag prevents wasted retries, and the explanation lets the agent tell the customer why the refund cannot proceed.",
+        "Blind backoff wastes attempts on errors that can never succeed, such as an expired claim window, and still treats both cases alike.",
+        "Raw exceptions are unstructured and may expose internals; the agent still has to guess whether a retry can help."
       ],
-      "correta": 1,
-      "explicacao": "Parallel tool use: execute the calls and return all the tool_result blocks in a single user message, each with the exact tool_use_id.",
-      "feedbacks": [
-        "It breaks the one-to-one correspondence with the tool_use_ids; the model doesn't know which result belongs to which call, and the API requires one result per call.",
-        "Correct. With parallel calls, all the results go together in a single user message, each referencing its own tool_use_id.",
-        "It works around the bug by restricting the model and makes the support session slower; the real defect is the loop's return format.",
-        "It leaves a tool_use without a result (the API requires a response for each one) and wastes a turn."
-      ]
-    },
-    {
       "cenario": 1,
       "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nIn one response, the model called get_customer and lookup_order in parallel. get_customer succeeded, but lookup_order threw an exception because the service was unavailable. What should the loop return to the model?",
-      "opcoes": [
-        "Only the get_customer result, omitting lookup_order so as not to confuse the model.",
-        "Abort the entire turn and tell the customer that the system is down.",
-        "The get_customer result and, for lookup_order, a tool_result with is_error: true and the error description.",
-        "Retry lookup_order in code until the service responds and only then return both results together, so the model doesn't have to deal with the failure."
-      ],
-      "correta": 2,
-      "explicacao": "When one parallel call fails, return all the tool_result blocks together, with is_error: true on the one that failed. No omitting results and no aborting everything.",
-      "feedbacks": [
-        "It leaves a tool_use without a response (a protocol error) and hides the failure: silent suppression.",
-        "Anti-pattern: aborting the workflow over a partial failure. There is useful data, and the model can retry or proceed with the partial results.",
-        "Correct. Every call gets a result; the failed one goes with is_error: true so the model can reason about recovery, making use of the result that succeeded.",
-        "Unbounded, invisible retries can stall the support session; bounded backoff is acceptable, but the model needs to know when the failure persists."
-      ]
+      "ts": "2.2",
+      "bullet": "2.2-K4"
     },
     {
-      "cenario": 1,
-      "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nget_customer returns the full customer record: 40 fields, including browsing history and all marketing preferences. In conversations with several lookups, the context bloats and the responses get worse. What is the BEST fix?",
+      "pergunta": "Velora Logistics' engineers build the MCP server behind their Claude Agent SDK support agent (tools get_customer, lookup_order, process_refund, escalate_to_human) and test it from Claude Code through a project-level .mcp.json committed to the repository, so every engineer gets the same server configuration. To speed up onboarding, a developer proposes putting the staging API key directly in the server's env block in .mcp.json, since the repository is private. How should you evaluate this proposal?",
       "opcoes": [
-        "Trim the tool's output to the fields relevant to customer support (in the tool or in a PostToolUse hook).",
-        "Migrate to a model with a larger context window.",
-        "Ask in the system prompt for the model to ignore irrelevant fields.",
-        "Summarize the conversation every five turns to free up space."
-      ],
-      "correta": 0,
-      "explicacao": "Trim tool output: return only the relevant fields, not all 40. This preserves context and quality.",
-      "feedbacks": [
-        "Correct. Trim tool output: only the relevant fields enter the context. Less noise, fewer tokens, better attention.",
-        "A larger window isn't free (every token is billed on every turn) and doesn't solve the noise that degrades attention.",
-        "The tokens remain in the context and still take up attention; the instruction doesn't reduce the volume.",
-        "It treats the effect and introduces loss of exact facts in the summary. The cause is the tool's excessive output."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D4",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe system prompt says \"be flexible with refunds when the case warrants it\". Similar cases receive different decisions, and the audit cannot explain the pattern. Which prompt change solves this best?",
-      "opcoes": [
-        "Ask the model to assess the customer's likely satisfaction and grant the refund when it is low.",
-        "Lower the temperature to zero, so that similar cases receive exactly the same decision on every run of the agent.",
-        "Append \"be consistent\" to the end of the current instruction.",
-        "Replace the instruction with explicit criteria: what is eligible, what is not, and boundary examples."
-      ],
-      "correta": 3,
-      "explicacao": "Explicit criteria (what counts, what doesn't, boundary examples) beat 'use your good judgment'.",
-      "feedbacks": [
-        "It swaps one vague criterion for another, and one based on sentiment at that. It remains inconsistent.",
-        "It targets sampling variation, not the lack of criteria; on recent models, sampling parameters may not even be accepted. The criterion remains undefined.",
-        "Yet another vague instruction: it doesn't say what is eligible. The model keeps judging case by case without a yardstick.",
-        "Correct. Vague instructions ('be flexible', 'use good judgment') produce inconsistency. Explicit criteria with boundary examples make the decision reproducible and auditable."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nTo avoid infinite loops, the agent loop stops after 5 tool calls. Complex cases (a return with an exchange and a partial refund) are being cut off midway, leaving the customer without an answer. Which design is correct?",
-      "opcoes": [
-        "Raise the limit to 15 calls, which covers the complex cases observed.",
-        "Ask the model to write \"SUPPORT COMPLETED\" when it finishes and end the loop when the phrase is detected.",
-        "Follow stop_reason (continue on \"tool_use\", stop on \"end_turn\"), with a high limit only as a backstop.",
-        "Code a decision tree that defines the tool sequence for each type of support case, ensuring every case ends in a predictable number of steps."
-      ],
-      "correta": 2,
-      "explicacao": "stop_reason drives the loop. An iteration limit is acceptable only as a backstop, never as the primary stopping mechanism.",
-      "feedbacks": [
-        "It still uses an arbitrary limit as the primary mechanism; some case will still get cut off, and there is no handling for the cutoff.",
-        "Anti-pattern: ending the loop by parsing natural language instead of stop_reason.",
-        "Correct. The model decides when to stop, signaling it through stop_reason. An iteration limit is a safety net, not the primary mechanism.",
-        "It takes away from the model the decision of which tool to use and when to stop, losing the flexibility for ambiguous cases, which are the agent's strength."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D2",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nThe team is going to standardize the MCP tools' error responses so that the agent can choose the right recovery on its own. Which TWO fields are most important for this? (Choose TWO.)",
-      "opcoes": [
-        "The full stack trace of the exception on the server.",
-        "Only the numeric HTTP status code returned by the backend.",
-        "errorCategory (for example transient, validation, business, permission).",
-        "isRetryable, indicating whether trying again might work.",
-        "A fixed message \"Operation failed, please try again\"."
-      ],
-      "corretas": [
-        2,
-        3
-      ],
-      "explicacao": "A useful structured error carries a category and isRetryable (plus a description, the attempted action, and partial results). A generic error, a raw status code, or a stack trace does not guide recovery.",
-      "feedbacks": [
-        "Costly noise in the context and possible leakage of internal details; it doesn't help the model decide on recovery.",
-        "A status code without context on what was attempted: the same 500 can be transient or permanent. Insufficient.",
-        "Correct. The category defines the strategy: retry, fix the input, explain the policy, or escalate.",
-        "Correct. It prevents pointless retry loops on business/permission errors and authorizes retries on transient ones.",
-        "The generic-error anti-pattern, and it also induces retries on errors that are not retryable."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D1",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nA customer comes back the next day to continue a support case about an order that, yesterday, was \"being picked\". Since then, the order has shipped and a partial refund was processed by a human agent. How should the system resume the case?",
-      "opcoes": [
-        "Resume the previous session exactly as it was, since it contains the entire history of the case.",
-        "A new session with a structured summary of the case, re-querying the current order status before answering.",
-        "Resume the previous session and let the customer say what has changed since yesterday.",
-        "Open a new session without any prior context and ask the customer to explain the problem again."
+        "Accept it: the repository is private and access-controlled, so a staging key in the committed .mcp.json adds no meaningful exposure for the team.",
+        "Reject it: keep the server in the committed .mcp.json but reference the key as ${VELORA_STAGING_KEY}, set in each engineer's environment.",
+        "Reject it: move the whole server definition into each engineer's ~/.claude.json, so the key stays on individual machines and out of the repository.",
+        "Accept it with a .gitignore entry for .mcp.json, so the file that contains the key never reaches the remote repository."
       ],
       "correta": 1,
-      "explicacao": "Resuming only makes sense when the tool results are still valid. If the state has changed, start fresh with a structured summary and re-query the data (or, when resuming, explicitly state what changed).",
+      "explicacao": "Environment variable expansion in .mcp.json keeps the shared server configuration in version control while each engineer supplies the credential locally. That gives the team one versioned configuration without committing a secret.",
       "feedbacks": [
-        "Tempting because of continuity, but the history contains tool results that are no longer valid ('being picked'); resuming without stating what changed leads to wrong answers.",
-        "Correct. The tool results from the previous session are stale; starting fresh with a structured summary and fresh data keeps the agent from acting on old state.",
-        "It shifts the responsibility for correcting the state onto the customer, who may not even know about the refund made by the human agent.",
-        "It avoids stale state, but it loses all the useful context and worsens the experience; the right approach is to carry over a structured summary."
-      ]
-    },
-    {
-      "cenario": 1,
-      "dominio": "D5",
-      "pergunta": "Scenario: VarejoMax serves its customers with an agent built on the Claude Agent SDK that uses MCP tools (get_customer, lookup_order, process_refund, escalate_to_human) to resolve returns, billing issues, and account problems. The goal is 80% first-contact resolution, escalating only when necessary.\n\nWhile monitoring production, the team found support sessions in which the customer received an empty message. In the logs, the API call returned HTTP 200, but the code only read the text from content and sent it. Which check was missing?",
-      "opcoes": [
-        "Check stop_reason before reading content: \"refusal\" arrives with HTTP 200 and needs its own handling.",
-        "Check the response's HTTP status code before reading the content, treating any status other than 200 as a failure, since safety refusals arrive as 4xx errors.",
-        "Increase max_tokens, because the response was probably truncated before the text.",
-        "Retry automatically whenever content comes back empty, until text is obtained."
+        "Private repositories are still cloned, forked, and backed up widely; committing secrets is exactly what variable expansion avoids.",
+        "Correct. ${VAR} expansion in the project .mcp.json shares the configuration without sharing the secret.",
+        "User-level ~/.claude.json is for personal or experimental servers; moving shared team tooling there loses the single versioned configuration.",
+        "Ignoring .mcp.json means it is no longer shared, which defeats the reason for a project-level file."
       ],
-      "correta": 0,
-      "explicacao": "A refusal arrives as HTTP 200 with stop_reason \"refusal\". Always check stop_reason before consuming content.",
-      "feedbacks": [
-        "Correct. A refusal comes with HTTP 200 and stop_reason \"refusal\"; code that ignores stop_reason treats it as an empty success.",
-        "False premise: the refusal comes with HTTP 200. Checking only the status code lets the problem slip through.",
-        "Truncation would show up as stop_reason \"max_tokens\" with partial text; the diagnosis is only possible by looking at stop_reason, which the code ignores.",
-        "It treats the symptom without understanding the cause; with a refusal, repeating the same request tends to repeat the refusal, and it delays the support session."
-      ]
+      "cenario": 1,
+      "dominio": "D2",
+      "ts": "2.4",
+      "bullet": "2.4-K2"
     }
   ]
 }

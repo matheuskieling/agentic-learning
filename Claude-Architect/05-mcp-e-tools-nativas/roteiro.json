@@ -1,0 +1,166 @@
+{
+  "modulo": "05",
+  "titulo": "MCP no Claude Code e no agente + tools nativas",
+  "beats": [
+    {
+      "id": "intro",
+      "fase": "teoria",
+      "titulo": "Abertura — MCP e tools nativas: decisões de integração, não protocolo",
+      "pontos": [
+        "Este módulo cobre os task statements 2.4 (integrar servidores MCP ao Claude Code e ao agente) e 2.5 (escolher e aplicar Read, Write, Edit, Bash, Grep, Glob) — fecha o D2 (18%) junto com o Módulo 04",
+        "Cenário-casa: 4 (Developer Productivity — agente do Agent SDK com tools nativas + servidores MCP); também cai no 2 (Claude Code do time) e no 1 (as tools get_customer, lookup_order... são MCP)",
+        "Aviso de escopo: JSON-RPC, handshake, transportes, OAuth, sampling/elicitation e tool search NÃO caem (fora do guia ou explicitamente out-of-scope); se aparecerem numa alternativa, são distratores",
+        "Roteiro: mapa mínimo e vários servidores ao mesmo tempo → project .mcp.json × user ~/.claude.json → ${VAR} → resources como catálogo → descrição da tool MCP × Grep e comunidade × custom → Grep × Glob e Read/Write/Edit → exploração incremental e wrapper modules",
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json; JSON, shell e config ficam como são; só o trecho de código de aplicação (fachada C# da seção 9) seria traduzido ao vivo"
+      ],
+      "checkpoint": "Pergunte se o aluno já configurou algum servidor MCP (no Claude Code ou num agente) e se está pronto para começar",
+      "ref": "05-mcp-e-tools-nativas/teoria.md"
+    },
+    {
+      "id": "t1",
+      "fase": "teoria",
+      "titulo": "O mapa mínimo: servidores, tools, resources — e todos ao mesmo tempo",
+      "pontos": [
+        "Servidor MCP expõe tools (ações/consultas que o modelo decide chamar) e resources (conteúdo para leitura, catálogos); quem conecta é o host: Claude Code ou o seu agente do Agent SDK",
+        "Fato de prova (2.4-K3): as tools de TODOS os servidores configurados são descobertas na conexão e ficam disponíveis AO MESMO TEMPO — não existe 'servidor ativo'",
+        "Mostre o trecho do Agent SDK do teoria.md: mcpServers com dois servidores + allowedTools com as nativas e mcp__<servidor>__*; diga que o SDK oficial é Python/TS",
+        "Para o modelo, tool MCP é tool como outra qualquer: tudo do M04 vale (descrição = seleção, poucas tools por agente)",
+        "Ponte M04 (2.2): falha de tool MCP volta com isError: true + errorCategory/isRetryable — mostre o JSON do result com o '← AQUI'",
+        "Anti-padrões de prova: tool select_server, uma sessão por servidor, fundir servidores num custom único, roteador na frente",
+        "Caixa volátil: o Claude Code adia as definições (tool search), mas na prova a resposta é 'todas disponíveis simultaneamente'"
+      ],
+      "checkpoint": "Pergunte em inglês: 'An agent is configured with ticketing, firmware-repo and device-registry MCP servers. A design doc proposes a select_server tool that restarts the session with only one server. What is wrong with this design?' (esperado: premissa errada — tools de todos os servidores já ficam disponíveis ao mesmo tempo)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#1-o-mapa-mínimo-servidores-tools-resources-e-o-agente"
+    },
+    {
+      "id": "t2",
+      "fase": "teoria",
+      "titulo": "Onde configurar: project .mcp.json × user ~/.claude.json",
+      "pontos": [
+        "O guia é binário: tooling compartilhado do time → .mcp.json na raiz do repo (versionado); servidor pessoal/experimental → ~/.claude.json (user-level, fora do git)",
+        "Mostre os dois JSONs do teoria.md com o '← AQUI' em mcpServers",
+        "Por quê: .mcp.json viaja com clone/pull e passa por code review; ~/.claude.json não afeta ninguém. Experimento que vira ferramenta do time é promovido via PR",
+        "Diagnóstico clássico (paralelo com 3.1): dev novo não recebe o servidor → estava no nível de usuário de cada um",
+        "Anti-padrões: README mandando cada um configurar; experimental direto no .mcp.json ('numa branch'); config no CLAUDE.md; flag inventada 'experimental: true'",
+        "Caixa volátil: existe o escopo 'local' do claude mcp add e servidores gerenciados; na prova, pessoal/experimental = user-level ~/.claude.json — NÃO trate 'user' como errado (o curso antigo errava isso)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'An engineer wants to try an unstable MCP server in all of her repositories without affecting her 30 teammates. Where should she configure it, and how would it reach the team later?' (esperado: ~/.claude.json; depois PR para o .mcp.json)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#2-onde-configurar-project-mcpjson--user-claudejson"
+    },
+    {
+      "id": "t3",
+      "fase": "teoria",
+      "titulo": "Segredos: ${VAR} no .mcp.json",
+      "pontos": [
+        "No .mcp.json versionado vai a referência ${GITHUB_TOKEN}; o valor vem do ambiente de quem roda (cada dev, o CI) — mostre o JSON com headers e o export no shell",
+        "Vale nos campos de conexão (env, headers, url, command, args); ${VAR:-padrão} dá default",
+        "Por quê: segredo commitado vaza (histórico, forks, logs); repo privado não é cofre; cada pessoa usa a própria credencial e a config continua uma só",
+        "Sintoma típico de prova: a config compartilhada funciona para 8 de 12 devs e dá 401 para os outros → a variável não está definida no ambiente deles",
+        "Anti-padrões: token literal 'porque o repo é privado'; .gitignore + wiki; cada dev edita e não commita; token no CLAUDE.md; mover tudo para ~/.claude.json só para esconder o token (perde o compartilhamento); wrapper que lê .env",
+        "OAuth e rotação de chave: fora do escopo"
+      ],
+      "checkpoint": "Peça para o aluno escrever de cabeça a entrada de .mcp.json de um servidor stdio 'fleet-api' cujo processo precisa da variável FLEET_API_KEY, sem commitar a chave; depois pergunte em inglês: 'Why does moving the entry to each engineer's ~/.claude.json not meet a requirement that the definition stays shared and reviewed?'",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#3-segredos-expansão-de-variável-de-ambiente-no-mcpjson"
+    },
+    {
+      "id": "t4",
+      "fase": "teoria",
+      "titulo": "Resources: catálogos de conteúdo para cortar chamadas exploratórias",
+      "pontos": [
+        "Resource = conteúdo exposto para leitura; tool = ação ou consulta parametrizada ('resources for content catalogs, tools for actions')",
+        "Exemplos do guia: resumos de issues, hierarquia de documentação, schemas de banco — mostre o JSON de resources/list com o '← AQUI'",
+        "Objetivo: o agente enxerga o que existe sem chamadas exploratórias (antes: 12 chamadas de search_tables; depois: lê o schema e acerta a consulta)",
+        "Distrator forte: 'tool list_tables chamada no início de toda sessão' — parece certo, mas continua sendo chamada exploratória",
+        "Outros anti-padrões: colar schema/docs inteiros no system prompt; aumentar limite de chamadas; cache especulativo",
+        "Pegadinha inversa: transformar ações (process_refund, escalate_to_human) ou consultas parametrizadas (get_customer) em resources → rejeitar"
+      ],
+      "checkpoint": "Pergunte em inglês: 'A support agent spends 4 to 6 calls at the start of each conversation just to learn which refund policies exist. A teammate also proposes turning process_refund into a resource. What do you expose as a resource, and what do you keep as a tool?'",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#4-resources-catálogos-de-conteúdo-para-cortar-chamadas-exploratórias"
+    },
+    {
+      "id": "t5",
+      "fase": "teoria",
+      "titulo": "Adoção (descrição da tool MCP × Grep) e servidor da comunidade × próprio",
+      "pontos": [
+        "2.4-S3: agente prefere o Grep nativo a uma tool MCP mais capaz → causa provável é a descrição curta; correção: descrever capacidades e saídas (o que cobre que o Grep não cobre, entrada, saída, quando preferir)",
+        "Mostre o antes/depois de find_references ('Finds references.' × descrição cross-repo com formato de saída); lembre que no MCP o schema se chama inputSchema",
+        "Distratores: 'always use X' no CLAUDE.md (regra absoluta no prompt: não diz quando usar e cria associação forçada, 2.1-K4), negar o Grep, hook que reescreve Grep, modelo maior",
+        "2.4-S4: integração padrão (Jira, GitHub, Slack) → servidor MCP existente da comunidade; servidor próprio só para workflow específico do time; os dois convivem ao mesmo tempo",
+        "Sintoma de prova: time gasta um dia por semana mantendo o próprio servidor Jira enquanto o validador interno não dá trabalho → causa: reimplementou integração padrão",
+        "Distratores: 'nosso servidor para controle total', API REST via Bash/curl, servidor custom único embrulhando tudo, culpar descrição ou escopo"
+      ],
+      "checkpoint": "Pergunte em inglês: 'Claude uses Grep in 70% of who-calls-X questions and misses callers in other repositories, although an MCP tool resolves references across all of them. A lead proposes adding \"Always use code-intel\" to CLAUDE.md. How should you evaluate this?' (esperado: preferir reescrever a descrição da tool MCP)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#5-adoção-descrição-detalhada-da-tool-mcp--grep-nativo"
+    },
+    {
+      "id": "t6",
+      "fase": "teoria",
+      "titulo": "Tools nativas: Grep × Glob e Read/Write × Edit",
+      "pontos": [
+        "Grep = conteúdo (chamadores de função, mensagens de erro, imports), independente do nome do arquivo; Glob = caminho/padrão de nome (**/*.test.tsx), não olha conteúdo",
+        "Regra de prova: 'o que está escrito' → Grep; 'como o arquivo se chama / onde mora' → Glob. Bash é para executar (build, testes, git)",
+        "Pegadinhas: Glob **/*checksum* para achar mensagem de erro; Grep por toMatchSnapshot para listar arquivos de teste (perde outros estilos); ls -R/cat em massa",
+        "Read/Write = arquivo inteiro (Write para criar ou substituir tudo); Edit = troca pontual por âncora única (old_string aparece exatamente uma vez) — mostre o tool_use do Edit com o '← AQUI'",
+        "Edit falhou por âncora não única → resposta do guia: Read do arquivo inteiro + Write com só o bloco certo mudado; repetir o Edit ou sed -i são distratores",
+        "Caixas voláteis: no Claude Code em macOS/Linux/WSL Glob/Grep saem do conjunto padrão (no SDK voltam via allowedTools); a doc também cita ampliar o old_string ou replace_all — na prova, Read + Write"
+      ],
+      "checkpoint": "Pergunte em inglês: 'The line poll_interval_ms = 500 appears in 9 blocks of gateway.conf and Edit fails reporting 9 matches. What is the reliable fallback?' e em seguida 'Which tool lists every *.profile.yaml in a monorepo?' (esperado: Read + Write; Glob)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#7-grep--glob-conteúdo--caminho"
+    },
+    {
+      "id": "t7",
+      "fase": "teoria",
+      "titulo": "Explorar sem ler tudo: incremental e através de wrapper modules",
+      "pontos": [
+        "2.5-S4: Grep para achar pontos de entrada (handler, rota, registro de evento) → Read desses arquivos → seguir imports/chamadas; NÃO ler tudo de antemão",
+        "Por quê: ler 240 arquivos enche o contexto e dilui a atenção (problema de contexto do M10); seguir o fio mantém só o relevante",
+        "2.5-S5: função usada via wrapper/barrel com outros nomes → Grep só pelo nome original perde usos; procedimento: Read do wrapper → lista de nomes exportados → Grep de cada nome",
+        "Mostre a FareFacade em C# (CalculateTripFare e LegacyFare chamando ComputeFare) e o equivalente barrel em TypeScript",
+        "Distratores: ler tudo 'para não perder chamadas indiretas'; ler tudo e resumir num scratchpad; Grep case-insensitive (não acha alias); Glob por nome; janela maior",
+        "Pontes: Explore subagent para isolar descoberta verbosa (M08, TS 3.4) e delegação a subagents (M10, TS 5.4)"
+      ],
+      "checkpoint": "Pergunte em inglês: 'You changed computeFare() and Grep showed 3 call sites, but the build broke in 11 other files. pricing/index.ts re-exports the function under two aliases. How should Claude find every usage?' (esperado: listar os nomes exportados no wrapper e Grep de cada um)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#9-explorar-sem-ler-tudo-incremental-e-através-de-wrapper-modules"
+    },
+    {
+      "id": "q1",
+      "fase": "quiz",
+      "titulo": "Quiz de fixação — Módulo 05",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "15 questões curtas cobrindo 2.4 (escopos, ${VAR}, servidores simultâneos, resources, descrição × Grep, comunidade × custom) e 2.5 (Grep × Glob, Read/Write × Edit, Read + Write, exploração incremental, wrapper)",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
+      ],
+      "checkpoint": "Pergunte se o aluno quer revisar algum tópico antes da prova do módulo",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-05/questions.json",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#cola-de-véspera"
+    },
+    {
+      "id": "prova",
+      "fase": "prova",
+      "titulo": "Prova do Módulo 05 — estilo exame (70%)",
+      "pontos": [
+        "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+        "20 questões de cenário (1, 2 e 4) com feedback por alternativa; 3 são de múltipla resposta (Choose TWO)",
+        "Depois de cada resposta, explique por que cada alternativa errada é tentadora e qual anti-padrão ela representa",
+        "Aprovação: 70%. Abaixo disso, revise a Tabela de decisão e refaça"
+      ],
+      "checkpoint": "Comente o resultado, destaque as pegadinhas que enganaram o aluno e registre com note",
+      "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-05/questions.json --id prova",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#tabela-de-decisão"
+    },
+    {
+      "id": "fim",
+      "fase": "fechamento",
+      "titulo": "Fechamento — D2 completo; próximo: Módulo 06 (enforcement, hooks e escalonamento)",
+      "pontos": [
+        "Recapitule pela Cola de véspera: time = .mcp.json, pessoal/experimental = ~/.claude.json; ${VAR}; todas as tools ao mesmo tempo; resources = catálogos; descrição da tool MCP × Grep; comunidade × custom; Grep = conteúdo, Glob = caminho; Edit = âncora única, falhou → Read + Write; explorar incremental; wrapper → nomes exportados",
+        "Com os Módulos 04 e 05 o D2 (18%) está coberto",
+        "Próximo: Módulo 06 — workflows com enforcement, hooks do Agent SDK (inclusive PostToolUse normalizando saídas de servidores MCP) e escalonamento",
+        "Para começar: python3 engine/aula.py start Claude-Architect/06-enforcement-e-escalonamento/roteiro.json"
+      ],
+      "checkpoint": "Pergunte se o aluno quer seguir direto para o Módulo 06 ou parar aqui (o progresso fica salvo)",
+      "ref": "05-mcp-e-tools-nativas/teoria.md#cola-de-véspera"
+    }
+  ]
+}

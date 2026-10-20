@@ -1,266 +1,281 @@
 {
-  "titulo": "Module 02 — Quiz: explicit criteria, few-shot, and iterative refinement",
+  "titulo": "Módulo 02 — Quiz: critérios explícitos e few-shot",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "A prompt says 'flag only relevant issues'. What is the expected effect?",
+      "pergunta": "A code-review prompt produces different findings on every run of the same diff. Which instruction gives the reviewer an explicit criterion instead of a vague one?",
       "opcoes": [
-        "Conservative, stable behavior",
-        "Fewer output tokens and more precision",
-        "Inconsistent results across runs",
-        "The model asks for clarification before responding"
+        "Report only the issues that a careful senior engineer on this team would consider important.",
+        "Be conservative and report only the findings that you are highly confident about.",
+        "Flag a comment only when the behavior it claims contradicts what the code actually does.",
+        "Check that every comment is accurate, complete, and helpful for future maintainers."
       ],
       "correta": 2,
-      "explicacao": "Vague terms are interpreted differently on each call; the criterion needs to be explicit.",
+      "explicacao": "An explicit criterion names the observable condition that makes something reportable. 'Claimed behavior contradicts actual code behavior' is checkable; 'important', 'conservative', and 'accurate' leave the model to invent its own standard on each run.",
       "feedbacks": [
-        "Incorrect: an undefined 'relevant' doesn't produce stability.",
-        "Incorrect: there's no guarantee of precision without a criterion.",
-        "Correct: vague → inconsistent.",
-        "Incorrect: the model usually interprets on its own, without asking."
-      ]
+        "Tempting because it appeals to expertise, but 'important' is undefined; each run will guess differently at what a senior engineer would flag.",
+        "Tempting because it sounds cautious, but it changes how much is reported, not what counts as an issue, so precision does not improve.",
+        "Correct. It states a concrete, checkable condition for reporting, which makes the judgment reproducible.",
+        "Tempting because it lists qualities, but 'accurate, complete, helpful' are vague; this is the guide's own example of a weak instruction."
+      ],
+      "ts": "4.1"
     },
     {
-      "pergunta": "What are the three components of an explicit criterion?",
+      "pergunta": "A team adds 'only report high-confidence findings' to a review prompt to cut false positives. Compared with specific categorical criteria, what effect should they expect on precision?",
       "opcoes": [
-        "What counts, what doesn't count, and boundary examples",
-        "Role, tone, and format",
-        "An instruction, emphasis in capital letters, and a self-reported confidence score",
-        "Goal, deadline, and owner"
+        "Little improvement, because it changes how much gets reported rather than which issues count as problems.",
+        "The same improvement as categorical criteria, provided the model states its confidence next to each finding.",
+        "A clear improvement at some cost to recall, which makes it the preferred first step before writing criteria.",
+        "A clear improvement on larger models only, since they are better calibrated about their own confidence levels."
       ],
       "correta": 0,
-      "explicacao": "A positive definition, exclusions, and ambiguous cases make the judgment reproducible.",
+      "explicacao": "General instructions like 'be conservative' or 'only report high-confidence findings' fail to improve precision compared with specific categorical criteria. They shrink volume, but the model's notion of what is a problem is unchanged.",
       "feedbacks": [
-        "Correct.",
-        "Incorrect: those are system prompt best practices, not a judgment criterion.",
-        "Incorrect: emphasis and self-reported confidence don't define a criterion.",
-        "Incorrect: that's task management, not a criterion."
-      ]
+        "Correct. Volume drops but the mix of true and false findings stays similar; categorical criteria are what change precision.",
+        "Tempting because stating confidence sounds rigorous, but displaying a number does not change which issues the model considers problems.",
+        "Tempting because a precision/recall trade-off sounds familiar, but the guide says this instruction does not deliver the precision gain.",
+        "Tempting because larger models are often better, but model size does not turn a vague instruction into a criterion."
+      ],
+      "ts": "4.1"
     },
     {
-      "pergunta": "The 'naming' category of a review bot has a 55% false positive rate, and the developers have started ignoring the security alerts as well. What is the fix?",
+      "pergunta": "The exam treats model confidence differently depending on how it is used. Which use of model confidence is consistent with the exam guide?",
       "opcoes": [
-        "Turn off the entire bot until it's resolved",
-        "Ask in the prompt for the bot to make fewer mistakes on naming",
-        "Add a second model to filter the comments from every category",
-        "Turn off only the naming category, refine it, and turn it back on"
+        "Posting only the review findings whose self-reported confidence is above 0.8 instead of writing review criteria",
+        "Escalating a support conversation to a human whenever the agent's self-reported confidence drops below 6 of 10",
+        "Ignoring model confidence entirely, because self-reported scores are never useful in a production review system",
+        "Routing extractions to human review with field-level confidence calibrated on a labeled validation set of documents"
       ],
       "correta": 3,
-      "explicacao": "Turn off, refine, turn back on: it preserves the good categories and restores trust.",
+      "explicacao": "Confidence has three faces in the guide: filtering findings by confidence instead of criteria is wrong (4.1); escalating support cases on self-reported confidence or sentiment is wrong (5.2); field-level confidence, calibrated on labeled data, used to route human review is right (4.6, 5.5).",
       "feedbacks": [
-        "Incorrect: it throws away the categories that work.",
-        "Incorrect: a vague instruction doesn't fix a vague criterion.",
-        "Incorrect: more complex than necessary; the problem is the criterion.",
-        "Correct."
-      ]
+        "Tempting because it cuts volume, but filtering by confidence in place of explicit criteria does not improve precision (4.1).",
+        "Tempting because it looks like a safety net, but self-reported confidence is a poor proxy for case complexity in escalation (5.2).",
+        "Tempting as an overcorrection, but the guide endorses calibrated field-level confidence for routing review; 'never useful' is wrong.",
+        "Correct. Calibrated, field-level confidence used to prioritize human review is the pattern the guide endorses (5.5)."
+      ],
+      "ts": "4.1"
     },
     {
-      "pergunta": "Why is a category with many false positives dangerous even if the other categories are good?",
+      "pergunta": "Why does a single review category with a high false positive rate threaten a review bot whose other categories are accurate?",
       "opcoes": [
-        "Because it increases token cost",
-        "It erodes trust in the entire system: people ignore everything",
-        "Because the model learns from its own mistakes between calls and gets worse over time",
-        "Because it invalidates prompt caching"
+        "Because false positives in one category feed back into the model and lower its accuracy in the other categories",
+        "Because developers lose trust in the bot as a whole and then ignore accurate findings from every category",
+        "Because noisy categories consume most of the output budget and cause the accurate findings to be truncated",
+        "Because one noisy category makes the model doubt its own findings in the other categories in the same review"
       ],
       "correta": 1,
-      "explicacao": "Trust belongs to the system as a whole: noise in one category makes people ignore the correct findings in the others.",
+      "explicacao": "High false-positive categories undermine confidence in accurate categories. Developers do not judge each comment on its merits; after enough false alarms they dismiss the bot's output wholesale, including the accurate security findings.",
       "feedbacks": [
-        "Incorrect: cost isn't the core problem.",
-        "Correct.",
-        "Incorrect: the model doesn't learn between calls.",
-        "Incorrect: nothing to do with caching."
-      ]
+        "Tempting if you think the model learns from its mistakes, but it does not update between calls; the damage is to human trust.",
+        "Correct. Trust belongs to the system: noise in one category teaches developers to ignore all of them.",
+        "Tempting because long outputs can hit limits, but truncation is not the effect the guide describes; the problem is trust.",
+        "Tempting as an intuition, but categories do not lower each other's model accuracy; the accurate findings stay accurate and get ignored."
+      ],
+      "ts": "4.1"
     },
     {
-      "pergunta": "What is the recommended number and composition of few-shot examples?",
+      "pergunta": "A review bot's 'naming' category has a 58% false positive rate, while its security and correctness categories are above 90%. What does the exam guide recommend?",
       "opcoes": [
-        "A single example of the most common case",
-        "Dozens of examples to cover everything",
-        "2–4 varied examples, each with input, output, and reasoning",
-        "4 identical examples to reinforce the format"
+        "Turn the whole bot off until each category is above 90%, then bring the categories back in a single release",
+        "Keep each category on and show a confidence score so developers can skip the comments that look uncertain",
+        "Disable only the naming category for now, improve its prompt, and re-enable it once its precision is good",
+        "Lower the strictness of the categories equally so that the bot's overall false positive rate comes down"
       ],
       "correta": 2,
-      "explicacao": "A few targeted, varied examples with reasoning teach the pattern.",
+      "explicacao": "The guide recommends temporarily disabling high false-positive categories to restore developer trust while the prompts for those categories are improved. The accurate categories keep delivering value in the meantime.",
       "feedbacks": [
-        "Incorrect: one example of the easy case doesn't teach the boundary.",
-        "Incorrect: high cost and a risk of the model latching onto surface features.",
-        "Correct.",
-        "Incorrect: identical examples teach only the easy case."
-      ]
-    },
-    {
-      "pergunta": "Why include the reasoning in each few-shot example?",
-      "opcoes": [
-        "To increase the token count and improve caching",
-        "So the model generalizes the criterion instead of copying only the format",
-        "Because the API requires a reasoning field",
-        "To replace the main instruction"
+        "Tempting because it sounds thorough, but it throws away the security and correctness findings that already work.",
+        "Tempting because it adds information, but the noise keeps reaching developers and the filtering burden moves to them.",
+        "Correct. Remove the noisy category, fix its criteria, validate, and bring it back; the accurate categories keep running.",
+        "Tempting because it lowers the total, but blanket strictness also suppresses accurate findings and does not fix the naming criteria."
       ],
-      "correta": 1,
-      "explicacao": "The reasoning shows WHY the output is what it is; the model learns the rule, not the surface.",
-      "feedbacks": [
-        "Incorrect: it's not about caching.",
-        "Correct.",
-        "Incorrect: there's no such requirement.",
-        "Incorrect: examples complement the instruction; they don't replace it."
-      ]
+      "ts": "4.1"
     },
     {
-      "pergunta": "An extractor makes up the due date when it doesn't appear in the document. Which prompting technique helps directly?",
+      "pergunta": "According to the exam guide, what makes severity classification consistent across pull requests?",
       "opcoes": [
-        "Few-shot showing a document without the date and the output with the field set to null",
-        "Ask the model to be more honest",
-        "Increase max_tokens",
-        "Remove the field from the schema"
+        "Defining each severity level with concrete code examples showing what belongs at that level",
+        "Running the review several times and keeping the severity label that appears most frequently",
+        "Deriving each finding's severity from the self-reported confidence score attached to it",
+        "Describing each severity level with a precise adjective, such as critical, major, or minor"
       ],
       "correta": 0,
-      "explicacao": "Few-shot reduces hallucination in extraction by showing the expected behavior for missing data (null).",
+      "explicacao": "Explicit severity criteria with concrete code examples for each level anchor the classification. Adjectives and confidence scores leave room for reinterpretation on every run.",
       "feedbacks": [
-        "Correct (combined with a nullable field in the schema, Module 03).",
-        "Incorrect: vague instruction.",
-        "Incorrect: it has nothing to do with fabricated data.",
-        "Incorrect: the field is needed when the data exists."
-      ]
+        "Correct. Code examples per level give the model an anchor, so the same defect lands on the same level.",
+        "Tempting because voting smooths randomness, but it multiplies cost and still rests on undefined levels.",
+        "Tempting because it produces a number, but confidence measures certainty, not how severe a defect is.",
+        "Tempting because the labels sound precise, but adjectives are exactly what gets reinterpreted between runs."
+      ],
+      "ts": "4.1"
     },
     {
-      "pergunta": "Where should you place the text of a contract submitted by the user in an analysis prompt?",
+      "pergunta": "Explicit review criteria define what to report and what to skip. Which pair matches the exam guide's guidance?",
       "opcoes": [
-        "Mixed in with the instructions, to provide context",
-        "In the tool name",
-        "After the question, at the end of the prompt",
-        "Inside a tag such as <contract>, separate from the instructions"
+        "Report: bugs, security issues, and deviations from the style guide. Skip: generated or vendored files.",
+        "Report: anything the model is highly confident about. Skip: findings below a confidence cutoff.",
+        "Report: bugs and security issues. Skip: any pattern that already appears elsewhere in the same PR.",
+        "Report: bugs and security issues. Skip: minor style and patterns used consistently in the codebase."
       ],
       "correta": 3,
-      "explicacao": "XML tags separate data from instructions and let you reference the content. Long documents go at the beginning, the question at the end.",
+      "explicacao": "The guide's example criteria report bugs and security issues and skip minor style and local patterns, rather than relying on confidence-based filtering. Local patterns are conventions the team uses on purpose.",
       "feedbacks": [
-        "Incorrect: mixing them makes the model confuse content with commands.",
-        "Incorrect: it makes no sense.",
-        "Incorrect: long documents go before the question.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "In a complex judgment (whether or not to approve an insurance claim), which practice improves quality and auditability?",
-      "opcoes": [
-        "Ask for the verdict first and the justification afterward",
-        "Ask only for the verdict, to save tokens",
-        "Ask for the analysis/evidence before the verdict",
-        "Ask for a confidence score from 0 to 100"
+        "Tempting because a style guide feels objective, but style deviations are exactly the minor findings to skip; reporting them floods developers with low-value comments.",
+        "Tempting because it is easy to implement, but it is confidence-based filtering, which the guide says to replace with criteria.",
+        "Tempting because it sounds like skipping local patterns, but a pattern repeated in the PR can be a repeated bug; local patterns are conventions the codebase uses on purpose.",
+        "Correct. Report the issues that matter (bugs, security); skip minor style and the codebase's own consistent patterns."
       ],
-      "correta": 2,
-      "explicacao": "Reasoning before the answer: the evidence grounds the decision and remains auditable.",
-      "feedbacks": [
-        "Incorrect: a justification given afterward tends to rationalize a decision already made.",
-        "Incorrect: it loses auditability.",
-        "Correct.",
-        "Incorrect: self-reported confidence is poorly calibrated."
-      ]
+      "ts": "4.1"
     },
     {
-      "pergunta": "After three attempts to explain a date transformation in prose, Claude Code keeps getting edge cases wrong. What is the next best action?",
+      "pergunta": "In which situation does the exam guide describe few-shot examples as the most effective technique?",
       "opcoes": [
-        "2–3 concrete input → output pairs, including the edge cases",
-        "Explain it again in more detail, in capital letters and with the full format specification",
-        "Switch to a larger model",
-        "Ask Claude to 'think harder'"
-      ],
-      "correta": 0,
-      "explicacao": "Concrete examples beat prose when the description isn't working.",
-      "feedbacks": [
-        "Correct.",
-        "Incorrect: more prose repeats what didn't work.",
-        "Incorrect: it skips the simplest fix.",
-        "Incorrect: it doesn't provide the concrete target that is missing."
-      ]
-    },
-    {
-      "pergunta": "In TDD with Claude, what is the workflow?",
-      "opcoes": [
-        "Ask for the implementation first, then ask for tests that pass against it",
-        "Write the implementation and ask Claude to review it",
-        "Ask Claude to describe the tests it would write",
-        "Failing tests → share the failures → iterate until they pass"
-      ],
-      "correta": 3,
-      "explicacao": "Failing tests define the verifiable target; Claude iterates until they pass.",
-      "feedbacks": [
-        "Incorrect: tests written afterward tend to validate what already exists, bugs included.",
-        "Incorrect: that's review, not TDD.",
-        "Incorrect: describing isn't executing.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A feature's specification has several open business decisions. Which technique should you use before implementing?",
-      "opcoes": [
-        "Implement right away and fix it later",
-        "Interview: Claude asks questions before implementing",
-        "Split it into 10 independent messages",
-        "Use few-shot with similar features from another company project"
+        "When the model needs knowledge that is missing from its training data, such as internal API names",
+        "When detailed instructions alone still produce output that is inconsistently formatted or not actionable",
+        "When the output must be guaranteed to parse as valid JSON for an automated downstream consumer",
+        "When a business rule must hold on each request, with zero tolerance for exceptions or occasional drift"
       ],
       "correta": 1,
-      "explicacao": "The interview surfaces hidden assumptions early, before the code heads in the wrong direction.",
+      "explicacao": "Few-shot examples are the most effective technique for consistently formatted, actionable output when detailed instructions alone produce inconsistent results. Guaranteed JSON is the job of tool use with a JSON schema, and rules that must always hold belong in code.",
       "feedbacks": [
-        "Incorrect: it uncovers the wrong assumptions too late.",
-        "Correct.",
-        "Incorrect: it doesn't resolve the open decisions.",
-        "Incorrect: examples from another context don't answer this project's decisions."
-      ]
+        "Tempting because examples carry information, but missing knowledge is a context problem, not what few-shot is described for.",
+        "Correct. When detailed prose still yields inconsistent output, examples show the expected format and level of detail directly.",
+        "Tempting because examples improve format, but guaranteed schema compliance comes from tool use with a JSON schema.",
+        "Tempting because examples improve compliance, but prompts are probabilistic; rules that must always hold need programmatic enforcement."
+      ],
+      "ts": "4.2"
     },
     {
-      "pergunta": "You have two bugs in the same shipping-cost calculation function. How should you ask Claude to fix them?",
+      "pergunta": "Findings from a CI review vary in structure from run to run, although the prompt already lists the required fields. Which change best improves consistency?",
       "opcoes": [
-        "Both in the same message, because they interact",
-        "One at a time, in different sessions",
-        "Only the more severe one; the other a week later",
-        "Together with all the other open bugs in the project"
+        "Add few-shot findings that show location, issue, severity, and a concrete suggested fix",
+        "Add a detailed prose specification of each field, its allowed values, and the field ordering",
+        "Add ten near-identical example findings for one defect type to reinforce the layout",
+        "Add example findings with location and issue, leaving severity and fix to the instructions"
       ],
       "correta": 0,
-      "explicacao": "Related problems go together so Claude sees the interaction and doesn't fix one by breaking the other.",
+      "explicacao": "When instructions alone produce inconsistent output, the guide recommends few-shot examples that demonstrate the specific desired output format: location, issue, severity, and suggested fix. A few complete, varied examples show the granularity and level of detail expected in each field.",
       "feedbacks": [
-        "Correct.",
-        "Incorrect: splitting up problems that interact leads to fixes that trip over each other.",
-        "Incorrect: there's no reason to postpone; they affect each other.",
-        "Incorrect: mixing in independent problems produces a huge change that's hard to review."
-      ]
+        "Correct. Examples that show every field, including a concrete fix, give the model the exact pattern to reproduce.",
+        "Tempting because the prose is where the format is defined, but more detailed instructions are what already produce inconsistent output; examples show the format directly.",
+        "Tempting because repetition seems to reinforce format, but near-identical examples of one defect anchor the model on surface content and add tokens without showing variety.",
+        "Tempting because it keeps examples short, but the model imitates what the examples show and tends to omit the fields they leave out."
+      ],
+      "ts": "4.2"
     },
     {
-      "pergunta": "Which instruction tends to work best on recent models?",
+      "pergunta": "Which few-shot design does the exam guide recommend for ambiguous scenarios?",
       "opcoes": [
-        "'IT IS EXTREMELY IMPORTANT THAT YOU NEVER FORGET THE ID FIELD!!!'",
-        "'Do the best you can.'",
-        "'Always include the id field: it reconciles with the ERP.'",
-        "'Use your good judgment about the fields.'"
+        "One example for each request type seen in production, so that each request type has its own demonstration",
+        "Several examples of the most common case, so that the model learns the dominant pattern before others",
+        "Two to four targeted examples that explain why one action was chosen over the plausible alternatives",
+        "Examples that show only the final action, so that the model is not distracted by long explanations"
       ],
       "correta": 2,
-      "explicacao": "A direct instruction that states the why works better than emphasis; newer models follow instructions precisely.",
+      "explicacao": "The guide recommends 2–4 targeted few-shot examples for ambiguous scenarios, each showing the reasoning for why one action was chosen over plausible alternatives. The contrast is what teaches the decision boundary.",
       "feedbacks": [
-        "Incorrect: exaggerated emphasis can cause overzealousness and adds no information.",
-        "Incorrect: vague.",
-        "Correct: clear and with a reason.",
-        "Incorrect: vague; it causes inconsistency."
-      ]
+        "Tempting because coverage feels safe, but one example per type grows the prompt and invites surface matching.",
+        "Tempting because common cases dominate traffic, but they are not where the model fails; the ambiguous ones are.",
+        "Correct. A few targeted examples with the 'why not the alternatives' reasoning teach the boundary.",
+        "Tempting because it keeps prompts short, but without the reasoning the model copies the action, not the judgment."
+      ],
+      "ts": "4.2"
     },
     {
-      "pergunta": "A ticket classifier assigns different labels to similar cases. Which TWO actions are the appropriate first step? (Choose TWO.)",
+      "pergunta": "Why do a few examples with explained reasoning often outperform an exhaustive list of rules?",
       "opcoes": [
-        "Add a second model that votes against the first",
-        "Define, for each category, what counts, what doesn't count, and boundary cases",
-        "Ask the model for a confidence score and discard the low ones",
-        "Add 2–4 varied examples with reasoning covering the ambiguous cases",
-        "Set temperature to 0"
+        "Because examples are processed with higher priority than written rules in a system prompt",
+        "Because a list of rules uses more tokens than the same knowledge written as a few examples",
+        "Because examples make the output deterministic for any input that matches them exactly",
+        "Because they let the model generalize the judgment to new patterns no rule anticipated"
+      ],
+      "correta": 3,
+      "explicacao": "Few-shot examples enable the model to generalize judgment to novel patterns rather than matching only pre-specified cases. A rule list covers what it enumerates; explained examples teach the criterion behind them.",
+      "feedbacks": [
+        "Tempting as an intuition, but there is no priority mechanism; the benefit comes from what the examples teach.",
+        "Tempting because token cost matters, but cost is not the reason examples outperform rules on new cases.",
+        "Tempting because examples improve consistency, but they do not make outputs deterministic; generalization is the point.",
+        "Correct. Explained examples teach the underlying judgment, which carries over to cases nobody listed."
+      ],
+      "ts": "4.2"
+    },
+    {
+      "pergunta": "A review bot flags many acceptable code patterns as defects. Which few-shot change best reduces these false positives while still letting the model generalize?",
+      "opcoes": [
+        "Add more examples of genuine defects, so that the model sees a wider variety of real problems",
+        "Add examples that contrast acceptable patterns with genuine issues and always explain the difference",
+        "Add a list of the exact code snippets that the model must never report as a defect again",
+        "Remove the examples, so that the model relies only on the written criteria in the prompt"
+      ],
+      "correta": 1,
+      "explicacao": "Few-shot examples that distinguish acceptable code patterns from genuine issues reduce false positives while enabling generalization. Showing only problems teaches the model that anything resembling them is a defect.",
+      "feedbacks": [
+        "Tempting because variety helps, but more problem-only examples reinforce the bias toward flagging look-alikes.",
+        "Correct. Contrasting acceptable look-alikes with real issues, with the reason, teaches where the line is.",
+        "Tempting because it is precise, but a snippet blocklist only matches what it lists and does not generalize.",
+        "Tempting because the examples seem to cause the problem, but removing them loses the strongest lever for consistency."
+      ],
+      "ts": "4.2"
+    },
+    {
+      "pergunta": "A research extraction system handles papers with inline citations well but misses citations in papers that use a numbered bibliography. What does the exam guide recommend?",
+      "opcoes": [
+        "Few-shot examples that show correct handling of both inline citations and numbered bibliographies",
+        "A preprocessing step that converts each bibliography into inline citations before the model reads it",
+        "An instruction asking the model to search the whole paper more carefully before reporting citations",
+        "A separate extraction prompt for each citation style, chosen by a classifier that inspects the paper"
+      ],
+      "correta": 0,
+      "explicacao": "The guide recommends few-shot examples that demonstrate correct handling of varied document structures, such as inline citations vs bibliographies and methodology sections vs embedded details.",
+      "feedbacks": [
+        "Correct. Examples of both structures show the model where citations live in each format.",
+        "Tempting because it normalizes input, but it adds a brittle conversion step before the simpler fix has been tried.",
+        "Tempting because it targets the miss, but 'more carefully' is vague; the model needs to see the other structure.",
+        "Tempting because it specializes, but a classifier plus several prompts is over-engineering for a few-shot problem."
+      ],
+      "ts": "4.2"
+    },
+    {
+      "pergunta": "A required field comes back null for many invoices, yet reviewers find the value on each one, printed in a footer table instead of the header. What is the most appropriate fix?",
+      "opcoes": [
+        "Make the field non-nullable so that the model must return a value for each invoice it processes",
+        "Raise the retry limit for the failed invoices, since the value is present in the source document",
+        "Add few-shot examples that show correct extraction when the value sits in a footer table",
+        "Ask invoice senders to put the value in the header, where the model already finds it reliably"
+      ],
+      "correta": 2,
+      "explicacao": "When required fields come back empty although the document contains the data in another format, the guide's fix is few-shot examples showing correct extraction from those formats. Forcing a value invites fabrication.",
+      "feedbacks": [
+        "Tempting because it seems to force extraction, but a model that cannot find the value will be pushed to invent one.",
+        "Tempting because the value exists, but repeating the same request without new guidance tends to repeat the same miss.",
+        "Correct. An example of the footer-table format shows the model where the value lives.",
+        "Tempting because it would work for new invoices, but it pushes the burden onto external senders you do not control."
+      ],
+      "ts": "4.2"
+    },
+    {
+      "pergunta": "Which TWO situations are good uses of few-shot examples according to the exam guide? Choose TWO.",
+      "opcoes": [
+        "Guaranteeing that refunds above a monetary limit are never processed without a manager's approval",
+        "Fixing tool misrouting caused by one-line descriptions that do not differentiate two similar tools",
+        "Reducing invented values when extracting informal measurements such as 'about two meters long'",
+        "Ensuring that each response parses as JSON that matches the schema a downstream system requires",
+        "Showing how to handle requests where two tools are plausible and both tool descriptions are clear"
       ],
       "corretas": [
-        1,
-        3
+        2,
+        4
       ],
-      "explicacao": "Explicit criteria + few-shot are the simplest rungs, and they attack the cause (a vague criterion).",
+      "explicacao": "Few-shot examples demonstrate ambiguous-case handling, such as tool selection for ambiguous requests, and reduce hallucination in extraction, such as informal measurements. Guarantees belong to code or schemas, and minimal tool descriptions are fixed by rewriting the descriptions first.",
       "feedbacks": [
-        "Incorrect: rung 4, without first defining the criterion.",
-        "Correct.",
-        "Incorrect: self-reported confidence is poorly calibrated.",
-        "Correct.",
-        "Incorrect: sampling is rejected on newer models and doesn't define a criterion."
-      ]
+        "Tempting because examples improve compliance, but a financial limit needs a programmatic guarantee such as a hook.",
+        "Tempting because examples can steer selection, but with minimal descriptions the first fix is rewriting the descriptions.",
+        "Correct. Examples show how to record approximate measurements instead of inventing precise values.",
+        "Tempting because examples demonstrate format, but guaranteed schema compliance comes from tool use with a JSON schema.",
+        "Correct. When descriptions are already clear and the request is genuinely ambiguous, examples show how to choose."
+      ],
+      "ts": "4.2"
     }
   ]
 }

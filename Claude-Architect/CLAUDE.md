@@ -5,39 +5,75 @@ Anthropic. O objetivo é duplo: **passar na prova** e sair com **critério de ar
 sistemas com Claude: agentes, tools, MCP, Claude Code em equipe e em CI, saída estruturada e
 confiabilidade.
 
-A base de conhecimento do exame (domínios, task statements, fatos-chave, anti-padrões) está em
-**`blueprint.md`**, a referência que todo conteúdo do curso deve respeitar.
+A base de conhecimento do exame está em **`blueprint.md`**: os 30 task statements do guia oficial
+com todos os bullets de *Knowledge of* / *Skills in*, fatos-chave, distratores típicos e as
+divergências guia × doc atual. Todo conteúdo do curso deve respeitá-lo.
+
+## Autoridade: o guia oficial decide
+
+- **Fonte de verdade da prova:** o *Exam Guide* oficial **v1.0 (vigente desde jul/2026)**, baixado da
+  [página da certificação](https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification)
+  ([PDF](https://everpath-course-content.s3-accelerate.amazonaws.com/instructor%2F6nizmqk8tpzpfjvt6qmmav7rh%2Fpublic%2F1783542750%2FClaude+Certified+Architect+%E2%80%93+Foundations+Exam+Guide.pdf)).
+  "Exam items are written against these objectives." O curso foi **reconstruído em out/2026**
+  contra esse guia: cada módulo = um conjunto de task statements; cada questão de prova, banco por
+  cenário e simulado mira um bullet específico do guia (campos `ts` e `bullet`).
+- **A doc atual** (code.claude.com, platform.claude.com, modelcontextprotocol.io) serve para
+  exatidão técnica. **Quando ela diverge do guia, a resposta de prova é a do guia**; a divergência
+  aparece na teoria como caixa `> **Na doc atual [volátil]:**`. Divergências conhecidas (tabela
+  completa no `blueprint.md`): `tool_choice` `"any"`/forçado (corretos na prova; alguns modelos
+  novos retornam 400), tool **`Task`** (doc atual: `Agent`), **`.claude/commands/`** (doc atual:
+  fundidos em skills), `allowed-tools` **restringe** (doc atual: pré-aprova), Edit ambíguo → **Read +
+  Write**. **Nenhuma questão do curso depende de uma divergência**, em nenhum dos dois sentidos.
+- **Fora do escopo oficial** (não cai): fine-tuning, autenticação/billing, OAuth e protocolos de
+  autenticação, deploy/hospedagem de MCP server, streaming/SSE, rate limit/quotas/cálculo de preço,
+  **detalhes de prompt caching** (só saber que existe), tokenização, computer use, vision,
+  embeddings, cloud providers, benchmarks, arquitetura interna/treino. Extras da doc que o guia não
+  lista (thinking adaptativo, `effort`, task budgets, context editing, memory tool, tool search,
+  Managed Agents...) aparecem no máximo como nota de 1–3 linhas.
+- **Antes de marcar a prova:** confira na página da certificação se o guia ainda é o v1.0. Se houver
+  versão nova, revise as divergências antes de fazer a prova.
 
 ## O exame (o que estamos mirando)
 
 | Item | Valor |
 |------|-------|
-| Código | CCAR-F (Foundations), guia oficial v1.0 (vigente desde jul/2026) |
-| Formato | 60 questões de múltipla escolha / múltipla resposta, **baseadas em cenários** |
-| Tempo | 120 min, supervisionado (Pearson VUE), sem consulta |
-| Aprovação | **720/1000** (escala), sem penalidade por chute |
-| Cenários | **4 sorteados de um banco de 6** e as questões se penduram neles (ver abaixo) |
+| Código | CCAR-F (Foundations), guia oficial v1.0 (jul/2026) |
+| Formato | 60 itens de múltipla escolha e **múltipla resposta (o item diz quantas marcar)**, baseados em cenários |
+| Tempo | 120 min, supervisionado (Pearson VUE, online ou centro de testes), sem consulta |
+| Aprovação | escala 100–1000, corte **720**; relatório traz % de acerto por domínio; questão em branco conta como erro e não há penalidade por chute (dito no guia de fev/2026; a v1.0 não repete), então responda todas |
+| Cenários | **4 sorteados de um banco de 6**; as questões se penduram no cenário |
 | Público | arquiteto com ~6 meses de prática com Claude API, Agent SDK, Claude Code e MCP |
 
-| Domínio | Peso | Módulos do curso |
-|---------|------|------------------|
-| D1 — Arquitetura agêntica & orquestração | **27%** | 06, 07 (+ hooks no 08) |
-| D2 — Design de tools & integração MCP | 18% | 04, 05 (+ tools nativas no 08) |
-| D3 — Configuração & workflows do Claude Code | 20% | 08, 09 |
-| D4 — Prompt engineering & saída estruturada | 20% | 01, 02, 03 (+ revisão multi-pass no 07) |
-| D5 — Gestão de contexto & confiabilidade | 15% | 10, 11 |
+| Domínio | Peso | Task statements → módulos |
+|---------|------|---------------------------|
+| D1 — Agentic Architecture & Orchestration | **27%** | 1.1 → M01 · 1.4, 1.5 → M06 · 1.2, 1.3, 1.6 → M07 · 1.7 → M10 |
+| D2 — Tool Design & MCP Integration | 18% | 2.1, 2.2, 2.3 → M04 · 2.4, 2.5 → M05 |
+| D3 — Claude Code Configuration & Workflows | 20% | 3.1–3.4 → M08 · 3.5, 3.6 → M09 |
+| D4 — Prompt Engineering & Structured Output | 20% | 4.1, 4.2 → M02 · 4.3, 4.4, 4.5 → M03 · 4.6 → M09 |
+| D5 — Context Management & Reliability | 15% | 5.2 → M06 · 5.1, 5.4 → M10 · 5.3, 5.5, 5.6 → M11 |
 
-**Banco de 6 cenários do exame** (os simulados deste curso seguem exatamente esse formato):
-1. Customer Support Resolution Agent (Agent SDK, tools MCP, escalonamento)
-2. Code Generation with Claude Code (CLAUDE.md, plan mode, slash commands/skills)
-3. Multi-Agent Research System (coordenador + subagents, tratamento de erro, proveniência)
-4. Developer Productivity with Claude (tools nativas, servidores MCP, exploração de codebase)
-5. Claude Code for Continuous Integration (`-p`, saída estruturada, Batch API, review multi-pass)
-6. Structured Data Extraction (JSON schema, tool use, validação com retry)
+**Os 6 cenários oficiais** (os bancos e simulados seguem exatamente esse formato):
+1. **Customer Support Resolution Agent:** agente do Agent SDK com tools MCP `get_customer`,
+   `lookup_order`, `process_refund`, `escalate_to_human`; meta de 80%+ de resolução no primeiro
+   contato sabendo quando escalar. Domínios primários: D1, D2, D5.
+2. **Code Generation with Claude Code:** time usando Claude Code com slash commands, CLAUDE.md, plan
+   mode × execução direta. D3, D5.
+3. **Multi-Agent Research System:** coordenador + subagents de busca web, análise de documentos,
+   síntese e relatório; relatórios com citações. D1, D2, D5.
+4. **Developer Productivity with Claude:** ferramentas de produtividade construídas com o **Agent
+   SDK** (explorar codebase desconhecida, legado, boilerplate, automação) usando as tools nativas
+   (Read, Write, Bash, Grep, Glob) e servidores MCP. D2, D3, D1.
+5. **Claude Code for Continuous Integration:** reviews automáticos, **geração de testes** e
+   feedback em PR; feedback acionável e poucos falsos positivos. D3, D4.
+6. **Structured Data Extraction:** extração de documentos não estruturados, validação com JSON
+   schema, casos de borda, integração downstream. D4, D5.
 
-**O "espírito" da prova** (cai em quase toda questão): vence a **correção mais simples que resolve**;
-**regras críticas vão em código** (hooks/validação), não em prompt; **critérios explícitos** batem
-"use seu bom senso"; **`stop_reason`** decide o loop; **erros estruturados**, nunca silenciados.
+**Os desempates que valem para quase toda questão:** vence a **correção mais simples que ataca a
+causa raiz** (descrição de tool antes de routing layer; critério explícito antes de segundo modelo);
+**regra crítica (financeira, segurança, compliance) → código determinístico** (hook, pré-requisito),
+não prompt; **critério explícito** bate "use seu bom senso"/"seja conservador"; o **primeiro passo
+proporcional** vem antes de infraestrutura nova; **erro estruturado**, nunca silenciado nem
+genérico.
 
 ## Foco do curso: PROVA, não prática
 
@@ -49,7 +85,10 @@ em **teoria enxuta voltada à prova + muitas questões + muitos simulados**.
   que aparece como alternativa errada → em qual cenário costuma cair.
 - Exemplos de código aparecem só quando ajudam a reconhecer algo na prova (um JSON de `tool_use`,
   um `.mcp.json`, um hook). Quando houver código de aplicação, a **linguagem-base é C# (.NET)**:
-  o aluno é dev .NET. JSON/YAML/shell ficam como são (é o formato real).
+  o aluno é dev .NET. JSON/YAML/shell ficam como são (é o formato real). O Agent SDK oficial é
+  Python/TypeScript: hooks e `AgentDefinition` aparecem nessa forma, com a ideia explicada.
+- **JSON sempre contextualizado:** ao citar um campo de request/response/schema, mostre o JSON com o
+  caminho completo até o campo (pedido do aluno).
 - **Linguagem dos exemplos (preferência salva):** no beat `intro` do Módulo 01, o agente lê
   `Claude-Architect/.sessions/preferencias.json`; se não existir, pergunta e grava
   `{ "linguagem": "<nome>" }`; nas retomadas, traduz ao vivo os trechos de código para ela.
@@ -62,7 +101,7 @@ do aluno):
 - **Em PT-BR:** a aula. Teoria (`teoria.md`, `blueprint.md`), narração dos beats, explicações,
   dúvidas e os comentários do instrutor depois de cada questão.
 - **Em inglês:** tudo que é avaliação. Quizzes, provas de módulo, bancos por cenário, simulados e a
-  revisão `/revisar` (que sorteia desses mesmos bancos). Os arquivos de questões já estão em inglês.
+  revisão `/revisar` (que sorteia desses mesmos bancos).
 - **Ao conduzir questões:** apresente enunciado e alternativas **em inglês, como o driver mostra,
   sem traduzir**, e repasse o feedback do banco também em inglês. Os rótulos do `engine/` (`Questão`,
   `Resultado`...) são do motor compartilhado e ficam em PT; não precisa repeti-los ao aluno. Depois do
@@ -81,78 +120,83 @@ Idêntico ao padrão da plataforma (ver `../CLAUDE.md` e `../engine/CLAUDE.md`).
 registra dúvidas com `note`, e em beats `quiz`/`prova` dispara o `engine/session.py`.
 
 Regra para o instrutor neste curso: **sempre amarrar ao formato da prova**. Ao fim de cada beat de
-teoria, diga em qual dos 6 cenários aquilo costuma cair e qual é a "pegadinha" típica. Ao conduzir
-questões, depois de cada resposta, explique **por que cada alternativa errada é tentadora** (é assim
-que a prova engana).
+teoria, diga em qual dos 6 cenários aquilo costuma cair, qual task statement é e qual é a
+"pegadinha" típica. Ao conduzir questões, depois de cada resposta, explique **por que cada
+alternativa errada é tentadora** (é assim que a prova engana).
 
 ## Anatomia de um módulo
 
 | Peça | Arquivo | Conteúdo |
 |------|---------|----------|
 | Roteiro | `NN-nome/roteiro.json` | beats: `intro` → teoria (t1..tn, cada um com mini-pergunta de checagem) → quiz (q1) → prova → fim |
-| Teoria | `NN-nome/teoria.md` | fatos de prova, anti-padrões, "como cai na prova", tabela de decisão, glossário, resumo de 1 página |
-| Quiz | `apps/modulo-NN/questions.json` (+`quiz.py`) | **15** questões curtas para fixar |
-| Prova | `provas/modulo-NN/questions.json` (+`prova.py`) | **20** questões **em estilo de cenário**, `feedbacks` por alternativa, 70% |
+| Teoria | `NN-nome/teoria.md` | por task statement: fatos de prova, por quê, distratores, "como cai na prova"; tabela de decisão, glossário, cola de véspera |
+| Quiz | `apps/modulo-NN/questions.json` (+`quiz.py`) | **15** questões de fixação do conteúdo da aula (podem ser conceituais) |
+| Prova | `provas/modulo-NN/questions.json` (+`prova.py`) | **20** questões **no formato do exame real** (cenário + decisão, distratores plausíveis), `feedbacks` por alternativa, 70% |
 
 ## Plano completo do curso
 
-**Legenda:** ✅ pronto · 🔜 próximo · ⬜ planejado.
+| # | Módulo | Diretório | Task statements (guia v1.0) |
+|---|--------|-----------|------------------------------|
+| 01 | O exame e a Messages API: request, histórico, tool use e o loop agêntico | `01-exame-e-api/` | orientação + 1.1 |
+| 02 | Prompt engineering: critérios explícitos e few-shot | `02-prompt-engineering/` | 4.1, 4.2 |
+| 03 | Saída estruturada, validação com retry e Batch API | `03-saida-estruturada/` | 4.3, 4.4, 4.5 |
+| 04 | Design de tools: descrições, erros estruturados, distribuição e `tool_choice` | `04-design-de-tools/` | 2.1, 2.2, 2.3 |
+| 05 | MCP no Claude Code e no agente + tools nativas | `05-mcp-e-tools-nativas/` | 2.4, 2.5 |
+| 06 | Workflows com enforcement, hooks do Agent SDK e escalonamento | `06-enforcement-e-escalonamento/` | 1.4, 1.5, 5.2 |
+| 07 | Orquestração multiagente: coordenador, subagents e decomposição | `07-multiagente/` | 1.2, 1.3, 1.6 |
+| 08 | Configurando o Claude Code: CLAUDE.md, rules, commands/skills, plan mode | `08-claude-code-config/` | 3.1, 3.2, 3.3, 3.4 |
+| 09 | Refinamento iterativo, CI/CD e review multi-instância/multi-pass | `09-claude-code-workflows-ci/` | 3.5, 3.6, 4.6 |
+| 10 | Gestão de contexto, codebase grande e sessões | `10-contexto-e-sessoes/` | 5.1, 5.4, 1.7 |
+| 11 | Propagação de erro, revisão humana e proveniência | `11-confiabilidade/` | 5.3, 5.5, 5.6 |
 
-| # | Módulo | Diretório | Task statements (blueprint) | Status |
-|---|--------|-----------|------------------------------|--------|
-| 01 | Fundamentos: o exame, a Messages API e a superfície de request | `01-fundamentos-api/` | base + 4.7 | ✅ |
-| 02 | Prompt engineering: critérios explícitos, few-shot, refinamento iterativo | `02-prompt-engineering/` | 4.1, 4.2, 3.5 | ✅ |
-| 03 | Saída estruturada, validação com retry e Batch API | `03-saida-estruturada/` | 4.3, 4.4, 4.5 | ✅ |
-| 04 | Design de tools: descrições, erros estruturados, `tool_choice`, tool search | `04-design-de-tools/` | 2.1, 2.2, 2.3, 2.6 | ✅ |
-| 05 | MCP: arquitetura, transportes, escopos, `.mcp.json`, autenticação | `05-mcp/` | 2.4 | ✅ |
-| 06 | O loop agêntico, enforcement com hooks e handoff humano | `06-agentic-loop/` | 1.1, 1.4, 1.5 | ✅ |
-| 07 | Orquestração multiagente, decomposição, review multi-pass e sessões | `07-multiagente/` | 1.2, 1.3, 1.6, 1.7, 4.6 | ✅ |
-| 08 | Configurando o Claude Code: CLAUDE.md, rules, skills, subagents, permissões, tools nativas | `08-claude-code-config/` | 3.0–3.4, 2.5 | ✅ |
-| 09 | Claude Code em CI/CD e refinamento iterativo | `09-claude-code-cicd/` | 3.5, 3.6 | ✅ |
-| 10 | Gestão de contexto: janela, caching, compaction, context editing, memória | `10-gestao-de-contexto/` | 5.1, 5.4, 5.7, 5.8, 4.8 | ✅ |
-| 11 | Confiabilidade: escalonamento, propagação de erro, revisão humana, proveniência | `11-confiabilidade/` | 5.2, 5.3, 5.5, 5.6 | ✅ |
-
-Ordem recomendada: 01 → 11, depois os simulados. Os módulos 06 e 07 (D1, 27%) são os mais densos.
+Ordem recomendada: 01 → 11, depois os bancos por cenário e os simulados.
 
 ## Simulados — `simulados/` (o coração do curso)
 
 Ver `simulados/CLAUDE.md`. Resumo:
 - **Banco por cenário** (`simulados/cenarios/cenario-N.json`, N=1..6): **20 questões por cenário**
-  (120 no total), para treinar um cenário de cada vez.
+  (120 no total), modo treino.
 - **Simulados completos** (`simulados/simulado-N.json`, N=1..5): **60 questões, 120 min, 4 cenários**
-  do banco de 6, distribuição por domínio do blueprint (27/18/20/20/15), corte **72%**.
+  em blocos de 15, distribuição por domínio do guia (D1 16 · D2 11 · D3 12 · D4 12 · D5 9), corte
+  **72%**. Nenhuma situação se repete entre simulados.
 - **Portões de prontidão** antes de marcar a prova real (em `simulados/CLAUDE.md`).
 
-Total do curso: 11×15 (quiz) + 11×20 (provas) + 120 (cenários) + 300 (simulados) ≈ **800 questões**.
+Total do curso: 11×15 (quiz) + 11×20 (provas) + 120 (cenários) + 300 (simulados) = **805 questões**,
+cobrindo os 240 bullets do guia.
 
 ## Estrutura de arquivos
 
 ```
 Claude-Architect/
 ├── CLAUDE.md · AGENTS.md · README.md
-├── blueprint.md              ← referência do exame (domínios, task statements, fatos, anti-padrões)
+├── blueprint.md              ← os 30 task statements do guia + divergências + out-of-scope
 ├── .sessions/                ← progresso (versionado no fork/branch; zerado na main)
 ├── NN-nome/{roteiro.json, teoria.md}
 ├── apps/modulo-NN/{questions.json, quiz.py}
 ├── provas/modulo-NN/{questions.json, prova.py}
-└── simulados/{CLAUDE.md, cenarios/cenario-N.json, simulado-N.json}
+└── simulados/{CLAUDE.md, simulado.py, cenarios/cenario-N.json, simulado-N.json}
 ```
 
-## Convenções específicas
+## Convenções específicas (para quem escrever ou corrigir conteúdo)
 
-- **Volatilidade.** O ecossistema Claude muda rápido (modelos, betas, flags). O `blueprint.md` marca
-  como **[volátil]** os detalhes de versão/modelo. Em aula, ensine o **princípio** (o que a prova
-  cobra) e trate o detalhe volátil como "confira na doc atual". Questões de prova evitam depender de
-  detalhe volátil, salvo quando ele é o próprio ponto (ex.: "`any` forçado retorna 400 em modelos
-  novos → use structured outputs").
-- **Questões são originais**, escritas em **inglês** (o idioma da prova), no estilo cenário do exame,
-  com múltipla resposta como "Choose TWO.". As **chaves** do JSON (`pergunta`, `opcoes`, `correta`,
-  `feedbacks`...) continuam em português porque são o contrato do `engine/`; só os valores são em inglês.
-- **Não reordene questões dentro de um banco:** a revisão (`revisar.py`) identifica cada questão pelo
-  índice (`m04-quiz#7`). Questão nova vai no fim do banco.
+- **Questões são originais**, em **inglês**, no formato do exame. As **chaves** do JSON (`pergunta`,
+  `opcoes`, `correta`/`corretas`, `explicacao`, `feedbacks`) ficam em português (contrato do
+  `engine/`). Campos extras (o motor ignora): `ts` em todas; `cenario`, `dominio`, `bullet` nas
+  provas, bancos e simulados.
+- **Padrão de questão de prova:** enunciado autocontido com situação concreta (sintoma, números,
+  trecho de config) e pergunta de decisão; 4 alternativas (ou 5 com "Choose TWO."), **todas
+  plausíveis**, de tamanho e estrutura parecidos; pelo menos duas erradas "fortes". Proibido
+  distrator espantalho. **Controle de pistas:** a correta não pode ser sistematicamente a mais longa
+  (nem a 2ª mais longa); posição balanceada; palavras de slogan também nas erradas. `feedbacks` em
+  todas as alternativas (por que é tentadora, por que falha aqui).
+- **Volatilidade:** detalhe de versão/modelo/beta nunca decide uma questão. Ensine o princípio do
+  guia; trate o detalhe da doc atual como nota `[volátil]`.
+- **Não reordene questões dentro de um banco já usado:** a revisão (`revisar.py`) identifica cada
+  questão pelo índice (`m04-quiz#7`). Questão nova vai no fim do banco; correção é no lugar.
 - **Progresso** em `Claude-Architect/.sessions/`: versionado no fork/branch do aluno; `main` zerada.
 
 ## Estado atual
 
-- ✅ Curso completo: 11 módulos + simulados.
+- ✅ Curso completo e **reconstruído em out/2026 contra o guia oficial v1.0**: 11 módulos + 6 bancos
+  por cenário + 5 simulados.
 - 🎓 Começar/retomar: `/retomar-curso Claude-Architect` (ou "vamos começar o curso de Claude Architect").

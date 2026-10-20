@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 3 — Multi-Agent Research System",
-  "aprovacao": 72,
+  "titulo": "Cenário 3 — Multi-Agent Research System (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 3,
-      "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nFor the question \"What is the state of the energy transition in Brazil?\", the final report covered almost nothing but solar energy. The logs show that the coordinator created three subtasks: \"cost of solar panels\", \"residential solar adoption\", and \"solar incentives\". All the subagents did their jobs well. Where is the problem, and how should it be fixed?",
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. Every request runs the same pipeline: five web searches, analysis of the top ten documents, synthesis, then the report. Grant-compliance checks, which follow a fixed checklist, come out well. For open-ended questions such as \"What is known about microplastics in Arctic food webs?\", reports miss major threads: a 2022 dataset cited by most of the analyzed papers was never searched for or analyzed. What is the most likely root cause?",
       "opcoes": [
-        "In the search subagents, which should have realized that the topic was broader and extended, on their own, the scope of the subtasks they received from the coordinator.",
-        "In the decomposition: the coordinator should decompose more broadly (wind, biofuels, grid...) and check coverage.",
-        "In the synthesis subagent, which should have filled in the gaps with its own knowledge.",
-        "In the number of subagents: doubling the number of searches on the same three topics would increase coverage."
-      ],
-      "correta": 1,
-      "explicacao": "Overly narrow decomposition anti-pattern: competent subagents covering only part of the topic. Decompose more broadly and check coverage explicitly.",
-      "feedbacks": [
-        "Tempting, but the subagents did exactly what was asked; expecting them to go beyond their scope makes the system unpredictable.",
-        "Correct. The subagents performed poorly chosen tasks well. The failure is in the decomposition, and the fix is to broaden the subtasks and verify coverage.",
-        "Filling gaps without sources compromises provenance; at most, the synthesis should flag the gap.",
-        "More searches on the same narrow topics only deepen the bias; the problem is what was decomposed, not how much."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe coordinator delegates to the analysis subagent with the prompt \"analyze the sources found and highlight what is relevant\". The result comes back generic and sometimes analyzes the wrong documents. What is the fix?",
-      "opcoes": [
-        "Have the subagent receive the coordinator's full history before starting, so it has exactly the same context as the main conversation.",
-        "Replace the analysis subagent with a more capable model.",
-        "Have the subagent ask the end user clarifying questions whenever it is in doubt.",
-        "Explicitly pass the question, the documents, the relevance criterion, and the output format in the prompt."
-      ],
-      "correta": 3,
-      "explicacao": "The subagent's context is isolated: the question, the material, the criteria, and the output format go explicitly in the delegation prompt.",
-      "feedbacks": [
-        "It dumps noise and tokens onto the subagent and cancels out the advantage of the isolated context; the right approach is to pass only what is needed, explicitly.",
-        "A better model still doesn't know which sources to analyze or for which question. It targets the wrong symptom.",
-        "It shifts the coordinator's delegation failure onto the user and breaks the automated flow.",
-        "Correct. The subagent has an isolated context and doesn't inherit the coordinator's history; everything it needs must go explicitly in the prompt."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nA typical research job requires five independent searches. The logs show the coordinator emitting one Agent call per turn, waiting for the result before the next one; each report takes 25 minutes. How can latency be reduced without losing quality?",
-      "opcoes": [
-        "Have the coordinator emit the five Agent calls in the same response, so the subagents run in parallel.",
-        "Combine the five searches into a single subagent with a large prompt.",
-        "Reduce the research to two searches, the most important ones.",
-        "Use the Batch API for the searches, since it is cheaper."
-      ],
-      "correta": 0,
-      "explicacao": "To parallelize, the coordinator emits multiple Agent calls in the same response. Separate turns = sequential.",
-      "feedbacks": [
-        "Correct. Parallelism happens when multiple Agent calls go out in the same coordinator response; separate turns are sequential.",
-        "It goes back to being sequential within a single context, which becomes overloaded; isolation and specialization are lost.",
-        "It cuts latency by sacrificing coverage; the problem was the sequential execution, not the number of searches.",
-        "Batch has a processing window of up to 24h, with no SLA, and doesn't support each subagent's multi-turn tool loop; it would increase latency."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTo \"speed things up\", an engineer made the search subagents send results directly to the synthesis subagent, and the synthesis subagent request extra searches directly from the search subagents. Now nobody can say which sources went into the report or why some searches are repeated. Which architecture fixes this?",
-      "opcoes": [
-        "A shared message bus on which all of the subagents publish and read results, with a central log to keep track of who sent what.",
-        "Keep the direct communication and add more detailed logs in each subagent.",
-        "Hub-and-spoke: all traffic goes through the coordinator, which delegates, aggregates, handles errors, and re-delegates.",
-        "Merge search and synthesis into a single agent with all the tools."
+        "The search subagent issues too few queries; raising the count from five to twenty per request would capture the threads that are now missing.",
+        "The document analysis subagent's relevance threshold discards papers that mention the dataset only in passing, so it never reaches synthesis.",
+        "Open-ended questions run through a pipeline fixed in advance, so threads found in intermediate results never become new subtasks.",
+        "The synthesis subagent has no instruction to detect gaps, so it never asks for the dataset that the analyzed papers kept citing."
       ],
       "correta": 2,
-      "explicacao": "Hub-and-spoke: the coordinator decomposes, delegates, routes all communication, aggregates, and handles errors. Subagents talking to each other directly is an anti-pattern.",
+      "explicacao": "A fixed pipeline fits predictable work such as the compliance checklist, but open-ended investigation needs dynamic decomposition: subtasks generated from what each step discovers. Here the analyzed papers revealed a key dataset, yet no step could turn that discovery into a new search and analysis.",
       "feedbacks": [
-        "It formalizes direct communication between subagents; it increases coupling and still lacks a single point that controls coverage and errors.",
-        "It improves observation of the chaos, not the design; subagents talking to each other directly is the anti-pattern.",
-        "Correct. The coordinator routes all communication, which provides traceability, gap control, and centralized error handling.",
-        "It eliminates the communication, but also the specialization and context isolation; the single agent becomes overloaded."
-      ]
-    },
-    {
+        "More queries planned upfront still cannot target a dataset nobody knew about until the documents were read.",
+        "The papers citing the dataset were analyzed and reached synthesis; the dataset itself was simply never searched for.",
+        "Correct. Prompt chaining suits predictable checks; open-ended questions need adaptive decomposition driven by intermediate findings.",
+        "Gap detection helps only if something acts on it; in a fixed pipeline no step turns a discovered thread into new work."
+      ],
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nClients also ask simple questions such as \"what Selic rate was set at the last Copom meeting?\". Today, every question goes through search, document analysis, and synthesis, taking minutes and costing a lot. What should the coordinator do?",
+      "ts": "1.6",
+      "bullet": "1.6-S1"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. For broad topics, the coordinator concatenates the outputs of about 14 document-analysis runs (roughly 90k tokens) in the order the runs finished and passes them to the synthesis subagent with the instruction \"Write the synthesis.\" Reviewers notice that findings from the analyses in positions 5 to 10 are rarely cited, while the first and last few appear in every report. What is the flaw in this design?",
       "opcoes": [
-        "Keep the full pipeline, because standardization guarantees quality.",
-        "Create a separate system, with a smaller model and a classifier at the entry point, dedicated only to simple factual questions, keeping the current pipeline for everything else.",
-        "Answer simple questions using only the model's knowledge, without searching.",
-        "Invoke only the subagents the query needs (here, one search and a short answer with a source)."
+        "The synthesis subagent needs a model with a larger context window, so that 90k tokens sit far below its limit and each analysis gets equal attention.",
+        "The coordinator should first compress each analysis into a two-sentence summary, so the synthesis input is short enough to be read evenly.",
+        "The coordinator should pass only the key snippets each analysis flagged and drop the rest, so the synthesis subagent reads a far shorter input.",
+        "It is one undifferentiated block, with no key-findings summary up front and no section headers, so middle findings get less attention."
       ],
       "correta": 3,
-      "explicacao": "Invoke only the subagents the query needs; don't push everything through the entire pipeline.",
+      "explicacao": "Models reliably process the beginning and end of long inputs but may omit findings from the middle (lost in the middle). Placing a key-findings summary at the start and organizing the detailed analyses under explicit section headers mitigates the position effect without dropping coverage.",
       "feedbacks": [
-        "Standardization here is a waste of time and money; it doesn't increase the quality of a simple factual answer.",
-        "More complex than necessary; the coordinator already exists to decide what to invoke.",
-        "It loses timeliness and source citation; a recent rate requires a search.",
-        "Correct. The coordinator invokes only what the query requires; not every question needs the entire pipeline."
-      ]
+        "A larger window does not fix the position effect; the model already receives the whole input but attends unevenly to its middle.",
+        "Two-sentence summaries strip the numbers, methods, and attribution synthesis needs; the problem is how the input is organized, not its length.",
+        "Bare snippets lose the context (methods, dates, sources) that synthesis needs, and the shorter input is still an unstructured block.",
+        "Correct. A summary at the beginning plus explicit section headers counters the lost-in-the-middle effect."
+      ],
+      "cenario": 3,
+      "dominio": "D5",
+      "ts": "5.1",
+      "bullet": "5.1-K2"
     },
     {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. A librarian ran a named research session on teacher-retention studies that analyzed 40 PDFs from a shared folder. A week later, two of the PDFs were replaced with corrected versions after the authors published errata that changed a key table. The librarian resumed the session to finalize the report, and the report still cites the old table values. Which statement about this behavior is correct?",
+      "opcoes": [
+        "Resumed sessions reread their source files automatically, so the old values must be coming from a cache inside the synthesis subagent.",
+        "The resumed session lacks context room for both versions; resuming it with a larger context window would let it reconcile them.",
+        "A resumed session can no longer be trusted after its sources change; the safe option is a new session that re-analyzes the 40 PDFs from scratch.",
+        "The resumed session still reasons from its earlier tool results; it must be told which two PDFs changed so it re-analyzes them."
+      ],
+      "correta": 3,
+      "explicacao": "Resuming restores the earlier conversation, including tool results that are now stale; it does not reread the files. Informing the agent which documents changed allows targeted re-analysis of those two PDFs while the valid analysis of the other 38 is kept.",
+      "feedbacks": [
+        "Resumption restores the earlier conversation and its tool results; it does not reread files, so no cache is needed to explain the old values.",
+        "Context size is not the issue: the session never loaded the corrected versions at all.",
+        "With 2 of 40 documents changed, most prior context is still valid; targeted re-analysis is cheaper than starting over.",
+        "Correct. After source changes, tell the resumed session what changed so it re-analyzes those files."
+      ],
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nWhen it receives the results of the first round, the coordinator notices that the synthesis draft on \"AI regulation in Latin America\" has nothing on Chile and Colombia, which were in the requested scope. What is the best next action?",
-      "opcoes": [
-        "Launch a second round of searches targeted at Chile and Colombia and redo the synthesis.",
-        "Deliver the report as is, since the countries covered are of good quality.",
-        "Redo the entire research from scratch with more subagents and a revised decomposition, ensuring that no country in scope is left out this time.",
-        "Ask the synthesis subagent to write about Chile and Colombia based on the model's general knowledge."
-      ],
-      "correta": 0,
-      "explicacao": "The coordinator evaluates the synthesis, identifies gaps, and re-delegates a targeted second round before synthesizing.",
-      "feedbacks": [
-        "Correct. Iterative refinement: run, evaluate, identify gaps, do a targeted round, and synthesize. Cheap and focused.",
-        "An incomplete delivery without even flagging the gap; it fails to meet the client's scope.",
-        "It wastes what is already good; the gap is localized and calls for a targeted round.",
-        "Unsourced content in a research system with citations; it compromises provenance."
-      ]
+      "ts": "1.7",
+      "bullet": "1.7-K3"
     },
     {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. To cut token use, an engineer proposes that the web search subagent's agentic loop send only the latest tool result in each request, dropping earlier search results and tool calls from the messages and adding a one-line note: \"Earlier searches were completed.\" In a test, token use fell by about 60%. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: the model only needs the newest result to choose its next query, and a 60% token reduction is a large saving per report.",
+        "Adopt it, as long as the system prompt lists the queries already run, which gives the model enough to avoid repeating searches.",
+        "Reject it, and instead send only the original task in each request, letting the model rerun any earlier searches it still needs.",
+        "Reject it: tool results must be appended to the conversation history so the model can reason over everything found so far."
+      ],
+      "correta": 3,
+      "explicacao": "In the agentic loop, each tool result is appended to the conversation so the model can incorporate it into its next decision. Dropping earlier results leaves the model unable to compare sources, notice gaps, or avoid repeats. Trimming irrelevant fields from verbose results is fine; removing the results entirely is not.",
+      "feedbacks": [
+        "Without earlier results the model cannot compare sources or avoid repeats; the saving costs the reasoning the loop exists for.",
+        "A list of queries prevents some repeats but hides what those searches returned, so the model cannot build on the findings.",
+        "Rerunning searches wastes calls and time and still leaves the model without the accumulated findings.",
+        "Correct. Tool results added to the context between iterations are what the model reasons over."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.1",
+      "bullet": "1.1-S2"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. For broad topics such as \"climate migration policy in Southeast Asia\", the coordinator spawns three web search subagents in parallel, each with the full question. About 60% of the sources they return overlap, so each report pays for the same searches several times. The team cannot add subagents or raise the per-report budget. What is the most effective fix?",
+      "opcoes": [
+        "Have each search subagent check a shared list of URLs already read before each search, so it can skip sources another instance found.",
+        "Have the coordinator give each subagent a distinct slice of the scope, such as one source type each: government, academic, NGO.",
+        "Keep the identical prompts and have the synthesis subagent deduplicate the overlapping sources before it writes its synthesis.",
+        "Use a single search subagent with a longer time budget, so the research no longer produces any duplicated results to remove."
+      ],
+      "correta": 1,
+      "explicacao": "When parallel subagents receive the same broad question, they search the same ground. Partitioning the research scope, by assigning distinct subtopics or source types to each subagent, minimizes duplication within the same number of subagents and the same budget.",
+      "feedbacks": [
+        "Subagents do not share memory; a shared list adds coordination machinery and still starts every instance from the same broad question.",
+        "Correct. Assigning distinct subtopics or source types minimizes duplicated searching.",
+        "Deduplicating afterwards still pays for the redundant searches; the waste happens upstream.",
+        "Removing parallelism avoids duplicates but slows research and narrows coverage; partitioning keeps both."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-S2"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The document analysis subagent has three tools: search_catalog (the library's holdings), extract_citations, and summarize_document. Its system prompt says: \"Whenever a request mentions a source or citation, search the catalog first.\" When asked to \"extract all citations from the attached paper\", it calls search_catalog in about 70% of runs. The tool descriptions were rewritten last week and clearly separate the three tools. What is the most effective first step?",
+      "opcoes": [
+        "Add few-shot examples to the system prompt showing extract_citations being chosen for requests about citations inside an attached paper.",
+        "Rename extract_citations to pull_reference_list, so that its name no longer shares the word that triggers the catalog search.",
+        "Merge search_catalog and extract_citations into one citation tool that decides internally whether to search the catalog or to extract.",
+        "Rewrite the keyword-triggered instruction in the system prompt so it no longer overrides the tool descriptions for these requests."
+      ],
+      "correta": 3,
+      "explicacao": "Keyword-sensitive instructions in a system prompt can create unintended tool associations that override well-written descriptions. The rule fires on the word 'citation' in the request, so the first step is to review and rewrite that instruction.",
+      "feedbacks": [
+        "Examples would compete with the instruction rather than remove it; the instruction keeps pulling selection toward search_catalog.",
+        "The trigger is the word in the request, not in the tool's name; renaming the tool leaves the instruction firing on every mention of citations.",
+        "Consolidation hides the choice inside the tool and adds work; the descriptions are already clear, so overlap is not the problem.",
+        "Correct. Review system prompts for keyword-sensitive instructions that override good tool descriptions."
+      ],
       "cenario": 3,
       "dominio": "D2",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nToday, when the academic search API times out, the search subagent returns \"no studies found\", and the report states that \"there is no research on the topic\". What should the subagent's response do in this case? (Choose TWO.)",
+      "ts": "2.1",
+      "bullet": "2.1-K4"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. A publisher's PDF server returns intermittent 503 errors on about 8% of downloads, and nearly all succeed on one retry. The team is choosing between two designs for the document analysis subagent. Design X: return every failure to the coordinator immediately. Design Y: retry transient failures locally and, if a document still fails, return a structured error with what was attempted and the analyses already completed. Which choice is best?",
       "opcoes": [
-        "Return a structured error indicating a transient failure, the query attempted, and whether it is retryable, instead of an empty result.",
-        "Keep the empty result, but add a generic note to the final report that \"other studies may exist\".",
-        "Return only the message \"Search failed\".",
-        "Include the partial results obtained before the timeout, marked as incomplete.",
-        "Abort the entire research and notify the client that the system is unavailable."
+        "Design Y: transient failures are fixed where they happen, and the coordinator gets only unresolved ones, with attempts and partial results.",
+        "Design X: the coordinator should make the retry decisions, because it is the only agent that can see the whole research plan.",
+        "Design Y, but without the partial analyses, since incomplete results could mislead the synthesis subagent about the coverage.",
+        "Design X, with the coordinator retrying each failed download three times before marking the document unavailable in the report."
+      ],
+      "correta": 0,
+      "explicacao": "Subagents should recover locally from transient failures and propagate only the errors they cannot resolve. When they do propagate, including what was attempted and the partial results lets the coordinator decide whether to proceed, re-delegate, or note a gap.",
+      "feedbacks": [
+        "Correct. Local recovery for transient failures, with structured escalation of what remains, keeps the coordinator informed without routine noise.",
+        "Routing routine 503s through the coordinator adds round trips and clutters its context; it needs only what the subagent could not fix.",
+        "Partial results are part of what lets the coordinator decide whether to proceed; dropping them forces wasteful re-work.",
+        "Retrying from the coordinator puts transient handling in the wrong layer and repeats a whole delegation for a network blip."
+      ],
+      "cenario": 3,
+      "dominio": "D5",
+      "ts": "5.3",
+      "bullet": "5.3-S3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. Faculty find claims in recent reports, such as \"remote instruction lowered course completion by 12%\", with no citation. Tracing a run shows that the search subagent returned URLs and excerpts for every finding, but the coordinator condensed each subagent's output into a 200-word paragraph before passing it to the synthesis subagent. Which TWO statements best explain or fix this? Choose TWO.",
+      "opcoes": [
+        "The coordinator's condensing step compresses findings into prose and drops the link between each claim and its source.",
+        "The synthesis subagent's prompt should require a citation for every claim, which on its own would restore the missing sources.",
+        "Citations are lost when the report-generation subagent formats the text, because that formatting step strips footnotes.",
+        "Upstream outputs should carry claim-source mappings (claim, URL or document, excerpt) that each later step preserves.",
+        "The coordinator should pass the full raw web pages to synthesis, so the synthesis subagent can work out the sources itself."
       ],
       "corretas": [
         0,
         3
       ],
-      "explicacao": "Empty ≠ failure. A timeout produces a structured error (category, query attempted, retryable) and, when available, partial results marked as such; never an empty list as success.",
+      "explicacao": "Source attribution is lost when a summarization step compresses findings without preserving claim-source mappings. Structured mappings (claim, source URL or document, excerpt) that every downstream step must keep and merge prevent the loss.",
       "feedbacks": [
-        "Correct. A timeout means the search didn't run; the structured error lets the coordinator decide between retrying, using an alternative, or recording the gap.",
-        "It still treats a failure as 'nothing found' (silent suppression) and hides the diagnosis.",
-        "Generic error: without a category, the query attempted, or an indication of retry, the coordinator doesn't know what to do.",
-        "Correct. A partial result with an indication that it is incomplete allows the work to continue without pretending to have full coverage.",
-        "Aborting the workflow because of a failure in one source; the right move is to proceed with the partial results and note the gap."
-      ]
-    },
-    {
+        "Correct. Compressing findings into prose discards which source supports which claim.",
+        "Synthesis cannot cite what it no longer has; the mapping was destroyed before it arrived.",
+        "The trace shows the sources were already gone before synthesis; report formatting is not where they disappeared.",
+        "Correct. Structured claim-source mappings preserved through each step keep attribution intact.",
+        "Raw pages bloat context and force synthesis to redo attribution; structured mappings carry the same information compactly."
+      ],
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nOf the four search subagents in a research job, three finished successfully and one failed with a permission error: the patent database requires a credential that has expired. What is the coordinator's best response?",
-      "opcoes": [
-        "Retry the patent search with exponential backoff until it works.",
-        "Synthesize with the three results, record the gap (patents, and why), and flag the expired credential.",
-        "Abort the entire research job, since the report would be incomplete.",
-        "Proceed with the three results and omit the patent database from the report, since the client didn't explicitly ask for patents and the gap could raise questions."
-      ],
-      "correta": 1,
-      "explicacao": "Don't abort the workflow because of one step: continue with the partial results, note the gap, and offer an alternative or escalate. A permission error is non-retryable.",
-      "feedbacks": [
-        "Retrying only helps with transient errors; an expired credential won't come back on its own.",
-        "Correct. A permission error is not retryable; continue with the partial results, note the gap, and escalate what requires human action.",
-        "It throws away three good results because of one source; the anti-pattern of aborting the workflow over one failure.",
-        "Silent suppression: the client thinks patents were considered."
-      ]
+      "ts": "5.6",
+      "bullet": "5.6-K1"
     },
     {
-      "cenario": 3,
-      "dominio": "D2",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent hits rate limits (HTTP 429) on the news API a few times per research job. Today it passes each 429 on to the coordinator, which interrupts its planning to deal with it. How should responsibility be divided?",
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. In a report on open-access mandates, the web search subagent returned {\"status\": \"failed\"} for 3 of 9 queries, and the coordinator could not decide what to do next. The subagent's logs show that one query timed out after collecting 4 results, one was rejected by the search API as malformed, and one received a 403 from a subscription database. Which TWO statements are correct? Choose TWO.",
       "opcoes": [
-        "The coordinator centralizes the handling of all errors, including each 429, to maintain full control and a complete view of the system's state.",
-        "The subagent ignores the 429 and returns whatever it has, without notice.",
-        "The subagent retries with backoff (respecting retry-after) and only propagates what it couldn't resolve, with context.",
-        "The subagent repeats the call immediately, without waiting, until it succeeds."
-      ],
-      "correta": 2,
-      "explicacao": "The subagent recovers from transient errors locally (backoff) and propagates only what it couldn't resolve, with context on what was attempted.",
-      "feedbacks": [
-        "It overloads the coordinator with operational details that the subagent can resolve on its own, and it pollutes the coordinator's context.",
-        "Silent suppression: the incomplete coverage doesn't show up anywhere.",
-        "Correct. Local recovery from transient errors in the subagent; the coordinator receives only persistent failures, together with what was attempted.",
-        "Retrying without backoff aggravates the rate limit and may never converge."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTwo market reports, both from 2025, estimate the Brazilian fintech market at R$ 42 billion and R$ 51 billion, using different methodologies. How should the synthesis subagent handle this in the report?",
-      "opcoes": [
-        "Present both values, each with its source, date, and methodology, marking the data point as contested.",
-        "Use the average, R$ 46.5 billion, as a consensus estimate.",
-        "Use the value from the better-known source and omit the other.",
-        "Omit the market size from the report, since the sources disagree."
-      ],
-      "correta": 0,
-      "explicacao": "Conflict between sources: annotate the divergent values with their sources. Don't silently pick one or take an average.",
-      "feedbacks": [
-        "Correct. A conflict between sources is annotated with the divergent values and their sources; the reader decides with complete information.",
-        "Averaging creates a number that no source states and hides the divergence.",
-        "Silently picking one value eliminates relevant information and the real uncertainty.",
-        "It throws away useful information; the divergence itself is a finding that should be presented."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe consistency checker flagged a \"contradiction\" because one source says 38% of SMEs use the cloud and another says 61%. The first is a survey published in 2021 with 2020 data; the second, from 2025 with 2024 data. Which design avoids this false alarm?",
-      "opcoes": [
-        "Automatically discard sources more than three years old.",
-        "Keep only the most recent source when two numbers diverge, since newer data better reflects the current state of the market.",
-        "Ask the checker to \"use good judgment\" when comparing numbers.",
-        "Record the data period and the publication date, treating different periods as a series, not a contradiction."
-      ],
-      "correta": 3,
-      "explicacao": "Record the data period, the publication date, and the collection date. Numbers from different periods are not a contradiction.",
-      "feedbacks": [
-        "It loses useful history (the evolution from 38% to 61% is a finding) and doesn't solve the metadata problem.",
-        "It picks silently; and, when the sources are from the same period, it would erase a real conflict.",
-        "A vague criterion; without the data date in the metadata, the checker has no way of knowing.",
-        "Correct. Temporal data requires recording 'data as of', publication, and collection; values from different periods describe an evolution."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe analysis subagents return paragraphs of running text. In the final synthesis, several claims lose their source, and the reviewer cannot trace where each number came from. Which change solves this at the source?",
-      "opcoes": [
-        "Ask the synthesis subagent to \"not lose the citations\".",
-        "Structured output from the subagents separating content from metadata: claim, excerpt, source/URL, and date.",
-        "Put all the URLs consulted in a reference list at the end of the report.",
-        "Have the synthesis subagent redo the searches to find the sources of each claim again."
-      ],
-      "correta": 1,
-      "explicacao": "Structured handoff between agents: separate content from metadata (claim, evidence, source, date) so that attribution survives.",
-      "feedbacks": [
-        "A vague instruction about an input that already arrives without structure; the source is lost before the synthesis.",
-        "Correct. A structured handoff with metadata lets attribution survive the subsequent stages of the pipeline.",
-        "A loose list doesn't say which claim comes from which source; the claim → source mapping is still missing.",
-        "Expensive and fragile; it recovers after the fact what simply shouldn't have been lost."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nInsightLab is going to revise the synthesis subagent's instructions to improve the reliability of the reports. Which TWO practices should be included? (Choose TWO.)",
-      "opcoes": [
-        "Remove caveats and limitations from the sources, so the text is more assertive.",
-        "Label the degree of certainty of each finding: well-established (multiple sources), contested, or single source.",
-        "When sources diverge, present only the most conservative value.",
-        "Cite sources only in a general bibliography at the end, without linking claims to sources.",
-        "Choose the format according to the content: a table for comparable financial data, a timeline for events."
+        "A generic status is preferable because it keeps the coordinator's context small; the details belong in the subagent's own logs.",
+        "With one generic status for all three, the coordinator cannot tell that one needs a retry, one a new query, and one another source.",
+        "The coordinator should treat a failed status as \"no results\" and move on, since most reports remain usable without those queries.",
+        "The subagent should retry the three with exponential backoff before replying, which makes reporting the failure details unnecessary.",
+        "The subagent should report each failure's type, the query attempted, partial results such as the 4 collected, and alternatives."
       ],
       "corretas": [
         1,
         4
       ],
-      "explicacao": "Reliable synthesis: label certainty (well-established/contested/single source), preserve caveats, link each claim to its source, and choose the format based on the content.",
+      "explicacao": "Generic error statuses hide exactly the context the coordinator needs: a timeout, a malformed query, and a permission error call for different recoveries. Structured error context (failure type, attempted query, partial results, alternatives) enables those decisions.",
       "feedbacks": [
-        "Losing caveats distorts the evidence; they should be preserved.",
-        "Correct. The certainty label shows the reader how solid each finding is.",
-        "Silently picking a value, even a 'conservative' one, hides the conflict.",
-        "Without the claim → source mapping, provenance is lost.",
-        "Correct. A format suited to the content is part of a good synthesis."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D2",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent has two tools: search (\"searches for information\") and find_documents (\"finds relevant documents\"). The first queries the web; the second, the internal collection of licensed reports. The subagent frequently searches the web for what exists in the collection. What is the simplest and most effective fix?",
-      "opcoes": [
-        "Add a classifier in front of the subagent that analyzes each query and decides which of the two tools should be used before the model acts.",
-        "Remove web search, leaving only the internal collection.",
-        "Rename the tools and rewrite their descriptions (e.g., web_search and search_licensed_reports), stating when to use each one.",
-        "Force the subagent to always call both tools for every query."
+        "The coordinator makes the recovery decisions; hiding the details in logs it cannot see defeats that.",
+        "Correct. A single generic status hides which recovery each failure needs.",
+        "Treating failures as empty results silently suppresses errors and leaves gaps the report will not disclose.",
+        "Backoff cannot fix a malformed query or a permission error, and the 4 partial results would still be lost.",
+        "Correct. Structured error context lets the coordinator retry, rephrase, or switch sources, and keep the partial results."
       ],
-      "correta": 2,
-      "explicacao": "Vague, overlapping descriptions cause misrouting: rename and describe the tools to separate their purposes.",
-      "feedbacks": [
-        "More complex than necessary; differentiating the descriptions comes first.",
-        "It eliminates a capability needed for topics outside the collection.",
-        "Correct. The name and description are the selection criterion; tools whose descriptions overlap in purpose cause misrouting.",
-        "It doubles cost and latency and dumps redundant results into the context, instead of fixing the selection."
-      ]
-    },
-    {
       "cenario": 3,
       "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe synthesis subagent receives, in a single prompt, the raw results from 12 subagents (about 150,000 tokens). Important findings that appear in the middle of this material almost never make it into the report. What should be done?",
+      "ts": "5.3",
+      "bullet": "5.3-K3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The coordinator runs search, analysis, and synthesis once per request. When the synthesis output contains a \"Gaps\" section, the coordinator copies it into the report under \"Limitations\" and sends everything to the report-generation subagent. Faculty note that about 40% of reports list gaps such as \"no data after 2021\" that a single targeted search would have filled. What is the flaw?",
       "opcoes": [
-        "Each subagent returns a concise summary (key findings first, with source), organized under topic headings.",
-        "Use a model with a 1M-token window, so the 150,000 tokens fit comfortably and the model has room to consider all the results.",
-        "Repeat the 150,000 tokens twice in the prompt to reinforce attention.",
-        "Shuffle the order of the results on each run so that every finding has a chance of being at the beginning."
+        "The coordinator accepts the gaps as final; it should re-delegate targeted queries for them and re-run synthesis until coverage suffices.",
+        "The synthesis subagent should run its own web searches when it finds a gap, so the coordinator does not have to be involved.",
+        "The coordinator should split the topic into more subtasks at the start, so that no gaps appear and a second round is never needed.",
+        "The pipeline should run the full search, analysis, and synthesis sequence twice for each request and merge the two outputs."
       ],
       "correta": 0,
-      "explicacao": "Lost in the middle: key findings at the beginning, section headings, nothing critical in the middle; and cut the volume with concise outputs.",
+      "explicacao": "The coordinator should evaluate synthesis output for gaps, re-delegate targeted queries to the search and analysis subagents, and re-invoke synthesis until coverage is sufficient. Copying the gaps into the report skips that iterative refinement loop.",
       "feedbacks": [
-        "Correct. Lost in the middle: put key findings at the beginning, use headings, and reduce the volume with concise, structured outputs.",
-        "Fitting is not the problem; a larger window costs more, and the 'lost in the middle' effect persists or gets worse.",
-        "It doubles cost and noise without solving how the material is organized.",
-        "It makes the result random and non-reproducible; it doesn't fix the cause."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D5",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nLarge research jobs run for hours. When the coordinator process crashes in the third hour, everything restarts from scratch, including the searches that had already finished. Which design solves this?",
-      "opcoes": [
-        "Resume the coordinator with --resume in the same session, relying on the conversation history to know which searches had already finished before the crash.",
-        "Reduce the scope of the research jobs so they finish in under an hour.",
-        "Add a time limit per research job and mark those that exceed it as failed.",
-        "Keep a manifest in a known location (subtasks, status, result paths) and resume from it."
+        "Correct. An iterative refinement loop closes the gaps that a single pass leaves.",
+        "Giving synthesis search tools invites cross-specialization misuse and bypasses the coordinator's control of the research.",
+        "Broader upfront decomposition helps, but some gaps only show up after synthesis; a refinement loop is what catches them.",
+        "Repeating the same untargeted pipeline doubles the cost without aiming at the gaps it found."
       ],
-      "correta": 3,
-      "explicacao": "State saved in a known location + a coordinator manifest makes it possible to resume after a crash. Whatever cannot be lost goes to a file.",
-      "feedbacks": [
-        "It depends on the scrollback, which may have been compacted or lost; whatever cannot be lost goes to a file.",
-        "It sacrifices the product to work around an engineering flaw.",
-        "It doesn't recover anything; it only turns crashes into declared failures.",
-        "Correct. State saved to a file + a manifest makes it possible to resume after a crash without redoing what has already finished."
-      ]
-    },
-    {
       "cenario": 3,
       "dominio": "D1",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe system is implemented with the Claude Agent SDK, and the subagents are declared via AgentDefinition. Which TWO statements about this implementation are correct? (Choose TWO.)",
-      "opcoes": [
-        "Each subagent automatically receives the coordinator's full history.",
-        "Subagents can directly call sibling subagents to exchange results.",
-        "The coordinator must have the Agent tool in allowedTools to be able to create subagents.",
-        "Messages produced inside a subagent carry parent_tool_use_id, which allows them to be attributed to the call that created it.",
-        "To run in parallel, each subagent must be started in a separate SDK process."
-      ],
-      "corretas": [
-        2,
-        3
-      ],
-      "explicacao": "Agent SDK: the Agent tool must be in allowedTools; subagent messages carry parent_tool_use_id. Context is isolated, and communication goes through the coordinator.",
-      "feedbacks": [
-        "False: the subagent's context is isolated, and everything it needs goes in the prompt.",
-        "It contradicts hub-and-spoke: communication goes through the coordinator.",
-        "Correct. Subagents are created via the Agent tool (formerly called Task), which must be allowed for the coordinator.",
-        "Correct. This is how you trace which subagent produced what.",
-        "Parallelism comes from multiple Agent calls in the same coordinator response."
-      ]
+      "ts": "1.2",
+      "bullet": "1.2-S3"
     },
     {
-      "cenario": 3,
-      "dominio": "D4",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe analysis subagent's prompt says \"discard unreliable sources\". In different runs, the same technical blog is accepted in one and discarded in another, and studies from industry associations are treated inconsistently. What is the best fix?",
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The system handles two request types: citation audits of theses (check each chapter's references for format, retractions, and broken links) and exploratory literature questions. After the team switched both types from a fixed pipeline to dynamic decomposition, exploratory reports improved, but citation audits became erratic: 15% skipped a check, and run times now vary threefold. Which statement about this outcome is correct?",
       "opcoes": [
-        "Ask the subagent to assign each source a reliability score from 0 to 10, justifying the score, and automatically discard those below 7.",
-        "Add \"be rigorous\" to the current instruction.",
-        "Define explicit criteria: the source types that count, those that don't, and boundary examples with the reason.",
-        "Add a second subagent that reviews each decision of the first one using the same prompt."
-      ],
-      "correta": 2,
-      "explicacao": "Explicit criteria (what counts, what doesn't, boundary examples) beat vague instructions like 'discard unreliable sources'.",
-      "feedbacks": [
-        "It shifts the vague judgment to a self-reported score with no yardstick; it remains inconsistent.",
-        "Yet another vague instruction; it doesn't define rigor.",
-        "Correct. Explicit criteria, with what counts, what doesn't, and boundary cases, make the decision consistent.",
-        "It doubles the cost and replicates the same vague criterion; it doesn't solve the root cause."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D2",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nThe search subagent uses the server-side web search tool. In extensive research, the response sometimes comes back with stop_reason \"pause_turn\", and the current code treats this as the end, delivering an incomplete result. What is the correct handling?",
-      "opcoes": [
-        "Treat pause_turn as an error and repeat the original request from scratch.",
-        "Resend the conversation including the response received, so the model continues the server-side loop where it left off.",
-        "Increase max_tokens, since pause_turn indicates that the output was cut off.",
-        "Switch to tool_choice none on the next turn to force a final answer."
-      ],
-      "correta": 1,
-      "explicacao": "pause_turn = the server-side tool loop hit its iteration cap; resend the response to continue.",
-      "feedbacks": [
-        "It discards the work already done in the turn and may hit the same cap again.",
-        "Correct. pause_turn indicates that the server-side loop hit its iteration cap; resending the response allows it to continue.",
-        "It confuses pause_turn with max_tokens; they are different signals.",
-        "It forces an answer before the search finishes; it delivers exactly the incomplete result you want to avoid."
-      ]
-    },
-    {
-      "cenario": 3,
-      "dominio": "D4",
-      "pergunta": "Scenario: InsightLab runs a multi-agent research system: a coordinator decomposes the client's question and delegates to web search, document analysis, and synthesis subagents, which together produce reports with citations.\n\nTo reduce incorrect citations, the team asked the synthesis subagent, when it finishes the report, to \"review its own citations\". The rate of citations that don't support the claim barely changed. Which approach is better?",
-      "opcoes": [
-        "An independent verifier subagent, with a fresh context, that checks whether each cited excerpt supports the claim.",
-        "Ask the synthesis subagent to review the citations twice.",
-        "Ask the synthesis subagent for a confidence score for each citation, with a justification, and remove from the report the citations scored below the threshold.",
-        "Increase the synthesis subagent's effort."
+        "Citation audits are predictable checks that suit a fixed pipeline, while open questions suit dynamic decomposition; use each where it fits.",
+        "Both types should keep dynamic decomposition, adding a coordinator prompt that lists each audit check the plan has to include.",
+        "Both types should go back to the fixed pipeline, because the improvement in exploratory reports is most likely run-to-run noise.",
+        "The erratic audits come from the coordinator's model; a larger model would make dynamic plans as consistent as a fixed pipeline."
       ],
       "correta": 0,
-      "explicacao": "Review should be done by an independent instance (without the author's reasoning context), with explicit criteria.",
+      "explicacao": "Fixed sequential pipelines (prompt chaining) suit predictable, multi-step work like citation audits; dynamic adaptive decomposition suits open-ended investigation. The outcome shows each pattern helping where it fits and hurting where it does not, so the system should route each request type to its own pattern.",
       "feedbacks": [
-        "Correct. Self-review in the same context suffers from the bias of the reasoning that generated the text; an independent verifier, with explicit criteria, catches what the author rationalized.",
-        "Same session, same bias; repeating doesn't change the point of view.",
-        "Self-reported confidence is poorly calibrated; incorrect citations usually come with high confidence.",
-        "More reasoning in the same biased context doesn't fix self-review."
-      ]
+        "Correct. Match the decomposition pattern to the workflow: chaining for predictable checks, adaptive decomposition for open questions.",
+        "Listing the checks makes a fixed procedure depend on probabilistic planning; a fixed pipeline runs every check by construction.",
+        "Reverting discards a real improvement for exploratory work, which benefits from subtasks generated by intermediate findings.",
+        "A larger model still plans afresh on every run; predictable checks do not need planning at all."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K1"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The document analysis subagent uses the MCP tools load_document and extract_tables. Today their errors distinguish a timeout, a malformed page range, a document outside the library's license, and a corrupt file. To simplify the server, an engineer proposes that every failure return {\"isError\": true, \"content\": \"Operation failed\"}, arguing that the agent \"only needs to know the call failed.\" How should you evaluate this proposal?",
+      "opcoes": [
+        "Reject it: a uniform message hides whether a timeout, a bad page range, or a license limit occurred, so the agent cannot pick a recovery.",
+        "Accept it: the agent's recovery is the same for each failure (retry once, then report), so detailed error categories would only add tokens.",
+        "Accept it, provided the server logs each full exception, so engineers can still diagnose failures when they review the logs later.",
+        "Reject it, and return the raw exception text from the PDF library instead, since that text already holds everything the agent would ever need."
+      ],
+      "correta": 0,
+      "explicacao": "Uniform error responses prevent the agent from making appropriate recovery decisions. A timeout may succeed on retry, a malformed page range needs corrected input, and a license restriction will never succeed; the agent can act correctly only if the error says which one occurred.",
+      "feedbacks": [
+        "Correct. Each error category implies a different action, which a generic message erases.",
+        "Retrying a license restriction or a malformed range can never succeed; one recovery path for every failure wastes calls and time.",
+        "Logs help engineers later but give the agent nothing to decide with at runtime.",
+        "Raw library text is unstructured and inconsistent; the agent needs a category and a retryable signal it can act on."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.2",
+      "bullet": "2.2-K3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The coordinator invokes the synthesis subagent through the Task tool with the prompt: \"Synthesize the findings from the search and document analysis steps on rural broadband adoption into a report draft.\" The draft is a generic overview that cites none of the 23 documents analyzed earlier in the run. The team cannot add shared storage or new tools. What is the most effective fix?",
+      "opcoes": [
+        "Give the synthesis subagent the web search tools, so that it can collect again whatever material it needs to write a well-cited report draft.",
+        "Add to the synthesis subagent's system prompt: \"Use the earlier findings carefully and cite every document that was analyzed.\"",
+        "Have the coordinator put the complete search results and document analyses, with their sources, directly in the synthesis Task prompt.",
+        "Run synthesis by resuming the document analysis subagent's session, so the synthesis step inherits the context that already holds the analyses."
+      ],
+      "correta": 2,
+      "explicacao": "Subagents do not inherit the coordinator's context or share memory; whatever they need must be passed explicitly in their prompt. Including the complete findings from prior agents, with their sources, in the synthesis subagent's Task prompt gives it the material to synthesize and cite.",
+      "feedbacks": [
+        "Re-collecting duplicates work and gives synthesis tools outside its role; the findings already exist in the coordinator.",
+        "Telling the subagent to use findings it never received cannot work; it has no implicit access to them.",
+        "Correct. Pass prior agents' complete findings directly in the subagent's prompt.",
+        "Reusing another subagent's session mixes roles and still omits the search results; explicit context passing is the intended mechanism."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S1"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. For a report that needs six independent PDFs analyzed, the coordinator's logs show one Task call to the document analysis subagent per response: it waits for each result before issuing the next call. Analysis accounts for 18 of the 24 minutes a report takes. What is the most effective first step to cut this time?",
+      "opcoes": [
+        "Send the six PDFs to the document analysis subagent in one Task call, so a single instance analyzes them back to back in one shared context.",
+        "Have the coordinator emit the six Task calls in a single response, so the analyses run in parallel and their results return together.",
+        "Set the coordinator's tool_choice to \"any\", so it calls a tool on every turn instead of pausing to write text between delegations.",
+        "Move the six analyses to the Message Batches API, which processes many requests at once and costs about half as much per document."
+      ],
+      "correta": 1,
+      "explicacao": "Subagents are spawned in parallel when the coordinator emits multiple Task tool calls in a single response, rather than one per turn. The six independent analyses then run concurrently, removing most of the sequential wait.",
+      "feedbacks": [
+        "One instance processing six PDFs is still sequential and packs every document into one context.",
+        "Correct. Multiple Task calls in one coordinator response run the subagents in parallel.",
+        "tool_choice controls whether a tool is called, not whether calls are issued together; the coordinator would still delegate one per turn.",
+        "Batches cut cost but offer no latency guarantee (up to 24 hours), which would make a 24-minute report far slower."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. Each handoff through the coordinator adds about 10 seconds. To cut latency, an engineer proposes letting the web search subagent send its results straight to the synthesis subagent, and synthesis send its draft straight to report generation, with the coordinator receiving only the final report. Which design should the team choose?",
+      "opcoes": [
+        "The direct handoffs: removing the coordinator from the data path cuts latency, and it can still check quality on the final report.",
+        "Keep routing through the coordinator: handoffs stay observable, errors are handled consistently, and it controls what each gets.",
+        "The direct handoffs, with each subagent writing a log entry for each message it sends, which gives the same visibility as the hub.",
+        "A hybrid: keep the coordinator only for error handling and let subagents exchange results directly, balancing latency and control."
+      ],
+      "correta": 1,
+      "explicacao": "Routing all subagent communication through the coordinator provides observability, consistent error handling, and controlled information flow. Direct handoffs save seconds but remove the point where gaps, errors, and missing sources can be caught and where the coordinator decides what each subagent receives.",
+      "feedbacks": [
+        "Checking only the final report loses the chance to catch gaps, errors, and missing sources at each step, when they are cheap to fix.",
+        "Correct. Hub-and-spoke routing keeps every handoff visible and under the coordinator's control.",
+        "Logs give after-the-fact visibility but no control: nobody decides what flows between subagents or how failures are handled.",
+        "Splitting responsibilities leaves the coordinator handling errors for data it never saw and unable to control what each subagent receives."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-S4"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The provost's office requires reports to show readers where credible sources disagree. For the 2023 graduating cohort, a government survey reports that 34% of graduates carry more than $30,000 in student debt, while a national university study reports 41%. The synthesis subagent currently keeps the figure from the more recent publication and cites only that source. What should change to meet the requirement?",
+      "opcoes": [
+        "Have the synthesis subagent average the two conflicting values and cite both sources for the averaged figure in the report.",
+        "Have the synthesis subagent report both values with their sources and methods, marking the claim as contested.",
+        "Have the synthesis subagent keep the source with the larger sample size and move the other value into a footnote.",
+        "Have the coordinator search until a third source breaks the tie, then report the value supported by most of the sources."
+      ],
+      "correta": 1,
+      "explicacao": "When credible sources report conflicting statistics, the synthesis should annotate the conflict with source attribution instead of selecting one value. Reporting both figures with their sources and methodology, and marking the claim as contested, is what lets readers see the disagreement.",
+      "feedbacks": [
+        "An average is a number neither source reported, and it hides the disagreement the requirement asks to show.",
+        "Correct. Annotate conflicting values with their sources rather than choosing one.",
+        "Sample size is one quality signal, but selecting by it still hides a credible disagreement from readers.",
+        "Majority voting across sources is still arbitrary selection, and it spends extra searches to hide the conflict."
+      ],
+      "cenario": 3,
+      "dominio": "D5",
+      "ts": "5.6",
+      "bullet": "5.6-K3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The library's license with one publisher allows at most 50 full-text downloads per day through its API. The limit is stated in the system prompts of the web search and document analysis subagents and in the description of their load_document tool. Last month the publisher flagged four days with 63 to 90 downloads; on ordinary days the system stays under the limit. What is the most likely root cause?",
+      "opcoes": [
+        "The limit exists only as prompt text, which is followed probabilistically; nothing intercepts load_document calls and blocks those over the cap.",
+        "The load_document description is too long, so the limit is lost among other details; moving it into the first sentence would fix it.",
+        "The subagents cannot see the running count; injecting the day's download total into each prompt would let them stop at 50.",
+        "The coordinator runs too many subagents in parallel on busy days; limiting it to one at a time would keep downloads under the cap."
+      ],
+      "correta": 0,
+      "explicacao": "A compliance rule that must always hold cannot rely on prompt instructions, which models follow probabilistically. A hook that intercepts outgoing load_document calls, counts downloads, and blocks calls above the daily limit enforces the license deterministically, however many subagents run.",
+      "feedbacks": [
+        "Correct. Hooks that intercept outgoing tool calls turn a compliance rule into a guarantee; prompt text cannot.",
+        "Placement may improve salience but leaves compliance probabilistic; the busy-day overruns show instructions alone fail.",
+        "Giving the model the count still relies on it choosing to stop, and parallel subagents can exceed the cap between updates.",
+        "Less parallelism slows research for everyone and still does not enforce the limit; a sequential run can exceed 50 too."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.5",
+      "bullet": "1.5-K2"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The document analysis subagent was given a generic fetch_url(url) tool so it could open articles from the catalog. Logs show it also fetching news homepages, search-engine result pages, and a 300 MB dataset file, which fill its context and slow runs by several minutes. What is the flaw in this design?",
+      "opcoes": [
+        "The subagent's system prompt does not restrict what it fetches; adding \"fetch only scholarly documents\" would stop the stray requests.",
+        "The subagent should not fetch anything; the search subagent should download each document and pass its full text in the Task prompt.",
+        "It has a generic fetch tool where it needs a constrained one, such as a load_document tool that accepts only validated document URLs.",
+        "fetch_url has no size limit; capping downloads at 20 MB would stop the large files from filling the analysis subagent's context."
+      ],
+      "correta": 2,
+      "explicacao": "A generic tool gives a subagent capabilities beyond its role, and it will use them. Replacing fetch_url with a constrained load_document tool that validates document URLs keeps the subagent on scholarly documents by design rather than by instruction.",
+      "feedbacks": [
+        "A prompt restriction is probabilistic and leaves the generic capability in place; the tool itself should constrain what can be fetched.",
+        "Moving all downloading to search makes Task prompts enormous and shifts the problem; the analysis role does need to load documents.",
+        "Correct. Replace generic tools with constrained alternatives that validate their inputs.",
+        "A size cap stops the dataset file but not the news and search pages; the tool still accepts any URL."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S2"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. The report-generation subagent often needs to confirm that a citation's DOI resolves and that its authors and year match before it formats the bibliography. Each time, it hands control back to the coordinator, which calls the web search subagent and then re-invokes report generation, adding about three round trips per report. Most checks are simple metadata lookups; a few involve disputed authorship or retracted papers. Which TWO changes best reduce the overhead while keeping the system reliable? Choose TWO.",
+      "opcoes": [
+        "Give the report-generation subagent a scoped verify_citation tool that resolves a DOI and returns its title, authors, and year.",
+        "Give the report-generation subagent the full web search toolset, so it can settle citation questions itself without the coordinator.",
+        "Have the report-generation subagent skip verification and mark unchecked citations, so faculty can confirm them while reading.",
+        "Have the search subagent pre-verify each source's DOI during the initial research, anticipating what report generation will check.",
+        "Keep sending disputed-authorship and retraction cases back through the coordinator to the search and analysis subagents."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "A scoped cross-role tool covers the high-frequency simple case (resolving a DOI and its metadata) without round trips. Complex cases such as disputed authorship or retractions still go through the coordinator, preserving the specialization and control of the hub-and-spoke design.",
+      "feedbacks": [
+        "Correct. A scoped verify tool handles the frequent simple lookups directly.",
+        "Full search access over-provisions the subagent, invites cross-specialization misuse, and bypasses coordinator control for complex cases.",
+        "Pushing verification to readers lowers report quality and shifts the work onto faculty.",
+        "Speculative pre-verification spends work on sources that may never be cited and cannot anticipate every check.",
+        "Correct. Complex cases keep routing through the coordinator, which the scoped tool does not replace."
+      ],
+      "cenario": 3,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S3"
+    },
+    {
+      "pergunta": "Eastbrook University Library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to web search, document analysis, synthesis, and report-generation subagents to produce comprehensive, cited reports for faculty. For a report on campus housing affordability, the coordinator spent about 40 minutes building a shared analysis of 60 sources. Faculty now want two versions built on that baseline: one framed as recommendations for policy-makers and one as a methodological review. An engineer proposes running the whole pipeline twice from scratch with different instructions. How should you evaluate this proposal?",
+      "opcoes": [
+        "Adopt it: running from scratch guarantees that each version is fully independent and not biased by the other version's reasoning.",
+        "Reject it: continue in the same session, producing the policy version first and asking for the methodological one in the next turn.",
+        "Reject it: fork the session (fork_session) after the shared analysis, so each branch starts from the same baseline independently.",
+        "Reject it: have the report-generation subagent write both versions in a single response, using the shared analysis as its input."
+      ],
+      "correta": 2,
+      "explicacao": "Fork-based session management creates independent branches from a shared analysis baseline, so divergent versions can be explored without repeating the shared work. Each branch keeps the same 40-minute analysis and develops its framing without being influenced by the other.",
+      "feedbacks": [
+        "Independence does not require redoing 40 minutes of analysis, and two fresh runs may analyze the sources differently, so the versions diverge on facts.",
+        "In one session, the second version inherits the first version's framing and reasoning, so the two are not independent.",
+        "Correct. fork_session branches from the shared baseline so each version develops independently.",
+        "A single response blends both framings and splits attention; separate branches keep the versions independent."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-K4"
     }
   ]
 }

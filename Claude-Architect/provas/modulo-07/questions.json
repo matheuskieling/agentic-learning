@@ -1,361 +1,441 @@
 {
-  "titulo": "Module 07 — Exam: multi-agent orchestration, decomposition, multi-pass review, and sessions",
+  "titulo": "Módulo 07 — Prova (estilo exame)",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "A multi-agent research system receives: \"overview of renewable energy in Brazil\". The coordinator creates subtasks on residential solar panels, solar power plants, and solar energy incentives. The report comes out well written and well supported, but it ignores wind, hydroelectric, and biomass. The logs show that each subagent did exactly what it was given. What is the best fix?",
+      "pergunta": "A pharmaceutical company's developer productivity agent, built with the Claude Agent SDK, was asked to \"add comprehensive tests\" to a 15-year-old laboratory information management system with 1,100 source files. The agent was configured with a plan that walks the repository alphabetically and generates one test file per source file. After three days it has written 640 tests, mostly for DTOs and simple getters. The sample-tracking and dose-calculation modules, where 80% of last year's production incidents originated, still have no new tests, and 90 of the generated tests fail because they mock classes that turned out to depend on a shared static configuration singleton. What is the most likely root cause?",
       "opcoes": [
-        "Improve the search subagents' prompt so they bring back more diverse sources",
-        "Fix the coordinator's decomposition to cover the entire scope and add an explicit coverage check before synthesis",
-        "Add a reviewer subagent at the end that rewrites the report with broader coverage",
-        "Switch the coordinator's model to one with a larger context window"
+        "The test-generation prompt has no few-shot examples of high-value tests, so the agent falls back on shallow tests that exercise simple data classes and property getters.",
+        "The task was decomposed as a fixed file-by-file sequence instead of mapping the structure, prioritizing high-impact areas, and adapting as dependencies surfaced.",
+        "The agent's context filled up during the three-day run, so it lost track of which modules carry the most business risk and drifted toward the easiest files.",
+        "The agent was not allowed to run the test suite through Bash, so it did not see that its mocks were failing and could not correct them before moving on."
       ],
       "correta": 1,
-      "explicacao": "Overly narrow decomposition is a coordinator defect. The subagents did what they were given; the fix is to decompose more broadly and check coverage.",
+      "explicacao": "An open-ended task like adding comprehensive tests to a legacy system needs adaptive decomposition: map the structure, find the high-impact areas (here, the modules behind 80% of incidents), and follow a prioritized plan that changes when dependencies such as the static singleton appear. A fixed alphabetical file-by-file plan guarantees effort goes to whatever comes first and cannot react to what is discovered.",
       "feedbacks": [
-        "Targets the component that worked: the subagents searched for exactly what they were asked to.",
-        "Correct. The gap originates in the decomposition.",
-        "A reviewer at the end has no material on wind and hydroelectric to include: none of that was researched. It treats the symptom too late.",
-        "The context window has nothing to do with the scope of the decomposition."
-      ]
-    },
-    {
-      "pergunta": "In the same research system, after 20 turns discussing with the user that the focus is \"Latin American logistics startups with a Series A round in 2025\", the coordinator delegates: \"Research the companies we discussed and bring back the funding data.\" The subagent comes back with generic data on large U.S. logistics companies. What is the cause and the fix?",
-      "opcoes": [
-        "The subagent uses a weaker model; use the same model as the coordinator",
-        "A better search tool is missing; integrate a startup database",
-        "The subagent should have asked for clarification; instruct it to always ask when in doubt",
-        "The subagent has an isolated context and did not see the conversation; the delegation must explicitly include region, stage, year, criteria, and output format"
+        "Few-shot examples could improve the quality of each test, but they would not change which files the plan visits or make the agent prioritize the risky modules; the symptom is about coverage order, not test style.",
+        "Correct. The fixed sequence ignores impact and cannot adapt when a shared dependency is discovered; mapping, prioritizing, and adapting the plan is the recommended decomposition.",
+        "Context degradation is real in long sessions, but the agent was never told to consider risk in the first place: an alphabetical plan sends it to DTOs whether or not its context is fresh.",
+        "Running the tests would expose the 90 failing mocks, but the agent would still be walking the alphabet; it would not reach the high-incident modules any sooner or plan around the singleton."
       ],
-      "correta": 3,
-      "explicacao": "Subagents do not inherit the coordinator's history. \"The companies we discussed\" doesn't exist for the subagent: everything goes explicitly into the delegation prompt.",
-      "feedbacks": [
-        "Even the best model can't guess what it never received.",
-        "The tool isn't the problem: the subagent doesn't even know what to look for.",
-        "Shifts to the subagent work that belongs to the coordinator and adds unnecessary round trips; the direct fix is to delegate with full context.",
-        "Correct."
-      ]
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-S3"
     },
     {
-      "pergunta": "The coordinator of a research system needs to query four independent sources for each question. Metrics show latency equal to the sum of the four queries. The logs reveal one `Agent` call per coordinator turn. What is the simplest fix?",
+      "pergunta": "A pharmaceutical company runs an internal developer assistant built with the Claude Agent SDK. A coordinator delegates to four subagents: codebase-explorer, dependency-analyzer, doc-writer, and test-planner. The design document states: \"For consistency, every request passes through all four subagents in order; a subagent with nothing relevant returns an empty section.\" Engineers report that a question such as \"Where is the batch-release validation function defined?\" takes about four minutes and comes back as a three-page answer that includes an unrequested test plan. Which flaw in the design best explains this?",
       "opcoes": [
-        "Instruct the coordinator to emit the four `Agent` calls in the same response when the subtasks are independent",
-        "Replace the subagents with a single agent that has all the tools for the four sources",
-        "Increase the maximum subagent concurrency setting",
-        "Move each source to a separate process orchestrated by an external queue"
-      ],
-      "correta": 0,
-      "explicacao": "Subagent parallelism = multiple `Agent` `tool_use` blocks in the same response. One per turn is sequential by construction.",
-      "feedbacks": [
-        "Correct.",
-        "Crams too many tools into one agent and doesn't solve the parallelism.",
-        "The limit isn't being hit: the coordinator emits one subagent at a time.",
-        "New infrastructure for something the protocol itself already solves: violates the simplest fix."
-      ]
-    },
-    {
-      "pergunta": "To \"gain speed\", an engineer proposes that the analysis subagent send questions directly to the search subagent, without going through the coordinator. What is the best assessment?",
-      "opcoes": [
-        "Good idea, as long as the direct messages are logged",
-        "Good idea, because it reduces the coordinator's context load",
-        "Reject it: in hub-and-spoke the coordinator routes all communication, which preserves observability, error handling, and coverage control",
-        "Reject it, because subagents cannot call tools"
+        "The four subagents run one after another instead of in parallel, so the total latency of every request equals the sum of all four subagent runs.",
+        "The doc-writer and test-planner subagents have no tool restrictions, so they run exploratory searches outside their specialization on every request.",
+        "The coordinator routes every request through the full pipeline instead of analyzing what each query needs and invoking only the relevant subagents.",
+        "The codebase-explorer returns verbose findings without a concise format, so its raw output spreads into each downstream subagent's section."
       ],
       "correta": 2,
-      "explicacao": "Direct communication between subagents is an anti-pattern: it takes away the coordinator's view of the whole, its error handling, and its gap detection.",
+      "explicacao": "The coordinator's job includes deciding which subagents to invoke based on the query's complexity. A lookup question needs only the explorer; forcing it through all four subagents adds latency and produces output nobody asked for. The fix is a coordinator that analyzes each query and selects subagents dynamically.",
       "feedbacks": [
-        "Logging doesn't give the coordinator back control over error handling or the ability to assess gaps.",
-        "Tempting, but the coordinator loses exactly the view it needs to aggregate and re-delegate.",
-        "Correct.",
-        "Subagents use tools normally; the problem is the communication topology."
-      ]
-    },
-    {
-      "pergunta": "An internal research assistant is expensive: even simple factual questions (\"when was company X founded?\") go through web search, academic search, trend analysis, and review. The quality of the answers to complex questions is good. What should change?",
-      "opcoes": [
-        "Create a separate classifier, trained to decide the route for each question",
-        "Have the coordinator evaluate each query and invoke only the subagents needed",
-        "Reduce the `max_tokens` of all subagents",
-        "Remove academic search and review from all queries"
+        "Parallel execution would shorten the wait, but the coordinator would still invoke the doc-writer and test-planner for a simple lookup, so the unrequested test plan and most of the cost would remain.",
+        "Tool restrictions matter for preventing cross-specialization misuse, but even perfectly scoped subagents would run here, because the design invokes all four for every request.",
+        "Correct. Always routing through the full pipeline is the flaw; the coordinator should analyze the query and invoke only the subagents it needs.",
+        "A more concise explorer output would trim the answer somewhat, but the doc-writer and test-planner would still run and still add sections that the engineer never requested."
       ],
-      "correta": 1,
-      "explicacao": "Invoking only what the query needs is the coordinator's job; it is the simplest fix and preserves the quality of the complex queries.",
-      "feedbacks": [
-        "More complex than necessary: the coordinator can already decide this with clear criteria.",
-        "Correct.",
-        "Cuts answers off midway without reducing the number of subagents invoked.",
-        "Hurts the complex queries, which currently work well."
-      ]
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-S1"
     },
     {
-      "pergunta": "In the final report of a research system, a market share figure appears without a source, and two subagents had found different values (31% and 27%), but the report shows only 29%. The subagents return prose paragraphs. What is the best change?",
+      "pergunta": "An energy utility runs Claude Code in its CI pipeline to review pull requests to its grid-telemetry ingestion service. The team recently restructured the review into two steps. Step 1 reviews each changed file on its own with the same criteria. Step 2 receives the step-1 findings plus the interfaces of the changed modules and looks only at data flow between files. Since the change, findings are equally detailed across files, and step 2 caught a parser that emits kWh while an aggregator in another file expects MWh, which the previous single-pass review had missed. Which statement about this pipeline is correct?",
       "opcoes": [
-        "Instruct the coordinator to always pick the value from the most recent source",
-        "Ask the synthesizer to cite the sources at the end of the report",
-        "Add a verifier subagent that redoes all the searches",
-        "Have the subagents return structured output separating content from metadata (claim, evidence, source, date), and have the synthesis record the conflicting values with their sources"
-      ],
-      "correta": 3,
-      "explicacao": "Structured handoff (content + metadata) preserves attribution. A conflict between sources should be annotated, not resolved by averaging or by silent selection.",
-      "feedbacks": [
-        "Choosing silently hides the conflict, and the most recent source may be measuring something else.",
-        "Without metadata coming from the subagents, the synthesizer has no way of knowing where each number came from.",
-        "Redoing searches doesn't fix the format that loses attribution; it's double the cost.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "After the first round, the research coordinator evaluates the synthesis and notices that the regulatory perspective is missing and that a 2023 data point needs updating. What is the most appropriate next step?",
-      "opcoes": [
-        "Launch a second round targeted only at those gaps, then synthesize",
-        "Rerun all the subagents with the same prompts",
-        "Deliver the report with a note saying it may be incomplete",
-        "Ask the user to research the regulatory part"
-      ],
-      "correta": 0,
-      "explicacao": "Iterative refinement: evaluate → identify gaps → targeted 2nd round → synthesize.",
-      "feedbacks": [
-        "Correct.",
-        "Repeats work already done and doesn't target the gaps.",
-        "Giving up on identifiable, fixable gaps is not the expected behavior of the coordinator.",
-        "Shifts to the user work that the system can do."
-      ]
-    },
-    {
-      "pergunta": "A company uses Claude Code in CI to review PRs. On PRs with more than 30 files, the review flags superficial issues, enforces a standard in some files and ignores it in others, and missed a signature change that broke three callers in other modules. What is the best restructuring?",
-      "opcoes": [
-        "Use a model with a larger context window so the whole PR fits",
-        "Run the same review three times and consolidate by voting",
-        "Pass 1 per file, with the same prompt for all; pass 2 for integration, with a separate prompt, receiving the pass 1 findings to analyze contracts and flow between modules",
-        "Ask the author to split every PR into PRs of at most 5 files"
+        "It is dynamic decomposition: the integration step exists because the coordinator generated it after detecting the unit mismatch in the per-file reviews.",
+        "It is prompt chaining, but the gain comes from the extra tokens it spends; one pass with a larger output budget would catch the same set of issues.",
+        "It is prompt chaining: fixed steps where focused per-file passes avoid attention dilution and a separate pass covers the cross-file data flow.",
+        "It is a consensus design: two passes examine the same code independently, and only the issues that both passes confirm are posted to the PR."
       ],
       "correta": 2,
-      "explicacao": "Multi-pass review solves attention dilution (local pass), inconsistency (same prompt per file), and cross-file bugs (integration pass).",
+      "explicacao": "Breaking a review into a fixed sequence of focused steps (each file on its own, then a cross-file integration pass) is the prompt chaining pattern. Per-file passes give every file the same attention instead of diluting it across the whole PR, and the integration pass looks at what no single file shows, such as a unit mismatch between a parser and an aggregator.",
       "feedbacks": [
-        "Fitting in the window doesn't solve attention dilution in a single pass.",
-        "Voting across reviews that suffer from the same problem doesn't create the integration pass.",
-        "Correct.",
-        "A process constraint that doesn't solve the tool's problem and isn't always feasible."
-      ]
+        "The steps were designed in advance and run on every PR; nothing is generated from intermediate findings. Dynamic decomposition is for open-ended investigations, not for a predictable review.",
+        "The label is right but the explanation is wrong: a longer output budget for a single pass does not fix attention dilution, which is why the old review gave uneven depth and missed the cross-file bug.",
+        "Correct. This is prompt chaining for a predictable review: per-file passes for consistent local depth plus a separate integration pass for cross-file issues.",
+        "The two steps look at different things (local issues versus cross-file data flow); they do not review the same code twice, and requiring agreement would suppress real findings."
+      ],
+      "cenario": 5,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K2"
     },
     {
-      "pergunta": "A team uses a Claude Code session to implement a feature and, at the end, in the same session, asks: \"now critically review your code\". The review almost never finds problems, but QA finds several. What is the most likely cause and the best fix?",
+      "pergunta": "A university library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to search, document-analysis, synthesis, and report subagents. To reduce latency, an engineer piloted a change that lets the document-analysis subagent send follow-up queries straight to the search subagent through a shared queue, bypassing the coordinator. The pilot was 18% faster, but when the search subagent timed out, the analysis subagent waited without reporting anything, and the coordinator's trace had no record of about 40% of the searches that were run. Which TWO statements correctly evaluate this change? Choose TWO.",
       "opcoes": [
-        "The review prompt is weak; ask the model to be \"extremely rigorous\"",
-        "Reasoning-context bias: whoever generated it doesn't question its own decisions. Review in an independent session that sees only the code",
-        "Lack of time; run the review with maximum `effort` in the same session",
-        "Fork the session to review, taking advantage of the cache"
-      ],
-      "correta": 1,
-      "explicacao": "Self-review in the same session is an anti-pattern. An independent instance evaluates the artifact without the reasoning that justified it.",
-      "feedbacks": [
-        "An instruction doesn't remove the biased context; the model remains \"convinced\" by its own reasoning.",
-        "Correct.",
-        "More effort in the same context keeps the bias.",
-        "The fork inherits the entire conversation, including the biased reasoning. Cheap, but not independent."
-      ]
-    },
-    {
-      "pergunta": "You are designing the multi-pass review pipeline for large PRs in CI. Which decisions are correct? (Choose TWO.)",
-      "opcoes": [
-        "Use, in pass 2, the same session that generated the code, because it knows the intentions",
-        "Apply the same review prompt to each file in pass 1, to keep the criteria consistent",
-        "Skip pass 1 when the PR fits in the context window",
-        "Let each file use a different prompt, adapted by the model itself",
-        "Pass the pass 1 findings to pass 2, focusing on contracts, data flow, and errors across modules"
-      ],
-      "corretas": [
-        1,
-        4
-      ],
-      "explicacao": "Pass 1: per file, consistent prompt. Pass 2: separate integration prompt, fed by the pass 1 findings. All in a session independent from the one that generated the code.",
-      "feedbacks": [
-        "Reintroduces reasoning-context bias.",
-        "Correct.",
-        "Fitting in the window doesn't eliminate attention dilution.",
-        "Different prompts produce exactly the inconsistency you want to avoid.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "Yesterday, a Claude Code session mapped the billing module and started a refactoring plan. Overnight, another developer merged a change that reorganized half of that module's files. How should you continue?",
-      "opcoes": [
-        "Use `--resume` and follow the plan normally",
-        "Use `--resume` with `--fork-session` to get a new ID",
-        "Use `--continue`, which reloads the files automatically",
-        "Start a new session with a structured summary of what was decided, letting Claude reread the current state of the module"
-      ],
-      "correta": 3,
-      "explicacao": "When files have changed, the tool results in the history are stale and the model trusts them. Start a new session with a summary (or, if resuming, state explicitly what changed).",
-      "feedbacks": [
-        "The history holds the old file contents; Claude would edit based on code that no longer exists.",
-        "A new ID doesn't refresh the stale results inherited from the base.",
-        "`--continue` resumes the most recent session with the same history; it doesn't reread anything automatically.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A Claude Code session spent an hour analyzing a legacy service. The tech lead wants to compare two modernization strategies (strangler fig vs. rewrite) based on that analysis, without the experiments of one contaminating the other. What is the best approach?",
-      "opcoes": [
-        "Resume the session twice with `--resume` and `--fork-session`, one per strategy",
-        "Try one strategy, undo it with git, and try the other in the same session",
-        "Open two new sessions and repeat the analysis in each one",
-        "Ask Claude, in the same session, to \"forget\" the first strategy before the second"
-      ],
-      "correta": 0,
-      "explicacao": "`--fork-session` creates branches with new IDs from the common base: it reuses the analysis without contamination between the branches.",
-      "feedbacks": [
-        "Correct.",
-        "Undoing the files doesn't remove the decisions and results of the first attempt from the history.",
-        "Works, but throws away an hour of valid analysis.",
-        "Asking it to forget doesn't remove anything from the context."
-      ]
-    },
-    {
-      "pergunta": "A developer needs to resume a bug investigation session because most of the context is still valid, but since then the developer has personally changed two configuration files. What is the correct way to resume?",
-      "opcoes": [
-        "Resume and mention nothing; Claude will notice the changes on its own",
-        "Resume and ask Claude to reread the entire repository",
-        "Resume and state explicitly what changed (which files and how), asking Claude to reread those two before continuing",
-        "Delete the session's tool result history before resuming"
-      ],
-      "correta": 2,
-      "explicacao": "When resuming after changes, say what changed: the stale results remain in the history and the model trusts them.",
-      "feedbacks": [
-        "Claude has no way of knowing; the old results look valid.",
-        "Overkill: wastes context rereading what didn't change.",
-        "Correct.",
-        "Editing the history is risky and unnecessary; just report the change."
-      ]
-    },
-    {
-      "pergunta": "A data extraction company always processes contracts the same way: extract parties and dates, classify risk clauses, validate required fields, and generate a summary. A proposal suggests an orchestrator agent that dynamically decides the steps. What is the best recommendation?",
-      "opcoes": [
-        "Approve the orchestrator, since it adapts to future contracts",
-        "Prompt chaining with the fixed steps and validation gates between them",
-        "Parallelization via voting at every step",
-        "A single agent with all the tools, with no defined steps"
-      ],
-      "correta": 1,
-      "explicacao": "Fixed, known steps → prompt chaining. Dynamic decomposition would bring cost and unpredictability with no gain.",
-      "feedbacks": [
-        "Hypothetical flexibility doesn't justify present complexity; it violates \"start simple\".",
-        "Correct.",
-        "Voting repeats the same task for consensus; here the steps are different and sequential.",
-        "Gives up predictability in a process that is predictable."
-      ]
-    },
-    {
-      "pergunta": "A product team wants to investigate why checkout conversion dropped 12% in the last week. Possible causes range from a frontend deploy to a change in the payment gateway or a marketing campaign, and each discovery changes where to look next. Which decomposition strategy is the most appropriate?",
-      "opcoes": [
-        "Prompt chaining with five fixed steps defined in advance",
-        "Routing by cause type, chosen from the first message",
-        "Parallelization via sectioning with fixed subtasks, with no later rounds",
-        "Dynamic decomposition (orchestrator-workers), in which subtasks emerge from the discoveries"
-      ],
-      "correta": 3,
-      "explicacao": "An open-ended investigation, in which each finding changes the plan, calls for dynamic/adaptive decomposition.",
-      "feedbacks": [
-        "Fixed steps ignore what the discoveries reveal.",
-        "The cause isn't known at the start; there is nothing to route.",
-        "May be useful in a first round, but fixed subtasks without adaptation don't keep up with the discoveries.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A support center receives 70% simple FAQ questions and 30% complex billing and technical cases. Today everything goes to the largest model with the same prompt, which is expensive and slow. Which pattern from \"Building Effective Agents\" solves this best?",
-      "opcoes": [
-        "Routing: classify the input and send simple questions to a smaller model and complex cases to specialized flows",
-        "Evaluator-optimizer: one model generates and another evaluates each answer",
-        "Orchestrator-workers for all questions",
-        "Parallelization via voting to increase confidence"
-      ],
-      "correta": 0,
-      "explicacao": "Routing separates distinct categories and lets you direct the easy ones to smaller/cheaper models.",
-      "feedbacks": [
-        "Correct.",
-        "Adds cost to every question, including the trivial ones.",
-        "Dynamic decomposition is overkill for FAQ questions.",
-        "Multiplies the cost of precisely what you want to make cheaper."
-      ]
-    },
-    {
-      "pergunta": "A team translates technical documentation with clear terminology and style rules, and a second read with feedback usually improves the translation measurably. Which pattern fits best?",
-      "opcoes": [
-        "Routing",
-        "Prompt chaining without gates",
-        "Evaluator-optimizer: one LLM translates, another evaluates it against the criteria and returns feedback, in a loop until it meets them",
-        "Orchestrator-workers"
-      ],
-      "correta": 2,
-      "explicacao": "Clear evaluation criteria + iterative refinement with measurable gain = evaluator-optimizer.",
-      "feedbacks": [
-        "There are no distinct categories to route.",
-        "A fixed sequence without evaluation doesn't take advantage of iterative feedback.",
-        "Correct.",
-        "The subtasks aren't unpredictable; the gain comes from evaluating and refining."
-      ]
-    },
-    {
-      "pergunta": "Regarding subagent spawning and context passing, which statements are correct? (Choose TWO.)",
-      "opcoes": [
-        "For the coordinator to create subagents, the `Agent` tool must be among its allowed tools",
-        "The subagent automatically inherits the coordinator's entire history",
-        "In the Agent SDK, messages produced inside a subagent carry `parent_tool_use_id`, which allows attributing them to the right subagent",
-        "Subagents run in parallel when the coordinator creates them in consecutive turns",
-        "The subagent returns its entire tool call history to the coordinator, in addition to the result"
-      ],
-      "corretas": [
-        0,
-        2
-      ],
-      "explicacao": "`Agent` (formerly `Task`) must be in `allowedTools`; `parent_tool_use_id` provides attribution. Context is isolated, parallelism requires the same response, and only the final result comes back.",
-      "feedbacks": [
-        "Correct.",
-        "Isolated context: only the delegation prompt reaches the fresh subagent.",
-        "Correct.",
-        "Consecutive turns = sequential. Parallel requires multiple `Agent` calls in the same response.",
-        "Only the final result comes back; that is what keeps the coordinator's context clean."
-      ]
-    },
-    {
-      "pergunta": "In a long Claude Code session, an architect and Claude defined dozens of constraints for a new module (patterns, dependency limits, API decisions). Now the architect wants to delegate generating a prototype that respects all these constraints, without polluting the main session with the exploratory work. What is the best option?",
-      "opcoes": [
-        "A fresh subagent with the prompt \"generate the prototype according to what we agreed on\"",
-        "A fork, which inherits the entire conversation (with the constraints), shares the prompt cache, and returns only the final result",
-        "Build the prototype in the main session anyway",
-        "A fresh subagent and, if it gets things wrong, fix them in the main session"
-      ],
-      "correta": 1,
-      "explicacao": "When the subtask depends on much of what has already been discussed, the fork is ideal: it inherits the context, is cheaper thanks to the cache, and keeps the main session clean.",
-      "feedbacks": [
-        "The fresh subagent doesn't know what was \"agreed on\": isolated context.",
-        "Correct.",
-        "Pollutes the main context with the exploratory work, which is what the architect wants to avoid.",
-        "Accepts a predictable failure and still pollutes the main session with the corrections."
-      ]
-    },
-    {
-      "pergunta": "A startup wants an assistant that answers questions about its base of 200 help articles. The team's proposal is a system with a coordinator, a search subagent, a writing subagent, and a reviewer subagent. What are the best first steps? (Choose TWO.)",
-      "opcoes": [
-        "Implement all four agents at once so there's no need to refactor later",
-        "Start with a single LLM call with retrieval over the articles and examples of good answers",
-        "Adopt a full agent framework before any prototype",
-        "Measure quality on a set of test questions and only add steps (e.g., a reviewer) if the gain shows up",
-        "Add an extra subagent for each article category"
+        "The latency gain justifies direct traffic between analysis and search, provided that the synthesis subagent still receives all of its inputs from the coordinator.",
+        "With the coordinator in the path, failures such as the search timeout are handled consistently in one place rather than separately by each pair of agents.",
+        "A cleaner fix is to merge the analysis and search subagents into one agent that holds both tool sets, which removes the round trip without a shared queue.",
+        "Routing every subagent request through the coordinator keeps one place that sees all requests and results, which the missing trace entries show was lost.",
+        "The change is acceptable once the queue logs every message, because a complete message log restores the coordinator's control over the flow of information."
       ],
       "corretas": [
         1,
         3
       ],
-      "explicacao": "\"Building Effective Agents\": start with the simplest solution (an LLM augmented with retrieval) and only add complexity when it demonstrably improves the result.",
+      "explicacao": "In a hub-and-spoke design, all communication between subagents goes through the coordinator. That gives observability (the coordinator sees every request and result, which the 40% gap in the trace shows was lost) and consistent error handling (the coordinator decides how to recover from the search timeout instead of the analysis subagent silently waiting).",
       "feedbacks": [
-        "Premature complexity: more cost, latency, and points of failure with no proven gain.",
-        "Correct.",
-        "Frameworks abstract away prompts and responses and make debugging harder; they are not the first step.",
-        "Correct.",
-        "Multiplies agents without evidence of need."
-      ]
+        "The 18% gain is real, but it was bought by losing observability and error handling for exactly the traffic that failed; keeping only synthesis on the coordinator does not recover them.",
+        "Correct. Centralized routing means errors like the timeout are handled consistently by the coordinator instead of disappearing between two subagents.",
+        "Merging the two subagents removes the hop, but it gives one agent tools outside its specialization and recreates the problems that separate, scoped subagents were meant to avoid.",
+        "Correct. Routing everything through the coordinator gives one observable place for all requests and results; bypassing it is why 40% of searches are missing from the trace.",
+        "Logging restores part of the visibility, but not control: the coordinator still cannot decide what analysis receives, notice gaps, or handle the search timeout, which went unreported in the pilot."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-S4"
+    },
+    {
+      "pergunta": "A pharmaceutical company's developer productivity tool uses the Claude Agent SDK. The coordinator defines two subagents, legacy-explorer and boilerplate-generator, each with a description, a system prompt, and a restricted tool list. The coordinator's options include allowedTools: [\"Read\", \"Grep\", \"Glob\", \"Bash\"]. Logs show the coordinator never delegates: it makes 60 or more Grep and Read calls itself, its context fills up on large repositories, and the subagent definitions are never used. The team wants to keep the coordinator's context small without rewriting the subagents. What is the most effective fix?",
+      "opcoes": [
+        "Rewrite both subagent descriptions to say \"use proactively for any codebase exploration\", so that the coordinator is more likely to select them.",
+        "Add a rule to the coordinator's system prompt stating that all codebase exploration must be delegated to subagents rather than done directly.",
+        "Add \"Task\" to the coordinator's allowedTools, so that it can spawn the defined subagents instead of exploring the whole repository by itself.",
+        "Remove Grep and Read from the coordinator's allowedTools, so that it has no option other than handing exploration work to the subagents."
+      ],
+      "correta": 2,
+      "explicacao": "Subagents are spawned through the Task tool, and a coordinator can only invoke them if its allowedTools includes \"Task\". Here the agent definitions exist, but the coordinator has no way to call them, so it does the exploration itself and fills its context.",
+      "feedbacks": [
+        "Better descriptions help the coordinator choose between subagents, but it cannot choose any of them while the Task tool is unavailable to it.",
+        "A prompt rule cannot give the coordinator a capability it lacks; without \"Task\" in allowedTools, it has no tool for delegating, whatever the prompt says.",
+        "Correct. Adding \"Task\" to allowedTools is what lets the coordinator spawn the subagents that are already defined.",
+        "Taking away Grep and Read would stop the coordinator from exploring, but it still could not delegate without the Task tool; it would simply fail at the work instead."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-K1"
+    },
+    {
+      "pergunta": "In a university library's multi-agent research system, a librarian spends 12 turns with the coordinator narrowing a request: peer-reviewed sources only, published 2015–2024, no preprints, focused on open-access mandates at EU universities. The coordinator then delegates to the search subagent with the prompt \"Find sources for the topic we agreed on.\" The search subagent returns 30 results about open access in general; 11 are preprints and 9 were published before 2015. What is the most effective first step?",
+      "opcoes": [
+        "Have the coordinator write the agreed topic, date range, and source-type exclusions directly into the search subagent's prompt for every delegation.",
+        "Give the search subagent read access to the coordinator's conversation log, so that it can recover the constraints agreed with the librarian.",
+        "Add the library's standing rules, such as peer-reviewed only and no preprints, to the system prompt in the search subagent's AgentDefinition.",
+        "Add a filtering step to the synthesis subagent that discards any result outside the agreed date range or the allowed source types."
+      ],
+      "correta": 0,
+      "explicacao": "Subagents run with isolated context: they do not inherit the coordinator's conversation history. Everything the librarian agreed on exists only in the coordinator's turns, so the coordinator must put the topic, dates, and exclusions explicitly into each delegation prompt.",
+      "feedbacks": [
+        "Correct. The subagent never saw the 12 turns; the coordinator has to pass the agreed constraints explicitly in the delegation prompt.",
+        "Pointing the subagent at the coordinator's log hands it a long, unfiltered transcript instead of the specific constraints, and gives up the coordinator's control over what each subagent receives.",
+        "Standing rules in the system prompt would help with preprints, but this request's topic and date range change from request to request and still would not reach the subagent.",
+        "Filtering downstream treats the symptom: the search would keep returning off-topic results, and sources that were never retrieved because the query was too broad cannot be filtered back in."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-K2"
+    },
+    {
+      "pergunta": "An energy utility is designing two Claude Code workflows for its CI system. Workflow 1 reviews every pull request to the billing-rules repository for the same three aspects: security, rate-calculation correctness, and logging conventions. Workflow 2 runs when the nightly meter-reconciliation job fails and must find the root cause, which in past incidents was sometimes bad input data, sometimes a configuration change, and sometimes code. The team lead wants a single decomposition design for both. Which choice is best?",
+      "opcoes": [
+        "Dynamic decomposition for both, because a coordinator that plans each run adapts better to pull requests of different sizes and to new kinds of job failures.",
+        "Prompt chaining for both, because fixed sequential steps are easier to test and audit, and auditability matters more than flexibility at a regulated utility.",
+        "Prompt chaining for the failure investigation, whose steps can be listed in advance, and dynamic decomposition for the reviews, whose pull requests vary in size.",
+        "Prompt chaining for the reviews, which check the same aspects every time, and dynamic decomposition for the investigation, whose next step depends on findings."
+      ],
+      "correta": 3,
+      "explicacao": "The two workflows have different shapes. A review that checks the same aspects on every PR is predictable, so a fixed prompt chain fits. A root-cause investigation is open-ended: what to check next depends on what the previous step found, so it needs dynamic, adaptive decomposition. One design for both forces one workflow into the wrong pattern.",
+      "feedbacks": [
+        "Dynamic planning for a review that always checks the same three aspects adds unpredictability and cost without benefit; PR size does not change which aspects are reviewed.",
+        "Fixed steps suit the review, but an investigation whose cause can be data, configuration, or code cannot follow a script written in advance; the chain would miss causes outside it.",
+        "This inverts the patterns: the investigation is the open-ended task, and varying PR size does not make the review unpredictable, since the aspects checked are always the same.",
+        "Correct. Prompt chaining fits the predictable multi-aspect review; dynamic decomposition fits the open-ended failure investigation."
+      ],
+      "cenario": 5,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-S1"
+    },
+    {
+      "pergunta": "A university library's multi-agent research system offers a replication check for computational papers: the document-analysis subagent reviews the paper's code repository for errors that could invalidate the results. For one paper with 22 R scripts, a single analysis pass over all scripts produced detailed notes on the first few scripts and one-line comments on the rest, missed a reversed sign in a script in the middle, and did not notice that the cleaning script drops rows with missing values while the modeling script assumes the full sample size. The requirement is consistent depth for every script plus detection of problems between scripts. What should you change?",
+      "opcoes": [
+        "Analyze each script in its own focused pass, then run a separate integration pass over the per-script findings to check data flow between scripts.",
+        "Spawn one analysis subagent per script and have the synthesis subagent merge their findings into the report, so every script receives the same depth of review.",
+        "Have the analysis subagent first summarize every script and then review the summaries for errors, so the whole repository fits comfortably within one prompt.",
+        "Order the scripts from largest to smallest before the single pass, so that the most complex code is reviewed while the model's attention is at its strongest."
+      ],
+      "correta": 0,
+      "explicacao": "A single pass over 22 scripts suffers from attention dilution: depth drops after the first files and obvious bugs are missed. Splitting the work into per-script local passes gives each script full attention, and a separate integration pass is needed for issues that only appear between scripts, such as the cleaning script changing the sample the model script relies on.",
+      "feedbacks": [
+        "Correct. Per-file passes give consistent local depth, and the separate integration pass catches cross-file data flow problems like the dropped rows.",
+        "This gets the per-script depth, but merging findings in synthesis is not an integration review: no step examines how data flows from the cleaning script into the modeling script.",
+        "Reviewing summaries discards the details where bugs live, such as a reversed sign, and still compresses the whole repository into one pass with diluted attention.",
+        "Reordering only changes which scripts get the thin coverage; the single pass still dilutes attention and still has no step that looks across scripts."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-S2"
+    },
+    {
+      "pergunta": "A food-delivery marketplace uses Claude Code to investigate why courier arrival estimates became 25% less accurate after a release. A developer created a custom slash command that runs fixed steps: read the ETA service, list the recent commits to that service, and propose a fix. On every run the command proposes a confident change to the ETA code, yet the accuracy problem persists. In 3 of 5 runs, the notes from the first step mention that the ETA model reads travel times from an external traffic feed, but the next step still lists only ETA-service commits. A teammate later finds the cause in a traffic-feed configuration change made in another repository. What is the most likely root cause?",
+      "opcoes": [
+        "The command has no few-shot examples of past root-cause analyses, so the final step jumps to a fix without weighing the evidence from earlier steps.",
+        "An open-ended investigation was run as a fixed chain of steps, so the plan could not adapt when early findings pointed to a source outside the ETA service.",
+        "The command runs inside the developer's long-lived session, so stale tool results from earlier work bias every analysis toward the ETA service code.",
+        "The command does not use plan mode, so Claude edits the ETA service before it explores the other services and feeds that supply data to the model."
+      ],
+      "correta": 1,
+      "explicacao": "Fixed sequential pipelines suit predictable work; investigations whose next step depends on what was just found need dynamic, adaptive decomposition. Here step 1 found the right lead (the traffic feed), but the fixed chain had no way to generate a new subtask to follow it, so every run ended with a fix in the wrong place.",
+      "feedbacks": [
+        "Few-shot examples could improve how the fix is argued, but the chain would still look only at ETA-service commits; the evidence that matters was never gathered.",
+        "Correct. The investigation was forced into a fixed chain that could not follow the traffic-feed lead discovered in step 1; it needed adaptive decomposition.",
+        "Stale context can bias a resumed session, but the stem shows the same miss on every run and points to the command's fixed steps, not to old tool results.",
+        "Plan mode helps before large changes, but the command did not fail by editing too early; it failed because its steps could never look outside the ETA service."
+      ],
+      "cenario": 2,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K1"
+    },
+    {
+      "pergunta": "A university library's multi-agent research system received the request \"How did the shift to hybrid teaching change the way students use the university library since 2020?\" The coordinator's log shows three subtasks: \"e-book loan statistics\", \"database login trends\", and \"off-campus proxy usage\". Every subagent returned well-sourced findings for its subtask, and the final report is accurate, but faculty reviewers say it ignores study-space occupancy, reference and tutoring services, and interlibrary loan. What is the flaw?",
+      "opcoes": [
+        "The coordinator decomposed the question only into digital-access metrics, so no subagent was ever assigned the other dimensions of student library use.",
+        "The search subagent's queries are too literal, so they retrieve only usage statistics instead of sources covering the full range of student library activity.",
+        "The synthesis subagent has no coverage check, so it does not flag that study spaces, reference services, and interlibrary loan are missing from the report.",
+        "The document-analysis subagent applies relevance criteria that are too strict, so it discards sources about physical spaces and in-person services."
+      ],
+      "correta": 0,
+      "explicacao": "The log shows that all three subtasks are about digital access. Each subagent did its assigned work well; the gap comes from what they were assigned. An overly narrow decomposition by the coordinator leads to incomplete coverage of a broad topic, so the fix belongs in the coordinator's decomposition.",
+      "feedbacks": [
+        "Correct. The coordinator's decomposition was too narrow: it never assigned the physical, service, or interlibrary dimensions of the question.",
+        "The search subagent answered the subtasks it was given; broader queries for \"e-book loan statistics\" would still not produce sources on study spaces or tutoring.",
+        "A coverage check would help notice the gap, but it treats the symptom downstream; the missing dimensions were never researched because no subtask asked for them.",
+        "Nothing indicates that sources were discarded; the subagents were never asked to look for physical spaces or in-person services in the first place."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-K4"
+    },
+    {
+      "pergunta": "A university library's research system logs two requests from the same afternoon. For \"In what year did the library join the HathiTrust consortium?\", the coordinator invoked only the search subagent and answered from its result in 9 seconds. For \"Compare the citation impact of open-access and paywalled chemistry articles from 2010 to 2023\", the coordinator created four subtasks, ran three searches in parallel, then invoked document analysis, synthesis, and report generation, taking 6 minutes. A stakeholder asks whether this inconsistency is a defect. Which statement is correct?",
+      "opcoes": [
+        "It is a defect: every request should follow the same subagent sequence so that answers stay consistent and the cost of each request stays comparable.",
+        "It is expected: the coordinator chooses which subagents to invoke based on each query's complexity, then decomposes, delegates, and aggregates.",
+        "It is expected only for factual lookups; complex requests should follow a decomposition fixed in code rather than one that the coordinator chooses.",
+        "It shows a missing routing classifier, which should label each request's type before the coordinator receives it and then pick the pipeline."
+      ],
+      "correta": 1,
+      "explicacao": "Deciding which subagents to invoke based on query complexity is part of the coordinator's role, together with task decomposition, delegation, and result aggregation. A one-fact lookup needs only search; a comparative analysis needs several searches, analysis, synthesis, and a report.",
+      "feedbacks": [
+        "Forcing the same sequence on every request is the full-pipeline anti-pattern: the lookup would take minutes and return sections nobody needs.",
+        "Correct. Selecting subagents by query complexity, then decomposing, delegating, and aggregating, is exactly the coordinator's job.",
+        "Fixing the decomposition in code for complex requests removes the coordinator's ability to adapt subtasks to each question, which is why it exists.",
+        "The coordinator already analyzes the request; adding a classifier in front of it is extra infrastructure that duplicates what the coordinator is designed to do."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-K3"
+    },
+    {
+      "pergunta": "A pharmaceutical company's developer productivity system uses a coordinator with three subagents: legacy-explorer, dependency-mapper, and migration-planner. To simplify the design, an architect proposes removing the coordinator. Each subagent would write its outputs to a shared document store, poll the store for the other subagents' outputs, and decide on its own what to do next. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it, because a shared store gives every subagent the complete outputs of the others, which removes the need to pass context explicitly.",
+        "Accept it if every store entry records a timestamp and the author agent, because that keeps the system as traceable as it is with a coordinator.",
+        "Reject it, because polling adds latency; replace the store with direct calls between subagents so that each one can request what it needs.",
+        "Reject it, because the coordinator is what manages communication between subagents, error handling, and routing, which the shared store would scatter."
+      ],
+      "correta": 3,
+      "explicacao": "In a hub-and-spoke architecture the coordinator manages all communication between subagents, handles their errors, and routes information. Replacing it with a shared store lets every subagent read everything and act on its own, so no component controls what each agent receives, handles failures consistently, or sees the whole flow.",
+      "feedbacks": [
+        "Giving everyone everything is not a substitute for explicit, controlled context: subagents would act on whatever they find in the store, and nobody would decide what each one should receive.",
+        "Timestamps and authorship give an audit trail, but nothing would still decide what each subagent receives or how failures are handled; traceability is only part of what the coordinator provides.",
+        "Direct calls fix the polling delay but keep the core problem: communication between subagents still bypasses a coordinator, so control and error handling remain scattered.",
+        "Correct. The coordinator is the hub that manages inter-subagent communication, error handling, and routing; removing it scatters all three across the subagents."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-K1"
+    },
+    {
+      "pergunta": "In a university library's research system, the synthesis subagent is invoked twice per report: once to write a draft, and again, after the coordinator collects reviewer comments, to revise it. For the second invocation the coordinator's prompt is \"Revise your draft according to the reviewer comments below,\" followed by the comments. The revised versions often have little in common with the drafts and cite none of the original sources. Which TWO changes should you make? Choose TWO.",
+      "opcoes": [
+        "Include the complete draft and its list of sources in the prompt of the second invocation, since the subagent keeps nothing from its first invocation.",
+        "Add an instruction to the synthesis subagent's system prompt telling it to build on its earlier draft whenever it is invoked to revise a report.",
+        "Ask reviewers to write self-contained comments that quote the sentences they object to, so that the subagent can locate them in its draft.",
+        "Have the coordinator condense the draft into two or three sentences before the revision call, so that the revision prompt stays short and focused.",
+        "Pass the original search and analysis findings along with the comments, since the synthesis subagent cannot see the coordinator's history."
+      ],
+      "corretas": [
+        0,
+        4
+      ],
+      "explicacao": "Subagents do not inherit the coordinator's context and do not share memory between invocations. The second synthesis call starts from nothing, so the coordinator must pass the full draft, its sources, and the underlying findings explicitly in the prompt, along with the comments.",
+      "feedbacks": [
+        "Correct. Each invocation starts fresh, so the draft and its sources must be in the revision prompt.",
+        "An instruction to build on the earlier draft cannot work: the subagent has no memory of that draft, so the prompt refers to something it never receives.",
+        "Quoted comments help locate passages, but the subagent still has no draft to locate them in; this shifts work to reviewers without fixing the missing context.",
+        "A two-sentence summary keeps the prompt short but throws away the content and citations the revision needs, which is exactly what the revised versions are missing.",
+        "Correct. The findings live in the coordinator's context; the synthesis subagent only sees what the coordinator passes in its prompt."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-K2"
+    },
+    {
+      "pergunta": "A university library's research coordinator has a system prompt with a 14-step procedure: \"1. Search the catalog using the user's exact keywords. 2. Keep the top 5 results. 3. Send each result to document analysis ... 14. Format citations in APA.\" Subagents follow these steps literally. For interdisciplinary requests, such as the effect of urban heat on student health, reports miss key sources: exact-keyword catalog searches return few results, and no step allows alternative terms or other databases. What is the most effective first step?",
+      "opcoes": [
+        "Rewrite the coordinator prompt around the research goal and quality criteria, such as coverage of each discipline and source standards, and let subagents choose how to search.",
+        "Add steps to the procedure for interdisciplinary requests, such as searching two more databases and trying three synonyms whenever fewer than five results come back.",
+        "Add few-shot examples of interdisciplinary requests to the procedure, showing which keywords to use for each discipline and which databases to search for each.",
+        "Add a classifier before the coordinator that detects interdisciplinary requests and routes them to a separate pipeline with a broader 20-step procedure."
+      ],
+      "correta": 0,
+      "explicacao": "Coordinator prompts should state research goals and quality criteria rather than step-by-step procedures, so subagents can adapt their approach when a request does not fit the script. The failures come from the rigid procedure itself; stating what a good result looks like lets subagents pick terms and databases that fit each topic.",
+      "feedbacks": [
+        "Correct. Goals and quality criteria let subagents adapt their search strategy instead of following a script that does not fit interdisciplinary topics.",
+        "More steps patch this one case but keep the rigid structure; the next request that does not fit the extended procedure will fail the same way.",
+        "Examples tied to specific disciplines still assume the procedure covers every case; subagents would follow them literally and remain stuck on topics the examples do not show.",
+        "A classifier and a second, longer procedure add infrastructure while keeping the real problem, which is a procedural prompt that prevents subagents from adapting."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S4"
+    },
+    {
+      "pergunta": "A university library's research system spent 40 minutes building a shared analysis of 120 sources for a grant proposal: claims extracted, sources assessed, and conflicts noted. The team now wants two alternative report framings, one that emphasizes policy impact and one that emphasizes methodological gaps, so that they can compare them. They do not want to redo the analysis, and they do not want the reasoning behind one framing to influence the other. Which design best meets these goals?",
+      "opcoes": [
+        "Fork the session that holds the completed analysis with fork_session, creating two independent branches that each develop one framing from that baseline.",
+        "Continue the same session and request the policy framing first and the methodological framing next, so that the second can reuse everything the first produced.",
+        "Start two new sessions and paste a one-paragraph summary of the analysis into each, so that both framings begin from the same independent and compact context.",
+        "Spawn two subagents from the coordinator with the prompt \"Write the report in your assigned framing,\" relying on them to work from the analysis already done."
+      ],
+      "correta": 0,
+      "explicacao": "Fork-based session management exists for this case: fork_session creates independent branches from a shared analysis baseline, so each branch keeps the full 40-minute analysis and develops its own approach without seeing the other branch's reasoning.",
+      "feedbacks": [
+        "Correct. Forking from the analysis baseline keeps the full shared context in both branches while keeping their reasoning independent.",
+        "Running both framings in one session lets the first framing's reasoning shape the second, which is the influence the team wants to avoid.",
+        "Fresh sessions are independent, but a one-paragraph summary discards most of the 120-source analysis that both framings need to build on.",
+        "Subagents do not inherit the coordinator's context; a prompt that relies on the earlier analysis without including it leaves them without the baseline."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-K4"
+    },
+    {
+      "pergunta": "A logistics company's customer support agent, built with the Claude Agent SDK, delegates parcel questions to a shipment-tracker subagent and damage claims to a claims-assistant subagent. Today both subagents receive every MCP tool, including process_refund. In 2 of 500 test conversations, the shipment-tracker called process_refund after confirming that a parcel was lost. Compliance now requires that the shipment-tracker be unable to issue refunds at all, while the claims-assistant keeps that ability. What should you change to meet the requirement?",
+      "opcoes": [
+        "Add an instruction to the shipment-tracker's prompt stating that it must never call process_refund and must report lost parcels to the coordinator instead.",
+        "Have the coordinator review each shipment-tracker result and reverse any refund that the subagent issued before the reply is sent to the customer.",
+        "Add a PostToolUse hook that records every process_refund call made by the shipment-tracker, so that compliance can audit those refunds each week.",
+        "Define the shipment-tracker with an AgentDefinition whose tool list contains only the tracking tools, alongside its description and system prompt."
+      ],
+      "correta": 3,
+      "explicacao": "Each subagent type is configured with an AgentDefinition that includes its description, system prompt, and tool restrictions. Restricting the shipment-tracker's tools removes process_refund from its reach entirely, which is what compliance requires, while the claims-assistant's definition can keep it.",
+      "feedbacks": [
+        "A prompt instruction lowers the rate but does not make the call impossible; the requirement is that the subagent be unable to refund, not that it usually refrains.",
+        "Reversing refunds after the fact means they were issued in the first place; it adds work and risk without meeting the requirement that the subagent cannot refund.",
+        "A PostToolUse hook runs after the refund has already happened; it provides an audit trail but does not prevent the call that compliance wants to rule out.",
+        "Correct. Tool restrictions in the subagent's AgentDefinition make process_refund unavailable to the shipment-tracker while the claims-assistant keeps it."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-K3"
+    },
+    {
+      "pergunta": "A pharmaceutical company's developer productivity system produces migration-readiness reports for legacy modules. The coordinator delegates to an explorer subagent and a dependency-analysis subagent, then invokes a synthesis subagent. About a third of the reports end with an \"Open questions\" section, such as \"Could not determine whether module LabSync is called by the nightly batch jobs\", and engineers later find those answers within minutes. The coordinator's logs show that each synthesis output is returned to the requester after a single pass. What is the most likely root cause?",
+      "opcoes": [
+        "The synthesis subagent has no Grep or Read tools, so it cannot look up the missing call sites itself before it writes the open-questions section of the report.",
+        "The explorer subagent's description is too vague, so the coordinator does not select it when a question involves finding callers among the nightly batch jobs.",
+        "The coordinator does not evaluate the synthesis for gaps and re-delegate targeted queries to the explorer and analysis subagents before synthesizing again.",
+        "The dependency-analysis subagent drops findings with partial evidence, so call sites it found in batch scripts never reach the synthesis step at all."
+      ],
+      "correta": 2,
+      "explicacao": "An iterative refinement loop has the coordinator evaluate the synthesis for gaps, re-delegate targeted queries to the search or exploration and analysis subagents, and re-invoke synthesis until coverage is sufficient. The logs show a single pass: the gaps are identified in the open-questions section, but nothing acts on them.",
+      "feedbacks": [
+        "Giving synthesis exploration tools would push it outside its specialization; the gap should go back to the coordinator, which can send a targeted query to the explorer.",
+        "If the explorer were never selected, the reports would lack structure overall; here the gap is specific and named in the report, yet no follow-up is attempted.",
+        "Correct. The coordinator returns the first synthesis without evaluating its gaps and re-delegating, which is the missing refinement loop.",
+        "Nothing in the logs suggests dropped findings; the open questions are the system telling you what it did not investigate, and the coordinator never follows up."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.2",
+      "bullet": "1.2-S3"
+    },
+    {
+      "pergunta": "A university library is building a feature that investigates sudden drops in a faculty member's citation count on the library's research dashboard. In the current design, the coordinator creates a fixed list of six checks at the start (data import errors, author-name variants, DOI mismatches, and three others), runs all six, and reports. In one test case, the author-name check found that 40% of the researcher's papers had been reassigned to a different author ID after a profile merge, but the remaining checks still ran against the original ID and the report never followed up on the merge. What is the flaw?",
+      "opcoes": [
+        "The checks ran in parallel, so later checks could not use the author-name finding; running the same six checks one after another would have fixed it.",
+        "The author-name subagent should have reversed the profile merge itself instead of only reporting it, since it already had all the evidence it needed.",
+        "The list of checks is too short; adding more predefined checks, including one for profile merges, would have covered this case from the very start.",
+        "The plan is fixed at the start, so it cannot generate new subtasks from what each step discovers, such as following up on the profile merge it found."
+      ],
+      "correta": 3,
+      "explicacao": "Adaptive investigation plans generate subtasks based on what each step discovers. Here the key discovery (the profile merge) should have produced new subtasks, such as re-running the checks against the new author ID, but a plan fixed at the start has no way to add them.",
+      "feedbacks": [
+        "Running the same fixed checks in sequence would not add the follow-up that the merge requires; the checks would still target the original author ID.",
+        "Reversing a profile merge is an action outside an investigation subagent's role; the problem is that nothing followed up on the finding, not who fixes it.",
+        "A longer predefined list still cannot anticipate every discovery; the next unexpected finding would go unfollowed in the same way.",
+        "Correct. A plan fixed up front cannot generate subtasks from intermediate findings; an adaptive plan would have followed up on the merge."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.6",
+      "bullet": "1.6-K3"
+    },
+    {
+      "pergunta": "A logistics company's support coordinator, built with the Claude Agent SDK, handles a customer asking about three delayed shipments by delegating each one to a shipment-tracker subagent. The trace shows: turn 1, one Task call for shipment A, then its result; turn 2, one Task call for shipment B, then its result; turn 3, one Task call for shipment C. Each subagent run takes about 8 seconds, so the reply takes 26 seconds, while the target is under 12 seconds. The three lookups do not depend on each other. Which statement is correct?",
+      "opcoes": [
+        "The delay is unavoidable, because Task calls share one execution slot in the coordinator's loop, so subagents run one at a time whatever the coordinator emits.",
+        "Emitting all three Task calls in a single coordinator response would run them in parallel; separate turns force each to wait for the one before.",
+        "Merging the three shipments into one Task call, so that a single subagent handles all of them, would cut the total time to that of a single lookup.",
+        "The coordinator should call the tracking tool itself for each shipment, because the overhead of starting subagents cannot be recovered by parallel runs."
+      ],
+      "correta": 1,
+      "explicacao": "Parallel subagents are spawned by emitting multiple Task tool calls in a single coordinator response. One Task call per turn makes each delegation wait for the previous result, so the latency becomes the sum of all three runs.",
+      "feedbacks": [
+        "Multiple Task calls emitted in the same response run in parallel; the serialization here comes from the coordinator issuing one call per turn, not from a shared slot.",
+        "Correct. Three Task calls in one response let the independent lookups run in parallel, bringing the reply close to the time of one lookup.",
+        "One subagent handling three shipments would process them in sequence inside its own run, so the total would still be close to the sum of the three lookups.",
+        "Doing the lookups in the coordinator gives up the subagents' isolation and scoped tools, and the problem is not startup overhead but the sequential turns."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S3"
+    },
+    {
+      "pergunta": "A pharmaceutical company's developer productivity tool generates briefs for legacy modules. An explorer subagent maps each module (files, entry points, call graph), and a dependency-analysis subagent lists the external services and database tables it uses. A writer subagent then produces the brief from this prompt: \"Write the brief for module {name} using the findings from the previous steps.\" The briefs describe structure in generic terms, such as \"a typical layered architecture\", and omit most of the database tables the analysis found. Which TWO changes address this? Choose TWO.",
+      "opcoes": [
+        "Insert the coordinator's own short summary of both outputs into the writer's prompt, so that the writer's context stays small and focused.",
+        "Insert the explorer's complete output, with the files, entry points, and call graph it found, directly into the writer's prompt.",
+        "Insert the dependency-analysis output, with each external service and database table it listed, directly into the writer's prompt.",
+        "Add a line to the writer's system prompt telling it to avoid generic descriptions and to mention every database table the module uses.",
+        "Give the writer subagent Read and Grep, so that it can explore the module again and confirm the structure before it starts writing the brief."
+      ],
+      "corretas": [
+        1,
+        2
+      ],
+      "explicacao": "The writer subagent does not inherit context from the coordinator or from the other subagents, so \"the findings from the previous steps\" refers to something it never received. The coordinator must include the complete findings of the prior agents directly in the writer's prompt; only then can the brief be specific and list the tables.",
+      "feedbacks": [
+        "A short summary is better than nothing, but it compresses away the specific files and tables the briefs are missing; prior findings should be passed complete.",
+        "Correct. The explorer's complete output in the prompt gives the writer the concrete structure it currently replaces with generic text.",
+        "Correct. Passing the full dependency-analysis output lets the writer list the services and tables it currently omits.",
+        "The writer cannot mention tables it never received; an instruction to be specific does not supply the missing findings.",
+        "Re-exploring duplicates the explorer's work and gives the writer tools outside its role, while the dependency findings would still be missing from its prompt."
+      ],
+      "cenario": 4,
+      "dominio": "D1",
+      "ts": "1.3",
+      "bullet": "1.3-S1"
     }
   ]
 }

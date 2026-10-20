@@ -1,401 +1,441 @@
 {
-  "titulo": "Scenario 6 — Structured Data Extraction",
-  "aprovacao": 72,
+  "titulo": "Cenário 6 — Structured Data Extraction (banco de treino)",
+  "aprovacao": 70,
   "questoes": [
     {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "Fiscalis processes about 20,000 customer documents per day (supplier invoices, contracts, and registration forms) and writes the data extracted by Claude directly into the ERP.\n\nToday the prompt asks \"return the invoice data as JSON\". In ~2% of cases the JSON comes back malformed, with a missing field or a different field name, and the ERP integration breaks. What is the best fix?",
+      "pergunta": "Lanternfall Games is building a structured data extraction system with Claude for its localization vendors' invoices. A tool with a strict JSON schema defines `invoice_date` as a string and `amount` as a number, and the results are loaded into the finance system. Every extraction passes schema validation, yet finance found that invoices from French and German vendors were booked with day and month swapped, and some amounts printed as `1.234,50` were stored as 1.2345. What is the most likely root cause?",
       "opcoes": [
-        "Reinforce in the prompt: \"respond ONLY with valid JSON, containing exactly these fields\".",
-        "Retry the call until the JSON parses successfully, without changing the prompt.",
-        "Create a repair step with regular expressions that fixes quotes, commas, and mismatched field names before writing, keeping the current prompt intact.",
-        "Use structured outputs (`output_config.format` with `json_schema`) or an extraction tool with `strict: true`, so the output follows the schema."
+        "The schema is not strict enough; adding a date `format` keyword and a numeric `minimum` would make schema validation reject the swapped dates and the misread amounts.",
+        "The model lacks the reasoning capacity to interpret European formats, so routing these vendors' invoices to a larger model would read them correctly.",
+        "The finance system parses the values with the wrong locale; the extraction is correct, and the import job should be configured per vendor country.",
+        "The schema fixes the structure but not the source conventions; the prompt needs normalization rules, such as ISO 8601 dates and how to read decimal commas."
       ],
       "correta": 3,
-      "explicacao": "To guarantee shape, use mechanisms that enforce the schema: structured outputs or tool use with `strict: true`. A text instruction is probabilistic.",
+      "explicacao": "A strict schema guarantees well-formed output, but it cannot tell the model how to interpret inconsistent source formats such as `03/04/2026` or `1.234,50`. Explicit normalization rules in the prompt, for example 'output dates as ISO 8601 and interpret day/month order and decimal separators according to the vendor's locale', resolve the ambiguity before the value is written. A swapped date or a misread amount is still schema-valid, which is why validation never caught it.",
       "feedbacks": [
-        "It helps, but it's still probabilistic; the 2% goes down, not to zero.",
-        "Blind retry costs more and doesn't guarantee correct fields or names; only that the text is parseable JSON.",
-        "Heuristic repair is fragile and may \"fix\" something into a wrong value without anyone noticing.",
-        "Correct: schema compliance becomes guaranteed by the mechanism, not by obedience to the prompt."
-      ]
-    },
-    {
+        "A swapped date is still a valid date and 1.2345 is still a positive number, so tighter constraints would not reject these values.",
+        "A larger model may guess better, but without stated rules the interpretation stays ambiguous; the fix is telling the model which conventions to apply.",
+        "`amount` is already a number in the extraction output, so the 1.2345 came from the extraction, not from the import job.",
+        "Correct. Normalization rules in the prompt, alongside the strict schema, handle inconsistent source formatting."
+      ],
       "cenario": 6,
       "dominio": "D4",
-      "pergunta": "Fiscalis already uses structured outputs with a strict schema to extract invoices. Every document passes schema validation.\n\nEven so, the accounting team finds invoices in which the extracted `total_amount` doesn't match the sum of the `items`. What is the best architectural response?",
+      "ts": "4.3",
+      "bullet": "4.3-S6"
+    },
+    {
+      "pergunta": "Lanternfall Games extracts terms from music-licensing contracts with Claude. Each request offers three tools: `extract_metadata` (licensor, territory, term), `lookup_licensor` (matches the licensor in the partner database) and `fetch_royalty_schedule`, with `tool_choice` set to \"auto\". In 15% of contracts the first call is `lookup_licensor` with a name guessed from the file title, and the enriched record ends up attached to the wrong partner. What is the flaw in this design?",
       "opcoes": [
-        "Add semantic validation in code (sum of items versus total, consistent dates, plausible taxes) and, if it fails, resend to Claude with the specific errors.",
-        "Consider the problem solved, since the output is 100% schema-compliant.",
-        "Add to the prompt: \"check that the total matches the sum of the items\" and trust the result.",
-        "Enable `strict: true` on the numeric fields as well, so the total stays consistent with the items."
+        "`lookup_licensor` should leave the request and run as a separate service, since enrichment tools must not be offered in the same request as the extraction tool.",
+        "Nothing guarantees extraction runs first; forcing `{\"type\": \"tool\", \"name\": \"extract_metadata\"}` on the first turn, then enriching later, fixes the order.",
+        "`tool_choice` should be \"any\", which makes the model call a tool on each turn and therefore begin with the most complete extraction tool that is available.",
+        "The system prompt should tell the model to call `extract_metadata` first, since the order of tool calls is a prompt concern, not a request setting."
+      ],
+      "correta": 1,
+      "explicacao": "Forced tool selection, `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}`, guarantees that a specific tool is called on that turn. Forcing the metadata extraction first means enrichment always starts from the licensor actually extracted from the contract; later turns can then use normal tool choice for `lookup_licensor` and `fetch_royalty_schedule`. With \"auto\", the order is left to the model.",
+      "feedbacks": [
+        "Removing enrichment from the agent is a bigger redesign than needed; forcing the first call achieves the required order within the same flow.",
+        "Correct. Forcing `extract_metadata` on the first turn guarantees it runs before the enrichment steps that follow.",
+        "\"any\" guarantees that some tool is called but not which one, so the model could still start with `lookup_licensor`.",
+        "A prompt instruction makes the right order more likely but does not guarantee it, and a 15% failure rate calls for a guarantee."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S3"
+    },
+    {
+      "pergunta": "Lanternfall Games routes documents from a shared inbox to Claude with three extraction tools: `extract_bug_report`, `extract_vendor_invoice` and `extract_nda`. The document type is not known in advance. With `tool_choice: \"auto\"`, about 6% of responses were prose summaries with no tool call, which crashed the loader. After switching to `tool_choice: \"any\"`, every response is a tool call, and the share of documents sent to the right tool stayed at 99%. Which statement about this behavior is correct?",
+      "opcoes": [
+        "\"any\" requires a call to one of the offered tools but leaves the choice of tool to the model, so prose replies stop while each document still gets its matching schema.",
+        "\"any\" makes the model call each offered tool on each document, and the loader keeps the call whose output validates, which is why the match rate stayed high.",
+        "\"any\" makes the model fall back to the first tool in the list whenever it is unsure, and the match rate stayed high only because few documents were ambiguous.",
+        "Keeping \"auto\" and adding 'respond by calling one of the tools' to the prompt would give the same guarantee, since both settings constrain the reply the same way."
       ],
       "correta": 0,
-      "explicacao": "Schema compliance ≠ semantic correctness. Cross-field consistency rules are validated in code, with a retry that returns the specific errors.",
+      "explicacao": "`tool_choice: \"any\"` forces the model to call a tool but lets it choose which one, which is exactly what is needed when several extraction schemas exist and the document type is unknown. \"auto\" allows a plain-text reply, so a share of responses skipped the tools. Forcing a single named tool would instead push every document into one schema.",
       "feedbacks": [
-        "Correct: validates the meaning, not just the shape, and feeds the concrete error back to the model.",
-        "This is exactly the confusion the exam tests: a valid schema doesn't mean correct data.",
-        "The instruction helps, but a rule that feeds into the ERP needs a deterministic check.",
-        "Strict guarantees type and structure; it knows nothing about the arithmetic relationship between fields."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "In the Fiscalis pipeline, the validator requires the issuer's CNPJ. When it's missing, the system resends Claude the message \"the issuer_cnpj field is empty; extract it from the document\", up to three times.\n\nOn scanned invoices where the CNPJ is illegible (torn or smudged), the third retry has started returning validly formatted CNPJs that don't exist in the document. What should change?",
-      "opcoes": [
-        "Allow `null` in the field when the information isn't legible in the document and route those cases to human review, instead of insisting on retries.",
-        "Switch to a larger model only for the retry attempts.",
-        "Harden the retry message: \"the CNPJ is mandatory; you must find it\".",
-        "Increase the number of retries to ten, giving the model more chances to find the CNPJ."
+        "Correct. \"any\" guarantees a tool call while leaving the model free to pick the matching extraction tool.",
+        "\"any\" requires a tool call; it does not make the model run every tool, and nothing in the loader picks between outputs.",
+        "There is no fallback to the first tool; the model still selects among the tools based on the document and their descriptions.",
+        "An instruction under \"auto\" only makes a tool call more likely; \"any\" is the setting that actually guarantees it."
       ],
-      "correta": 0,
-      "explicacao": "Retry recovers extraction errors, not information that isn't in the source. Demanding the value induces fabrication; the right approach is `null` + human review.",
-      "feedbacks": [
-        "Correct: honestly accepts the absence and puts a human where the data is truly missing.",
-        "No model can read what is illegible; the problem is the source, not the capability.",
-        "Demanding what doesn't exist is the recipe for the hallucination that's already happening.",
-        "More retries only increase the pressure to invent a plausible value."
-      ]
-    },
-    {
       "cenario": 6,
       "dominio": "D4",
-      "pergunta": "The Fiscalis schema has `document_type` as an enum with `invoice`, `credit_note`, and `boleto`. Customers have started sending receipts, debit notes, and proforma invoices.\n\nThese documents are being forcibly classified as `invoice` or `boleto`, contaminating the reports. What is the best schema adjustment?",
+      "ts": "4.3",
+      "bullet": "4.3-S2"
+    },
+    {
+      "pergunta": "Lanternfall Games extracts QA bug reports, written freely by external testers, into a schema with `repro_steps`, `expected`, `actual` and `build`. The prompt already holds about 1,200 words of rules on writing steps: one action per step, imperative voice, no commentary. Still, in about a quarter of extractions, steps are merged, reworded with opinions or split mid-action. A lead proposes adding three worked examples, each a raw report with its correct extraction: a chat log, a terse note and a long narrative. How should you evaluate this proposal?",
       "opcoes": [
-        "Add `other` to the enum, with a `document_type_detail` field to describe the type found.",
-        "Expand the enum to about 40 tax document types, trying to anticipate everything customers might send in the future.",
-        "Replace the enum with a free string, so the model can write any type.",
-        "Remove the field and infer the type later from the name of the uploaded file."
+        "Reject it: examples would make the model copy their exact wording, so the better fix is to rewrite the rules as a short numbered checklist that is easier to follow.",
+        "Reject it: this is a schema problem, so each step should become an object with `action` and `target` fields that schema validation can check.",
+        "Accept it: when detailed instructions alone give inconsistent output, a few targeted examples are the most effective way to show the exact format expected.",
+        "Accept it, but replace the 1,200 words of rules with 30 examples, since a model needs many examples before it can generalize a formatting rule."
       ],
-      "correta": 0,
-      "explicacao": "An enum with \"other\" + a detail field avoids forced classification and preserves the information so the enum can evolve later.",
+      "correta": 2,
+      "explicacao": "Few-shot examples are the most effective technique for consistent formatting when detailed instructions alone still produce inconsistent results. Three examples drawn from different report styles show the model how to turn each kind of input into clean, single-action steps. A handful of well-chosen examples is enough, and the rules can remain as supporting guidance.",
       "feedbacks": [
-        "Correct: avoids the forced fit and keeps the data structured and analyzable.",
-        "It never covers everything, and rare types with similar names increase confusion; the problem returns with the next new type.",
-        "Loses standardization: \"Invoice\", \"proforma invoice\", and \"fatura\" become different values in the reports.",
-        "A file name is an unreliable source and throws away what the model can see in the document."
-      ]
-    },
-    {
+        "Reformatting the rules is still instruction-only, which already proved inconsistent; examples that vary in input style are generalized from, not copied.",
+        "A schema can force each step into an object, but it cannot make each step a single imperative action; it fixes structure, not consistency of content.",
+        "Correct. Targeted examples are the most effective fix when instructions alone yield inconsistent formatting.",
+        "Two to four targeted examples usually suffice; 30 examples add cost, and dropping the rules removes useful guidance."
+      ],
       "cenario": 6,
       "dominio": "D4",
-      "pergunta": "Fiscalis also extracts data from service contracts. Many contracts have no end date and some have ambiguous renewal clauses.\n\nThe model is inventing end dates and guessing `auto_renewal: true/false` on the ambiguous contracts. Which two schema changes reduce this guessing? (Choose TWO.)",
+      "ts": "4.2",
+      "bullet": "4.2-K1"
+    },
+    {
+      "pergunta": "Lanternfall Games extracts outsourced art vendors' invoices into a schema with `line_items` and a single `total`, then sends them for payment. Audits found two problems. Some invoices contain arithmetic errors, so the printed total differs from the sum of the lines. Others show one total on the summary page and a different total on the last page. In both cases the extraction carries one clean number, so finance never notices. Which schema changes best address this? Choose TWO.",
       "opcoes": [
-        "Remove `auto_renewal` from the schema and ask for this data as free text at the end of the response.",
-        "Make `end_date` nullable and instruct the model to use `null` when the contract doesn't define the end.",
-        "Make all fields required and non-nullable, to force a complete extraction.",
-        "Change `auto_renewal` to an enum `yes` / `no` / `unclear`, accompanied by a field with the clause excerpt used as evidence.",
-        "Give `end_date` a default value of 12 months after signing when it isn't in the text."
+        "Have the model report the larger of two conflicting totals, so that finance does not underpay a vendor when the invoice itself is ambiguous.",
+        "Extract `stated_total` as printed and a `calculated_total` summed from the line items, so that the pipeline can flag invoices where they differ.",
+        "Instruct the model to recompute the total from the line items and put the corrected value in `total`, so that finance receives a consistent number.",
+        "Keep `total` required and add a schema rule that it must equal the sum of the line items, so that validation rejects the inconsistent extractions.",
+        "Add a `conflict_detected` boolean that is set when the document gives different values for the same field, such as two totals on different pages."
       ],
       "corretas": [
         1,
-        3
-      ],
-      "explicacao": "A nullable field avoids inventing an absent value; an \"unclear\" value in the enum avoids a binary guess in an ambiguous case. Evidence helps the review.",
-      "feedbacks": [
-        "Leaves structured output and loses validation, without resolving the ambiguity.",
-        "Correct: gives the model an honest output for missing data.",
-        "Inverts the solution: being required with no outlet for \"doesn't exist\" is what causes the fabrication.",
-        "Correct: the uncertainty value removes the obligation to pick a side in an ambiguous case.",
-        "A fabricated default is systematic fabrication, worse than the occasional guess."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "Fiscalis has a validation loop: when an extraction fails the business rules, the pipeline resends the document with the message \"the previous extraction is invalid, try again\".\n\nThe retries fix little: the model tends to repeat the same errors. What is the most effective change?",
-      "opcoes": [
-        "Switch models on each attempt, to vary how the document is read.",
-        "Include in the retry the previous extraction and the specific errors (field, rule violated, value found and expected), keeping a limit on attempts before failing with an error.",
-        "Increase the attempt limit, because more rounds increase the chance of getting it right.",
-        "Resend exactly the same request, because the model's natural variation may produce a different output."
-      ],
-      "correta": 1,
-      "explicacao": "An effective retry returns the concrete errors for the model to fix, with a cap on attempts and an explicit failure afterward.",
-      "feedbacks": [
-        "Swaps one random variable for another; it doesn't tell the model what to fix.",
-        "Correct: the model can only fix what it knows is wrong.",
-        "Without specific feedback, more attempts repeat the same error and increase the cost.",
-        "An identical retry is a blind retry; it treats the error as transient when it's a content error."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "Fiscalis needs to detect supplier invoices with summation errors, which turn into commercial disputes. Today the schema has a single `total_amount` field.\n\nWhich extraction design helps detect these discrepancies reliably?",
-      "opcoes": [
-        "Extract only the items and recalculate the total in code, discarding the printed total.",
-        "Ask the model to check the sum and, when there's a discrepancy, return in `total_amount` the value it considers most correct for the document.",
-        "Extract only the printed total, which is the document's legally valid amount.",
-        "Extract the printed `declared_total` and compare it in code with the sum of the extracted items, flagging discrepancies."
-      ],
-      "correta": 3,
-      "explicacao": "Extracting the declared value and checking it against the calculated one exposes the discrepancy. Merging the two into one field hides precisely what you want to detect.",
-      "feedbacks": [
-        "Loses the declared value; there's no way to prove the discrepancy to the supplier.",
-        "The model silently \"reconciles\" and the discrepancy disappears.",
-        "Without the items there's no way to verify the sum; the discrepancy goes unnoticed.",
-        "Correct: keeps both versions and makes the discrepancy visible and measurable."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "Fiscalis wants to tighten the extraction's strict schema: CNPJ matching the pattern `^\\d{14}$`, `iss_rate` between 2 and 5, and `description` with at most 200 characters.\n\nAfter adding `pattern`, `minimum`/`maximum`, and `maxLength` to the raw schema used with structured outputs, the API starts rejecting the request with HTTP 400. Which two actions make up the correct approach? (Choose TWO.)",
-      "opcoes": [
-        "Keep in the strict schema only what it supports: types, required fields, `additionalProperties: false`, enums, and the simple CNPJ `pattern`.",
-        "Repeat the constraints in each field's description, which makes strict mode start enforcing them.",
-        "Drop strict mode so the request passes again, since it's incompatible with value validation.",
-        "Use `oneOf` with one variant per valid rate range, so strict mode can enforce the limits.",
-        "Validate the rate range and the description length in code, returning the errors to the model in a retry when they're violated."
-      ],
-      "corretas": [
-        0,
         4
       ],
-      "explicacao": "Strict mode supports a subset of JSON Schema: numeric ranges (`minimum`/`maximum`), string length (`minLength`/`maxLength`), array constraints, and recursion are not supported (in a raw schema, 400). `pattern` works for simple regexes like `^\\d{14}$`. The schema guarantees the shape; code guarantees the value rules.",
+      "explicacao": "Self-correcting extraction keeps the evidence of inconsistency instead of hiding it. Extracting `stated_total` alongside `calculated_total` lets the pipeline flag arithmetic errors, and a `conflict_detected` boolean surfaces documents that contradict themselves. Silently picking or recomputing a value removes exactly the signal finance needs.",
       "feedbacks": [
-        "Correct: the strict schema still guarantees structure (and the simple `pattern`), within the supported subset.",
-        "A description guides the model, but doesn't become an enforced constraint; it remains probabilistic.",
-        "Treats the symptom: the 400 comes from the unsupported constraints, not from strict. It loses the structure guarantee; the two can coexist.",
-        "`oneOf` isn't among the constructs documented as supported, and enumerating numeric ranges this way doesn't work; it trades one limitation for another.",
-        "Correct: value rules that strict mode doesn't enforce stay in your code, with an informative retry."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D2",
-      "pergunta": "The Fiscalis invoice extractor was written with a `record_invoice` tool whose `input_schema` is the output format, forced with `tool_choice: {\"type\": \"tool\", \"name\": \"record_invoice\"}`.\n\nWhen migrating to a newer model, the calls started returning HTTP 400 because of the forced `tool_choice`. The only purpose of forcing it was to guarantee JSON in the schema's format. What is the best alternative?",
-      "opcoes": [
-        "Use structured outputs (`output_config.format`) with the invoice's JSON schema.",
-        "Prefill the assistant's response with `{` to induce JSON output, keeping the `record_invoice` tool declared.",
-        "Keep the old model indefinitely to preserve the forced `tool_choice`.",
-        "Use `tool_choice: none` and ask in the prompt for the response to follow the tool's schema."
+        "Picking one value by a heuristic hides the conflict; which total is right is a business decision, not something to guess.",
+        "Correct. Extracting both totals makes discrepancies visible for downstream review.",
+        "Silently correcting the total hides the vendor's error: finance would pay a number that does not appear on the invoice without knowing it.",
+        "A JSON schema cannot express 'equals the sum of other fields', and rejecting the extraction would lose the invoice instead of flagging it.",
+        "Correct. A `conflict_detected` flag records that the source itself is inconsistent instead of resolving it silently."
       ],
-      "correta": 0,
-      "explicacao": "When forcing existed only to obtain JSON, structured outputs is the direct replacement. Another option is `auto` + an instruction naming the tool + `strict: true`. Support varies by model.",
-      "feedbacks": [
-        "Correct: meets the real goal (schema-compliant JSON) with the mechanism built for it.",
-        "Assistant prefill also returns 400 on the newer models; it trades one error for another.",
-        "Postpones the problem and blocks the system's evolution; it isn't a sustainable architectural decision.",
-        "`none` forbids the tool and falls back to a text instruction, with no format guarantee."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D2",
-      "pergunta": "The Fiscalis extraction tool has the properties `data_emissao` and `data_competencia` (Portuguese for \"issue date\" and \"accrual date\"), both of type string, with no description.\n\nOn service invoices, the model frequently swaps the two dates. What is the simplest fix that solves it?",
-      "opcoes": [
-        "Add to each property a description with the date's definition, where it usually appears, and the expected format.",
-        "Split the extraction of the two dates into two different calls to the model.",
-        "Rename the properties to English, because the model understands English names better.",
-        "Train a classifier that identifies which date is which in the document before extraction and passes the result to the model as a hint."
-      ],
-      "correta": 0,
-      "explicacao": "Property descriptions guide how fields are filled in the same way the tool description guides selection. A definition, location cues, and the format resolve the ambiguity.",
-      "feedbacks": [
-        "Correct: resolves the ambiguity in the interface definition itself, with a minimal change.",
-        "Doubles cost and latency without clarifying the difference between the dates.",
-        "The problem is semantic (which date is which), not one of language.",
-        "Far more complex than necessary for an ambiguity that the description resolves."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D2",
-      "pergunta": "The Fiscalis reconciliation agent uses the `lookup_supplier(cnpj)` tool to validate whether the invoice issuer is registered. When the registry is down, the tool returns `[]`.\n\nDuring an outage, the agent started marking dozens of legitimate invoices as \"supplier not registered\". What is the fix in the tool?",
-      "opcoes": [
-        "Return the message \"Operation failed\" whenever something goes wrong, so the agent knows there was a problem.",
-        "Distinguish the cases: return `[]` only when the query ran and found nothing; on timeout or unavailability, return a structured error (`isError`, transient category, `isRetryable: true`, attempted action).",
-        "Keep `[]` on failure, but instruct the agent to be suspicious of empty results.",
-        "Make the tool throw an exception that halts the entire reconciliation pipeline."
-      ],
-      "correta": 1,
-      "explicacao": "Empty ≠ failure. An empty result is information; a backend failure is a structured error, with a category and a retry indication, so the agent can decide on recovery.",
-      "feedbacks": [
-        "A generic error hides the diagnosis: the agent doesn't know whether to try again, wait, or escalate.",
-        "Correct: the agent receives what it needs to separate \"doesn't exist\" from \"couldn't verify\".",
-        "Suppressing the error and relying on the model's suspicion is the anti-pattern of silent suppression.",
-        "A transient failure shouldn't bring down the whole workflow; a structured error allows retrying and continuing with partial results."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D2",
-      "pergunta": "The single Fiscalis agent has 17 tools: OCR, classification, invoice extraction, contract extraction, five ERP lookups, accounting entry posting, email sending, and ticket creation, among others.\n\nIt frequently calls the wrong tool (for example, contract extraction on an invoice) and sometimes posts entries before validating. Which architectural change is the most appropriate?",
-      "opcoes": [
-        "Increase `effort` so the model reasons better about which tool to use.",
-        "Rewrite the descriptions of the 17 tools with examples and edge cases, keeping the single agent so as not to complicate the architecture.",
-        "Enable `tool_choice: any`, to ensure the agent always calls some tool.",
-        "Split into specialized agents with a few tools each, coordinated by an orchestrator."
-      ],
-      "correta": 3,
-      "explicacao": "With many tools visible at decision time, selection degrades. The guideline is ~4–5 tools per agent; specializing agents reduces confusion. Improving descriptions alone isn't enough at this scale.",
-      "feedbacks": [
-        "More reasoning doesn't remove the overload of options at decision time.",
-        "Helps at the margin, but with 17 tools on the same agent, selection remains degraded.",
-        "Forcing a call doesn't help choose the right one; it only prevents text responses.",
-        "Correct: each agent decides among a few tools relevant to its role."
-      ]
-    },
-    {
       "cenario": 6,
       "dominio": "D4",
-      "pergunta": "Fiscalis receives handwritten registration forms with varied layouts. The most problematic fields are the address ones, where the model mixes up the address complement (unit/suite), neighborhood, and city.\n\nWhich use of examples in the prompt tends to improve the extraction of these forms the most?",
-      "opcoes": [
-        "Include three nearly identical examples of the easy case, without explanation, just input and output.",
-        "Use no examples and add more paragraphs of instructions on how to interpret addresses.",
-        "Include 2 to 4 varied examples of hard cases (address on a single line, missing complement, abbreviations), each with the input, the expected output, and the reasoning.",
-        "Include 50 examples of the most common layout, so the model memorizes the pattern."
-      ],
-      "correta": 2,
-      "explicacao": "Few-shot works best with a few examples targeted at the edge cases, varied and with reasoning, to teach the pattern rather than have it memorized.",
-      "feedbacks": [
-        "Similar examples without reasoning don't cover the edges or explain the criterion.",
-        "For format ambiguity, concrete examples are usually more effective than prose.",
-        "Correct: covers the real boundaries and shows the reasoning that generalizes.",
-        "Many examples of the common case are expensive and don't teach the cases that fail."
-      ]
+      "ts": "4.4",
+      "bullet": "4.4-S4"
     },
     {
-      "cenario": 6,
-      "dominio": "D4",
-      "pergunta": "Fiscalis is going to reprocess 300,000 historical invoices from 2021 to 2025 with the new schema, with no tight deadline. The daily processing of new invoices remains real-time.\n\nWhich two practices are appropriate for the reprocessing? (Choose TWO.)",
+      "pergunta": "Lanternfall Games extracts publishing agreements into JSON for its royalty system. After moving from 'reply in JSON' prompting to a strict `tool_use` schema, JSON parse failures fell from 3% to zero. Pydantic validation in the loader still rejects about 4% of documents, for example revenue shares that add up to 110%, or the publisher's name placed in the `developer` field. Which statements are correct? Choose TWO.",
       "opcoes": [
-        "Also move the real-time daily processing to the Batch API, unifying the pipeline.",
-        "Match the results to the invoices by the order in which the requests were sent.",
-        "Refine and validate the prompt on a representative sample (several document types) before submitting the full volume.",
-        "Use the Batch API with `custom_id` equal to the document identifier, to match each result to its invoice.",
-        "Within each batch request, let the model call an ERP lookup tool to fill in missing data."
+        "The remaining rejections show the strict schema is not being applied, since a correctly configured schema would also catch shares that add up to 110%.",
+        "Because strict tool use now guarantees valid output, the Pydantic validation step can be removed from the loader to simplify the pipeline.",
+        "The remaining rejections are semantic errors, such as shares that do not sum to 100% or values in the wrong field, which a valid schema cannot rule out.",
+        "Converting the Pydantic model into the tool's JSON schema would remove the remaining rejections, since both would then enforce exactly the same rules.",
+        "Tool use with a strict schema eliminates syntax errors such as malformed JSON, which is why parse failures dropped to zero after the change."
       ],
       "corretas": [
         2,
-        3
+        4
       ],
-      "explicacao": "Reprocessing with no urgency is a typical batch case, with matching by `custom_id` and prompt refinement on a sample before spending on volume.",
+      "explicacao": "Strict tool use with a JSON schema eliminates syntax errors: the output always parses and matches the declared structure. It does not prevent semantic errors such as totals that do not add up or values placed in the wrong field, so a separate validation step, such as Pydantic with cross-field checks, remains necessary. Those semantic failures are what a retry with error feedback should target.",
       "feedbacks": [
-        "The daily flow is real-time; the up-to-24h window with no SLA doesn't meet it.",
-        "Batch results may come back out of order; matching by position assigns data to the wrong invoice.",
-        "Correct: a prompt error discovered after 300,000 documents is expensive.",
-        "Correct: 50% cheaper and reliable correlation via `custom_id`.",
-        "A batch request doesn't support a multi-turn tool loop; the data must go in the request or be filled in afterward."
-      ]
+        "The schema is working: parse failures went to zero. Cross-field arithmetic is outside what a JSON schema enforces.",
+        "Semantic errors still occur, as the 4% shows; removing validation would load them into the royalty system.",
+        "Correct. These are semantic errors, which schema compliance does not prevent.",
+        "Cross-field rules such as shares summing to 100% live in validation code; converting field types into a schema does not carry that logic.",
+        "Correct. Strict tool use removes syntax errors, which explains the drop in parse failures."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K4"
     },
     {
-      "cenario": 6,
-      "dominio": "D5",
-      "pergunta": "The Fiscalis dashboard shows 97% extraction accuracy, measured on a labeled sample of 2,000 documents of all types.\n\nEven so, the registration team complains that almost half of the handwritten forms arrive with errors. What is the correct next step?",
+      "pergunta": "Lanternfall Games extracts 'risk clauses' from licensing contracts into a `flags` array for its legal team. Lawyers receive about 22 flags per contract, and 80% are standard boilerplate such as governing-law or notice-address clauses. Two prompt changes are proposed. Design 1 adds: 'Be conservative and flag only clauses you are highly confident are risky.' Design 2 lists the clause types to flag, such as exclusivity over 12 months or auto-renewal without a notice window, and the types to skip. Which choice is best?",
       "opcoes": [
-        "Increase the labeled sample uniformly to 10,000 documents and recalculate the average.",
-        "Break down the metric by document type and by field, to locate where accuracy actually drops before changing anything.",
-        "Replace the model for the entire pipeline with a larger, newer one, to raise overall accuracy and, with it, the accuracy on handwritten forms.",
-        "Treat the complaint as an isolated case, since the aggregate accuracy is well above the target."
+        "Design 1, because a confidence threshold adapts to each contract, whereas a fixed list of clause types will miss risky clauses that nobody thought to name.",
+        "Design 2, because specific categories define what counts as a risk for this team, whereas 'be conservative' leaves the same vague judgment in place.",
+        "Both together, since the categories define the scope and the confidence instruction trims the remaining noise, giving the highest precision of the designs.",
+        "Neither: a second Claude call should review each flag and drop those it judges low-risk, so precision improves without changing the extraction prompt."
       ],
       "correta": 1,
-      "explicacao": "An aggregate metric hides per-segment failure: 97% overall can coexist with ~45% on handwritten forms. Measure by type and field before changing anything.",
+      "explicacao": "General instructions such as 'be conservative' or 'only report high-confidence findings' do not tell the model which clauses the legal team considers risky, so precision barely changes. Specific categorical criteria, with examples of what to flag and what to skip, directly remove the boilerplate. Adding the vague instruction on top contributes little beyond the categories.",
       "feedbacks": [
-        "A more precise average is still an average; the bad segment remains diluted.",
-        "Correct: measure before changing, at the level where the problem shows up.",
-        "Changes things without measuring: expensive and with no guarantee of addressing the failing segment.",
-        "This is the anti-pattern of an aggregate metric masking failure by document type."
-      ]
+        "A model's confidence is not a definition of risk; without categories it stays confident about boilerplate. A category list can still include a rule for other unusual clauses.",
+        "Correct. Specific categories improve precision where general caution does not.",
+        "The confidence instruction adds little: precision comes from the categories, and general caution can suppress real risks in borderline cases.",
+        "A second pass adds cost and still needs criteria to judge risk; it is over-engineering when the prompt itself lacks the criteria."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.1",
+      "bullet": "4.1-K2"
     },
     {
+      "pergunta": "Lanternfall Games uses a Claude agent to reconcile vendor payment disputes: over a long session it reads a dispute file of 30–50 invoices, credit notes and emails, then emits a structured reconciliation record for the finance system. To stay within context, the conversation history is summarized every 20 turns. Records produced after a summary often contain wrong invoice numbers, and the summaries include phrases such as 'several invoices totaling roughly €40k'. Which changes best fix this? Choose TWO.",
+      "opcoes": [
+        "Instruct the summarizer to 'preserve all important numbers', so that the summaries keep the amounts and invoice numbers the record needs.",
+        "Summarize more often, every 5 turns instead of 20, with a structured summary template, so that each summary compresses fewer facts.",
+        "Switch to a model with a larger context window and stop summarizing, so that the whole dispute file and the conversation remain in context.",
+        "Keep a case-facts block with each invoice number, amount, date and status, and include it in every request outside the summarized history.",
+        "Record each document's amounts, dates and invoice numbers as structured data as soon as they are extracted, instead of relying on the conversation."
+      ],
+      "corretas": [
+        3,
+        4
+      ],
+      "explicacao": "Progressive summarization tends to compress exact amounts, dates and identifiers into vague phrases. Extracting those transactional facts into structured data as they appear, and carrying them in a persistent case-facts block included in every prompt outside the summarized history, keeps them exact however the conversation is condensed. Summarizing differently or keeping everything in context does not provide that guarantee.",
+      "feedbacks": [
+        "A summarizer told to keep 'important numbers' still decides what is important and can still paraphrase; it remains a request, not a mechanism.",
+        "More frequent summaries mean more rounds of compression, so exact values get paraphrased even more often.",
+        "A bigger window only delays summarization; long inputs still suffer lost-in-the-middle effects, and dispute files can outgrow any window.",
+        "Correct. A persistent case-facts block keeps exact transactional facts out of the summarization path.",
+        "Correct. Capturing facts as structured data at extraction time gives the case-facts block an exact source."
+      ],
       "cenario": 6,
       "dominio": "D5",
-      "pergunta": "Fiscalis has the capacity to manually review about 8% of extractions. Today the sample is drawn uniformly from all documents.\n\nInvoices above R$ 100,000 and handwritten forms account for almost all of the costly errors. How should human review be redistributed?",
+      "ts": "5.1",
+      "bullet": "5.1-S1"
+    },
+    {
+      "pergunta": "Lanternfall Games auto-posts vendor invoice extractions whose calibrated field confidence is at least 0.9 and sends the rest, about 12%, to reviewers. Accuracy on high-confidence fields was 99.4% at launch. Seven weeks after a large vendor changed its invoice layout, finance discovered that the model had been putting VAT-inclusive amounts in `net_amount` with high confidence for that vendor, causing overpayments. What is the most likely root cause of the late detection?",
       "opcoes": [
-        "Review only the first 8% of documents that arrive each day.",
-        "Keep the uniform sampling, which is statistically unbiased.",
-        "Risk-stratified sampling: higher percentages for high-value invoices and types with the worst measured accuracy, lower ones for low-risk types, keeping some sampling in every stratum.",
-        "Review only the documents for which the model declares low confidence in its own extraction."
+        "Nothing samples the high-confidence extractions after launch, so their error rate is never re-measured and new error patterns go unnoticed until they do damage.",
+        "The 0.9 threshold is too low; raising it to 0.97 would have sent this vendor's invoices to reviewers and caught the error during the first week.",
+        "The confidence scores were never properly calibrated, since a calibrated model would have lowered its confidence as soon as the layout changed.",
+        "Reviewers only see low-confidence extractions, so they should also review every invoice from vendors above a spending limit, whatever its confidence."
+      ],
+      "correta": 0,
+      "explicacao": "Calibration done at launch says nothing about error patterns that appear later. Ongoing stratified random sampling of high-confidence extractions keeps measuring their real error rate and surfaces novel failures, such as a vendor's new layout, within days instead of weeks. Confidence routing decides what reviewers see by default; sampling is what checks that the confident part is still right.",
+      "feedbacks": [
+        "Correct. Without ongoing sampling of high-confidence extractions, a new error pattern stays invisible until it causes damage.",
+        "The model was confidently wrong, so a higher threshold might still not route these invoices, and it would add review load without measuring errors.",
+        "The scores were calibrated at launch; the layout change created a new pattern that the model was confidently wrong about, which calibration alone cannot catch.",
+        "Reviewing big vendors' invoices helps for that segment but is not a measurement of error rates and would miss the same pattern at smaller vendors."
+      ],
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.5",
+      "bullet": "5.5-S1"
+    },
+    {
+      "pergunta": "Lanternfall Games extracts 14 fields from licensing contracts. The model returns one overall confidence score per contract, and contracts scoring under 0.7 go to legal review; the 0.7 cutoff was picked because it 'felt right'. A check against 300 hand-labeled contracts showed that 41% of `territory` and `term_end` errors were in contracts scored 0.85 or higher, while the other fields were almost always right. What is the flaw in this routing design?",
+      "opcoes": [
+        "Self-reported confidence is not useful for routing, so the team should drop the score entirely and send a fixed random 20% of contracts to legal review instead.",
+        "A single document-level score with an untested cutoff hides weak fields; scores should be per field, with thresholds calibrated on a labeled validation set.",
+        "The cutoff is simply too low; moving it to 0.9 would send the contracts with `territory` and `term_end` errors to legal review where they belong.",
+        "The model should explain each confidence score in a sentence, so that reviewers can judge whether the score is calibrated before opening the contract."
+      ],
+      "correta": 1,
+      "explicacao": "Routing review by confidence works when the scores are field-level and the thresholds are calibrated against a labeled validation set. A single score per contract blends 14 fields, so weak fields like `territory` and `term_end` hide behind strong ones, and a cutoff chosen by feel has no measured relationship to error rates. Per-field scores with calibrated thresholds focus reviewer attention where errors actually occur.",
+      "feedbacks": [
+        "Confidence can be useful for routing when it is per field and calibrated; a fixed random share ignores the clear signal that two fields carry most errors.",
+        "Correct. Field-level scores with thresholds calibrated on labeled data route review attention to the fields that need it.",
+        "A higher document-level cutoff would also send many accurate contracts to review and still blends the 14 fields into one number.",
+        "Explanations do not change which contracts are routed, and the score's reliability should be measured on labeled data rather than judged case by case."
+      ],
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.5",
+      "bullet": "5.5-K3"
+    },
+    {
+      "pergunta": "Lanternfall Games' extraction agent has two tools: `parse_report`, described as 'Parses a report and returns structured data', and `parse_feedback`, described as 'Parses feedback and returns structured data'. Playtest surveys should go to `parse_feedback`, but 23% of them are sent to `parse_report`; nearly all of those surveys contain a free-text section titled 'Bugs I noticed'. QA bug reports are routed correctly. Which statement about this behavior is correct?",
+      "opcoes": [
+        "The model is ignoring the descriptions and choosing by tool order, so listing `parse_feedback` first in the request would send the surveys to the right tool.",
+        "The surveys are too long for the model to classify reliably, so the routing error would disappear if only the first page of each survey were sent.",
+        "The two descriptions are nearly identical, so the model has little to tell the tools apart and leans on surface words such as 'Bugs' in the document.",
+        "The error rate shows the task needs a dedicated classifier model in front of the agent, since tool selection cannot be made reliable through descriptions."
       ],
       "correta": 2,
-      "explicacao": "Human review should be stratified by risk, keeping minimum sampling in the low-risk strata to detect regressions.",
+      "explicacao": "Tool descriptions are the main signal the model uses to choose between tools. When two descriptions are almost identical, the model has no stated boundary between them, so it falls back on cues in the input, like a section titled 'Bugs I noticed'. Rewriting the descriptions to state what each tool is for, its inputs and when to use it instead of the other removes the overlap.",
       "feedbacks": [
-        "Arrival order has no relation to risk.",
-        "Unbiased, but it spends most of the capacity on low-risk documents.",
-        "Correct: concentrates human effort where error is most likely and most costly.",
-        "Uncalibrated self-reported confidence isn't a reliable triage criterion."
-      ]
-    },
-    {
-      "cenario": 6,
-      "dominio": "D5",
-      "pergunta": "Fiscalis started asking Claude for a confidence score from 0 to 1 for each extracted field. The plan is to automatically approve every field with confidence ≥ 0.9.\n\nWhat needs to happen before using this threshold in production?",
-      "opcoes": [
-        "Ask the model to be stricter when assigning confidence, lowering the high values.",
-        "Nothing: the model knows its own degree of certainty, so 0.9 already means 90% accuracy.",
-        "Calibrate each field's confidence scores against a labeled set, per document type, before defining the threshold.",
-        "Replace the per-field confidence with a single per-document confidence, more stable and simpler to use as an approval threshold."
+        "Order is not the selection mechanism; the misrouted surveys share a content cue, which points to ambiguous descriptions rather than ordering.",
+        "Length is not the issue: the misrouted surveys are those with a 'Bugs' section, and truncation would discard content the extraction needs.",
+        "Correct. Overlapping descriptions leave the model without a boundary, so surface words drive the choice.",
+        "A classifier is over-engineering when the descriptions have not even been differentiated; better descriptions are the proportionate first fix."
       ],
-      "correta": 2,
-      "explicacao": "Per-field confidence is useful, but it only has meaning after being calibrated against labeled data. Without that, the threshold is arbitrary.",
-      "feedbacks": [
-        "Adjusts the scale by instruction, without measuring; it's still uncalibrated.",
-        "Self-reported confidence is poorly calibrated; treating it as a probability is the anti-pattern.",
-        "Correct: turns a self-reported number into a measured signal.",
-        "Loses granularity: a document can have correct fields and one wrong critical field."
-      ]
+      "cenario": 6,
+      "dominio": "D2",
+      "ts": "2.1",
+      "bullet": "2.1-K3"
     },
     {
-      "cenario": 6,
-      "dominio": "D5",
-      "pergunta": "When extracting supply contracts, Fiscalis finds pricing annexes in which the same item appears with different unit prices in two tables (for example, R$ 12.40 in table 2 and R$ 13.10 in table 5).\n\nHow should the extraction handle this conflict?",
+      "pergunta": "Lanternfall Games plans to extract 180,000 archived QA bug reports, written between 2012 and 2024 in several formats, into its new schema using the Message Batches API. The prompt has only been tested on reports from the last two years. A lead proposes first running the prompt on a few hundred reports sampled across years and formats, fixing what fails, and only then submitting the full batch. How should you evaluate this proposal?",
       "opcoes": [
-        "Use the value from the annex's last table, assuming it reflects the most recent version of the negotiation between the parties.",
-        "Compute the average of the two values and record only the result.",
-        "Record both values with the location of each, mark the item as conflicting, and route it for review.",
-        "Use the higher value, which is the conservative choice for the buying company."
+        "Accept it: refining the prompt on a representative sample first raises the first-pass success rate and avoids paying to resubmit large parts of the batch.",
+        "Reject it: the batch already costs 50% less, so it is cheaper to submit everything now and resubmit only the requests that fail validation afterwards.",
+        "Reject it: a few hundred reports cannot represent 180,000, so the team should process the whole archive synchronously and fix issues as they appear.",
+        "Accept it, but run the sample through the batch API as well, since prompts tested with synchronous calls behave differently once they are batched."
       ],
-      "correta": 2,
-      "explicacao": "When sources conflict, preserve the divergent values with provenance. Don't silently pick one or take the average.",
+      "correta": 0,
+      "explicacao": "Testing and refining the prompt on a sample that covers the archive's eras and formats catches systematic failures before they are multiplied across 180,000 requests. That maximizes the first-pass success rate and avoids paying to resubmit large parts of the batch. The batch discount does not make failures free: every failed document costs a request, a validation pass and a resubmission.",
       "feedbacks": [
-        "An undocumented assumption about order; it also picks silently.",
-        "The average creates a value that doesn't exist in either source.",
-        "Correct: keeps the information and the traceability for whoever decides.",
-        "Picking silently hides the conflict; the criterion isn't even objective."
-      ]
+        "Correct. Prompt refinement on a representative sample before a large batch reduces costly resubmissions.",
+        "Half price on a large failed share is still waste, and systematic errors that pass validation would not even be caught for resubmission.",
+        "A well-chosen sample across years and formats catches systematic issues; processing 180,000 reports synchronously gives up the batch savings for no benefit.",
+        "The model behaves the same whether a request is sent synchronously or in a batch; the sample can be tested with quick synchronous calls."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-S4"
     },
     {
-      "cenario": 6,
-      "dominio": "D5",
-      "pergunta": "Fiscalis extracts clauses from 200- to 300-page contracts, sending the entire document in a single call. Penalties and price adjustments are usually in the middle of the document.\n\nThe penalty and adjustment-index fields are the ones that fail most, while the data from the first and last pages comes out correct. What is the best approach?",
+      "pergunta": "Lanternfall Games auto-approves high-confidence extractions across six document types and can spare reviewers for 150 audits a week. Today the audit sample is drawn uniformly at random from all high-confidence extractions. Because vendor invoices are 88% of volume, NDAs and music licenses get zero to two audits a week, and the team cannot say what their error rates are. With the same 150 audits, what is the most effective fix?",
       "opcoes": [
-        "Repeat the extraction instruction three times in the prompt, to reinforce the model's attention.",
-        "First ask for a summary of the entire contract and then extract the penalty and adjustment from that summary.",
-        "Use a model with a larger window, since the problem is the document's size.",
-        "Segment the contract by sections/clauses, extract each part's fields with a focused prompt, and consolidate in code, keeping the reference to the source clause."
+        "Audit only the lowest-scoring extractions within the high-confidence set, since errors cluster just above the threshold and that is where reviewers find most.",
+        "Keep the uniform sample but run it monthly with 600 audits at once, so that the rare document types appear often enough for their error rates to be measured.",
+        "Stop auto-approving NDAs and music licenses and route them to reviewers, then use the remaining capacity for a uniform random sample of the vendor invoices.",
+        "Draw a stratified random sample by document type, with a minimum quota per type, so every type's error rate is measured and new patterns surface."
       ],
       "correta": 3,
-      "explicacao": "Information in the middle of a long context tends to get lost (lost in the middle). Splitting by section with focused prompts solves it; an intermediate summary loses exact values.",
+      "explicacao": "Stratified random sampling draws a random sample within each segment, here each document type, so even low-volume types get enough audits to estimate their error rates. Because sampling stays random within each stratum, it still detects new error patterns rather than only re-checking known weak spots. With a fixed review budget, it is the way to measure every segment instead of the dominant one.",
       "feedbacks": [
-        "Repeating the instruction doesn't change the position of the information in the context.",
-        "A summary loses precisely the values, percentages, and dates, which are what you want to extract.",
-        "The document already fits in the window; a larger window doesn't eliminate the lost-in-the-middle effect.",
-        "Correct: each call has a lean context and a clear focus, and provenance is preserved."
-      ]
+        "Auditing only near-threshold cases biases the sample: it says nothing about the error rate of the whole set and can miss confidently wrong patterns.",
+        "Batching the same uniform sample keeps the same proportions, so the rare types still get only a handful of audits per month.",
+        "Full manual review of two types uses capacity to handle documents rather than to measure accuracy, and it does not scale as volumes grow.",
+        "Correct. Stratifying by document type with a quota per stratum measures every type's error rate within the same budget."
+      ],
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.5",
+      "bullet": "5.5-K2"
     },
     {
-      "cenario": 6,
-      "dominio": "D1",
-      "pergunta": "The Fiscalis accounts payable agent extracts the invoice and posts it to the ERP with the `post_to_erp` tool. The financial policy says that invoices above R$ 50,000 can only be posted with human approval.\n\nThe rule is in the system prompt, but an audit found three postings of more than R$ 50,000 without approval. How do you enforce the policy?",
+      "pergunta": "Lanternfall Games extracts regional distribution agreements, and `publisher_tax_id` is required; when it is missing, a validator retries up to three times with the error message. 9% of agreements exhaust all retries, and on some retries the model returns well-formed IDs that match no registered company. In every failing case, the agreement says tax details are 'as set out in the Master Distribution Agreement', which is not part of the input. What is the most effective first step?",
       "opcoes": [
-        "Rewrite the rule in the system prompt with more emphasis, repeating it at the beginning and the end and including examples of invoices above the limit.",
-        "Block it in code: a `PreToolUse` hook that denies `post_to_erp` above R$ 50,000 without a recorded approval.",
-        "Audit the postings monthly and reverse the ones that violate the policy.",
-        "Ask the agent to declare its confidence before each posting and block when it's low."
+        "Stop retrying these cases: let `publisher_tax_id` be null when the document lacks it, and route the agreement so the master agreement gets supplied.",
+        "Make the retry message more specific, quoting the clause that mentions tax details, so the model knows where in the document to look for the ID.",
+        "Raise the retry limit to five and add a few-shot example of a correctly extracted tax ID, so that the model gets more chances and a clearer target to aim for.",
+        "Add a format pattern for tax IDs to the schema, so that malformed values are rejected and the retries converge on a valid ID more quickly."
+      ],
+      "correta": 0,
+      "explicacao": "Retrying with error feedback works for format or structural mistakes, not when the information simply is not in the input. Here the tax ID exists only in an external master agreement, so every retry either fails again or invents a plausible value. Making the field nullable and routing the case to obtain the missing document stops both the waste and the fabrication.",
+      "feedbacks": [
+        "Correct. Retries cannot recover information that is absent from the source; allow null and route the case to get the missing document.",
+        "The clause only points elsewhere; a more precise message cannot make the ID appear in this document.",
+        "More retries and examples increase the pressure to produce a value, which is how the invented IDs appeared in the first place.",
+        "A pattern check makes fabricated IDs look valid more often; the problem is missing information, not formatting."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-K2"
+    },
+    {
+      "pergunta": "Lanternfall Games validates each extracted platform-release agreement before loading it, and about 5% fail, typically because `release_date` precedes `signed_date` or `platforms` contains a value outside the enum, such as 'PS'. The first version of the retry resent only the document with the message 'the previous attempt was invalid; try again', and 60% of those retries failed the same way. Which design for the retry request is best?",
+      "opcoes": [
+        "Send only the validation errors and the failed JSON, without the document, so that the request stays small and the model focuses on patching the invalid fields.",
+        "Resend the document with a longer system prompt listing each validation rule in detail, so that the model knows the rules before it extracts the data again.",
+        "Send the document, the failed JSON and the errors to a second model that only judges which fields are wrong, then rerun extraction for just those fields.",
+        "Send the original document, the failed extraction and the specific validation errors together, so the model can correct each field against the source."
+      ],
+      "correta": 3,
+      "explicacao": "An effective self-correction request contains three things: the original document, so the model can re-read the source; the failed extraction, so it knows what it produced; and the specific validation errors, so it knows exactly what to fix. The first retry design gave none of the error detail, so the model repeated its mistakes. Dropping the document instead would leave the model guessing at correct values.",
+      "feedbacks": [
+        "Without the document, the model cannot check what the real dates or platforms are and may simply invent values that pass validation.",
+        "Listing every rule does not tell the model which rule this extraction broke or what it produced, so it can repeat the same error.",
+        "An extra judging model adds cost and latency for information the validator already has; the specific errors can be given to the extractor directly.",
+        "Correct. Document plus failed extraction plus specific errors gives the model what it needs to correct itself."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.4",
+      "bullet": "4.4-S1"
+    },
+    {
+      "pergunta": "Lanternfall Games moved its nightly extraction of playtest surveys to the Message Batches API. During extraction, the model used to call a `lookup_build` tool to turn a build ID into a game version and branch. In the batch results, most requests end with `stop_reason: \"tool_use\"` and the records have no version or branch. The team wants to keep batch pricing and still have complete records ready for each morning's stand-up. What should they change?",
+      "opcoes": [
+        "Make each request single-turn: extract the raw build ID in the batch, then resolve version and branch in code or put the build table in the prompt.",
+        "Raise `max_tokens` on each batch request, so the model has enough room to call `lookup_build` and still finish the record within that same request.",
+        "Use `tool_choice: \"any\"` in the batch requests, so that the model is required to finish its tool calls before the batch marks the request complete.",
+        "Submit the tool results as a second batch the following night, matched by `custom_id`, so that each survey's conversation resumes where it stopped."
+      ],
+      "correta": 0,
+      "explicacao": "The Message Batches API cannot execute tools in the middle of a request and feed the results back, so a request that needs a tool call simply ends with `stop_reason: \"tool_use\"`. Batch requests should be designed as single-turn: give the model everything it needs up front, or have it extract the raw ID and resolve it deterministically afterwards. That keeps batch pricing and produces complete records overnight.",
+      "feedbacks": [
+        "Correct. Batch requests cannot run tools mid-request, so make each request self-contained and resolve lookups outside the model.",
+        "The request did not run out of tokens; it stopped because it needed a tool result that the batch cannot supply.",
+        "Forcing a tool call makes the problem worse: the request still ends at the tool call, and nothing executes the tool inside a batch.",
+        "This technically continues each conversation, but every tool round adds up to another day, so records would not be ready for the morning."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-K3"
+    },
+    {
+      "pergunta": "Lanternfall Games extracts external testers' bug reports into a schema in which `platform` is an enum of `pc`, `ps5`, `xbox` and `switch`, and `severity` is an enum of `blocker`, `critical`, `major` and `minor`. Since the game launched on handheld PCs and a cloud gaming service, the platform dashboards look wrong, and reports whose text gives conflicting severity hints are almost all labeled `major`. Schema validation passes on 100% of records. What is the most likely root cause?",
+      "opcoes": [
+        "The model is guessing because the reports are informal, and asking testers to fill a structured form would remove the ambiguity at its source.",
+        "The enums are too short; adding each known platform and a finer severity scale would let the model match each report to one exact value.",
+        "The schema is strict, so the model must output one of the values; switching to free-text fields would let it describe platforms and severities accurately.",
+        "The closed enums leave no valid answer for new platforms or unclear severity, so the model picks the nearest value; they need `other` plus a detail field and `unclear`."
+      ],
+      "correta": 3,
+      "explicacao": "A closed enum forces the model to choose one of its values even when none fits, so new platforms and ambiguous severities get silently mapped to the nearest option. Adding `other` with a detail string keeps the category extensible, and an `unclear` value lets the model say the source is ambiguous instead of guessing. The data stays structured and valid while becoming honest about edge cases.",
+      "feedbacks": [
+        "Better input forms help in the future, but the extraction must still handle informal reports, and the schema gives the model no way to express what it sees.",
+        "Adding today's platforms helps until the next one appears, and a finer scale still gives no honest answer when the severity is genuinely unclear.",
+        "Free text gives up the structure that dashboards and downstream systems rely on; `other` plus detail keeps both structure and accuracy.",
+        "Correct. `other` plus a detail field and an `unclear` value let the model handle new categories and ambiguous cases honestly."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.3",
+      "bullet": "4.3-S5"
+    },
+    {
+      "pergunta": "Lanternfall Games builds an obligations register from each licensing deal, which typically has a master contract and 3–8 amendments. One subagent per document returns a prose summary of the obligations it found, and a merge step turns those summaries into register entries that must cite the clause behind each obligation. Legal found that 30% of entries cite the wrong amendment or no clause, and where two amendments change the same royalty rate, the register cannot say which document set the current value. What is the flaw in this design?",
+      "opcoes": [
+        "The subagents should pass their full documents to the merge step instead of summaries, so that the merge step can find each clause itself while building the register.",
+        "One subagent per document is too fragmented; a single agent reading the whole deal at once would build a structured register and track each obligation's source.",
+        "The subagents return prose without a structured link from each obligation to its document, clause and excerpt, so the merge step has no sources to preserve.",
+        "The merge step lacks a citation instruction, and adding 'cite the clause for each obligation' would let it recover the citations from the summaries."
+      ],
+      "correta": 2,
+      "explicacao": "Attribution survives a multi-step pipeline only if each claim travels with its source. When subagents output structured claim-source mappings, with document name, clause number and excerpt for each obligation, the merge step can preserve and combine them and can show which amendment set the current value. Prose summaries compress that link away, and no later instruction can restore what is no longer there.",
+      "feedbacks": [
+        "Passing whole documents floods the merge step's context with verbose content when it only needs the obligations and their sources.",
+        "One agent reading a master contract and up to eight amendments at once risks lost-in-the-middle omissions and still produces unstructured output.",
+        "Correct. Structured claim-source mappings from each subagent give the merge step the provenance it must preserve.",
+        "The merge step cannot cite what the summaries do not contain; an instruction only invites it to guess the clause."
+      ],
+      "cenario": 6,
+      "dominio": "D5",
+      "ts": "5.6",
+      "bullet": "5.6-S1"
+    },
+    {
+      "pergunta": "Lanternfall Games submitted 42,000 archived contracts for extraction through the Message Batches API, one request per contract with the contract number as `custom_id`. The results show 41,310 succeeded, 170 errored with a temporary server-overload error, and 520 errored because the request exceeded the model's context limit; all 520 are contracts with long appendices. Which statement about handling these results is correct?",
+      "opcoes": [
+        "The whole batch should be resubmitted, so that the 42,000 extractions come from the same run and the same prompt version, keeping results consistent.",
+        "The 690 failed requests should be resubmitted unchanged in a new batch, since batch errors are transient and usually succeed on a second attempt.",
+        "Only the 690 failures should be resubmitted by `custom_id`: the 170 as they were, and the 520 after splitting each long contract into chunks that fit.",
+        "The 520 oversized contracts should leave the batch flow for manual entry, since contracts that exceed the context limit cannot be processed by the model."
+      ],
+      "correta": 2,
+      "explicacao": "Batch failures are handled by resubmitting only the failed requests, identified by their `custom_id`, with changes where the failure calls for them. The overload errors are transient and can be resent as they were, while the context-limit failures will fail again unless each oversized contract is split into chunks that fit. Resubmitting everything wastes the 41,310 successful results.",
+      "feedbacks": [
+        "The 41,310 successes are valid; resubmitting them doubles the cost without improving consistency, since the prompt has not changed.",
+        "The 170 overload errors are transient, but the 520 context-limit failures will fail again unless the documents are modified.",
+        "Correct. Resubmit only failures by `custom_id`, modifying the ones that exceeded the context limit by chunking them.",
+        "Chunking lets the model process long contracts; moving them to manual entry pushes avoidable work onto people."
+      ],
+      "cenario": 6,
+      "dominio": "D4",
+      "ts": "4.5",
+      "bullet": "4.5-S3"
+    },
+    {
+      "pergunta": "Lanternfall Games' bug-intake agent must call `classify_report` (game area, component, duplicate key) before it may call `search_duplicates` or `create_ticket`. In 9% of reports it skips classification and files tickets in the wrong component. An engineer proposes setting `tool_choice` to `{\"type\": \"tool\", \"name\": \"classify_report\"}` on every request of the conversation. How should you evaluate this proposal?",
+      "opcoes": [
+        "Accept it: forcing the tool on each request guarantees that classification happens, and the model can still call other tools next to it in each turn.",
+        "Adjust it: force `classify_report` only on the first request, then let later turns use normal tool choice to search duplicates and file the ticket.",
+        "Reject it: enforce the order by listing `classify_report` first in the tools array, since the model calls tools in the order in which they are defined.",
+        "Reject it: `tool_choice: \"any\"` on each request achieves the same ordering, since it makes the model call a tool before it is allowed to reply in text."
       ],
       "correta": 1,
-      "explicacao": "A rule with financial consequences goes into deterministic code (hook/prerequisite). The prompt is probabilistic and has a non-zero failure rate.",
+      "explicacao": "Forced tool selection guarantees that a specific tool is called on the turn where it is set, which is how to make classification happen first. Kept on every request, though, it would force `classify_report` again on each turn and stop the agent from reaching `search_duplicates` or `create_ticket`. The pattern is to force the first call, then process the following steps in follow-up turns with normal tool choice.",
       "feedbacks": [
-        "Still best-effort; the audit already showed that the prompt fails.",
-        "Correct: the policy becomes a barrier the model can't get around.",
-        "Detects after the damage; the policy requires prevention.",
-        "Self-reported confidence is poorly calibrated and has no relation to the invoice amount."
-      ]
+        "A forced choice makes the model call that named tool on each of those turns, so the other tools would never get their turn.",
+        "Correct. Force the required tool on the first turn, then handle the following steps in later turns.",
+        "Tool order in the array is not an ordering guarantee; the model chooses based on context and descriptions.",
+        "\"any\" guarantees some tool call but not which one, so the agent could still start with `create_ticket`."
+      ],
+      "cenario": 6,
+      "dominio": "D2",
+      "ts": "2.3",
+      "bullet": "2.3-S4"
     }
   ]
 }

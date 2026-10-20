@@ -1,271 +1,281 @@
 {
-  "titulo": "Module 09 — Claude Code in CI/CD and iterative refinement (review quiz)",
+  "titulo": "Módulo 09 — Quiz de fixação",
   "aprovacao": 70,
   "questoes": [
     {
-      "pergunta": "Claude generates release notes in an almost-right format, but one that varies between runs. The prose instructions have already been rewritten twice. What is the most effective next step?",
+      "pergunta": "Claude Code keeps formatting migrated product codes differently between runs, even though your prose description of the rules is accurate. What is the most effective next step?",
       "opcoes": [
-        "Rewrite the prose instruction with more emphasis and words in CAPITAL LETTERS",
-        "Include 2–3 concrete input → output examples, covering an edge case",
-        "Switch to a larger model",
-        "Ask it to \"use your good judgment to keep the format consistent\""
-      ],
-      "correta": 1,
-      "explicacao": "Concrete examples convey format and edge cases better than prose; the model imitates the pattern.",
-      "feedbacks": [
-        "More emphasis on the same prose rarely fixes the variation.",
-        "Correct.",
-        "A more expensive solution that doesn't attack the cause (format ambiguity).",
-        "A vague criterion produces exactly the inconsistency observed."
-      ]
-    },
-    {
-      "pergunta": "In the TDD workflow with Claude Code, which rule preserves the value of the tests as the definition of done?",
-      "opcoes": [
-        "Write the tests after the implementation, so they reflect the final code",
-        "Let Claude adjust the tests when they seem too rigid",
-        "Run the tests only at the end, once",
-        "Write the tests first, feed the failures back to Claude, and don't allow it to change the tests to make them pass"
-      ],
-      "correta": 3,
-      "explicacao": "The test is the verifiable target; if Claude can change it, the criterion ceases to exist.",
-      "feedbacks": [
-        "Tests written afterward tend to validate what was done, not what was expected.",
-        "It opens the door to \"passing\" by moving the target.",
-        "It loses the iteration cycle driven by the failures.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "The PO asked for \"a commissions module for salespeople\" in two lines, in a domain the team doesn't know. Which technique should you use before writing any code?",
-      "opcoes": [
-        "Ask Claude to interview you with clarifying questions before implementing",
-        "Ask for the implementation directly and fix it in review",
-        "Use `--max-turns 50` so Claude has room to explore",
-        "Send the request via the Batch API to save money"
-      ],
-      "correta": 0,
-      "explicacao": "Vague requirement + unfamiliar domain → interview: Claude surfaces rules and edge cases before spending effort on an implementation.",
-      "feedbacks": [
-        "Correct.",
-        "It causes rework along the lines of \"that's not what I meant\".",
-        "More turns don't resolve the requirement's ambiguity.",
-        "Batch has nothing to do with requirement clarity."
-      ]
-    },
-    {
-      "pergunta": "Two bugs in the same `OrderCalculator`: the rounding of the total depends on the order in which discounts are applied, and that order is wrong. How should you send them to Claude?",
-      "opcoes": [
-        "In two separate sessions, one per bug",
-        "The rounding one first; the ordering one can wait until another week",
-        "In a single message, because the problems interact",
-        "Together with all the other 10 open bugs in the backlog"
+        "Rewrite the description with more detail and stronger emphasis on the rules that Claude keeps getting wrong.",
+        "Add a JSON schema for the output so that every product code comes back with the same structure on each run.",
+        "Provide 2-3 concrete input/output examples that cover the cases where the formatting has been inconsistent.",
+        "Run the transformation several times and keep the most frequent result for each product code as the answer."
       ],
       "correta": 2,
-      "explicacao": "Related problems go together so Claude sees the whole picture; independent ones go in sequence.",
+      "explicacao": "When prose descriptions are interpreted inconsistently, concrete input/output examples are the most effective way to communicate the expected transformation. Two or three pairs that cover the cases that vary show Claude exactly what to produce.",
       "feedbacks": [
-        "Splitting coupled problems makes one fix undo the other.",
-        "Fixing one in isolation can be invalidated by the fix for the other.",
-        "Correct.",
-        "Mixing in independent problems produces an unreviewable diff."
-      ]
-    },
-    {
-      "pergunta": "A CI job runs `claude \"fix the lint warnings\"` and hangs until it times out. What is the cause?",
-      "opcoes": [
-        "`--max-turns` was missing",
-        "`-p` was missing: without it, Claude Code opens the interactive session and waits for input",
-        "The runner doesn't have access to CLAUDE.md",
-        "`--output-format json` was missing"
+        "More prose is still interpreted; the same ambiguity that produced the variation remains.",
+        "A schema enforces structure, not how the content inside a field is transformed; inconsistent formats can all be valid strings.",
+        "Correct. Concrete pairs covering the inconsistent cases communicate the transformation better than prose.",
+        "Majority voting picks the most common interpretation, not the correct one, and multiplies the cost."
       ],
-      "correta": 1,
-      "explicacao": "`-p` (or `--print`) is non-interactive mode: it executes, prints, and exits.",
-      "feedbacks": [
-        "It limits turns, but doesn't take the process out of interactive mode.",
-        "Correct.",
-        "Without CLAUDE.md it would still run; that doesn't explain the hang.",
-        "The output format doesn't change interactive mode."
-      ]
+      "ts": "3.5"
     },
     {
-      "pergunta": "Using `claude -p ... --output-format json --json-schema '<schema>'`, in which field of the output JSON does the schema-conforming response appear?",
+      "pergunta": "Which workflow best matches test-driven iteration with Claude Code as described in the exam guide?",
       "opcoes": [
-        "`structured_output`",
-        "`result`",
-        "`content[0].text`",
-        "`session_id`"
+        "Write tests for expected behavior, edge cases, and performance first, then share the failing test output with Claude after each run.",
+        "Ask Claude to implement the feature first, then to write tests that pass, and then share any failures that manual QA finds later on.",
+        "Ask Claude to write the implementation and its tests together in one pass, so that both stay consistent with each other from the start.",
+        "Describe the expected behavior in prose, then ask Claude to confirm after each change that every requirement in the prose is still met."
       ],
       "correta": 0,
-      "explicacao": "With `--json-schema`, the validated response comes in `structured_output`; `result` contains the text.",
+      "explicacao": "Test-driven iteration means writing a suite that covers expected behavior, edge cases, and performance requirements before implementation, then iterating by sharing the test failures. The failures give Claude an objective, precise signal for each round.",
       "feedbacks": [
-        "Correct.",
-        "`result` is the final text; the schema-conforming object is in `structured_output`.",
-        "That's the Messages API format, not the output of `claude -p`.",
-        "It's the session identifier."
-      ]
+        "Correct. Tests first, covering behavior, edge cases, and performance, then iterate on the shared failures.",
+        "Tests written after the implementation tend to mirror it, bugs included, and manual QA feedback arrives late and imprecisely.",
+        "Generating both in one pass lets the tests encode the same assumptions as the code, so they cannot act as an independent target.",
+        "Self-confirmation against prose is not verification; Claude can report requirements as met when the code does not meet them."
+      ],
+      "ts": "3.5"
     },
     {
-      "pergunta": "An internal dashboard needs to show, in real time, each step Claude takes during a CI job. Which output format should you use?",
+      "pergunta": "A developer who has never built a caching layer asks Claude Code to add one to a pricing service. What is the purpose of using the interview pattern in this situation?",
       "opcoes": [
-        "`--output-format text`",
-        "`--output-format json`",
-        "`--json-schema` without `--output-format`",
-        "`--output-format stream-json`"
+        "To have Claude explore the existing pricing code in read-only mode before it proposes where the new cache should be placed.",
+        "To have Claude list the assumptions it made, such as the TTL, at the end of its implementation so that the developer can check them.",
+        "To have the developer answer a fixed questionnaire about caching before Claude is allowed to start reading the pricing codebase.",
+        "To have Claude ask questions that surface considerations the developer did not anticipate, such as invalidation and failure modes."
       ],
       "correta": 3,
-      "explicacao": "`stream-json` emits one JSON object per line as events happen.",
+      "explicacao": "The interview pattern has Claude ask questions before implementing, surfacing considerations the developer may not have anticipated. In an unfamiliar domain such as caching, typical topics are cache invalidation strategies and failure modes.",
       "feedbacks": [
-        "Text only at the end, with no structure.",
-        "A single object at the end of the run.",
-        "The schema defines the format of the final response, not streaming.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "What is the correct role of `--max-turns` in a pipeline?",
-      "opcoes": [
-        "Define when the task is done",
-        "Ensure Claude uses exactly N turns",
-        "Serve as a backstop that limits cost and time in the worst case",
-        "Replace the job's `timeout`"
+        "That describes code exploration (plan mode), which cannot reveal business decisions such as acceptable staleness.",
+        "Listing assumptions after implementing surfaces them too late; the decisions were already made by default.",
+        "A fixed questionnaire cannot adapt to what the developer does not know; the pattern is Claude asking targeted questions.",
+        "Correct. Claude asks first, so decisions about invalidation and failure modes are made before any code is written."
       ],
-      "correta": 2,
-      "explicacao": "An iteration limit is a backstop; the normal end is Claude finishing. Use it together with the job timeout.",
-      "feedbacks": [
-        "Using an arbitrary limit as the primary stopping mechanism is an anti-pattern.",
-        "It's a ceiling, not a target.",
-        "Correct.",
-        "They're complementary: one limits turns, the other wall-clock time."
-      ]
+      "ts": "3.5"
     },
     {
-      "pergunta": "In CI, you want to add \"You are a senior C# reviewer\" while keeping all of Claude Code's default behavior. Which flag?",
+      "pergunta": "Two bugs sit in the same invoice calculator, and fixing the tax rounding changes the subtotal that the discount step uses. There is also an unrelated typo in an email template. How should you present them to Claude Code?",
       "opcoes": [
-        "`--system-prompt`",
-        "`--append-system-prompt`",
-        "`--json-schema`",
-        "`--permission-mode plan`"
+        "Send all three issues in one message, so that Claude can fix everything in a single, consistent change set for the PR.",
+        "Send the two calculator bugs together in one detailed message, and fix the typo separately as its own small change.",
+        "Send each of the three issues in its own message, one after another, so that every change stays small and reviewable.",
+        "Fix the typo first to warm up the session, then send the two calculator bugs as two separate messages, one at a time."
       ],
       "correta": 1,
-      "explicacao": "`--append-system-prompt` appends to the default system prompt; `--system-prompt` replaces everything.",
+      "explicacao": "Interacting problems belong in a single detailed message so that Claude can reason about how one fix affects the other. Independent problems, like the typo, are better fixed sequentially as small, reviewable changes.",
       "feedbacks": [
-        "It replaces the entire system prompt and loses the default behavior.",
-        "Correct.",
-        "It defines the output format, not the persona.",
-        "It changes the permission posture, not the instructions."
-      ]
-    },
-    {
-      "pergunta": "Using `anthropics/claude-code-action@v1`, how do you pass `--max-turns 8` and `--allowedTools` to Claude?",
-      "opcoes": [
-        "Through the `claude_args` input",
-        "Through the environment variables `MAX_TURNS` and `ALLOWED_TOOLS`",
-        "By writing them in the repository's CLAUDE.md",
-        "It's not possible; the Action uses fixed values"
+        "Mixing the unrelated typo into the coupled fix makes the change larger and harder to review, with no benefit.",
+        "Correct. The coupled bugs go together with their dependency explained; the independent typo is handled on its own.",
+        "Sequential iteration is right for independent issues, but splitting the coupled bugs makes each fix undo the other.",
+        "Splitting the coupled bugs across messages is the problem; the order of the typo fix does not matter."
       ],
-      "correta": 0,
-      "explicacao": "`claude_args` passes any CLI flag through to Claude Code inside the Action.",
-      "feedbacks": [
-        "Correct.",
-        "That's not how the Action receives these options.",
-        "CLAUDE.md is for instructions, not flag configuration.",
-        "The Action accepts the flags via `claude_args`."
-      ]
+      "ts": "3.5"
     },
     {
-      "pergunta": "To save money, the team proposes running each PR's mandatory security check through the Batch API. What is your assessment?",
+      "pergunta": "A migration script generated by Claude Code mishandles rows where the discount column is NULL, and two prose requests to \"handle nulls properly\" produced two different behaviors. What should you give Claude next?",
       "opcoes": [
-        "Good idea: 50% savings with no side effects",
-        "Good idea, as long as the batch has more than 100 PRs",
-        "Good idea if it uses a `custom_id` equal to the PR number",
-        "Bad idea: Batch can take up to 24h with no SLA, incompatible with a blocking pre-merge step"
-      ],
-      "correta": 3,
-      "explicacao": "Never use Batch in a blocking/pre-merge step. Use synchronous calls at the gate; use Batch for nightly/weekly analysis.",
-      "feedbacks": [
-        "It ignores latency: the PR would be blocked for hours.",
-        "Volume doesn't change the lack of an SLA.",
-        "`custom_id` solves correlation, not latency.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "The results of a Batch API batch arrived, and the script assigns each result to a document by its position in the list. Some reports got swapped. What is the fix?",
-      "opcoes": [
-        "Sort the results by creation date",
-        "Send one document per batch",
-        "Match each result by the `custom_id` defined at submission",
-        "Use `--output-format json`"
+        "A stronger prose instruction stating that null handling is critical and must not cause any rows to be lost.",
+        "A request to review its own migration script for null handling issues and to fix whatever problems it finds.",
+        "A test case with an example input row containing a NULL discount and the exact expected output record.",
+        "A list of every nullable column in the legacy table, so that Claude applies one consistent default value."
       ],
       "correta": 2,
-      "explicacao": "Batch results can come back out of order; `custom_id` is the correlation key.",
+      "explicacao": "To fix edge-case handling, provide specific test cases with example input and expected output. A row with a NULL discount and the exact record it should become removes the ambiguity that prose left open.",
       "feedbacks": [
-        "Order isn't guaranteed by any criterion; don't use position or date.",
-        "It throws away the advantage of batching.",
-        "Correct.",
-        "It's a `claude -p` flag; it has nothing to do with the Batch API."
-      ]
+        "Emphasis does not define the behavior; Claude still has to guess whether NULL means zero, null, or a flagged row.",
+        "Self-review in the same session tends to confirm earlier choices and still lacks a definition of the expected behavior.",
+        "Correct. A concrete input row and its exact expected output pin down how the edge case must be handled.",
+        "A blanket default may be wrong for some columns; the problem is that the expected behavior was never specified."
+      ],
+      "ts": "3.5"
     },
     {
-      "pergunta": "A job generates code with `claude -p` and, in the next step, runs `claude -p --continue \"now review what you wrote\"`. The review approves almost everything. What should change?",
+      "pergunta": "What does the -p (--print) flag do when Claude Code runs in a CI pipeline?",
       "opcoes": [
-        "Do the review in a new, independent session, with the diff and explicit criteria",
-        "Increase `--max-turns` for the review step",
-        "Ask it to \"be very critical\" in the review prompt",
-        "Replace `--continue` with `--resume` using the same ID"
+        "It switches to non-interactive mode: it processes the prompt, prints the result to stdout, and exits.",
+        "It prints the full Claude Code transcript, including tool calls, so the pipeline log captures each step.",
+        "It pre-approves every tool permission while Claude Code runs, so it never pauses for a confirmation.",
+        "It formats the result as JSON for downstream steps, so the CI pipeline can parse what Claude returns."
       ],
       "correta": 0,
-      "explicacao": "The session that generated the code tends to confirm its own decisions (reasoning-context bias). Review in a new session.",
+      "explicacao": "The -p (or --print) flag runs Claude Code in non-interactive mode: it processes the prompt, outputs the result, and exits without waiting for user input, which is what CI pipelines require. Without it, the job hangs waiting for interactive input.",
       "feedbacks": [
-        "Correct.",
-        "More turns in the same biased session don't remove the bias.",
-        "An instruction doesn't remove the reasoning context that causes the bias.",
-        "`--resume` with the same ID is the same session; same problem."
-      ]
+        "Correct. Print mode processes the prompt, writes the result to stdout, and exits.",
+        "Print mode outputs the result, not a full transcript; capturing every step is a different concern.",
+        "-p does not grant permissions; it only makes the run non-interactive.",
+        "JSON output comes from --output-format json; -p alone prints plain text by default."
+      ],
+      "ts": "3.6"
     },
     {
-      "pergunta": "A PR with 45 files gets a superficial review, and cross-module bugs slip through. Which elements make up the recommended approach? (Choose TWO.)",
+      "pergunta": "Your CI script needs each review finding's file, line, and severity to post inline PR comments. Which setup provides this most reliably?",
       "opcoes": [
-        "A single prompt with all 45 files and the instruction \"be thorough\"",
-        "Pass 1: review each file in isolation, with the same criteria",
-        "Review only the 10 largest files",
-        "Use the Batch API for the PR review",
-        "Pass 2: a separate integration prompt that receives the findings from pass 1 and looks for cross-file problems"
+        "claude -p with a prompt that asks for one finding per line in a file:line severity message format for the script to parse.",
+        "claude -p with --output-format stream-json, parsing the text of each streamed message to find file and line references.",
+        "claude -p with the default text output, followed by a second claude -p call that converts the review prose into JSON.",
+        "claude -p with --output-format json and --json-schema, reading the findings from the structured_output field of the result."
+      ],
+      "correta": 3,
+      "explicacao": "--output-format json with --json-schema makes Claude Code return schema-conformant findings in the structured_output field, which a script can post as inline comments without parsing prose.",
+      "feedbacks": [
+        "A requested line format is still free text; some findings will deviate and break the parser.",
+        "stream-json streams events, but the message text is still free-form prose that must be parsed.",
+        "A second model call converts prose probabilistically and adds cost; the flags already provide structure.",
+        "Correct. The schema-conformant findings arrive in structured_output, ready to post as inline comments."
+      ],
+      "ts": "3.6"
+    },
+    {
+      "pergunta": "According to the exam guide, what is the mechanism for giving CI-invoked Claude Code project context such as testing standards, fixture conventions, and review criteria?",
+      "opcoes": [
+        "A long prompt string in each pipeline file, so that every CI-invoked job carries the full review criteria.",
+        "The project CLAUDE.md, which Claude Code loads in CI runs just as it does in interactive sessions.",
+        "A project skill in .claude/skills/ with the review criteria, invoked by name in every CI prompt.",
+        "A personal ~/.claude/CLAUDE.md on the CI runner holding the testing standards and fixture conventions."
+      ],
+      "correta": 1,
+      "explicacao": "CLAUDE.md is the mechanism for providing project context (testing standards, fixture conventions, review criteria) to CI-invoked Claude Code. It is versioned with the repository and loaded by claude -p just like an interactive session.",
+      "feedbacks": [
+        "Prompt strings in pipeline files drift between repositories and never reach developers' local sessions.",
+        "Correct. The project CLAUDE.md gives CI and local sessions the same versioned project context.",
+        "Skills load on demand; criteria that must always apply should not depend on each prompt invoking a skill.",
+        "A user-level file on the runner is not versioned with the project and does not reach developers' machines."
+      ],
+      "ts": "3.6"
+    },
+    {
+      "pergunta": "Nightly test generation produces many low-value tests, such as getter checks and mock-call assertions, and ignores the team's existing fixtures. Which change best improves the quality of the generated tests?",
+      "opcoes": [
+        "Cap the number of generated tests per run so that Claude focuses on the few tests it considers most important.",
+        "Ask Claude to generate twice as many tests and let reviewers discard the ones that turn out to be low value.",
+        "Document the team's testing standards, what makes a test valuable, and the existing fixtures in CLAUDE.md.",
+        "Run a second Claude instance that deletes generated tests that do not improve the suite's line coverage."
+      ],
+      "correta": 2,
+      "explicacao": "Documenting testing standards, valuable test criteria, and available fixtures in CLAUDE.md gives test generation the project context it needs, which improves quality and reduces low-value output.",
+      "feedbacks": [
+        "A cap reduces volume but does not tell Claude what a valuable test is or which fixtures to use.",
+        "More output shifts the work to reviewers without improving the quality of what is generated.",
+        "Correct. Standards, valuable-test criteria, and fixtures in CLAUDE.md steer generation toward useful tests.",
+        "Coverage is a poor proxy for value, and deleting after the fact does not teach Claude the team's fixtures."
+      ],
+      "ts": "3.6"
+    },
+    {
+      "pergunta": "After a developer pushes new commits, the CI review re-posts issues that already have open comment threads, in different words. What is the recommended fix?",
+      "opcoes": [
+        "Include the prior review findings in context and instruct Claude to report only new or still-unaddressed issues.",
+        "Hash each review comment in the posting script and skip any comment already posted in an open thread.",
+        "Review only the latest commit's diff, so that each run comments only on the code that changed since the last run.",
+        "Skip the review on later pushes of new commits and run it once, when the pull request is first opened."
+      ],
+      "correta": 0,
+      "explicacao": "When re-running a review after new commits, include the prior findings in context and ask Claude to report only new or still-unaddressed issues. This avoids duplicate comments while still flagging problems that remain open.",
+      "feedbacks": [
+        "Correct. With prior findings in context, Claude can skip what was already reported and flag only what is new or still open.",
+        "The wording changes between runs, so text hashes differ and the duplicates get through.",
+        "Reviewing only the last commit misses earlier issues that are still unaddressed and cross-commit interactions.",
+        "A single review leaves later commits without feedback, so new issues go unreported."
+      ],
+      "ts": "3.6"
+    },
+    {
+      "pergunta": "Generated tests frequently duplicate scenarios that the existing suite already covers. What should the test-generation job do?",
+      "opcoes": [
+        "Lower the number of tests requested per class, so that Claude proposes only the scenarios it considers essential.",
+        "Resume the previous night's session with --resume, so that Claude remembers which tests it generated the night before.",
+        "Instruct Claude in the prompt to avoid common scenarios and prefer edge cases the existing suite is less likely to cover.",
+        "Provide the existing test files in context, so that Claude can see what the current tests verify and avoid proposing those cases again."
+      ],
+      "correta": 3,
+      "explicacao": "Claude cannot avoid duplicating scenarios it cannot see. Providing the existing test files in context lets test generation skip scenarios that the suite already covers.",
+      "feedbacks": [
+        "Fewer tests still include duplicates, because Claude does not know what the suite covers.",
+        "The duplicates are of the existing suite, not of last night's output; session history does not show the current tests.",
+        "Guessing what is \"common\" is not the same as knowing what is covered, and it may skip important behavior.",
+        "Correct. With the existing tests in context, Claude can skip covered scenarios."
+      ],
+      "ts": "3.6"
+    },
+    {
+      "pergunta": "Why is the Claude session that generated a change less effective at reviewing it than an independent review instance?",
+      "opcoes": [
+        "Because the generating session has used most of its context window, leaving too little room to read the full diff.",
+        "Because the session that generated the change retains its reasoning, so it is less likely to question its own decisions.",
+        "Because a review needs a review-specific system prompt, which cannot be changed in a session that began as a generator.",
+        "Because the self-review prompt usually lacks a checklist; with one, the same session reviews as well as a new instance."
+      ],
+      "correta": 1,
+      "explicacao": "A model retains reasoning context from generation, making it less likely to question its own decisions in the same session. An independent instance without that context reviews the code as it is, which is why session context isolation matters in CI.",
+      "feedbacks": [
+        "Context usage can matter in long sessions, but the core limitation is the retained reasoning, not lack of space.",
+        "Correct. The retained reasoning makes the generating session unlikely to challenge its own choices.",
+        "The limitation is not about system prompts; even a well-prompted same-session review shares the generator's reasoning.",
+        "Self-review instructions are less effective than an independent instance, even with a detailed checklist."
+      ],
+      "ts": "4.6"
+    },
+    {
+      "pergunta": "According to the exam guide, which approach is most effective at catching subtle issues in code that Claude just generated?",
+      "opcoes": [
+        "Enabling extended thinking in the session that generated the code and having Claude review it step by step.",
+        "Adding an explicit checklist of subtle issues to the end of the prompt so that Claude reviews its own code.",
+        "Reviewing the code with an independent Claude instance that has none of the generator's reasoning context.",
+        "Running several independent self-review passes in the same session and keeping findings that all of them report."
+      ],
+      "correta": 2,
+      "explicacao": "Independent review instances, without prior reasoning context, are more effective at catching subtle issues than self-review instructions or extended thinking, because those operate inside the generator's context.",
+      "feedbacks": [
+        "Extended thinking adds reasoning inside the same context, so the model re-checks from the same assumptions.",
+        "A checklist is a self-review instruction; it does not remove the generator's reasoning context.",
+        "Correct. An independent instance sees only the code, not the reasoning that justified it.",
+        "Repeating a self-review repeats the same blind spot, and requiring agreement suppresses real findings."
+      ],
+      "ts": "4.6"
+    },
+    {
+      "pergunta": "A 30-file pull request gets uneven comments and contradictory findings from a single-pass review. Which review architecture does the exam guide recommend?",
+      "opcoes": [
+        "Per-file review passes for local findings, plus a separate integration pass analyzing data flow across files.",
+        "A single pass with a larger-context model, so that all 30 files fit comfortably and receive equal attention.",
+        "Three full-diff passes, keeping only the findings that at least two of the three passes report in common.",
+        "Per-file passes only, run in parallel with identical criteria, since the contradictions come from mixing files."
+      ],
+      "correta": 0,
+      "explicacao": "Multi-pass review splits large reviews into per-file local analysis passes plus cross-file integration passes, avoiding attention dilution and contradictory findings while still catching cross-file data-flow issues.",
+      "feedbacks": [
+        "Correct. Per-file passes give consistent local depth; the integration pass covers cross-file data flow.",
+        "A larger context window does not fix attention dilution across many files.",
+        "Consensus filtering suppresses real bugs that are only caught in some runs.",
+        "Per-file passes alone miss issues that live between files, such as a contract change and its consumers."
+      ],
+      "ts": "4.6"
+    },
+    {
+      "pergunta": "Which two statements about model-reported confidence in an automated code-review pipeline are consistent with the exam guide? Choose TWO.",
+      "opcoes": [
+        "Confidence should be reported once per review as a single overall score, because per-finding scores add noise to routing.",
+        "A verification pass in which the model reports confidence alongside each finding can be used to route findings to human review.",
+        "Thresholds used for confidence-based routing should be calibrated against a labeled set of findings of known correctness.",
+        "Self-reported confidence is calibrated out of the box, so a fixed 0.8 threshold can route findings without any labeled data.",
+        "Asking the model to report only the findings it is highly confident about is a good substitute for explicit review criteria."
       ],
       "corretas": [
         1,
-        4
+        2
       ],
-      "explicacao": "Multi-pass: local per-file analysis + a cross-file integration pass, with a separate prompt.",
+      "explicacao": "Per-finding confidence from a verification pass enables calibrated review routing, and the thresholds should be calibrated on a labeled validation set. Filtering findings by confidence instead of explicit criteria, or trusting an uncalibrated threshold, are anti-patterns.",
       "feedbacks": [
-        "That's the cause of the problem: diluted attention and inconsistent criteria.",
-        "Correct.",
-        "It leaves files unreviewed and doesn't catch cross-file bugs.",
-        "PR review is blocking: synchronous.",
-        "Correct."
-      ]
-    },
-    {
-      "pergunta": "A CI job only analyzes the code and publishes a report; it must not change anything on the runner. Which settings apply least privilege deterministically? (Choose TWO.)",
-      "opcoes": [
-        "`--permission-mode bypassPermissions` to avoid prompts",
-        "An instruction in the prompt: \"don't modify files\"",
-        "`--allowedTools \"Read,Grep,Glob\"`",
-        "`--permission-mode dontAsk`, denying everything that hasn't been pre-approved",
-        "`--allowedTools \"Bash\"` so Claude can run whatever it needs"
+        "A single score for the whole review cannot route individual findings; the guide calls for confidence alongside each finding.",
+        "Correct. Confidence per finding, produced in a verification pass, supports calibrated routing to human reviewers.",
+        "Correct. Calibration against labeled data is what makes confidence thresholds usable for routing.",
+        "Raw self-reported confidence is not calibrated by default; a threshold must be checked against labeled findings before it can route reliably.",
+        "Confidence filtering is not a substitute for explicit criteria about what to report; it drops real issues without defining them."
       ],
-      "corretas": [
-        2,
-        3
-      ],
-      "explicacao": "Pre-approving only read tools and denying the rest (`dontAsk`) restricts the job deterministically.",
-      "feedbacks": [
-        "It unlocks everything: the opposite of least privilege.",
-        "A prompt is probabilistic; it's not a control.",
-        "Correct.",
-        "Correct.",
-        "Unrestricted Bash allows changing anything on the runner."
-      ]
+      "ts": "4.6"
     }
   ]
 }

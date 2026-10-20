@@ -1,130 +1,125 @@
 {
   "modulo": "04",
-  "titulo": "Design de tools: descrições, erros estruturados, tool_choice, tool search",
+  "titulo": "Design de tools: descrições, erros estruturados, distribuição e tool_choice",
   "beats": [
     {
       "id": "intro",
       "fase": "teoria",
-      "titulo": "Abertura — por que design de tools é metade do D2",
+      "titulo": "Abertura — a interface da tool decide quase tudo",
       "pontos": [
-        "Este módulo cobre os task statements 2.1, 2.2, 2.3 e 2.6 do D2 (18% da prova, junto com MCP no Módulo 05)",
-        "Ideia-mãe: para o modelo, a tool é o que a DEFINIÇÃO diz; ele escolhe lendo name/description/input_schema e decide o próximo passo lendo o tool_result",
-        "Por isso a correção mais simples de 'chamou a tool errada' quase sempre é a interface, não um roteador ou fine-tuning",
-        "Roteiro: descrição e strict → erros estruturados → 4–5 tools por agente → tool search → tool_choice → tools server-side → paralelo e cache → MCP connector",
-        "Cenários onde mais cai: 1 (Support), 3 (Research), 4 (Dev Productivity), 6 (Extraction)",
-        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json; o JSON fica como é, só código de aplicação seria traduzido"
+        "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json; traduza ao vivo o código de aplicação (base C#); JSON fica no formato real",
+        "Este módulo cobre os TS 2.1, 2.2 e 2.3 do D2 (Tool Design & MCP Integration, 18% da prova); a outra metade do D2 (2.4 e 2.5) fica no Módulo 05",
+        "Ideia-mãe: o modelo não vê o seu código. Escolhe a tool pela DESCRIÇÃO, decide a recuperação pelo RESULTADO (inclusive o erro) e só usa as tools que você DEU a ele. Por isso a resposta de prova quase sempre está na interface, não em classificador, roteador ou modelo maior",
+        "Roteiro: descrição → sobreposição, separação e system prompt → isError e categorias de erro → recuperação local e vazio vs. falha → quantas tools por agente → escopo cruzado e tool restrita → tool_choice",
+        "Cenários onde cai: 1 (Customer Support), 3 (Multi-Agent Research), 4 (Developer Productivity), 6 (Structured Data Extraction)",
+        "Aviso: o guia só cobra tool_choice auto, any e forçado, e os dois últimos são respostas CORRETAS na prova. O 400 de alguns modelos novos, tool search, none e disable_parallel_tool_use são notas voláteis que não decidem questão"
       ],
-      "checkpoint": "Pergunte se o aluno já escreveu alguma definição de tool (ou function calling em outro provedor) e se está pronto para começar",
+      "checkpoint": "Pergunte se o aluno já definiu tools (function calling) em algum projeto e se está pronto para começar",
       "ref": "04-design-de-tools/teoria.md"
     },
     {
       "id": "t1",
       "fase": "teoria",
-      "titulo": "Interface da tool: a descrição é o critério de seleção (e strict)",
+      "titulo": "A descrição é o mecanismo de seleção (2.1-K1, K2, S1)",
       "pontos": [
-        "Definição client-side: name + description + input_schema (JSON Schema com properties/required); enum e descrição por propriedade restringem entradas",
-        "Boa descrição: propósito e quando usar/NÃO usar, formato de entrada com exemplo, o que devolve, casos de borda, diferença para as tools vizinhas",
-        "Mostre o JSON de buscar_pedido do teoria.md e aponte cada um desses elementos",
-        "strict: true → argumentos seguem o schema exatamente; exige additionalProperties: false em todo objeto; opcionais são permitidas mas contam para um limite por request [volátil] → prefira required + nullable",
-        "Strict cobre forma, não semântica; faixas numéricas, tamanho de string, restrições de array, recursão ficam fora (400 no schema cru); pattern só com regex simples → valide o resto no seu código",
-        "Anti-padrões: nome vago (search), tools sobrepostas com descrições quase iguais; a correção é reescrever/renomear ou fundir — não classificador de roteamento",
-        "Prova: cenário 1/4, 'get_customer vs get_order confundidas' → melhorar descrições; pegadinha: few-shot no system prompt ataca o sintoma"
+        "A tool vai no request como name + description + input_schema, dentro de tools[], em TODO request do loop; mostre o JSON de lookup_order do teoria.md §1 com o // ← AQUI na description",
+        "Fato do guia: a descrição é o PRINCIPAL mecanismo de seleção; descrição mínima → escolha instável entre tools parecidas",
+        "Checklist de uma boa descrição: propósito e saída; formato de entrada com exemplo; exemplos de consulta; casos de borda (inexistente = found:false, não erro); fronteira 'use a outra quando...'",
+        "Primeiro passo para descrições mínimas = reescrever e expandir a descrição (Q2 oficial). Consolidar as tools é escolha arquitetural válida, mas NÃO é o primeiro passo; roteador por palavra-chave é over-engineering",
+        "Desempate com few-shot (TS 4.2, Módulo 02): descrição mínima → descrição primeiro; descrições já boas + pedido genuinamente ambíguo → 2–4 exemplos mostrando por que uma tool e não a alternativa",
+        "Na prova: cenários 1 e 4, 'tool errada em X% dos casos, descrições de uma linha, most effective first step?' → expandir descrições. Pegadinhas: few-shot de 5–8 exemplos, routing layer, consolidar"
       ],
-      "checkpoint": "Pergunte: duas tools com descrições 'Retrieves customer data' e 'Retrieves account data' estão sendo confundidas — qual a primeira correção, e por que um classificador de roteamento perde?",
-      "ref": "04-design-de-tools/teoria.md#1-interface-da-tool-a-descrição-é-o-critério-de-seleção"
+      "checkpoint": "Pergunte (em inglês): 'Two tools with one-line descriptions are confused in 15% of calls. A teammate wants to merge them into one tool. Is that the most effective first step?' Espere: não; expandir as descrições primeiro (entrada, exemplos, bordas, fronteira); consolidar é válido, mas é mudança maior",
+      "ref": "04-design-de-tools/teoria.md#1-a-descrição-é-o-mecanismo-de-seleção"
     },
     {
       "id": "t2",
       "fase": "teoria",
-      "titulo": "Erros estruturados: categorias, retentável e vazio ≠ falha",
+      "titulo": "Sobreposição, separação e o system prompt (2.1-K3, S2, S3, K4, S4)",
       "pontos": [
-        "Falha volta como tool_result com is_error: true e conteúdo estruturado: errorCategory, isRetryable, descrição, attempted_action, partial_results",
-        "Mostre o JSON de tool_result com is_error do teoria.md",
-        "Quatro categorias: transitório (retry com backoff), validação (corrija a entrada), negócio (não retenta: explique/escale), permissão (não retenta: escale)",
-        "Vazio ≠ falha: busca que rodou e não achou = sucesso com [] (informação); timeout/503 = a busca não rodou = erro",
-        "Subagent resolve transitório localmente e propaga só o que não resolveu, com contexto; não aborte o workflow inteiro por uma falha",
-        "Anti-padrões: 'Operation failed', supressão silenciosa ([] quando o backend caiu), retry em erro de negócio, exceção que derruba o loop",
-        "Prova: cenário 3 (timeout vira 'sem fontes') e cenário 1 (reembolso acima do limite sendo retentado)"
+        "2.1-K3: descrições ambíguas ou sobrepostas causam misrouting (exemplo do guia: analyze_content × analyze_document quase idênticas)",
+        "2.1-S2: renomear + reescrever: analyze_content → extract_web_results, com descrição específica de web; o nome também é sinal (verbo genérico atrai qualquer pedido)",
+        "2.1-S3: tool genérica com 'instructions' livre → separar em tools com contrato de entrada/saída: analyze_document → extract_data_points, summarize_content, verify_claim_against_source; mostre o antes/depois do teoria.md §2",
+        "Separar × consolidar: tool genérica com vários propósitos → separar; 'juntar tudo numa tool' e 'parâmetro mode' aparecem como distratores. [volátil] A doc de definição de tools sugere agrupar operações afins com um parâmetro action; na prova vale o guia (renomear/separar; consolidar não é 1º passo)",
+        "2.1-K4/S4: o system prompt também escolhe tools. Uma instrução sensível a palavra-chave ('When the user mentions tests, run run_test_suite') cria associação e atropela boas descrições → revise o system prompt e reescreva a regra pela intenção; mostre o JSON do §3",
+        "Assinatura do problema de prompt no enunciado: o erro segue uma PALAVRA, persiste com descrições boas ou começou junto com uma mudança no prompt",
+        "Na prova: cenários 3 e 4. Pegadinhas: alongar ainda mais a descrição, few-shot por cima da regra conflitante, classificador, mais palavras-chave"
       ],
-      "checkpoint": "Peça para o aluno classificar: (a) 429 rate limit, (b) conta congelada, (c) data em formato errado, (d) token expirado — e dizer o que o agente faz em cada um",
-      "ref": "04-design-de-tools/teoria.md#2-erros-estruturados-o-modelo-precisa-saber-o-que-fazer-com-a-falha"
+      "checkpoint": "Pergunte (em inglês): 'Descriptions are detailed and distinct, but the agent still sends uploaded PDFs to analyze_web_page. The system prompt says: \"Whenever the user mentions content, analyze it.\" What is the most likely root cause?' Espere: instrução por palavra-chave no system prompt atropelando as descrições",
+      "ref": "04-design-de-tools/teoria.md#2-sobreposição-renomear-e-separar"
     },
     {
       "id": "t3",
       "fase": "teoria",
-      "titulo": "Distribuição de tools: 4–5 por agente e subagents especializados",
+      "titulo": "isError do MCP, categorias de erro e isRetryable (2.2-K1, K2, K3, K4, S1, S2)",
       "pontos": [
-        "A seleção degrada quando o agente vê muitas tools ao mesmo tempo; diretriz: 4–5 tools por agente na hora da decisão",
-        "18 tools num agente → divida em subagents especializados (coordenador, busca, análise, ação), cada um com conjunto pequeno e coeso",
-        "Bônus: menor privilégio — o subagent de pesquisa não precisa de emitir_reembolso",
-        "Melhorar descrições SOZINHO não resolve volume; modelo maior ou system prompt gigante também não",
-        "Não exagere para o outro lado: um subagent por tool só adiciona coordenação",
-        "Prova: cenário 3/4, 'agente com 18 tools escolhe errado' → subagents com 4–5 tools; pegadinha: 'reescrever as 18 descrições'"
+        "2.2-K1: no MCP, a falha de execução volta DENTRO do resultado da tool com isError: true (não como exceção) → o agente vê a falha e raciocina; mostre o JSON do teoria.md §4",
+        "Duas camadas, dois nomes, ambos certos: isError (resultado MCP, servidor → cliente) e is_error (bloco tool_result da Messages API, host → modelo). Na prova, 'MCP isError flag' é o termo; não descarte a alternativa por estranhar o nome",
+        "2.2-K2: quatro categorias: transient (timeout, serviço indisponível), validation (entrada inválida), business (violação de política), permission (sem acesso, aprovação de admin)",
+        "2.2-S1/K4: metadados = errorCategory + isRetryable + descrição legível; repetir igual só resolve transient, e o metadado evita retry desperdiçado",
+        "2.2-S2: erro de negócio = retriable: false + explicação amigável ao cliente, para o agente explicar a política em vez de dizer 'problema técnico'; mostre o JSON de process_refund do §5",
+        "2.2-K3: 'Operation failed' uniforme impede a recuperação: o agente retenta o permanente e desiste do transitório",
+        "Anti-padrões: erro como texto de sucesso, permissão marcada como transient, código interno opaco (POL-60D), retry cego, escalar tudo para humano"
       ],
-      "checkpoint": "Pergunte: um agente de suporte tem 16 tools (consulta, CRM, reembolso, logística, relatórios). Como você redistribuiria e por quê?",
-      "ref": "04-design-de-tools/teoria.md#3-distribuição-de-tools-45-por-agente-e-subagents-especializados"
+      "checkpoint": "Peça para classificar (em inglês): '(a) payment gateway timeout, (b) refund outside the 60-day window, (c) date sent as 31/02/2025, (d) tenant admin approval required' — errorCategory, isRetryable e o que o agente faz em cada caso",
+      "ref": "04-design-de-tools/teoria.md#4-erro-de-tool-no-mcp-iserror"
     },
     {
       "id": "t4",
       "fase": "teoria",
-      "titulo": "Tool search e defer_loading",
+      "titulo": "Recuperação local e vazio válido vs. falha de acesso (2.2-S3, S4)",
       "pontos": [
-        "Tools com defer_loading: true não entram no contexto de início; o modelo usa a tool de busca para carregar só as que precisa",
-        "Use com 10+ tools, definições acima de ~10k tokens ou vários servidores MCP",
-        "Mantenha 3–5 tools frequentes NÃO deferidas (pelo menos uma tem que ficar carregada)",
-        "Conciliação: '4–5 tools' é o que o modelo VÊ na decisão; tool search mantém isso pequeno enquanto o catálogo cresce",
-        "Preserva o prompt cache (deferidas não ficam no prefixo); [volátil] variantes regex e BM25",
-        "Anti-padrões: carregar 200 tools 'porque a janela é grande'; deferir tudo; trocar o array tools a cada turno (invalida cache)",
-        "Prova: cenário 4, 'vários servidores MCP, ~40k tokens de definições, seleção piorou' → tool search"
+        "2.2-S3: o subagent resolve o transitório localmente (retry com espera) e propaga ao coordenador SÓ o que não resolveu, com o que tentou e os resultados parciais; mostre o JSON do relatório do subagent no teoria.md §6",
+        "2.2-S4: falha de acesso (a consulta não rodou; precisa de decisão de retry) ≠ resultado vazio válido (consulta OK, zero resultados = informação); mostre os dois JSON lado a lado (isError false com matches: [] × isError true com transient)",
+        "Anti-padrões: [] como sucesso quando o backend caiu (supressão silenciosa → 'não há estudos', 'a função não tem chamadores'); tratar vazio válido como erro; propagar todo timeout sem tentar; retentar e devolver só 'search unavailable'; abortar o workflow inteiro",
+        "Ponte: o lado do coordenador (contexto estruturado de erro, anotação de cobertura) é o TS 5.3, no Módulo 11",
+        "Na prova: cenário 3 (fonte fora do ar vira 'sem fontes'), cenário 4 (busca de código vazia vira 'pode apagar'), cenário 1 (lookup vazio × timeout)"
       ],
-      "checkpoint": "Pergunte: qual a diferença entre resolver '18 tools' com subagents e com tool search? Quando cada um é a melhor resposta?",
-      "ref": "04-design-de-tools/teoria.md#4-tool-search-e-defer_loading-catálogo-grande-sem-poluir-a-decisão"
+      "checkpoint": "Pergunte (em inglês): 'search_orders returns an empty list both when the order service is down and when the customer has no orders. What should change?' Espere: isError + transient quando o serviço não respondeu; lista vazia só quando a busca rodou",
+      "ref": "04-design-de-tools/teoria.md#6-recuperação-local-e-vazio-válido-vs-falha-de-acesso"
     },
     {
       "id": "t5",
       "fase": "teoria",
-      "titulo": "tool_choice (auto/any/tool/none) e disable_parallel_tool_use",
+      "titulo": "Quantas e quais tools por agente (2.3-K1, K2, K3, S1)",
       "pontos": [
-        "auto (padrão: chama tool ou responde texto) · any (obrigado a chamar alguma) · {type: tool, name} (obrigado a chamar aquela) · none (só texto; tools continuam declaradas)",
-        "disable_parallel_tool_use: true → no máximo uma chamada por resposta (útil quando escritas conflitam)",
-        "[volátil] Em modelos mais novos, any e tool forçado retornam 400 → auto + instrução explícita nomeando a tool + strict, ou structured outputs (output_config.format) quando o objetivo era só JSON",
-        "Suporte é por modelo: ao migrar, teste a forma do request",
-        "Anti-padrões: forçar tool num agente conversacional; achar que none remove as tools; migrar de modelo mantendo tool forçado sem testar",
-        "Prova: cenário 6 (extração sempre em JSON) e cenário 1 (duas escritas em paralelo conflitando)"
+        "2.3-K1: muitas tools num agente (18 em vez de 4–5) degradam a seleção, porque cada decisão fica mais complexa",
+        "2.3-K2: tool fora da especialidade é mal usada: a síntese com busca web passa a pesquisar sem os critérios de fonte do agente de busca",
+        "2.3-K3/S1: acesso escopado por papel; no Agent SDK, as tools ficam restritas na AgentDefinition de cada subagent, e o coordenador precisa de 'Task' no allowedTools (Módulo 07); mostre o snippet TS do teoria.md §7",
+        "Lendo o sintoma: erros espalhados por muitos pares = volume; concentrados num par = sobreposição de descrição; seguindo uma palavra = system prompt",
+        "Anti-padrões: todas as tools para todos 'para serem autossuficientes'; proibir no prompt mantendo a tool; modelo maior; reescrever 18 descrições; um subagent por tool",
+        "[volátil, 1 frase] Tool search/defer_loading existe na doc, mas não está no guia: na prova, 'tools demais' se resolve distribuindo por papel"
       ],
-      "checkpoint": "Pergunte: o pipeline de extração usava tool_choice forçado e passou a receber 400 após trocar de modelo. Quais as duas saídas corretas?",
-      "ref": "04-design-de-tools/teoria.md#5-tool_choice-e-disable_parallel_tool_use"
+      "checkpoint": "Pergunte (em inglês): 'Every subagent in a research system has the same 16 tools, and the report writer has started opening tickets on its own. What is the best fix?' Espere: restringir as tools de cada subagent ao seu papel (AgentDefinition); ações com o coordenador",
+      "ref": "04-design-de-tools/teoria.md#7-quantas-e-quais-tools-por-agente"
     },
     {
       "id": "t6",
       "fase": "teoria",
-      "titulo": "Tools definidas pela Anthropic, server-side, pause_turn e web fetch",
+      "titulo": "Tool de escopo cruzado e tool restrita (2.3-S3, S2)",
       "pontos": [
-        "Declaradas por type + name, sem input_schema (ex.: web_search com max_uses)",
-        "Server-side (web search, web fetch, code execution, tool search): rodam na Anthropic, resultado na MESMA resposta, você não executa",
-        "Client-side (bash, text editor, memory): você executa e devolve tool_result",
-        "Erro server-side vem com HTTP 200 e objeto de erro dentro do bloco de resultado (ex.: max_uses_exceeded); checar só status HTTP não pega",
-        "pause_turn: loop server-side bateu o teto de iterações; reenvie a conversa com a resposta como está para continuar (não é fim nem erro)",
-        "Web fetch só busca URLs já presentes na conversa — não é crawler; [volátil] programmatic tool calling mantém resultados grandes fora do contexto",
-        "Prova: 'resposta incompleta, log mostra pause_turn, código trata como fim' → reenviar; pegadinha: aumentar max_tokens"
+        "2.3-S3: tool de escopo cruzado para necessidade FREQUENTE e SIMPLES (verify_fact no agente de síntese); casos complexos continuam passando pelo coordenador (Q9 oficial: 85% simples / 15% complexos)",
+        "Por que vence: corta as idas e voltas no caso comum sem dar ao agente o pacote inteiro (menor privilégio)",
+        "Distratores clássicos: dar todas as tools de busca; acumular verificações e mandar em lote no fim (dependência bloqueante); pré-cache especulativo",
+        "2.3-S2: tool restrita no lugar de genérica: fetch_url → load_document, que valida se a URL é de documento e devolve erro de validação no resto; mostre a definição do teoria.md §8",
+        "A restrição vira código da tool, não instrução: 'liste os domínios no prompt' e 'filtre depois com hook' são as erradas; manter a genérica como fallback preserva o mau uso"
       ],
-      "checkpoint": "Pergunte: o que o código deve fazer ao receber stop_reason pause_turn, e por que 'checar se o HTTP é 200' não detecta falha da web search?",
-      "ref": "04-design-de-tools/teoria.md#6-tools-definidas-pela-anthropic-e-server-side"
+      "checkpoint": "Pergunte (em inglês): 'The report agent often needs to confirm one date or figure; 80% are single-value checks and 20% need real investigation. Each check now costs two extra round trips through the coordinator. What is the best change?' Espere: tool escopada de lookup para o caso simples; complexos via coordenador",
+      "ref": "04-design-de-tools/teoria.md#8-tool-de-escopo-cruzado-e-tool-restrita"
     },
     {
       "id": "t7",
       "fase": "teoria",
-      "titulo": "Tool use paralelo, devolução dos tool_result, cache e MCP connector",
+      "titulo": "tool_choice: auto, any e forçado (2.3-K4, S4, S5)",
       "pontos": [
-        "O modelo pode emitir vários tool_use numa resposta (e misturar com texto); quem diz se terminou é o stop_reason",
-        "Execute (em paralelo se quiser) e devolva TODOS os tool_result numa ÚNICA mensagem user, cada um com o tool_use_id exato, tool_result primeiro no content",
-        "A chamada que falhou também recebe tool_result, com is_error: true — nunca omita",
-        "Mostre o par assistant (2 tool_use) → user (2 tool_result, um com is_error) do teoria.md",
-        "Cache: prefixo na ordem tools → system → messages; trocar o array tools entre turnos invalida tudo",
-        "MCP connector (visão geral): Messages API conecta direto a um servidor MCP remoto (mcp_servers + toolset) sem você escrever client; [volátil] beta; detalhes de MCP no Módulo 05"
+        "2.3-K4: as três opções do guia: {\"type\":\"auto\"} (pode responder em texto; padrão), {\"type\":\"any\"} (tem que chamar ALGUMA tool, o modelo escolhe qual), {\"type\":\"tool\",\"name\":\"...\"} (tem que chamar AQUELA); tool_choice vale por request",
+        "2.3-S5: any garante chamada de tool em vez de texto (ex.: etapa de triagem que tem que terminar numa tool de roteamento; no Módulo 03, vários schemas de extração com tipo de documento desconhecido)",
+        "2.3-S4: o forçado garante que aquela tool rode PRIMEIRO (extract_metadata antes do enriquecimento); os passos seguintes vêm em turnos posteriores (ex.: auto). Mostre o fluxo de 2 turnos do teoria.md §9 com o // ← AQUI",
+        "Anti-padrões: instrução no prompt 'sempre chame X primeiro' (probabilística); any quando a ordem importa (garante uma chamada, não qual); forçar em todo turno; any em agente conversacional; achar que texto com end_turn foi corte (corte é max_tokens)",
+        "[volátil] Na doc atual, Opus 5.5, Sonnet 5.5, Fable 5.1 e Mythos 5.1 recusam any/forçado com 400; outros modelos aceitam. Na PROVA, any e forçado são as respostas do guia; none e disable_parallel_tool_use existem na API, mas não estão no guia"
       ],
-      "checkpoint": "Peça para o aluno descrever a mensagem de resposta quando o modelo pediu 3 tools e uma deu timeout",
-      "ref": "04-design-de-tools/teoria.md#7-tool-use-paralelo-devolução-dos-resultados-e-cache"
+      "checkpoint": "Pergunte (em inglês): 'enrich_author and lookup_citations need the DOI that extract_metadata returns; in 7% of runs the model calls lookup_citations first. What is the most effective fix?' Espere: forçar extract_metadata no 1º request e processar o enriquecimento nos turnos seguintes (auto)",
+      "ref": "04-design-de-tools/teoria.md#9-tool_choice-auto-any-e-forçado"
     },
     {
       "id": "q1",
@@ -132,7 +127,7 @@
       "titulo": "Quiz de fixação — Módulo 04",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "15 questões curtas cobrindo descrição/strict, erros estruturados, distribuição, tool search, tool_choice, server-side e paralelo",
+        "15 questões de fixação: 2.1 (descrição, renomear, separar, system prompt), 2.2 (isError, categorias, vazio × falha, recuperação local) e 2.3 (4–5 tools, escopo cruzado, tool restrita, tool_choice)",
         "Depois de cada resposta, explique por que cada alternativa errada é tentadora"
       ],
       "checkpoint": "Pergunte se o aluno quer revisar algum tópico antes da prova do módulo",
@@ -145,7 +140,8 @@
       "titulo": "Prova do Módulo 04 — estilo cenário (70%)",
       "pontos": [
         "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
-        "20 questões em estilo de cenário do exame, com feedback por alternativa; algumas de múltipla resposta (Choose TWO)",
+        "20 questões em estilo de cenário (cenários 1, 3, 4 e 6), com feedback por alternativa; 3 de múltipla resposta (Choose TWO)",
+        "Depois de cada resposta, explique por que cada errada é tentadora e qual anti-padrão ela representa",
         "Aprovação: 70%. Abaixo disso, revise a tabela de decisão e refaça"
       ],
       "checkpoint": "Comente o resultado, destaque os anti-padrões que enganaram o aluno e registre com note",
@@ -155,11 +151,11 @@
     {
       "id": "fim",
       "fase": "fechamento",
-      "titulo": "Fechamento — próximo: Módulo 05 (MCP)",
+      "titulo": "Fechamento — próximo: Módulo 05 (MCP e tools nativas)",
       "pontos": [
-        "Recapitule pela Cola de véspera: descrição = seleção; erro estruturado com categoria; vazio ≠ falha; 4–5 tools; tool search; tool_choice; server-side com HTTP 200 e pause_turn; paralelo numa só mensagem",
-        "Próximo: Módulo 05 — MCP (arquitetura host/client/server, transportes, escopos, .mcp.json, autenticação), a outra metade do D2",
-        "Para começar: python3 engine/aula.py start Claude-Architect/05-mcp/roteiro.json"
+        "Recapitule pela Cola de véspera: descrição = mecanismo de seleção (reescrever é o primeiro passo); renomear/separar; revisar o system prompt; isError + errorCategory + isRetryable; negócio = retriable false + mensagem amigável; vazio ≠ falha; recuperação local; 4–5 tools por papel; escopo cruzado; tool restrita; tool_choice auto/any/forçado",
+        "Próximo: Módulo 05 — MCP no Claude Code e no agente + tools nativas (TS 2.4 e 2.5), a outra metade do D2",
+        "Para começar: python3 engine/aula.py start Claude-Architect/05-mcp-e-tools-nativas/roteiro.json"
       ],
       "checkpoint": "Pergunte se o aluno quer seguir direto para o Módulo 05 ou parar aqui (o progresso fica salvo)",
       "ref": "04-design-de-tools/teoria.md#cola-de-véspera"
