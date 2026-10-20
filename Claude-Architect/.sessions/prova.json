@@ -1,0 +1,613 @@
+{
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-01/questions.json",
+  "bank": {
+    "titulo": "Módulo 01 — Prova (estilo exame)",
+    "aprovacao": 70,
+    "questoes": [
+      {
+        "pergunta": "Your telecom provider's CI pipeline reviews each pull request with the Claude API. The request defines one tool, report_findings, whose input_schema matches the format your PR-comment bot parses, and sets tool_choice to {\"type\": \"auto\"}. In 6% of runs the bot fails with \"no tool_use block in response\". In those runs the response has stop_reason \"end_turn\" and a single text block such as \"I reviewed the diff and found nothing that needs attention.\" Nearly all of them are small, clean diffs. What is the most likely root cause?",
+        "opcoes": [
+          "The system prompt asks the model to summarize each review, and on clean diffs that wording leads it to treat a short summary as its complete answer.",
+          "These responses are cut off by max_tokens before the model reaches the point where it would emit the report_findings call.",
+          "The prompt includes no example of a clean diff, so the model has never seen what an empty report_findings call should look like.",
+          "The auto setting lets the model reply in text instead of calling a tool, and when a diff has nothing to report it sometimes does just that."
+        ],
+        "correta": 3,
+        "explicacao": "With tool_choice \"auto\" the model may return text instead of calling a tool, and clean diffs with nothing to report are where it does so. The stop_reason \"end_turn\" rules out truncation. Setting tool_choice to \"any\" or forcing report_findings makes the tool call mandatory, so the bot always receives a tool_use block.",
+        "feedbacks": [
+          "System prompt wording can bias tool use, but nothing in the evidence points to it; the pattern (clean diffs, end_turn, prose) is exactly what \"auto\" permits by design.",
+          "Truncation would show stop_reason \"max_tokens\", not \"end_turn\", and it would hit large diffs, not small clean ones.",
+          "An example of a clean-diff report might lower the rate, but it is still a probabilistic nudge; the cause is that \"auto\" makes the tool call optional.",
+          "Correct. \"auto\" allows a text answer; \"any\" or a forced report_findings call removes that option."
+        ],
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.3",
+        "bullet": "4.3-K2"
+      },
+      {
+        "pergunta": "In your health insurer's multi-agent research system, the web search subagent runs its own loop. Each time a response has stop_reason \"tool_use\", the harness executes search_web, stores the results in the run's evidence store for the synthesis step, and sends the next request containing the original task followed by a user message that says \"Search completed. Continue.\" Traces show the subagent issuing the same query four to six times per task and using about three times the expected tokens. What is the flaw in this implementation?",
+        "opcoes": [
+          "The harness should deduplicate queries itself and skip any search_web call whose query string has already been executed in the current task.",
+          "The search output never enters the conversation as a tool_result, so the model cannot see what it already found and keeps searching.",
+          "The subagent has more tools than its role needs, which makes its tool selection unreliable and causes it to fall back on repeated searches.",
+          "The \"Continue.\" message reads as an instruction to keep working, which pushes the model to search again instead of ending its turn."
+        ],
+        "correta": 1,
+        "explicacao": "Tool results must be appended to the conversation history so the model can reason about its next action. Here the results go only to the evidence store, and the next request carries neither the assistant's tool_use turn nor a tool_result, so from the model's point of view no search has happened yet. Appending the response and the matching tool_result blocks fixes both the repeats and the token cost.",
+        "feedbacks": [
+          "Deduplication hides the symptom, but the model would still lack the results it needs to reason and would keep asking for them in other forms.",
+          "Correct. Results that live only in an external store are invisible to the model; they must be returned as tool_result blocks in the next request.",
+          "Too many tools can degrade selection, but nothing suggests a selection problem; the subagent picks the right tool and simply never sees its output.",
+          "The wording is a minor factor; even with a neutral message the model would have no search results in its context and would search again."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K2"
+      },
+      {
+        "pergunta": "Your health insurer's synthesis subagent checks figures with verify_claim before writing. Its loop ends with this check: if (response.Content.Any(b => b.Type == \"text\")) break; In 9% of runs the report includes figures that were never verified. In those runs the last response contains the text \"Let me verify the two remaining rates before finalizing.\" followed by two verify_claim tool_use blocks, with stop_reason \"tool_use\". Which statement about this behavior is correct?",
+        "opcoes": [
+          "The model is ending its turn too early, so the system prompt should require that every verification is finished before it writes any text at all.",
+          "The responses were truncated by max_tokens, which explains why the verification calls appear after the explanatory text in the final response.",
+          "The loop treats any text as completion, but one response can mix text and tool_use blocks; the harness should continue while stop_reason is \"tool_use\".",
+          "The verify_claim calls run too slowly, so the harness times out and leaves the loop before the two remaining checks can return their results."
+        ],
+        "correta": 2,
+        "explicacao": "Checking for assistant text is one of the termination anti-patterns in the guide: a single response often contains an explanatory text block and tool_use blocks. stop_reason \"tool_use\" says the model still wants tools executed. Driving the loop on stop_reason (continue on \"tool_use\", stop on \"end_turn\") fixes it.",
+        "feedbacks": [
+          "The model did not end its turn; stop_reason was \"tool_use\". A prompt rule would not fix a harness that exits on the wrong signal.",
+          "Truncation would show stop_reason \"max_tokens\". Text before tool_use blocks is normal output, not a sign of a cutoff.",
+          "Correct. Text content is not a completion indicator; stop_reason is.",
+          "Nothing in the trace suggests a timeout; the loop exits on the text check before the tools are even executed."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S3"
+      },
+      {
+        "pergunta": "Your HR software platform extracts fields from uploaded employment contracts. When validation fails, the service sends a follow-up turn so the model can correct the extraction. To cut input tokens, an engineer proposes that the follow-up request contain only one user message with the validation errors, arguing that \"the model already has the contract and its first answer from the previous call.\" Contracts average 9,000 tokens. How should you evaluate this proposal?",
+        "opcoes": [
+          "Accept it: the Messages API keeps each conversation's earlier turns on the server, so resending them only adds duplicate input tokens.",
+          "Reject it: each request is stateless, so the follow-up must resend the contract and the failed extraction with the errors listed.",
+          "Accept a variant: replace the earlier turns with a short summary of the contract and the extraction, keeping context at lower cost.",
+          "Accept it, and restate the schema's field rules in the system prompt so the model can fix each field from the errors alone."
+        ],
+        "correta": 1,
+        "explicacao": "The Messages API does not keep conversation state between calls; every request must carry the complete history the model needs. A useful correction turn includes the original document, the failed extraction and the specific validation errors. Without them the model can only guess.",
+        "feedbacks": [
+          "There is no server-side conversation memory in the Messages API; anything not in the request does not exist for the model.",
+          "Correct. The API is stateless; the follow-up must include the document, the prior extraction and the errors.",
+          "A summary drops exactly the details a correction needs (values, clauses, dates); progressive summarization is a known source of lost facts.",
+          "Field rules do not replace the source text; without the contract the model cannot find the correct values and will fabricate them."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.1",
+        "bullet": "5.1-K4"
+      },
+      {
+        "pergunta": "Your airline's internal agent helps engineers explore legacy code with Grep, Glob and Read. Its loop runs while iterations < 5 and then returns the text of the last response. In 22% of sessions about the booking engine, engineers get answers such as \"Next I'll check how FareCalc applies the codeshare rules\" and nothing more; sessions on small services finish normally. The platform team requires protection against runaway sessions. What is the most effective fix?",
+        "opcoes": [
+          "Raise the cap to 15 iterations, because the longest exploration sessions in last month's logs needed 13 tool calls to finish their work.",
+          "Keep the cap at 5 and add a system prompt rule telling the model to finish exploring and to summarize within five tool calls per session.",
+          "Continue while stop_reason is \"tool_use\" and stop on \"end_turn\", keeping a much higher cap only as a logged safety backstop.",
+          "Stop only when the last response has no future-tense phrases such as \"Next I'll check\", and otherwise send another request to the model."
+        ],
+        "correta": 2,
+        "explicacao": "The loop uses an arbitrary iteration cap as its primary stopping mechanism, so long investigations are cut off mid-task. Control flow should continue on \"tool_use\" and terminate on \"end_turn\"; a high cap with logging still meets the runaway-session requirement as a backstop, not as the stopping rule.",
+        "feedbacks": [
+          "A bigger cap is still the primary stopping rule; the next unusually long investigation will be cut off at 15 the same way.",
+          "Forcing the model to compress any investigation into five calls trades truncated answers for shallow ones; the stopping signal is still wrong.",
+          "Correct. stop_reason drives the loop; the cap stays only as a safety net with logging.",
+          "Parsing natural language to decide termination is an anti-pattern; phrasing varies and the text can coexist with pending tool calls."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S1"
+      },
+      {
+        "pergunta": "Your online electronics retailer's support agent handles returns. A new conversation service now saves every turn to the chat database and rebuilds the messages array from that database before each model call. Since the rollout, the agent calls lookup_order three or four times in a row for the same order before replying, and median response time rose 70%. The chat database stores customer messages and the agent's text replies. What is the most effective first step?",
+        "opcoes": [
+          "Persist the tool_use turns and their matching tool_result blocks as well, so each rebuilt request carries the results the agent already has.",
+          "Cache lookup_order responses for ten minutes inside the service, so that repeated calls for the same order return without a backend query.",
+          "Add a rule to the system prompt telling the agent to call lookup_order at most once per order number in any single customer conversation.",
+          "Trim the lookup_order output to the five return-relevant fields, so the order data stays prominent in the agent's context on each turn."
+        ],
+        "correta": 0,
+        "explicacao": "The rebuilt history contains only customer-visible text, so the tool_use turns and tool_result blocks disappear between iterations and the model never sees the order it looked up. Tool results must be appended to the conversation history so the model can reason about the next action; persisting them removes the repeated calls at the source.",
+        "feedbacks": [
+          "Correct. The model repeats lookup_order because its result is missing from the history it receives.",
+          "Caching makes the repeated calls cheaper but does not stop them; the model still cannot see the result it already obtained.",
+          "A prompt rule cannot help a model that has no record of the earlier call; it would either keep calling or answer without the data.",
+          "Trimming is useful for context budgets, but here the result is not in the context at all, so there is nothing to make prominent."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K2"
+      },
+      {
+        "pergunta": "In your health insurer's research system, the document analysis subagent has two tools: search_policy_docs, described as \"Searches documents\", and search_clinical_studies, described as \"Searches documents for research\". On drug-coverage questions it queries the clinical studies corpus first in 31% of tasks, finds nothing relevant, and then retries with the other tool. Two designs are proposed: (1) rewrite both descriptions with the corpus each covers, input formats, example queries, and when to use the other tool; (2) add a pre-processing step that classifies each query by keywords and calls the matching tool before the model runs. Which evaluation is correct?",
+        "opcoes": [
+          "Design 2 is better: keyword classification makes the choice deterministic, and every misrouted query currently wastes a full tool call.",
+          "Design 1 is better: descriptions are the main input the model uses to pick a tool, and these two are nearly indistinguishable.",
+          "Both work equally well; prefer design 2 because it also removes one model round trip from every task that involves policy documents.",
+          "Neither fixes the cause; the subagent needs few-shot examples showing coverage questions being routed to the policy document corpus."
+        ],
+        "correta": 1,
+        "explicacao": "Tool descriptions are the primary mechanism the model uses to select tools, and two near-identical one-line descriptions make selection unreliable. Rewriting them with scope, input formats, examples and boundaries fixes the root cause cheaply. A keyword pre-classifier is over-engineered and bypasses the model's language understanding.",
+        "feedbacks": [
+          "Determinism is not the requirement here; a keyword router breaks on mixed or unusual queries and adds a component to maintain before the simple fix is tried.",
+          "Correct. Minimal, overlapping descriptions are the root cause; clear descriptions are the first fix.",
+          "The two designs are not equivalent; the saved round trip does not justify replacing model selection with brittle keyword rules.",
+          "Few-shot examples add tokens without fixing the underlying problem: the model has nothing in the descriptions to tell the corpora apart."
+        ],
+        "cenario": 3,
+        "dominio": "D2",
+        "ts": "2.1",
+        "bullet": "2.1-K1"
+      },
+      {
+        "pergunta": "Your airline's developer productivity agent generates database migration boilerplate. Every run must begin with inspect_schema, which reads the live table definitions, before generate_migration or write_file is called. In 11% of runs the model goes straight to generate_migration from the ticket text, producing migrations that collide with existing columns. The steps after inspection should stay model-driven. What should you change to meet this requirement?",
+        "opcoes": [
+          "Set tool_choice to \"any\" on every request, so that the model must always call one of the tools instead of replying with text.",
+          "Add a system prompt rule that inspect_schema must be the first call of every run, with two examples showing the correct order.",
+          "Force {\"type\": \"tool\", \"name\": \"inspect_schema\"} on the first request of every run, then use \"auto\" for later turns.",
+          "Remove generate_migration from the tool list and have the harness call it automatically once inspect_schema has returned."
+        ],
+        "correta": 2,
+        "explicacao": "Forced tool selection guarantees that a specific tool is called first; the following steps are then processed in follow-up turns with \"auto\", so they remain model-driven. \"any\" only guarantees that some tool is called, and a prompt rule keeps a non-zero failure rate.",
+        "feedbacks": [
+          "\"any\" requires a tool call but lets the model choose which one, so it can still pick generate_migration first.",
+          "Instructions and examples reduce the rate but cannot guarantee the order; 11% failures call for a configuration that enforces it.",
+          "Correct. Force inspect_schema on the first turn, then switch to \"auto\".",
+          "Hard-wiring the next step removes model-driven decisions the requirement says to keep, and does not by itself force inspection to run first."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.3",
+        "bullet": "2.3-K4"
+      },
+      {
+        "pergunta": "Your airline's developer productivity agent answers questions about legacy systems, such as \"Why does the baggage fee differ on codeshare flights?\" Today the model chooses each next tool. To make runs \"predictable\", a tech lead proposes a fixed sequence for every question: Glob for likely files, Grep for the main class name, Read the first three matches, then summarize. Which TWO statements correctly evaluate this proposal? Choose TWO.",
+        "opcoes": [
+          "The fixed sequence is acceptable if the iteration cap is raised, so the three reads can cover larger source files completely.",
+          "The fixed sequence is preferable, because a predictable tool order is what makes an agent's answers reliable across runs.",
+          "Open-ended questions need the model to pick each next call from what it just found, such as following a call into another module.",
+          "A fixed sequence suits predictable, repeatable tasks; here it would miss code paths that only appear after earlier results.",
+          "The proposal works if the sequence is written into the system prompt rather than code, so the model can still deviate."
+        ],
+        "corretas": [
+          2,
+          3
+        ],
+        "explicacao": "In model-driven decision-making, Claude chooses the next tool based on what earlier results revealed, which open-ended investigation requires. A pre-configured sequence fits predictable, repeatable work, but for questions like this one it stops at whatever the first three matches happen to be.",
+        "feedbacks": [
+          "The iteration cap is not the problem; the fixed sequence decides what to read before anything has been found.",
+          "Predictable order does not make answers reliable when the needed code is not in the first three matches; it makes the failures predictable.",
+          "Correct. The next call depends on what the previous one revealed.",
+          "Correct. Fixed sequences belong to predictable tasks, not open-ended investigation.",
+          "A sequence in the prompt is still a fixed plan the model is told to follow; it weakens the guidance without addressing why the sequence is wrong here."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K3"
+      },
+      {
+        "pergunta": "Your airline's agent generates boilerplate for new microservices. Its system prompt tells the model to write \"TASK COMPLETE\" when it is done, and the harness loops until a response contains that phrase. Logs show two failure modes: some runs stop while two write_file calls requested in the same response are never executed, and others keep sending requests for 30 or more turns after the model has already summarized its work in different words. What is the flaw?",
+        "opcoes": [
+          "The completion phrase is too common; a unique marker such as <<DONE-7f3a>> would prevent both the early matches and the missed endings.",
+          "The prompt should require the model to write the completion phrase only after every write_file call has returned its result.",
+          "The harness is missing a cap of 10 requests per run, which would be enough for every boilerplate template in the current catalog.",
+          "Termination depends on parsing the model's text; the loop should run tools on \"tool_use\" and stop on \"end_turn\", fixing both modes."
+        ],
+        "correta": 3,
+        "explicacao": "Both failures come from parsing natural language to decide when the loop ends: the phrase can appear next to pending tool calls, and the model can finish without it. stop_reason is the reliable signal: \"tool_use\" means execute and continue, \"end_turn\" means the turn is finished.",
+        "feedbacks": [
+          "A rarer marker is still a text signal; it would still appear alongside pending write_file calls and still be missing when the model words its ending differently.",
+          "This adds a second prompt dependency to the first; the harness would still ignore stop_reason and depend on the model's wording.",
+          "A cap would stop the long runs, but as the primary stopping rule it is arbitrary and does nothing about the runs that end too early.",
+          "Correct. Drive the loop on stop_reason, not on phrases in the text."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S3"
+      },
+      {
+        "pergunta": "While debugging your electronics retailer's support agent, a new engineer reads this trace: request 1 returns stop_reason \"tool_use\" with a get_customer block; 900 ms later, request 2 contains a tool_result with the customer record and returns stop_reason \"tool_use\" with a lookup_order block; request 3 returns stop_reason \"end_turn\" with the reply to the customer. The engineer concludes that the model queried the CRM itself between requests 1 and 2. Which statement about this trace is correct?",
+        "opcoes": [
+          "The model only requested get_customer; the agent's runtime executed it and sent the record back in request 2, which let the model choose lookup_order.",
+          "The model executed get_customer over its MCP connection, and request 2 only confirmed the call by echoing the record back to it as a tool_result.",
+          "The runtime executed get_customer, but the model had already committed to lookup_order in request 1 and was only waiting for the call to finish.",
+          "Each request was independent; the model chose lookup_order from the customer's message alone, since tool results are kept outside its context."
+        ],
+        "correta": 0,
+        "explicacao": "In the agentic loop the model only emits tool_use requests; your runtime executes the tool and returns the result for the next iteration. The model then decides the next action, here lookup_order, using the result that was appended to the conversation.",
+        "feedbacks": [
+          "Correct. Request, execute, return the result, and let the model choose the next step.",
+          "The model never executes tools, MCP or otherwise; the client side calls the MCP server and returns the result.",
+          "Request 1 contained only get_customer; the choice of lookup_order was made in request 2, after the customer record arrived.",
+          "Tool results are part of the context: they are appended to the history precisely so the model can use them."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K1"
+      },
+      {
+        "pergunta": "Your airline's developer productivity agent automates repetitive changes, such as renaming a configuration key across services. A typical run makes 9 model requests. To cut latency, an engineer proposes: before the first request, run Grep and Glob for every identifier in the task description, paste all outputs into the prompt, and accept the first response as the final result with no further iterations. How should you evaluate the proposal?",
+        "opcoes": [
+          "Reject it: the agent needs to request tools, receive results and request more, because later calls depend on what earlier results reveal.",
+          "Accept it: one request with all context is the most reliable design, since the model reasons best when every output is available upfront.",
+          "Accept it for tasks that touch fewer than ten files, and keep the agentic loop only for larger tasks whose outputs would not fit in context.",
+          "Reject it, and instead tell the model in the system prompt to request every tool it will need in its first response, all in parallel."
+        ],
+        "correta": 0,
+        "explicacao": "The agentic loop exists because each tool result can change what the model needs next: a Grep hit leads to a Read, which reveals another file to edit. Pre-computing searches from the task text is speculative and removes the iterations in which the model acts on new information.",
+        "feedbacks": [
+          "Correct. Later steps depend on earlier results, which a single pre-loaded request cannot provide.",
+          "Upfront context is only as good as the guesses behind it; the outputs that matter come from calls that are chosen after seeing earlier results.",
+          "Size is not the issue; even small tasks need follow-up calls (Read, Edit) chosen from what the searches found.",
+          "The model cannot know in its first response which files later results will point to, so it cannot request them all upfront."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K1"
+      },
+      {
+        "pergunta": "Your health insurer's document analysis subagent picks tools through code: if the query contains \"trial\" it calls search_trials; if it contains \"guideline\" it calls search_guidelines; otherwise it calls search_all; summarize always runs last. Queries such as \"What trial evidence supports the 2025 asthma guideline change?\" return off-topic results 40% of the time. Compliance requires an audit record of every tool call. What is the most effective fix?",
+        "opcoes": [
+          "Add branches to the decision tree for mixed queries, and log the branch taken on each run so the audit record shows why each tool ran.",
+          "Train a lightweight classifier on past queries to choose the search tool, and keep summarize as the fixed final step of each run.",
+          "Let the model choose each next call from the query and the results so far, guided by clear tool descriptions; the harness logs every call.",
+          "Call search_trials and search_guidelines for every query, then let summarize merge both result sets into a single combined answer."
+        ],
+        "correta": 2,
+        "explicacao": "A pre-configured decision tree cannot anticipate queries that mix categories or need follow-up searches. Letting Claude choose the next tool from context and earlier results handles them, and the audit requirement is met by logging every tool call in the harness, which works the same way for model-driven calls.",
+        "feedbacks": [
+          "More branches only move the edge cases; the next unusual query will fall through the tree again.",
+          "A trained classifier is heavier infrastructure that still makes a single up-front choice and cannot react to what the first search returns.",
+          "Correct. Model-driven tool selection, with every call logged for the audit.",
+          "Calling everything wastes tokens and adds noise, and still follows a fixed sequence that cannot react to what the results show."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K3"
+      },
+      {
+        "pergunta": "Your health insurer's synthesis subagent calls verify_claim to check figures before writing. To keep the loop fast, the harness starts each verification in the background, immediately returns a tool_result whose content is \"verification queued\", and continues; finished verifications are written to a results table. Reviewers find that 14% of reports still contain figures that the results table marks as contradicted by the source. What is the most effective first step?",
+        "opcoes": [
+          "Have the report generator read the results table afterward and automatically replace contradicted figures in the final text.",
+          "Wait for each verification to finish and put its actual result in the tool_result, so the next iteration can reason about it.",
+          "Tell the subagent in its system prompt not to use any figure until its verification has been confirmed in the results table.",
+          "Move verification into a separate pass after synthesis, and send contradicted reports back to the subagent for a full rewrite."
+        ],
+        "correta": 1,
+        "explicacao": "The model can only incorporate new information that is added to its context between iterations. A placeholder tool_result tells it nothing, so it writes with unverified figures. Returning the real verification result before the next request lets it adjust its reasoning and the text.",
+        "feedbacks": [
+          "Patching numbers afterward edits text the model wrote without knowing the outcome; surrounding claims and conclusions that relied on the figure stay wrong.",
+          "Correct. The actual result must reach the conversation before the next iteration.",
+          "The model cannot see the results table; a rule about it changes nothing the model can observe.",
+          "A second pass adds latency and rewrites; the simpler fix is to return the result the model asked for."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S2"
+      },
+      {
+        "pergunta": "Your health insurer's research system has two tool_choice problems. The report subagent must return its output through one of three tools (render_summary, render_comparison_table, render_evidence_brief), whichever fits the findings, yet 7% of its runs end in plain prose that the publishing step rejects. Separately, the coordinator must call plan_research before any delegation on each new topic, and logs show it sometimes delegates first. Which TWO changes meet these requirements? Choose TWO.",
+        "opcoes": [
+          "Force {\"type\": \"tool\", \"name\": \"plan_research\"} on the coordinator's first request for a topic, then switch to \"auto\".",
+          "Force render_summary for the report subagent, so every run returns its output through the most general of the three formats.",
+          "Set tool_choice to \"any\" for the report subagent, so it must call one of the three render tools but still picks the format.",
+          "Set tool_choice to \"any\" on the coordinator's first request, so it must open with a tool call, and plan_research is the obvious one.",
+          "Keep \"auto\" for the report subagent and add a system prompt rule that every answer must be delivered through a render tool."
+        ],
+        "corretas": [
+          0,
+          2
+        ],
+        "explicacao": "\"any\" guarantees a tool call while leaving the choice among several valid tools to the model, which fits the report subagent. Forcing a named tool guarantees that a specific tool runs first, which fits plan_research; later turns go back to \"auto\".",
+        "feedbacks": [
+          "Correct. Forced selection guarantees plan_research runs first.",
+          "Forcing one format throws away the comparison and evidence formats the findings sometimes need.",
+          "Correct. \"any\" removes the prose option and keeps the format choice.",
+          "\"any\" guarantees some tool call, not which one; the coordinator could still open with a delegation call.",
+          "A prompt rule is probabilistic; \"auto\" still permits the prose replies the publishing step rejects."
+        ],
+        "cenario": 3,
+        "dominio": "D2",
+        "ts": "2.3",
+        "bullet": "2.3-K4"
+      },
+      {
+        "pergunta": "Your electronics retailer's support agent is helping a customer with two issues. In one response the model requests lookup_order for order 55120 and get_customer for the account. lookup_order returns the order; get_customer times out after 8 seconds. Which TWO actions should the harness take before the next request so the model can keep reasoning correctly? Choose TWO.",
+        "opcoes": [
+          "Return both tool_result blocks in one user message, with the get_customer result marked is_error: true and a short timeout note.",
+          "Append the assistant response to the history unchanged, including both tool_use blocks, before adding any of the results.",
+          "Retry get_customer in the harness until it succeeds, then send both results together, so that the model never sees the timeout.",
+          "Return only the lookup_order result and drop the get_customer tool_use block, so that the model can simply request it again.",
+          "Send the lookup_order result now in its own user message, and send the get_customer result in a second message once a retry succeeds."
+        ],
+        "corretas": [
+          0,
+          1
+        ],
+        "explicacao": "The model reasons over the full exchange: its own response with both tool_use blocks, followed by one user message carrying a tool_result for each call. A failed call still returns a result, flagged with is_error, so the model can decide how to recover (retry, use the order data, or ask the customer).",
+        "feedbacks": [
+          "Correct. One message, every result, the failure marked with is_error.",
+          "Correct. The assistant turn, with every tool_use block, must stay in the history.",
+          "An unbounded retry stalls the conversation and hides the failure; the model should learn about the timeout and decide what to do.",
+          "Dropping blocks leaves the history inconsistent and hides the failure that the model needs to reason about.",
+          "Results for one response belong in a single user message; splitting them breaks the pairing and leaves a tool_use without its result."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S2"
+      },
+      {
+        "pergunta": "Your electronics retailer moved its support agent behind a new API gateway. Since then, in multi-turn chats the agent asks customers again for order numbers they gave two messages earlier, and in 9% of conversations it offers a refund it had already said was not possible. Single-message conversations are unaffected. Gateway metrics show input tokens per request holding steady at about 3,100, however long the conversation gets. What is the most likely root cause?",
+        "opcoes": [
+          "The gateway forwards only the latest customer message, so each request lacks the earlier turns and the model never sees what was said.",
+          "The conversations have outgrown the context window, so the earliest turns fall outside what the model can attend to reliably.",
+          "The system prompt lacks an instruction to remember details from earlier turns and to check them before asking the customer again.",
+          "The gateway's response cache returns stale replies from earlier sessions, so the agent repeats questions from other conversations."
+        ],
+        "correta": 0,
+        "explicacao": "Input tokens that stay flat while the conversation grows mean the history is not being sent. The Messages API is stateless, so each request must carry the complete conversation; without it the model re-asks for known facts and contradicts its own earlier answers.",
+        "feedbacks": [
+          "Correct. Constant input size plus forgotten facts points to a missing history.",
+          "If the context were overflowing, input tokens would grow toward the limit, not stay at 3,100.",
+          "No instruction can make the model remember turns it never receives; this treats a transport bug as a prompt problem.",
+          "Stale cached replies would show other customers' details, not this customer's own earlier messages being forgotten."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.1",
+        "bullet": "5.1-K4"
+      },
+      {
+        "pergunta": "Your electronics retailer's support harness works like this: send the request; if the response contains a tool_use block, run the tools and loop; otherwise send the response text to the customer and close the turn. Since the agent started quoting return-policy excerpts in its replies, 3% of customers receive messages that stop mid-sentence, such as \"Your refund of $189.99 has been approved and will\", and no follow-up arrives. What is the flaw?",
+        "opcoes": [
+          "The model is ending its turn early on long replies, so the system prompt should ask it to finish every sentence before it stops.",
+          "The policy excerpts push the conversation past the context window; trimming tool outputs would leave the reply room to finish.",
+          "The harness should check whether the reply ends with punctuation and, if not, ask the model in a new message to continue it.",
+          "The loop never reads stop_reason, so a \"max_tokens\" cutoff is handled as a finished turn rather than as truncation."
+        ],
+        "correta": 3,
+        "explicacao": "The harness continues on tool_use but treats every other response as complete, including one with stop_reason \"max_tokens\", which is a cutoff, not an end. Branching on stop_reason (continue on \"tool_use\", finish on \"end_turn\", handle \"max_tokens\" as truncation) prevents half-sentences from reaching customers.",
+        "feedbacks": [
+          "The model did not choose to stop; the output hit the max_tokens limit, which a prompt cannot change.",
+          "Context overflow is a different failure; the symptom matches longer outputs hitting the output limit.",
+          "Guessing completion from punctuation is parsing natural language; stop_reason already says whether the reply was cut off.",
+          "Correct. Check stop_reason; \"max_tokens\" is truncation, not completion."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S1"
+      },
+      {
+        "pergunta": "Your HR software platform extracts fields from offer letters. Version 1 asked for \"only valid JSON\" in the prompt, and 3.8% of outputs failed parsing (text before the JSON, trailing commas). Version 2 defines an extract_offer tool whose input_schema is the target schema and reads the tool_use input; parse failures dropped to zero, but QA still finds 2% of records with the start date stored in the signing_date field. Which statement about these results is correct?",
+        "opcoes": [
+          "Tool use with a JSON schema removed the syntax errors, but it does not prevent semantic errors such as a value in the wrong field.",
+          "The remaining errors show the schema is not being enforced, so the tool definition should also be resent with every retry attempt.",
+          "The misplaced dates mean version 2 is less reliable than version 1, which should be restored with stronger format instructions.",
+          "The schema guarantees that each field is correct, so the misplaced dates must come from errors in the source offer letters themselves."
+        ],
+        "correta": 0,
+        "explicacao": "Tool use with a JSON schema is the most reliable way to get schema-compliant output and eliminates syntax errors, which is what version 2 achieved. Schema compliance says nothing about whether each value is in the right field; semantic errors still need validation and targeted fixes.",
+        "feedbacks": [
+          "Correct. Schema compliance fixes syntax, not semantics.",
+          "The schema is being enforced (zero parse failures); a date in the wrong but valid field passes any schema.",
+          "Version 2 eliminated a 3.8% failure class; the 2% semantic issue would exist in version 1 too, hidden behind parse errors.",
+          "A schema validates structure and types, not meaning; assuming the source is wrong skips the real fix."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.3",
+        "bullet": "4.3-K1"
+      },
+      {
+        "pergunta": "Your HR software platform receives uploads that may be a résumé, an offer letter, or a termination notice; the type is not known in advance, and each type has its own extraction tool. With tool_choice set to \"auto\", 5% of responses are a prose summary instead of a tool call. An engineer proposes forcing {\"type\": \"tool\", \"name\": \"extract_resume\"}, since résumés are 70% of the volume. How should you evaluate the proposal?",
+        "opcoes": [
+          "Accept it: forcing the most common tool ends the prose replies, and the other 30% can be rerouted when résumé validation fails.",
+          "Accept it, but add an instruction telling the model to leave résumé fields empty when the document is clearly another type.",
+          "Reject it and keep \"auto\", adding a system prompt rule that the model must always respond by calling one of the three tools.",
+          "Reject it: setting tool_choice to \"any\" makes a tool call mandatory while still letting the model pick the matching schema."
+        ],
+        "correta": 3,
+        "explicacao": "When several extraction schemas exist and the document type is unknown, tool_choice \"any\" guarantees structured output while letting the model choose the right tool. Forcing one named tool fixes the prose problem by pushing 30% of documents through the wrong schema.",
+        "feedbacks": [
+          "Forcing the résumé tool makes 30% of extractions wrong by design and adds a reroute step to recover from it.",
+          "Empty fields on the wrong schema still lose the data the correct schema would have captured.",
+          "A prompt rule lowers the prose rate but cannot guarantee a tool call the way \"any\" does.",
+          "Correct. \"any\" guarantees a tool call and keeps the choice of schema with the model."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.3",
+        "bullet": "4.3-K2"
+      }
+    ]
+  },
+  "order": [
+    1,
+    15,
+    3,
+    16,
+    19,
+    8,
+    12,
+    5,
+    4,
+    0,
+    10,
+    11,
+    17,
+    18,
+    6,
+    2,
+    9,
+    7,
+    14,
+    13
+  ],
+  "pos": 20,
+  "answers": [
+    {
+      "pos": 0,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 1,
+      "escolha": [
+        0,
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 2,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 3,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 4,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 5,
+      "escolha": [
+        2,
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 6,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 7,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 8,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 9,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 10,
+      "escolha": [
+        3
+      ],
+      "acertou": false
+    },
+    {
+      "pos": 11,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 12,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 13,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 14,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 15,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 16,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 17,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 18,
+      "escolha": [
+        0,
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 19,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    }
+  ],
+  "done": true
+}

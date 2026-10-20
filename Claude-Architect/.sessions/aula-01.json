@@ -1,0 +1,220 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/Claude-Architect/01-exame-e-api/roteiro.json",
+  "roteiro": {
+    "modulo": "01",
+    "titulo": "O exame e a Messages API: request, histórico, tool use e o loop agêntico",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — o curso, o formato e a linguagem dos exemplos",
+        "pontos": [
+          "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json. Se NÃO existir, pergunte ao aluno em qual linguagem ele prefere ver os trechos de código (padrão sugerido: C#, a stack .NET do aluno) e grave {\"linguagem\": \"<nome>\"} nesse arquivo. Se existir, confirme a linguagem salva e pergunte se quer manter. Os arquivos usam C# como referência-base; JSON/YAML/shell ficam no formato real; traduza o código de aplicação ao vivo",
+          "Objetivo do curso: passar na CCAR-F (Claude Certified Architect – Foundations) com critério de arquiteto. O foco é PROVA: teoria enxuta voltada ao que o guia oficial v1.0 cobra, muitas questões, bancos por cenário e simulados completos. Sem laboratório nem API key",
+          "Formato: aula ao vivo, one-on-one. Eu explico um ponto por vez, você pergunta à vontade e só avançamos quando você confirmar. O progresso fica salvo: dá para parar e retomar de onde paramos",
+          "Idioma: a aula é em PT-BR; tudo que é avaliação (checkpoints, quiz, prova, bancos, simulados e o /revisar) é em INGLÊS, como a prova real. Se travar numa palavra, eu explico o termo",
+          "Regra de ouro do curso: o guia oficial decide o que cai e qual é a resposta certa. Quando a doc atual diverge (ex.: tool_choice any/forçado), a teoria traz uma caixa [volátil] e a resposta de prova segue o guia",
+          "Neste módulo: o exame pelo guia (formato, 6 cenários, 5 domínios, 30 TS, out-of-scope, como é uma questão), a Messages API (request, resposta, histórico completo), tool use (tool_use → tool_result, tool_choice) e o TS 1.1 completo (loop agêntico). Ao fim: quiz (15) e prova (20, 70%)"
+        ],
+        "checkpoint": "Confirme a linguagem dos exemplos (gravada em .sessions/preferencias.json) e se o aluno topa o formato",
+        "ref": "01-exame-e-api/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "O exame: ficha técnica e os 6 cenários",
+        "pontos": [
+          "Público-alvo do guia: arquiteto de soluções com 6+ meses construindo com Claude API, Agent SDK, Claude Code e MCP. A prova mede decisão em produção (tradeoffs), não definição",
+          "60 itens em 120 min (~2 min cada), supervisionado. Múltipla escolha e múltipla resposta: cada item DIZ quantas marcar (pode ser 2, pode ser 3). Leia o número; nossos bancos usam 'Choose TWO'",
+          "Nota escalada de 100 a 1.000, corte 720, por critério (não é curva). Relatório: aprovado/reprovado + nota + % de acerto por domínio, que só informa (não decide a aprovação). A v1.0 não repete o ponto, mas o rascunho oficial de fev/2026 dizia que questão em branco conta como erro e não há penalidade por chute, então nunca deixe em branco",
+          "4 cenários sorteados de um banco de 6; cada um enquadra um bloco de questões. Percorra a tabela: 1 suporte (Agent SDK; get_customer, lookup_order, process_refund, escalate_to_human; meta 80%+ no 1º contato), 2 geração de código com Claude Code, 3 pesquisa multiagente (coordenador + subagents), 4 produtividade (Agent SDK + tools nativas + MCP), 5 Claude Code em CI, 6 extração estruturada com JSON schema",
+          "Estratégia: identifique o cenário antes de ler as alternativas; ele diz quais tools e qual vocabulário valem naquela questão"
+        ],
+        "checkpoint": "Pergunte (em inglês, estilo exame): 'Your score report shows a scaled score of 735 and 61% correct in Domain 5. Did you pass, and what is the domain percentage for?' (Passou: 735 ≥ 720; o % por domínio só ajuda a ver pontos fracos.)",
+        "ref": "01-exame-e-api/teoria.md#1-o-exame-pelo-guia-oficial-v10"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "Domínios, os 30 task statements e o que não cai",
+        "pontos": [
+          "Pesos: D1 Agentic Architecture 27% (~16 itens), D2 Tool Design & MCP 18%, D3 Claude Code 20%, D4 Prompt Engineering & Structured Output 20%, D5 Context & Reliability 15%. D1 + D3 + D4 = 67% da prova",
+          "Os 30 task statements são o contrato: 'Exam items are written against these objectives'. Mostre a tabela TS → módulo do curso do teoria.md. Este módulo cobre o 1.1 inteiro e a base de 5.1, 2.1, 2.3 e 4.3",
+          "Só existem 30: 1.1–1.7, 2.1–2.5, 3.1–3.6, 4.1–4.6, 5.1–5.6. Números como 2.6, 4.7 ou 5.8, citados por fontes não oficiais, não existem",
+          "Out-of-scope (seção 17), nunca decide uma questão: fine-tuning, autenticação/billing, deploy de servidor MCP, arquitetura interna/treino, Constitutional AI/RLHF, embeddings/vector DB, computer use, vision, streaming/SSE, rate limits e preço, OAuth, cloud providers, benchmarks, detalhes de prompt caching, tokenização",
+          "Extras da doc atual que o guia não lista (thinking adaptativo, effort, prefill, outros stop_reason como refusal/pause_turn, Tool Runner, Managed Agents): não caem. Numa alternativa, são distrator ou irrelevantes"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'One answer option only makes sense if you know how server-sent events are parsed in streaming responses. How much should that knowledge weigh on this exam?' (Nada: streaming/SSE é out-of-scope.)",
+        "ref": "01-exame-e-api/teoria.md#1-o-exame-pelo-guia-oficial-v10"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Como é uma questão: distratores e os 4 desempates",
+        "pontos": [
+          "Anatomia: 1 frase do cenário + sintoma concreto (número, log, config) + pergunta de decisão ('most effective first step', 'most likely root cause', 'how should you evaluate this proposal'). As alternativas são todas plausíveis e de tamanho parecido: tamanho não denuncia a certa",
+          "Leia com o aluno a questão oficial 2 (get_customer × lookup_order com descrições mínimas): B vence porque ataca a causa raiz com o menor custo; A (few-shot) gasta tokens sem corrigir a causa; C (routing layer) é over-engineering; D (consolidar) é válido, mas grande demais para um primeiro passo. Cite a oficial 1 como exemplo de 'crítico → código'",
+          "Taxonomia de distratores: fix por prompt onde precisa garantia; over-engineering (classificador, routing layer, 2º modelo, ML); resolve outro problema; feature inexistente; empurrar o ônus para humanos; modelo/janela maior; votação entre runs; cache/pré-busca especulativa; retry + status genérico; supressão silenciosa; abortar o workflow; dar todas as tools; consolidar cedo demais; contexto implícito; confiança/sentimento como gatilho de escalonamento",
+          "Os 4 desempates: (1) a correção mais simples que resolve a causa raiz; (2) regra crítica → código/determinismo; (3) critério explícito > critério vago, confiança autodeclarada ou sentimento para decidir o que reportar/quando escalar (mas confiança por campo CALIBRADA para rotear revisão humana é certa: M02, M09, M11); (4) primeiro passo proporcional antes de infraestrutura. (1) e (2) não conflitam: crítico (dinheiro, identidade, compliance) puxa para código; qualidade puxa para o passo simples",
+          "Método de leitura: cenário → sintoma real (leia os logs, não o diagnóstico que o enunciado insinua) → elimine pela taxonomia → aplique o desempate"
+        ],
+        "checkpoint": "Dê um mini-cenário em inglês: 'An agent sometimes issues refunds above the $500 limit stated in its system prompt. (A) Restate the limit in capitals at the top of the prompt. (B) Add a code check that blocks process_refund above $500. (C) Add a second model that reviews each refund afterward. (D) Add few-shot examples of refusals. Which wins, and which tie-breaker applies?' (B; regra crítica → código. A/D são prompt, C é over-engineering e só detecta depois.)",
+        "ref": "01-exame-e-api/teoria.md#2-como-é-uma-questão-distratores-e-desempates"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "Messages API: request, resposta e a API sem estado",
+        "pontos": [
+          "Um endpoint: POST /v1/messages. Mostre o JSON anotado do request: model; max_tokens (teto de SAÍDA, obrigatório); system (parâmetro de topo, fora de messages); messages (histórico alternando user/assistant); tools; tool_choice",
+          "Mostre o JSON da resposta: content é uma lista de blocos (pode misturar text e tool_use e trazer vários tool_use); stop_reason (tool_use | end_turn | max_tokens) é o sinal de controle; usage conta tokens (preço é out-of-scope)",
+          "A API não tem estado (5.1-K4): cada request leva o histórico COMPLETO, incluindo os turnos de tool_use e de tool_result. O que não está no request não existe para o modelo",
+          "Anti-padrões que viram alternativa errada: mandar só a última mensagem ('a API guarda a conversa' é feature inexistente); reconstruir messages só com o texto visível ao cliente; trocar o histórico por um resumo vago (o M10 ensina o bloco de case facts)",
+          "Como cai: cenário 1, o agente pergunta de novo o número do pedido e os tokens de entrada ficam constantes enquanto a conversa cresce; cenário 6, o retry de validação manda só os erros, sem o documento e sem a extração anterior"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'After a gateway change, your support agent asks customers again for details they already gave, and input tokens per request stay flat as chats grow longer. What is the most likely root cause?' (O histórico completo não está indo no request.)",
+        "ref": "01-exame-e-api/teoria.md#3-messages-api-request-resposta-e-a-ausência-de-estado"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "Tool use: definição da tool e o ciclo tool_use → tool_result",
+        "pontos": [
+          "Tool definition (mostre o JSON em tools[]): name, description, input_schema (JSON Schema dos argumentos). A description é o principal mecanismo de seleção (2.1-K1): inclua formato de entrada, exemplos, bordas e quando usar esta × a parecida. O M04 aprofunda",
+          "O modelo NÃO executa nada: ele emite tool_use (id, name, input) e o SEU código executa e devolve um tool_result com o tool_use_id exato",
+          "Regras (mostre o messages[] anotado): anexe a resposta do assistant inteira (texto + todos os tool_use); vários tool_use → execute todos e devolva TODOS os tool_result numa ÚNICA mensagem user (os tool_result primeiro); falha → tool_result com is_error: true e uma mensagem útil, para o modelo decidir a recuperação. Faltar um tool_result dá 400; um por mensagem não dá erro, mas 'ensina' o modelo a evitar chamadas paralelas",
+          "No MCP o flag de falha é isError (M04/M05): is_error na Messages API e isError no MCP estão ambos certos, cada um na sua camada",
+          "Anti-padrões que viram alternativa errada: uma mensagem user por resultado; mandar só os que deram certo; esconder a falha com vazio ou sucesso falso; pôr o resultado no system prompt; achar que 'o modelo chamou o CRM sozinho'"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'In one response the model requested lookup_order and get_customer; get_customer timed out. How do you build the next request?' (Resposta do assistant inteira no histórico + UMA mensagem user com os 2 tool_result, ids corretos, o do timeout com is_error: true.)",
+        "ref": "01-exame-e-api/teoria.md#4-tool-use-definição-ciclo-tool_use--tool_result-e-tool_choice"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "tool_use como saída estruturada e tool_choice (visão geral)",
+        "pontos": [
+          "4.3-K1: defina uma tool de extração cujo input_schema é o formato desejado e leia tool_use.input. Para o guia, é a forma MAIS confiável de obter saída conforme o schema: elimina erro de sintaxe JSON, mas NÃO erro semântico (soma que não fecha, valor no campo errado). A validação fica para o M03",
+          "tool_choice (mostre o JSON no request): {\"type\": \"auto\"} pode responder em texto; {\"type\": \"any\"} tem de chamar alguma tool e escolhe qual; {\"type\": \"tool\", \"name\": \"...\"} tem de chamar aquela tool",
+          "Respostas CORRETAS na prova: any para garantir uma tool em vez de texto (2.3-S5), ex.: vários schemas e tipo de documento desconhecido (4.3-S2); forçado para garantir que uma tool rode primeiro (ex.: extract_metadata antes do enriquecimento), voltando a auto nos turnos seguintes",
+          "Distratores típicos: 'instrua no prompt a sempre chamar X' (probabilístico) e 'use any' quando o requisito é uma tool ESPECÍFICA (any não escolhe por você)",
+          "Caixa [volátil]: Opus 5.5, Sonnet 5.5, Fable 5.1 e Mythos 5.1 retornam 400 para any/forçado (outros modelos aceitam). Na prova vale o guia: any e forçado são respostas certas. M03 e M04 aprofundam"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'Your pipeline has three extraction tools (invoice, receipt, contract), the document type is unknown, and 5% of responses come back as prose. Which tool_choice setting fixes this, and why not force the most common tool?' (any; forçar um só joga os outros tipos no schema errado.)",
+        "ref": "01-exame-e-api/teoria.md#44-tool_choice-23-k4-43-k2-visão-geral"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "O loop agêntico (1.1): ciclo de vida, stop_reason e resultados no histórico",
+        "pontos": [
+          "Ciclo de vida (1.1-K1): enviar o request → inspecionar stop_reason → se 'tool_use', executar as tools pedidas → anexar os resultados ao histórico → próxima iteração; se 'end_turn', entregar a resposta",
+          "Controle de fluxo (1.1-S1): continua em 'tool_use', termina em 'end_turn'. 'max_tokens' é CORTE, não fim: não entregue como resposta; aumente o teto ou continue (se cortou dentro de um tool_use, repita com max_tokens maior)",
+          "Resultados anexados (1.1-K2 e S2): o resultado tem de estar NO PRÓXIMO REQUEST, completo e vinculado ao tool_use_id. Log, banco de dados, 'verification queued' ou processamento em segundo plano não contam: o modelo não vê",
+          "Mostre o loop em C# do teoria.md e destaque o que NÃO existe nele: frase de conclusão, break quando há texto, for de 5 voltas como regra, if/else escolhendo a próxima tool",
+          "Como cai (cenários 1, 3 e 4): 'chama a mesma tool 4 vezes seguidas', 'resposta cortada no meio da frase', 'o relatório mantém números que a verificação contradisse'"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'Your harness sends the reply to the customer whenever a response has no tool_use block. A few customers receive messages that stop mid-sentence. What is the flaw?' (O loop não checa stop_reason: um corte por max_tokens é tratado como fim.)",
+        "ref": "01-exame-e-api/teoria.md#5-o-loop-agêntico-ts-11"
+      },
+      {
+        "id": "t8",
+        "fase": "teoria",
+        "titulo": "Modelo decide × árvore fixa, e os anti-padrões de término",
+        "pontos": [
+          "1.1-K3: num loop agêntico, Claude escolhe a próxima tool pelo contexto, inclusive pelo que os resultados anteriores revelaram. Árvore de decisão ou sequência fixa de tools é script: funciona no caminho previsto e quebra fora dele",
+          "Não confunda com dois padrões legítimos de outros módulos: pré-requisito programático para regra crítica de ordem (M06) e prompt chaining para revisão previsível em etapas (M07)",
+          "1.1-S3, os três anti-padrões do guia: (1) ler linguagem natural para decidir o fim ('TASK COMPLETE', 'anything else?'); (2) teto arbitrário de iterações como mecanismo PRINCIPAL de parada; (3) 'a resposta tem texto' como sinal de conclusão, quando texto e tool_use vêm juntos",
+          "Teto alto, com log e alerta, como BACKSTOP contra loop infinito é correto; como regra de parada, é errado",
+          "Distratores que aparecem: 'aumente o teto para 15', 'peça no prompt que termine em N chamadas', 'roteador por palavra-chave escolhe a próxima tool', 'pré-execute as buscas e aceite a 1ª resposta', 'use um marcador de conclusão mais raro'"
+        ],
+        "checkpoint": "Pergunte (em inglês): 'A tech lead wants every legacy-code question answered by a fixed Glob → Grep → Read-three-files sequence, to make runs predictable. How should you evaluate the proposal?' (Ruim para investigação aberta: a próxima chamada depende do que a anterior revelou; sequência fixa só serve para tarefa previsível.)",
+        "ref": "01-exame-e-api/teoria.md#5-o-loop-agêntico-ts-11"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz de fixação do módulo",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "15 questões curtas: formato do exame, cenários, out-of-scope, desempate, API sem estado, tool_result, description, tool_choice, tool_use como saída estruturada e o loop (1.1)",
+          "Depois de cada resposta, explique por que as alternativas erradas são tentadoras"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-01/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+        "ref": "Claude-Architect/apps/modulo-01/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do módulo",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "20 questões em estilo de cenário do exame (cenários 1, 3, 4, 5 e 6), com feedback por alternativa e três 'Choose TWO'",
+          "Depois de cada resposta, explique por que cada alternativa errada é tentadora e qual distrator da taxonomia ela representa",
+          "Aprovação 70%; só seguir para o Módulo 02 após passar"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-01/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 02; se não, revise na teoria os pontos errados",
+        "ref": "Claude-Architect/provas/modulo-01/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 01",
+        "pontos": [
+          "Recap do exame: 60 itens, 120 min, corte 720, 4 de 6 cenários, marque quantas o item pede, 30 TS, out-of-scope nunca decide; taxonomia de distratores e os 4 desempates",
+          "Recap da API: sem estado (histórico completo em todo request); tool_use → tool_result com tool_use_id, todos numa mensagem user, is_error na falha; description seleciona; tool_use + schema = saída estruturada mais confiável; tool_choice auto/any/forçado",
+          "Recap do loop (1.1): tool_use continua, end_turn para, max_tokens é corte; resultados no histórico; o modelo decide a próxima tool; nada de frase de conclusão, teto como regra ou 'tem texto'",
+          "Revise a 'Cola de véspera' do teoria.md",
+          "Próximo: Módulo 02 — Prompt engineering: critérios explícitos e few-shot (python3 engine/aula.py start Claude-Architect/02-prompt-engineering/roteiro.json)"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 02 ou parar por aqui",
+        "ref": "01-exame-e-api/teoria.md#cola-de-véspera"
+      }
+    ]
+  },
+  "pos": 12,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "visto",
+    "t2": "visto",
+    "t3": "visto",
+    "t4": "visto",
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
+    "t8": "visto",
+    "q1": "visto",
+    "prova": "visto",
+    "fim": "visto"
+  },
+  "concluido_em": {
+    "intro": "2026-10-20T14:39:02+00:00",
+    "t1": "2026-10-20T14:42:11+00:00",
+    "t2": "2026-10-20T14:45:25+00:00",
+    "t3": "2026-10-20T14:48:57+00:00",
+    "t4": "2026-10-20T14:51:51+00:00",
+    "t5": "2026-10-20T15:06:23+00:00",
+    "t6": "2026-10-20T16:04:35+00:00",
+    "t7": "2026-10-20T16:11:33+00:00",
+    "t8": "2026-10-20T16:18:49+00:00",
+    "q1": "2026-10-20T16:29:58+00:00",
+    "prova": "2026-10-20T17:05:12+00:00",
+    "fim": "2026-10-20T17:06:21+00:00"
+  },
+  "notes": [
+    {
+      "beat": "t8",
+      "ts": "2026-10-20T16:16:12+00:00",
+      "text": "t8: confundiu 'o proponente quer previsibilidade' com 'a tarefa é previsível' (aceitou sequência fixa Glob→Grep→Read p/ código legado). Reforçar: checar se a justificativa da proposta casa com a natureza da tarefa."
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-10-20T16:54:03+00:00",
+      "text": "prova Q11: escolheu 'each request was independent; tool results kept outside context' — confundiu stateless (servidor não guarda) com 'resultados ficam fora do contexto'. Reforçar: stateless => você reenvia tudo, inclusive tool_result."
+    }
+  ],
+  "iniciado_em": "2026-10-20T14:37:09+00:00"
+}
