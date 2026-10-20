@@ -70,6 +70,14 @@ def _fmt_dt(iso):
         return None
 
 
+def _dia_local(iso):
+    """Dia (YYYY-MM-DD) na hora local: o carimbo é UTC, e 'iso[:10]' joga a noite no dia seguinte."""
+    try:
+        return datetime.fromisoformat(iso).astimezone().strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return iso[:10]
+
+
 def _bar(frac, width):
     """Barra com um bloco parcial no final — leitura suave do percentual."""
     frac = max(0.0, min(1.0, frac))
@@ -150,7 +158,7 @@ def cmd_progresso(args):
         # ritmo + último beat, a partir das datas carimbadas
         idx = {b["id"]: i for i, b in enumerate(beats)}
         for b_id, ts in concl.items():
-            dia = ts[:10]
+            dia = _dia_local(ts)
             por_dia[dia] = por_dia.get(dia, 0) + 1
             # ordena por (data, módulo, posição do beat) — desempata beats do mesmo segundo
             chave = (ts, modulo, idx.get(b_id, -1))
