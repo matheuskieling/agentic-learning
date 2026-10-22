@@ -1,0 +1,191 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/Claude-Architect/02-prompt-engineering/roteiro.json",
+  "roteiro": {
+    "modulo": "02",
+    "titulo": "Prompt engineering: critérios explícitos e few-shot",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — o que vamos fazer neste módulo",
+        "pontos": [
+          "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e conduza o código de aplicação na linguagem salva (se não houver, pergunte e grave); os arquivos usam C# como referência-base",
+          "Objetivo: dominar os task statements 4.1 (critérios explícitos para precisão e menos falso positivo) e 4.2 (few-shot para consistência e qualidade). D4 vale 20% da prova",
+          "Ideia central: saída inconsistente ou ruidosa quase sempre é critério vago. A correção proporcional é escrever o critério e mostrar exemplos, antes de qualquer arquitetura nova",
+          "Onde cai: cenário 5 (review de PR em CI), cenário 6 (extração de documentos variados) e cenário 1 (escalonamento com critérios + few-shot)",
+          "Refinamento iterativo (3.5) saiu daqui: fica no M09",
+          "Ao fim: quiz (15) e prova (20 em estilo cenário, 70%)"
+        ],
+        "checkpoint": "Confirme que o aluno está pronto para começar",
+        "ref": "02-prompt-engineering/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "Critério explícito em vez de instrução vaga (4.1)",
+        "pontos": [
+          "Exemplo do guia: 'check that comments are accurate' (vago) × 'flag comments only when claimed behavior contradicts actual code behavior' (explícito)",
+          "Critério explícito = o que REPORTAR (bugs, segurança) + o que PULAR (estilo menor, padrões locais que o repo usa de propósito) + FRONTEIRA (MD5 para checksum não; MD5 para senha sim)",
+          "Mostre o bloco <review_criteria> da teoria e peça ao aluno para apontar qual linha mataria um comentário de 'use explicit type instead of var'",
+          "Por quê: o modelo não conhece o seu critério de relevância; critério categórico torna o julgamento reprodutível e auditável",
+          "Distratores: 'seja mais rigoroso', votação entre 3 runs (suprime bug intermitente), segundo modelo revisor, mover o texto vago para o CLAUDE.md (no CI o CLAUDE.md é o lugar certo, mas o lugar não corrige a vagueza)"
+        ],
+        "checkpoint": "A CI review prompt says 'ensure error handling is adequate', and findings differ on every run of the same diff. What should you change first? (Esperado: critério explícito — reportar exceção capturada e descartada num caminho de escrita; pular estilo/padrões locais; fronteira.)",
+        "ref": "02-prompt-engineering/teoria.md#1-critério-explícito-em-vez-de-instrução-vaga-41"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "'Be conservative' não melhora a precisão; as três caras da confiança (4.1)",
+        "pontos": [
+          "'Be conservative' e 'only report high-confidence findings' mudam QUANTO o modelo reporta, não O QUE ele considera problema: o volume cai, a proporção de falso positivo fica igual e alguns achados verdadeiros somem",
+          "Confiança e relevância são eixos diferentes: o modelo pode estar 95% seguro de que um nome é ruim, e esse é justamente o achado indesejado",
+          "Tabela das três caras: (a) filtrar achados por confiança EM VEZ DE critério = errado (4.1); (b) escalonar atendimento por confiança autodeclarada ou sentimento = errado (5.2, M06); (c) confiança por campo/achado CALIBRADA com conjunto rotulado para ROTEAR revisão humana = certo (4.6/5.5, M09/M11)",
+          "Cuidado com o extremo oposto: 'confiança do modelo nunca serve' também está errado",
+          "Como cai: alternativa com 'confidence threshold' ou 'be more conservative' é o distrator nº 1 deste TS"
+        ],
+        "checkpoint": "After adding 'only report findings you are highly confident about', comment volume fell 40% but developers still dismiss the same share of comments. Which statement explains this? (Esperado: a instrução mexe no volume, não no critério; falta critério categórico.)",
+        "ref": "02-prompt-engineering/teoria.md#2-be-conservative-não-melhora-a-precisão-as-três-caras-da-confiança-41"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Falso positivo e a confiança do time: desligar a categoria temporariamente (4.1)",
+        "pontos": [
+          "Uma categoria com muito falso positivo mina a confiança nas categorias precisas: o dev passa a ignorar o bot inteiro, inclusive os achados de segurança corretos",
+          "Correção do guia em 4 passos: medir precisão POR CATEGORIA → desligar temporariamente só as ruidosas → reescrever o critério delas (+ few-shot aceitável × problema real) e validar numa amostra → religar",
+          "Mostre a tabela da teoria (security 94%, style 41%, média 71%): a média esconde a categoria ruim",
+          "Distratores: desligar o bot inteiro; manter tudo e exibir a confiança 'para o dev decidir' (a categoria ruidosa segue no ar; não confundir com confiança calibrada para rotear revisão, 4.6-S3, que é certa); religar depois de só acrescentar 'be more careful'",
+          "Ponte: o campo detected_pattern (4.4, M03) mostra quais construções geram os achados descartados",
+          "Também cai fora do CI: alertas do agente de suporte para supervisores (cenário 1), anomalias para revisores (cenário 6)"
+        ],
+        "checkpoint": "Security findings are 94% accurate, but developers now dismiss them as often as style comments, which are 41% accurate. What is the most effective first step? (Esperado: desligar temporariamente a categoria de estilo, manter as precisas, reescrever e validar antes de religar.)",
+        "ref": "02-prompt-engineering/teoria.md#3-falso-positivo-e-a-confiança-do-time-desligar-a-categoria-temporariamente-41"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "Severidade com exemplos de código por nível (4.1)",
+        "pontos": [
+          "Sintoma típico: a mesma omissão sai 'critical' num PR e 'minor' em outro; adjetivos ('crítico = grave') não ancoram nada",
+          "Correção: cada nível definido com exemplos CONCRETOS de código (mostre o bloco <severity_levels>: SQL concatenado = CRITICAL; Task não aguardada e FindAsync sem null check = HIGH; N+1 = MEDIUM; var/convenção do repo = NÃO REPORTAR)",
+          "Por quê: diante de um caso novo (ex.: '_ = _mailer.SendInvoiceAsync(invoice);', a Task descartada com outra sintaxe), o modelo compara com os exemplos e chega a HIGH, em vez de reinterpretar um adjetivo",
+          "Distratores: nota de confiança como severidade; severidade por votação entre runs; reduzir a dois níveis com definição de uma linha; modelo maior"
+        ],
+        "checkpoint": "Your review bot labels the same missing null check 'critical' in one PR and 'minor' in another. What should you change so severity is classified consistently? (Esperado: definir cada nível com exemplos concretos de código; não votação, não confiança, não modelo maior.)",
+        "ref": "02-prompt-engineering/teoria.md#4-severidade-com-exemplos-de-código-por-nível-41"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "Few-shot quando as instruções não bastam: formato acionável (4.2)",
+        "pontos": [
+          "Fato de prova: few-shot é A técnica mais eficaz para saída consistentemente formatada e acionável QUANDO instruções detalhadas sozinhas dão resultado inconsistente; mais prosa não resolve",
+          "Os exemplos mostram o formato completo: location, issue, severity, suggested fix (granularidade arquivo:linha, fix em código e não 'considere refatorar')",
+          "Mostre o request JSON da teoria: critérios + exemplos no system (← AQUI), diff real em messages, separado; cada finding vira comentário inline no PR",
+          "Separe na prova: 'saída não parseável para automação' → schema (tool_use + JSON schema, M03; --output-format json + --json-schema no CI, M09); 'campos inconsistentes, fix vago' → few-shot",
+          "Pegadinha: se os exemplos mostram um formato diferente do que a instrução pede, o modelo segue o exemplo",
+          "Distratores: refinar a prosa de novo; dividir em duas chamadas; janela de contexto maior",
+          "Nota volátil (não cai): em alguns modelos recentes, um campo chamado 'reasoning' na saída pode ser recusado; use 'explanation'/'evidence'"
+        ],
+        "checkpoint": "Your review prompt has a detailed 'Output format' section, yet half the findings lack a line number and many fixes just say 'consider refactoring'. What is the most effective next step? (Esperado: 2–4 exemplos completos com location, issue, severity e suggested fix concreto.)",
+        "ref": "02-prompt-engineering/teoria.md#5-few-shot-quando-as-instruções-não-bastam-formato-acionável-42"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "Few-shot para casos ambíguos: o porquê, generalização e aceitável × problema real (4.2)",
+        "pontos": [
+          "Few-shot demonstra o tratamento de casos ambíguos: seleção de tool para pedidos ambíguos e lacunas de cobertura de teste por branch",
+          "2–4 exemplos DIRECIONADOS aos casos que falham, cada um com o PORQUÊ de a ação vencer as alternativas plausíveis (Exemplo 1: palete atrasado + carga descongelada → reembolsa o frete, escalona a carga; por que não resolver tudo, por que não escalonar tudo)",
+          "Exemplo 2 (branch): a função 'tem teste', mas só o branch C é exercitado; o exemplo ensina a apontar A e B e a não duplicar C",
+          "Generalização: exemplos com o porquê ensinam o critério e cobrem padrões novos; uma lista de 60 regras só cobre os 60 casos listados",
+          "Exemplo 3 (aceitável × problema real): catch de OperationCanceledException com ct.IsCancellationRequested (aceitável) × catch (Exception) vazio num caminho de cobrança (HIGH); o modelo generaliza para TaskCanceledException",
+          "Few-shot NÃO é o 1º passo quando a descrição da tool é mínima: aí reescreve a descrição (2.1, M04). É a resposta quando as descrições já são boas e o pedido é ambíguo",
+          "Distratores: 15–20 exemplos 'um por tipo'; exemplos do caso mais frequente; só a resposta sem o porquê; só exemplos de problema; classificador por palavra-chave"
+        ],
+        "checkpoint": "A colleague proposes replacing your three reasoned few-shot examples with a list of 60 forbidden code patterns 'to be exhaustive'. How should you evaluate this proposal? (Esperado: rejeitar; a lista só casa os padrões enumerados; exemplos com o porquê generalizam para código novo.)",
+        "ref": "02-prompt-engineering/teoria.md#6-few-shot-para-casos-ambíguos-o-porquê-generalização-e-aceitável--problema-real-42"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "Few-shot em extração: formatos variados, campos vazios e alucinação (4.2) + a escada",
+        "pontos": [
+          "Few-shot reduz alucinação em extração: medidas informais ('uns 20 quilos', 'do tamanho de um micro-ondas') e estruturas variadas",
+          "Estruturas variadas que o guia cita: citação inline × bibliografia no fim; metodologia em seção própria × diluída no texto. Mostre os dois <example> da teoria",
+          "Medida informal: registrar o que foi dito (approximate: true, source_text) e deixar null o que não tem número (← AQUI no JSON que vai para a tabela de sinistros)",
+          "Tabela das três situações: campo nulo COM o dado presente em outro formato → few-shot desses formatos; modelo INVENTA quando o dado não existe → nullable + exemplo com null (M03); dado ausente → retry não resolve (4.4, M03)",
+          "Distratores: tornar o campo não-nulo 'para forçar'; 'não alucine'; exigir template único dos autores; regex por formato",
+          "Escada de correções: critério → few-shot → schema/validação (M03) → arquitetura extra. Regra crítica vai para código desde o início (M06)",
+          "Ponte de 1 frase: os '2–3 pares entrada/saída' para guiar o Claude Code numa transformação são o refinamento iterativo do 3.5, no M09"
+        ],
+        "checkpoint": "A required royalty_rate field comes back null for 18% of licensing contracts. Manual review finds the rate in an annex table in every one of them. Which change is most likely to fix it? (Esperado: few-shot mostrando a extração correta a partir da tabela do anexo; não tornar o campo não-nulo nem dar retry às cegas.)",
+        "ref": "02-prompt-engineering/teoria.md#7-few-shot-em-extração-formatos-variados-campos-vazios-e-alucinação-42"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz de fixação do módulo",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "15 questões sobre critério explícito, 'be conservative', três caras da confiança, falso positivo por categoria, severidade com exemplos de código e few-shot (formato, casos ambíguos, aceitável × problema, extração)",
+          "Depois de cada resposta, explique por que as erradas são tentadoras"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-02/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e o que revisar",
+        "ref": "Claude-Architect/apps/modulo-02/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do módulo",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "20 questões em estilo de cenário (cenários 1, 5 e 6), feedback por alternativa, algumas 'Choose TWO'",
+          "Depois de cada resposta, explique por que cada errada é tentadora e qual anti-padrão ela representa",
+          "Aprovação 70%; só seguir para o Módulo 03 após passar"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-02/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 03; se não, revise na teoria os pontos errados",
+        "ref": "Claude-Architect/provas/modulo-02/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 02",
+        "pontos": [
+          "Recap: reportar/pular/fronteira; 'be conservative' não melhora a precisão; três caras da confiança; medir por categoria e desligar temporariamente a ruidosa; severidade com exemplos de código; few-shot = técnica mais eficaz quando instruções detalhadas falham; 2–4 exemplos com o porquê vs alternativas; aceitável × problema real; estruturas variadas e campo nulo com dado presente",
+          "Revise a 'Cola de véspera' do teoria.md",
+          "Próximo: Módulo 03 — Saída estruturada, validação com retry e Batch API: python3 engine/aula.py start Claude-Architect/03-saida-estruturada/roteiro.json"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 03 ou parar por aqui",
+        "ref": "02-prompt-engineering/teoria.md#cola-de-véspera"
+      }
+    ]
+  },
+  "pos": 5,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "visto",
+    "t2": "visto",
+    "t3": "visto",
+    "t4": "visto",
+    "t5": "pendente",
+    "t6": "pendente",
+    "t7": "pendente",
+    "q1": "pendente",
+    "prova": "pendente",
+    "fim": "pendente"
+  },
+  "concluido_em": {
+    "intro": "2026-10-22T20:36:49+00:00",
+    "t1": "2026-10-22T20:42:43+00:00",
+    "t2": "2026-10-22T20:47:56+00:00",
+    "t3": "2026-10-22T20:55:08+00:00",
+    "t4": "2026-10-22T21:05:24+00:00"
+  },
+  "notes": [],
+  "iniciado_em": "2026-10-22T20:34:56+00:00"
+}

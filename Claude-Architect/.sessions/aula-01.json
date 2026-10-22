@@ -175,7 +175,7 @@
     ]
   },
   "pos": 12,
-  "marco_sessao": 0,
+  "marco_sessao": 12,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -214,6 +214,11 @@
       "beat": "prova",
       "ts": "2026-10-20T16:54:03+00:00",
       "text": "prova Q11: escolheu 'each request was independent; tool results kept outside context' — confundiu stateless (servidor não guarda) com 'resultados ficam fora do contexto'. Reforçar: stateless => você reenvia tudo, inclusive tool_result."
+    },
+    {
+      "beat": "fim",
+      "ts": "2026-10-22T20:34:56+00:00",
+      "text": "Revisão M01 (22/10): 3,5/4. Acertou stateless×contexto e previsibilidade (inclusive o caso inverso). Errou parcial: tool_choice nos turnos seguintes ao forçado = auto (disse any)."
     }
   ],
   "iniciado_em": "2026-10-20T14:37:09+00:00"
