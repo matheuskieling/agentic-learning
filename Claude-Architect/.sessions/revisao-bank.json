@@ -1,0 +1,167 @@
+{
+  "titulo": "Revisão acumulada — 8 perguntas (módulos: 01)",
+  "aprovacao": 70,
+  "questoes": [
+    {
+      "pergunta": "Which tool_choice setting guarantees that the model calls the tool named extract_metadata in this response?",
+      "opcoes": [
+        "{\"type\": \"auto\"}, because the model calls extract_metadata whenever its description fits the input.",
+        "{\"type\": \"any\"}, because the model must call a tool, and extract_metadata is the one it has to call.",
+        "{\"type\": \"auto\"} plus a system prompt line that says to always call extract_metadata before anything.",
+        "{\"type\": \"tool\", \"name\": \"extract_metadata\"}, because the model must call exactly that named tool."
+      ],
+      "correta": 3,
+      "explicacao": "Forced tool selection makes the model call that specific tool. \"any\" only guarantees that some tool is called, and \"auto\" lets the model answer in text or choose another tool.",
+      "feedbacks": [
+        "\"auto\" leaves the decision to the model, including replying with text.",
+        "\"any\" forces a tool call but not a particular tool.",
+        "A prompt instruction is probabilistic; it does not guarantee the call.",
+        "Correct. Forced selection names the tool that must be called."
+      ],
+      "ts": "2.3",
+      "qid": "m01-quiz#9"
+    },
+    {
+      "pergunta": "Your electronics retailer's support harness works like this: send the request; if the response contains a tool_use block, run the tools and loop; otherwise send the response text to the customer and close the turn. Since the agent started quoting return-policy excerpts in its replies, 3% of customers receive messages that stop mid-sentence, such as \"Your refund of $189.99 has been approved and will\", and no follow-up arrives. What is the flaw?",
+      "opcoes": [
+        "The model is ending its turn early on long replies, so the system prompt should ask it to finish every sentence before it stops.",
+        "The policy excerpts push the conversation past the context window; trimming tool outputs would leave the reply room to finish.",
+        "The harness should check whether the reply ends with punctuation and, if not, ask the model in a new message to continue it.",
+        "The loop never reads stop_reason, so a \"max_tokens\" cutoff is handled as a finished turn rather than as truncation."
+      ],
+      "correta": 3,
+      "explicacao": "The harness continues on tool_use but treats every other response as complete, including one with stop_reason \"max_tokens\", which is a cutoff, not an end. Branching on stop_reason (continue on \"tool_use\", finish on \"end_turn\", handle \"max_tokens\" as truncation) prevents half-sentences from reaching customers.",
+      "feedbacks": [
+        "The model did not choose to stop; the output hit the max_tokens limit, which a prompt cannot change.",
+        "Context overflow is a different failure; the symptom matches longer outputs hitting the output limit.",
+        "Guessing completion from punctuation is parsing natural language; stop_reason already says whether the reply was cut off.",
+        "Correct. Check stop_reason; \"max_tokens\" is truncation, not completion."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.1",
+      "bullet": "1.1-S1",
+      "qid": "m01-prova#17"
+    },
+    {
+      "pergunta": "While debugging your electronics retailer's support agent, a new engineer reads this trace: request 1 returns stop_reason \"tool_use\" with a get_customer block; 900 ms later, request 2 contains a tool_result with the customer record and returns stop_reason \"tool_use\" with a lookup_order block; request 3 returns stop_reason \"end_turn\" with the reply to the customer. The engineer concludes that the model queried the CRM itself between requests 1 and 2. Which statement about this trace is correct?",
+      "opcoes": [
+        "The model only requested get_customer; the agent's runtime executed it and sent the record back in request 2, which let the model choose lookup_order.",
+        "The model executed get_customer over its MCP connection, and request 2 only confirmed the call by echoing the record back to it as a tool_result.",
+        "The runtime executed get_customer, but the model had already committed to lookup_order in request 1 and was only waiting for the call to finish.",
+        "Each request was independent; the model chose lookup_order from the customer's message alone, since tool results are kept outside its context."
+      ],
+      "correta": 0,
+      "explicacao": "In the agentic loop the model only emits tool_use requests; your runtime executes the tool and returns the result for the next iteration. The model then decides the next action, here lookup_order, using the result that was appended to the conversation.",
+      "feedbacks": [
+        "Correct. Request, execute, return the result, and let the model choose the next step.",
+        "The model never executes tools, MCP or otherwise; the client side calls the MCP server and returns the result.",
+        "Request 1 contained only get_customer; the choice of lookup_order was made in request 2, after the customer record arrived.",
+        "Tool results are part of the context: they are appended to the history precisely so the model can use them."
+      ],
+      "cenario": 1,
+      "dominio": "D1",
+      "ts": "1.1",
+      "bullet": "1.1-K1",
+      "qid": "m01-prova#10"
+    },
+    {
+      "pergunta": "Your harness has executed a tool that the model requested. Where must the result go so the model can use it in the next iteration?",
+      "opcoes": [
+        "Into the system prompt of the next request, under a \"Tool results\" heading that the model reads first.",
+        "Into an assistant message right after the tool_use block, so the model treats it as its own earlier output.",
+        "Into a user message as a tool_result block whose tool_use_id matches the id of the tool_use block.",
+        "Into a separate call to a results endpoint, keyed by the id of the response that requested the tool."
+      ],
+      "correta": 2,
+      "explicacao": "Tool results are appended to the conversation history as tool_result blocks in a user message, each linked by tool_use_id to the request that produced it. That is how the model reasons about its next action.",
+      "feedbacks": [
+        "The system prompt is not where tool results belong; they must be linked to their tool_use in the message history.",
+        "Assistant messages hold the model's output; results are returned by your side in a user message.",
+        "Correct. A tool_result in a user message, matched by tool_use_id.",
+        "There is no results endpoint; everything travels in the messages array of the next request."
+      ],
+      "ts": "1.1",
+      "qid": "m01-quiz#6"
+    },
+    {
+      "pergunta": "Your CCAR-F score report shows a scaled score of 742 and 58% correct in Domain 2. Which statement is correct?",
+      "opcoes": [
+        "You did not pass, because each domain must reach at least 70% correct for the overall result to count as a pass.",
+        "You passed; the per-domain percentages show where you were weaker but are not used to make the pass/fail decision.",
+        "You passed provisionally; Domain 2 has to be retaken within 12 months through the free renewal assessment.",
+        "The result is pending, because any domain below 60% triggers a manual review of your whole exam by Pearson VUE."
+      ],
+      "correta": 1,
+      "explicacao": "The pass/fail result is based on the total scaled score, with 720 as the cut score. The percent-correct by domain on the report is there to help you understand your performance, not to decide the result.",
+      "feedbacks": [
+        "There is no per-domain minimum; only the total scaled score determines pass or fail.",
+        "Correct. 742 is above 720; domain percentages are informational.",
+        "There is no provisional pass; the free renewal assessment is for renewing a credential before it expires.",
+        "The guide describes no manual review triggered by domain scores."
+      ],
+      "ts": "exame",
+      "qid": "m01-quiz#1"
+    },
+    {
+      "pergunta": "A response contains a text block (\"I'll check the warranty terms now.\") and a tool_use block, with stop_reason \"tool_use\". What should the loop do?",
+      "opcoes": [
+        "Return the text to the user, since a text block means the model has produced its answer for this turn.",
+        "Execute the tool, append the response and the tool_result to the history, and send the next request.",
+        "Drop the text block, execute the tool, and send only the tool_result so that the history stays compact.",
+        "Ask the model in a new user message whether it has finished, and continue only if it answers that it has not."
+      ],
+      "correta": 1,
+      "explicacao": "stop_reason \"tool_use\" means the model wants the tool executed; text in the same response does not mean it is done. The loop executes the tool, appends the full assistant response and the tool_result, and continues.",
+      "feedbacks": [
+        "Text content is not a completion indicator; stop_reason is.",
+        "Correct. Continue on \"tool_use\".",
+        "The assistant response must be appended whole, including its text and tool_use blocks.",
+        "Asking the model is parsing natural language to decide termination; stop_reason already answers it."
+      ],
+      "ts": "1.1",
+      "qid": "m01-quiz#11"
+    },
+    {
+      "pergunta": "A response ends with stop_reason \"max_tokens\". What does that mean for the agentic loop?",
+      "opcoes": [
+        "The output reached max_tokens and was cut off; it is not a finished turn and must be handled as truncation.",
+        "The model judged that it had said enough and ended its turn, so treat it like \"end_turn\" and return the text.",
+        "The conversation exceeded the context window, so drop the oldest turns and resend the same request unchanged.",
+        "The model wants more tool calls than allowed, so raise the iteration cap and continue the loop as usual."
+      ],
+      "correta": 0,
+      "explicacao": "max_tokens is the output limit for a single response. When it is reached the response stops mid-output; treating it as a finished answer delivers truncated text or incomplete JSON. Handle it explicitly, for example by raising the limit or continuing.",
+      "feedbacks": [
+        "Correct. A cutoff, not a finished turn.",
+        "\"end_turn\" is the signal for a natural finish; \"max_tokens\" means the output was cut.",
+        "max_tokens limits the output of one response; it is not a context-window signal.",
+        "max_tokens has nothing to do with the number of tool calls or iterations."
+      ],
+      "ts": "1.1",
+      "qid": "m01-quiz#14"
+    },
+    {
+      "pergunta": "In your health insurer's multi-agent research system, the web search subagent runs its own loop. Each time a response has stop_reason \"tool_use\", the harness executes search_web, stores the results in the run's evidence store for the synthesis step, and sends the next request containing the original task followed by a user message that says \"Search completed. Continue.\" Traces show the subagent issuing the same query four to six times per task and using about three times the expected tokens. What is the flaw in this implementation?",
+      "opcoes": [
+        "The harness should deduplicate queries itself and skip any search_web call whose query string has already been executed in the current task.",
+        "The search output never enters the conversation as a tool_result, so the model cannot see what it already found and keeps searching.",
+        "The subagent has more tools than its role needs, which makes its tool selection unreliable and causes it to fall back on repeated searches.",
+        "The \"Continue.\" message reads as an instruction to keep working, which pushes the model to search again instead of ending its turn."
+      ],
+      "correta": 1,
+      "explicacao": "Tool results must be appended to the conversation history so the model can reason about its next action. Here the results go only to the evidence store, and the next request carries neither the assistant's tool_use turn nor a tool_result, so from the model's point of view no search has happened yet. Appending the response and the matching tool_result blocks fixes both the repeats and the token cost.",
+      "feedbacks": [
+        "Deduplication hides the symptom, but the model would still lack the results it needs to reason and would keep asking for them in other forms.",
+        "Correct. Results that live only in an external store are invisible to the model; they must be returned as tool_result blocks in the next request.",
+        "Too many tools can degrade selection, but nothing suggests a selection problem; the subagent picks the right tool and simply never sees its output.",
+        "The wording is a minor factor; even with a neutral message the model would have no search results in its context and would search again."
+      ],
+      "cenario": 3,
+      "dominio": "D1",
+      "ts": "1.1",
+      "bullet": "1.1-K2",
+      "qid": "m01-prova#1"
+    }
+  ]
+}
