@@ -1,481 +1,480 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-01/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-02/questions.json",
   "bank": {
-    "titulo": "Módulo 01 — Prova (estilo exame)",
+    "titulo": "Módulo 02 — Prova (estilo exame)",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Your telecom provider's CI pipeline reviews each pull request with the Claude API. The request defines one tool, report_findings, whose input_schema matches the format your PR-comment bot parses, and sets tool_choice to {\"type\": \"auto\"}. In 6% of runs the bot fails with \"no tool_use block in response\". In those runs the response has stop_reason \"end_turn\" and a single text block such as \"I reviewed the diff and found nothing that needs attention.\" Nearly all of them are small, clean diffs. What is the most likely root cause?",
+        "pergunta": "Your energy utility's CI pipeline runs Claude Code with -p to generate regression tests from grid-protection requirement documents written by field engineers. Reviewers keep finding asserted thresholds that the documents never state: a requirement saying a relay should trip at 'roughly 10% over nominal' produced a test asserting exactly 110.0%, and documents that list limits in a table rather than in prose produced invented limits in 6 of 40 runs. Which TWO changes most directly reduce these fabricated values? Choose TWO.",
         "opcoes": [
-          "The system prompt asks the model to summarize each review, and on clean diffs that wording leads it to treat a short summary as its complete answer.",
-          "These responses are cut off by max_tokens before the model reaches the point where it would emit the report_findings call.",
-          "The prompt includes no example of a clean diff, so the model has never seen what an empty report_findings call should look like.",
-          "The auto setting lets the model reply in text instead of calling a tool, and when a diff has nothing to report it sometimes does just that."
-        ],
-        "correta": 3,
-        "explicacao": "With tool_choice \"auto\" the model may return text instead of calling a tool, and clean diffs with nothing to report are where it does so. The stop_reason \"end_turn\" rules out truncation. Setting tool_choice to \"any\" or forcing report_findings makes the tool call mandatory, so the bot always receives a tool_use block.",
-        "feedbacks": [
-          "System prompt wording can bias tool use, but nothing in the evidence points to it; the pattern (clean diffs, end_turn, prose) is exactly what \"auto\" permits by design.",
-          "Truncation would show stop_reason \"max_tokens\", not \"end_turn\", and it would hit large diffs, not small clean ones.",
-          "An example of a clean-diff report might lower the rate, but it is still a probabilistic nudge; the cause is that \"auto\" makes the tool call optional.",
-          "Correct. \"auto\" allows a text answer; \"any\" or a forced report_findings call removes that option."
-        ],
-        "cenario": 5,
-        "dominio": "D4",
-        "ts": "4.3",
-        "bullet": "4.3-K2"
-      },
-      {
-        "pergunta": "In your health insurer's multi-agent research system, the web search subagent runs its own loop. Each time a response has stop_reason \"tool_use\", the harness executes search_web, stores the results in the run's evidence store for the synthesis step, and sends the next request containing the original task followed by a user message that says \"Search completed. Continue.\" Traces show the subagent issuing the same query four to six times per task and using about three times the expected tokens. What is the flaw in this implementation?",
-        "opcoes": [
-          "The harness should deduplicate queries itself and skip any search_web call whose query string has already been executed in the current task.",
-          "The search output never enters the conversation as a tool_result, so the model cannot see what it already found and keeps searching.",
-          "The subagent has more tools than its role needs, which makes its tool selection unreliable and causes it to fall back on repeated searches.",
-          "The \"Continue.\" message reads as an instruction to keep working, which pushes the model to search again instead of ending its turn."
-        ],
-        "correta": 1,
-        "explicacao": "Tool results must be appended to the conversation history so the model can reason about its next action. Here the results go only to the evidence store, and the next request carries neither the assistant's tool_use turn nor a tool_result, so from the model's point of view no search has happened yet. Appending the response and the matching tool_result blocks fixes both the repeats and the token cost.",
-        "feedbacks": [
-          "Deduplication hides the symptom, but the model would still lack the results it needs to reason and would keep asking for them in other forms.",
-          "Correct. Results that live only in an external store are invisible to the model; they must be returned as tool_result blocks in the next request.",
-          "Too many tools can degrade selection, but nothing suggests a selection problem; the subagent picks the right tool and simply never sees its output.",
-          "The wording is a minor factor; even with a neutral message the model would have no search results in its context and would search again."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K2"
-      },
-      {
-        "pergunta": "Your health insurer's synthesis subagent checks figures with verify_claim before writing. Its loop ends with this check: if (response.Content.Any(b => b.Type == \"text\")) break; In 9% of runs the report includes figures that were never verified. In those runs the last response contains the text \"Let me verify the two remaining rates before finalizing.\" followed by two verify_claim tool_use blocks, with stop_reason \"tool_use\". Which statement about this behavior is correct?",
-        "opcoes": [
-          "The model is ending its turn too early, so the system prompt should require that every verification is finished before it writes any text at all.",
-          "The responses were truncated by max_tokens, which explains why the verification calls appear after the explanatory text in the final response.",
-          "The loop treats any text as completion, but one response can mix text and tool_use blocks; the harness should continue while stop_reason is \"tool_use\".",
-          "The verify_claim calls run too slowly, so the harness times out and leaves the loop before the two remaining checks can return their results."
-        ],
-        "correta": 2,
-        "explicacao": "Checking for assistant text is one of the termination anti-patterns in the guide: a single response often contains an explanatory text block and tool_use blocks. stop_reason \"tool_use\" says the model still wants tools executed. Driving the loop on stop_reason (continue on \"tool_use\", stop on \"end_turn\") fixes it.",
-        "feedbacks": [
-          "The model did not end its turn; stop_reason was \"tool_use\". A prompt rule would not fix a harness that exits on the wrong signal.",
-          "Truncation would show stop_reason \"max_tokens\". Text before tool_use blocks is normal output, not a sign of a cutoff.",
-          "Correct. Text content is not a completion indicator; stop_reason is.",
-          "Nothing in the trace suggests a timeout; the loop exits on the text check before the tools are even executed."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S3"
-      },
-      {
-        "pergunta": "Your HR software platform extracts fields from uploaded employment contracts. When validation fails, the service sends a follow-up turn so the model can correct the extraction. To cut input tokens, an engineer proposes that the follow-up request contain only one user message with the validation errors, arguing that \"the model already has the contract and its first answer from the previous call.\" Contracts average 9,000 tokens. How should you evaluate this proposal?",
-        "opcoes": [
-          "Accept it: the Messages API keeps each conversation's earlier turns on the server, so resending them only adds duplicate input tokens.",
-          "Reject it: each request is stateless, so the follow-up must resend the contract and the failed extraction with the errors listed.",
-          "Accept a variant: replace the earlier turns with a short summary of the contract and the extraction, keeping context at lower cost.",
-          "Accept it, and restate the schema's field rules in the system prompt so the model can fix each field from the errors alone."
-        ],
-        "correta": 1,
-        "explicacao": "The Messages API does not keep conversation state between calls; every request must carry the complete history the model needs. A useful correction turn includes the original document, the failed extraction and the specific validation errors. Without them the model can only guess.",
-        "feedbacks": [
-          "There is no server-side conversation memory in the Messages API; anything not in the request does not exist for the model.",
-          "Correct. The API is stateless; the follow-up must include the document, the prior extraction and the errors.",
-          "A summary drops exactly the details a correction needs (values, clauses, dates); progressive summarization is a known source of lost facts.",
-          "Field rules do not replace the source text; without the contract the model cannot find the correct values and will fabricate them."
-        ],
-        "cenario": 6,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-K4"
-      },
-      {
-        "pergunta": "Your airline's internal agent helps engineers explore legacy code with Grep, Glob and Read. Its loop runs while iterations < 5 and then returns the text of the last response. In 22% of sessions about the booking engine, engineers get answers such as \"Next I'll check how FareCalc applies the codeshare rules\" and nothing more; sessions on small services finish normally. The platform team requires protection against runaway sessions. What is the most effective fix?",
-        "opcoes": [
-          "Raise the cap to 15 iterations, because the longest exploration sessions in last month's logs needed 13 tool calls to finish their work.",
-          "Keep the cap at 5 and add a system prompt rule telling the model to finish exploring and to summarize within five tool calls per session.",
-          "Continue while stop_reason is \"tool_use\" and stop on \"end_turn\", keeping a much higher cap only as a logged safety backstop.",
-          "Stop only when the last response has no future-tense phrases such as \"Next I'll check\", and otherwise send another request to the model."
-        ],
-        "correta": 2,
-        "explicacao": "The loop uses an arbitrary iteration cap as its primary stopping mechanism, so long investigations are cut off mid-task. Control flow should continue on \"tool_use\" and terminate on \"end_turn\"; a high cap with logging still meets the runaway-session requirement as a backstop, not as the stopping rule.",
-        "feedbacks": [
-          "A bigger cap is still the primary stopping rule; the next unusually long investigation will be cut off at 15 the same way.",
-          "Forcing the model to compress any investigation into five calls trades truncated answers for shallow ones; the stopping signal is still wrong.",
-          "Correct. stop_reason drives the loop; the cap stays only as a safety net with logging.",
-          "Parsing natural language to decide termination is an anti-pattern; phrasing varies and the text can coexist with pending tool calls."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S1"
-      },
-      {
-        "pergunta": "Your online electronics retailer's support agent handles returns. A new conversation service now saves every turn to the chat database and rebuilds the messages array from that database before each model call. Since the rollout, the agent calls lookup_order three or four times in a row for the same order before replying, and median response time rose 70%. The chat database stores customer messages and the agent's text replies. What is the most effective first step?",
-        "opcoes": [
-          "Persist the tool_use turns and their matching tool_result blocks as well, so each rebuilt request carries the results the agent already has.",
-          "Cache lookup_order responses for ten minutes inside the service, so that repeated calls for the same order return without a backend query.",
-          "Add a rule to the system prompt telling the agent to call lookup_order at most once per order number in any single customer conversation.",
-          "Trim the lookup_order output to the five return-relevant fields, so the order data stays prominent in the agent's context on each turn."
-        ],
-        "correta": 0,
-        "explicacao": "The rebuilt history contains only customer-visible text, so the tool_use turns and tool_result blocks disappear between iterations and the model never sees the order it looked up. Tool results must be appended to the conversation history so the model can reason about the next action; persisting them removes the repeated calls at the source.",
-        "feedbacks": [
-          "Correct. The model repeats lookup_order because its result is missing from the history it receives.",
-          "Caching makes the repeated calls cheaper but does not stop them; the model still cannot see the result it already obtained.",
-          "A prompt rule cannot help a model that has no record of the earlier call; it would either keep calling or answer without the data.",
-          "Trimming is useful for context budgets, but here the result is not in the context at all, so there is nothing to make prominent."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K2"
-      },
-      {
-        "pergunta": "In your health insurer's research system, the document analysis subagent has two tools: search_policy_docs, described as \"Searches documents\", and search_clinical_studies, described as \"Searches documents for research\". On drug-coverage questions it queries the clinical studies corpus first in 31% of tasks, finds nothing relevant, and then retries with the other tool. Two designs are proposed: (1) rewrite both descriptions with the corpus each covers, input formats, example queries, and when to use the other tool; (2) add a pre-processing step that classifies each query by keywords and calls the matching tool before the model runs. Which evaluation is correct?",
-        "opcoes": [
-          "Design 2 is better: keyword classification makes the choice deterministic, and every misrouted query currently wastes a full tool call.",
-          "Design 1 is better: descriptions are the main input the model uses to pick a tool, and these two are nearly indistinguishable.",
-          "Both work equally well; prefer design 2 because it also removes one model round trip from every task that involves policy documents.",
-          "Neither fixes the cause; the subagent needs few-shot examples showing coverage questions being routed to the policy document corpus."
-        ],
-        "correta": 1,
-        "explicacao": "Tool descriptions are the primary mechanism the model uses to select tools, and two near-identical one-line descriptions make selection unreliable. Rewriting them with scope, input formats, examples and boundaries fixes the root cause cheaply. A keyword pre-classifier is over-engineered and bypasses the model's language understanding.",
-        "feedbacks": [
-          "Determinism is not the requirement here; a keyword router breaks on mixed or unusual queries and adds a component to maintain before the simple fix is tried.",
-          "Correct. Minimal, overlapping descriptions are the root cause; clear descriptions are the first fix.",
-          "The two designs are not equivalent; the saved round trip does not justify replacing model selection with brittle keyword rules.",
-          "Few-shot examples add tokens without fixing the underlying problem: the model has nothing in the descriptions to tell the corpora apart."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-K1"
-      },
-      {
-        "pergunta": "Your airline's developer productivity agent generates database migration boilerplate. Every run must begin with inspect_schema, which reads the live table definitions, before generate_migration or write_file is called. In 11% of runs the model goes straight to generate_migration from the ticket text, producing migrations that collide with existing columns. The steps after inspection should stay model-driven. What should you change to meet this requirement?",
-        "opcoes": [
-          "Set tool_choice to \"any\" on every request, so that the model must always call one of the tools instead of replying with text.",
-          "Add a system prompt rule that inspect_schema must be the first call of every run, with two examples showing the correct order.",
-          "Force {\"type\": \"tool\", \"name\": \"inspect_schema\"} on the first request of every run, then use \"auto\" for later turns.",
-          "Remove generate_migration from the tool list and have the harness call it automatically once inspect_schema has returned."
-        ],
-        "correta": 2,
-        "explicacao": "Forced tool selection guarantees that a specific tool is called first; the following steps are then processed in follow-up turns with \"auto\", so they remain model-driven. \"any\" only guarantees that some tool is called, and a prompt rule keeps a non-zero failure rate.",
-        "feedbacks": [
-          "\"any\" requires a tool call but lets the model choose which one, so it can still pick generate_migration first.",
-          "Instructions and examples reduce the rate but cannot guarantee the order; 11% failures call for a configuration that enforces it.",
-          "Correct. Force inspect_schema on the first turn, then switch to \"auto\".",
-          "Hard-wiring the next step removes model-driven decisions the requirement says to keep, and does not by itself force inspection to run first."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-K4"
-      },
-      {
-        "pergunta": "Your airline's developer productivity agent answers questions about legacy systems, such as \"Why does the baggage fee differ on codeshare flights?\" Today the model chooses each next tool. To make runs \"predictable\", a tech lead proposes a fixed sequence for every question: Glob for likely files, Grep for the main class name, Read the first three matches, then summarize. Which TWO statements correctly evaluate this proposal? Choose TWO.",
-        "opcoes": [
-          "The fixed sequence is acceptable if the iteration cap is raised, so the three reads can cover larger source files completely.",
-          "The fixed sequence is preferable, because a predictable tool order is what makes an agent's answers reliable across runs.",
-          "Open-ended questions need the model to pick each next call from what it just found, such as following a call into another module.",
-          "A fixed sequence suits predictable, repeatable tasks; here it would miss code paths that only appear after earlier results.",
-          "The proposal works if the sequence is written into the system prompt rather than code, so the model can still deviate."
+          "Generate tests three times per document and keep only the thresholds that come out identical in all three runs before committing them",
+          "Use --output-format json with a --json-schema that requires a numeric threshold field for each generated test before it is committed",
+          "Add few-shot examples that record an informal threshold such as 'roughly 10%' as approximate, with a tolerance rather than an exact value",
+          "Demonstrate, with paired examples, correct limit extraction from documents that use a table and from ones that state limits in prose",
+          "Add few-shot examples of generated tests whose thresholds come from documents that state each limit as an exact number in running prose"
         ],
         "corretas": [
           2,
           3
         ],
-        "explicacao": "In model-driven decision-making, Claude chooses the next tool based on what earlier results revealed, which open-ended investigation requires. A pre-configured sequence fits predictable, repeatable work, but for questions like this one it stops at whatever the first three matches happen to be.",
+        "explicacao": "Few-shot examples are effective at reducing hallucination in extraction tasks, specifically for informal measurements and varied document structures. One example shows how to record an approximate value without inventing precision; another shows correct extraction when the limits live in a table. Examples of only the easy case, voting, and a mandatory numeric field do not show the model how to handle these inputs.",
         "feedbacks": [
-          "The iteration cap is not the problem; the fixed sequence decides what to read before anything has been found.",
-          "Predictable order does not make answers reliable when the needed code is not in the first three matches; it makes the failures predictable.",
-          "Correct. The next call depends on what the previous one revealed.",
-          "Correct. Fixed sequences belong to predictable tasks, not open-ended investigation.",
-          "A sequence in the prompt is still a fixed plan the model is told to follow; it weakens the guidance without addressing why the sequence is wrong here."
+          "Tempting as a consistency check, but voting does not remove a value the model invents the same way every time, and it can drop legitimate thresholds that vary in wording.",
+          "Tempting because --json-schema is the right tool for parseable CI output, but a required numeric field pushes the model to supply a number even when the source only gives an approximation.",
+          "Correct. A demonstration of how to record 'roughly 10%' (approximate, with a tolerance) stops the model from turning an informal measurement into false precision.",
+          "Correct. Examples covering both table-based and prose-based documents show the model where the limits really are, which reduces invented values for the table format.",
+          "Tempting because it uses few-shot, but examples drawn only from clean, exact, prose-based documents show the easy case; they teach nothing about informal wording or tables, which is where the values are invented."
         ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K3"
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K4"
       },
       {
-        "pergunta": "Your airline's agent generates boilerplate for new microservices. Its system prompt tells the model to write \"TASK COMPLETE\" when it is done, and the harness loops until a response contains that phrase. Logs show two failure modes: some runs stop while two write_file calls requested in the same response are never executed, and others keep sending requests for 30 or more turns after the model has already summarized its work in different words. What is the flaw?",
+        "pergunta": "Your energy utility posts Claude Code review findings as inline PR comments. The prompt's instructions require four fields per finding: location (file:line), issue, severity, and a concrete suggested fix. Below the instructions are two few-shot examples, each written as a one-sentence issue followed by a severity label. In production, 58% of findings contain only an issue and a severity, so they cannot be anchored to a line. What is the flaw in this implementation?",
         "opcoes": [
-          "The completion phrase is too common; a unique marker such as <<DONE-7f3a>> would prevent both the early matches and the missed endings.",
-          "The prompt should require the model to write the completion phrase only after every write_file call has returned its result.",
-          "The harness is missing a cap of 10 requests per run, which would be enough for every boilerplate template in the current catalog.",
-          "Termination depends on parsing the model's text; the loop should run tools on \"tool_use\" and stop on \"end_turn\", fixing both modes."
-        ],
-        "correta": 3,
-        "explicacao": "Both failures come from parsing natural language to decide when the loop ends: the phrase can appear next to pending tool calls, and the model can finish without it. stop_reason is the reliable signal: \"tool_use\" means execute and continue, \"end_turn\" means the turn is finished.",
-        "feedbacks": [
-          "A rarer marker is still a text signal; it would still appear alongside pending write_file calls and still be missing when the model words its ending differently.",
-          "This adds a second prompt dependency to the first; the harness would still ignore stop_reason and depend on the model's wording.",
-          "A cap would stop the long runs, but as the primary stopping rule it is arbitrary and does nothing about the runs that end too early.",
-          "Correct. Drive the loop on stop_reason, not on phrases in the text."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S3"
-      },
-      {
-        "pergunta": "While debugging your electronics retailer's support agent, a new engineer reads this trace: request 1 returns stop_reason \"tool_use\" with a get_customer block; 900 ms later, request 2 contains a tool_result with the customer record and returns stop_reason \"tool_use\" with a lookup_order block; request 3 returns stop_reason \"end_turn\" with the reply to the customer. The engineer concludes that the model queried the CRM itself between requests 1 and 2. Which statement about this trace is correct?",
-        "opcoes": [
-          "The model only requested get_customer; the agent's runtime executed it and sent the record back in request 2, which let the model choose lookup_order.",
-          "The model executed get_customer over its MCP connection, and request 2 only confirmed the call by echoing the record back to it as a tool_result.",
-          "The runtime executed get_customer, but the model had already committed to lookup_order in request 1 and was only waiting for the call to finish.",
-          "Each request was independent; the model chose lookup_order from the customer's message alone, since tool results are kept outside its context."
+          "The examples show a two-field format that contradicts the four-field instructions, and the model follows what the examples show.",
+          "Two examples are too few for a four-field format; the prompt needs about twelve, one for each combination of field and severity level.",
+          "The format instructions come before the diff; they should be repeated after the diff so that they are the last thing the model reads.",
+          "Severity is mixed into the same response as the issue; it should be assigned in a separate call that runs after the review completes."
         ],
         "correta": 0,
-        "explicacao": "In the agentic loop the model only emits tool_use requests; your runtime executes the tool and returns the result for the next iteration. The model then decides the next action, here lookup_order, using the result that was appended to the conversation.",
+        "explicacao": "Few-shot examples should demonstrate the exact output format you want (location, issue, severity, suggested fix). Here the examples show only issue and severity, and models follow demonstrated format closely, so most findings copy the incomplete pattern. Fixing the examples to show all four fields, with a concrete fix, addresses the cause.",
         "feedbacks": [
-          "Correct. Request, execute, return the result, and let the model choose the next step.",
-          "The model never executes tools, MCP or otherwise; the client side calls the MCP server and returns the result.",
-          "Request 1 contained only get_customer; the choice of lookup_order was made in request 2, after the customer record arrived.",
-          "Tool results are part of the context: they are appended to the history precisely so the model can use them."
+          "Correct. The examples contradict the instructions; models imitate demonstrated format, so the examples must show all four fields.",
+          "Tempting because more coverage sounds safer, but the count is not the problem. Two to four complete examples work; twelve incomplete ones would teach the same wrong format.",
+          "Tempting because position effects exist, but the instructions are already clear. The output matches the examples, which points to the examples, not to where the instructions sit.",
+          "Tempting as specialization, but splitting the work does not explain missing locations and fixes, and it adds a second call without fixing the misleading examples."
+        ],
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S2"
+      },
+      {
+        "pergunta": "Your logistics company's support agent can open carrier damage claims with a file_carrier_claim tool. Auditors found that 31% of the claims it opened were unnecessary (the damage came from the shipper's packing, or the item was outside coverage). The team added: 'Be conservative: only file a claim when you are highly confident it is warranted.' Two weeks later, claim volume is down 35%, the unnecessary share is still 29%, and several valid claims were missed. Which statement about this behavior is correct?",
+        "opcoes": [
+          "The instruction reduced how often the agent files claims but not which cases it treats as claimable; precision needs categorical criteria for what qualifies.",
+          "The phrase 'highly confident' is too loose; replacing it with a numeric cutoff such as 'confidence above 0.85' would let the model apply it consistently.",
+          "The missed valid claims show the agent is now under-confident, so the instruction should be softened and each claim confirmed by a supervisor instead.",
+          "The unchanged share of unnecessary claims points to missing data, so the agent needs the carrier's coverage API before it can judge claims at all."
+        ],
+        "correta": 0,
+        "explicacao": "Instructions like 'be conservative' or 'only act when highly confident' change how much the model acts, not what it considers a valid case, so precision barely moves. The fix is categorical criteria: which damage causes and coverage conditions qualify for a claim and which do not, with boundary examples.",
+        "feedbacks": [
+          "Correct. Volume fell while the error share stayed the same, which is exactly what a confidence-style instruction does; explicit criteria change which cases qualify.",
+          "Tempting because a number feels more precise, but a confidence cutoff still filters by certainty instead of defining what makes a claim warranted.",
+          "Tempting because missed claims are real, but shifting every decision to supervisors pushes the burden onto humans without fixing the vague criterion.",
+          "Tempting because better data can help, but the unnecessary claims include packing damage the agent can already see; the gap is the missing definition of a valid claim."
         ],
         "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K1"
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-K2"
       },
       {
-        "pergunta": "Your airline's developer productivity agent automates repetitive changes, such as renaming a configuration key across services. A typical run makes 9 model requests. To cut latency, an engineer proposes: before the first request, run Grep and Glob for every identifier in the task description, paste all outputs into the prompt, and accept the first response as the final result with no further iterations. How should you evaluate the proposal?",
+        "pergunta": "Your energy utility's CI review prompt includes three few-shot examples, each explaining why a piece of meter-data code is or is not a real defect. A senior engineer proposes replacing them with an exhaustive list of 60 forbidden code patterns compiled from past incidents, arguing that a list is more predictable. Last month, 4 of the 9 defects confirmed by human reviewers involved code shapes that appear in no incident report. How should you evaluate this proposal?",
         "opcoes": [
-          "Reject it: the agent needs to request tools, receive results and request more, because later calls depend on what earlier results reveal.",
-          "Accept it: one request with all context is the most reliable design, since the model reasons best when every output is available upfront.",
-          "Accept it for tasks that touch fewer than ten files, and keep the agentic loop only for larger tasks whose outputs would not fit in context.",
-          "Reject it, and instead tell the model in the system prompt to request every tool it will need in its first response, all in parallel."
-        ],
-        "correta": 0,
-        "explicacao": "The agentic loop exists because each tool result can change what the model needs next: a Grep hit leads to a Read, which reveals another file to edit. Pre-computing searches from the task text is speculative and removes the iterations in which the model acts on new information.",
-        "feedbacks": [
-          "Correct. Later steps depend on earlier results, which a single pre-loaded request cannot provide.",
-          "Upfront context is only as good as the guesses behind it; the outputs that matter come from calls that are chosen after seeing earlier results.",
-          "Size is not the issue; even small tasks need follow-up calls (Read, Edit) chosen from what the searches found.",
-          "The model cannot know in its first response which files later results will point to, so it cannot request them all upfront."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K1"
-      },
-      {
-        "pergunta": "Your health insurer's document analysis subagent picks tools through code: if the query contains \"trial\" it calls search_trials; if it contains \"guideline\" it calls search_guidelines; otherwise it calls search_all; summarize always runs last. Queries such as \"What trial evidence supports the 2025 asthma guideline change?\" return off-topic results 40% of the time. Compliance requires an audit record of every tool call. What is the most effective fix?",
-        "opcoes": [
-          "Add branches to the decision tree for mixed queries, and log the branch taken on each run so the audit record shows why each tool ran.",
-          "Train a lightweight classifier on past queries to choose the search tool, and keep summarize as the fixed final step of each run.",
-          "Let the model choose each next call from the query and the results so far, guided by clear tool descriptions; the harness logs every call.",
-          "Call search_trials and search_guidelines for every query, then let summarize merge both result sets into a single combined answer."
-        ],
-        "correta": 2,
-        "explicacao": "A pre-configured decision tree cannot anticipate queries that mix categories or need follow-up searches. Letting Claude choose the next tool from context and earlier results handles them, and the audit requirement is met by logging every tool call in the harness, which works the same way for model-driven calls.",
-        "feedbacks": [
-          "More branches only move the edge cases; the next unusual query will fall through the tree again.",
-          "A trained classifier is heavier infrastructure that still makes a single up-front choice and cannot react to what the first search returns.",
-          "Correct. Model-driven tool selection, with every call logged for the audit.",
-          "Calling everything wastes tokens and adds noise, and still follows a fixed sequence that cannot react to what the results show."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-K3"
-      },
-      {
-        "pergunta": "Your health insurer's synthesis subagent calls verify_claim to check figures before writing. To keep the loop fast, the harness starts each verification in the background, immediately returns a tool_result whose content is \"verification queued\", and continues; finished verifications are written to a results table. Reviewers find that 14% of reports still contain figures that the results table marks as contradicted by the source. What is the most effective first step?",
-        "opcoes": [
-          "Have the report generator read the results table afterward and automatically replace contradicted figures in the final text.",
-          "Wait for each verification to finish and put its actual result in the tool_result, so the next iteration can reason about it.",
-          "Tell the subagent in its system prompt not to use any figure until its verification has been confirmed in the results table.",
-          "Move verification into a separate pass after synthesis, and send contradicted reports back to the subagent for a full rewrite."
+          "Adopt it: an enumerated list makes the review deterministic, and new defect shapes can be appended to the list as incidents occur.",
+          "Reject it: a list matches only the shapes it enumerates, while reasoned examples let the model apply that judgment to new code.",
+          "Adopt it, but turn each of the 60 patterns into its own few-shot example so the model sees each known defect shape in its context.",
+          "Reject it: keep the three examples, but move the review to a larger model that can infer the remaining defect shapes itself."
         ],
         "correta": 1,
-        "explicacao": "The model can only incorporate new information that is added to its context between iterations. A placeholder tool_result tells it nothing, so it writes with unverified figures. Returning the real verification result before the next request lets it adjust its reasoning and the text.",
+        "explicacao": "Few-shot examples that explain why code is or is not a defect let the model generalize that judgment to patterns no one listed. An enumerated list only catches what it names, and the incident data shows almost half of real defects have shapes nobody has seen before. Keeping reasoned examples is what covers those.",
         "feedbacks": [
-          "Patching numbers afterward edits text the model wrote without knowing the outcome; surrounding claims and conclusions that relied on the figure stay wrong.",
-          "Correct. The actual result must reach the conversation before the next iteration.",
-          "The model cannot see the results table; a rule about it changes nothing the model can observe.",
-          "A second pass adds latency and rewrites; the simpler fix is to return the result the model asked for."
+          "Tempting because lists feel predictable, but the list would only grow after each miss; 4 of 9 recent defects had shapes no list contained.",
+          "Correct. Reasoned examples teach the criterion, so the model can recognize new defect shapes instead of matching only enumerated ones.",
+          "Tempting because it keeps the few-shot format, but 60 surface-level examples cost tokens and still anchor the model on known shapes rather than on the reasoning.",
+          "Tempting because it keeps the examples, but a larger model is not what enables generalization here; the explained examples already do that."
         ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S2"
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K3"
       },
       {
-        "pergunta": "Your health insurer's research system has two tool_choice problems. The report subagent must return its output through one of three tools (render_summary, render_comparison_table, render_evidence_brief), whichever fits the findings, yet 7% of its runs end in plain prose that the publishing step rejects. Separately, the coordinator must call plan_research before any delegation on each new topic, and logs show it sometimes delegates first. Which TWO changes meet these requirements? Choose TWO.",
+        "pergunta": "Your energy utility's CI pipeline asks Claude Code to suggest missing tests for each PR, with the existing test files provided in context. It often marks a function as 'already covered' when any test calls it, even if some branches are never exercised; the negative-reading branch of the tariff calculator went untested for four months. The CI runner image is frozen this quarter, so coverage tooling cannot be added. What is the most effective fix?",
         "opcoes": [
-          "Force {\"type\": \"tool\", \"name\": \"plan_research\"} on the coordinator's first request for a topic, then switch to \"auto\".",
-          "Force render_summary for the report subagent, so every run returns its output through the most general of the three formats.",
-          "Set tool_choice to \"any\" for the report subagent, so it must call one of the three render tools but still picks the format.",
-          "Set tool_choice to \"any\" on the coordinator's first request, so it must open with a tool call, and plan_research is the obvious one.",
-          "Keep \"auto\" for the report subagent and add a system prompt rule that every answer must be delivered through a render tool."
-        ],
-        "corretas": [
-          0,
-          2
-        ],
-        "explicacao": "\"any\" guarantees a tool call while leaving the choice among several valid tools to the model, which fits the report subagent. Forcing a named tool guarantees that a specific tool runs first, which fits plan_research; later turns go back to \"auto\".",
-        "feedbacks": [
-          "Correct. Forced selection guarantees plan_research runs first.",
-          "Forcing one format throws away the comparison and evidence formats the findings sometimes need.",
-          "Correct. \"any\" removes the prose option and keeps the format choice.",
-          "\"any\" guarantees some tool call, not which one; the coordinator could still open with a delegation call.",
-          "A prompt rule is probabilistic; \"auto\" still permits the prose replies the publishing step rejects."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-K4"
-      },
-      {
-        "pergunta": "Your electronics retailer's support agent is helping a customer with two issues. In one response the model requests lookup_order for order 55120 and get_customer for the account. lookup_order returns the order; get_customer times out after 8 seconds. Which TWO actions should the harness take before the next request so the model can keep reasoning correctly? Choose TWO.",
-        "opcoes": [
-          "Return both tool_result blocks in one user message, with the get_customer result marked is_error: true and a short timeout note.",
-          "Append the assistant response to the history unchanged, including both tool_use blocks, before adding any of the results.",
-          "Retry get_customer in the harness until it succeeds, then send both results together, so that the model never sees the timeout.",
-          "Return only the lookup_order result and drop the get_customer tool_use block, so that the model can simply request it again.",
-          "Send the lookup_order result now in its own user message, and send the get_customer result in a second message once a retry succeeds."
-        ],
-        "corretas": [
-          0,
-          1
-        ],
-        "explicacao": "The model reasons over the full exchange: its own response with both tool_use blocks, followed by one user message carrying a tool_result for each call. A failed call still returns a result, flagged with is_error, so the model can decide how to recover (retry, use the order data, or ask the customer).",
-        "feedbacks": [
-          "Correct. One message, every result, the failure marked with is_error.",
-          "Correct. The assistant turn, with every tool_use block, must stay in the history.",
-          "An unbounded retry stalls the conversation and hides the failure; the model should learn about the timeout and decide what to do.",
-          "Dropping blocks leaves the history inconsistent and hides the failure that the model needs to reason about.",
-          "Results for one response belong in a single user message; splitting them breaks the pairing and leaves a tool_use without its result."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S2"
-      },
-      {
-        "pergunta": "Your electronics retailer moved its support agent behind a new API gateway. Since then, in multi-turn chats the agent asks customers again for order numbers they gave two messages earlier, and in 9% of conversations it offers a refund it had already said was not possible. Single-message conversations are unaffected. Gateway metrics show input tokens per request holding steady at about 3,100, however long the conversation gets. What is the most likely root cause?",
-        "opcoes": [
-          "The gateway forwards only the latest customer message, so each request lacks the earlier turns and the model never sees what was said.",
-          "The conversations have outgrown the context window, so the earliest turns fall outside what the model can attend to reliably.",
-          "The system prompt lacks an instruction to remember details from earlier turns and to check them before asking the customer again.",
-          "The gateway's response cache returns stale replies from earlier sessions, so the agent repeats questions from other conversations."
-        ],
-        "correta": 0,
-        "explicacao": "Input tokens that stay flat while the conversation grows mean the history is not being sent. The Messages API is stateless, so each request must carry the complete conversation; without it the model re-asks for known facts and contradicts its own earlier answers.",
-        "feedbacks": [
-          "Correct. Constant input size plus forgotten facts points to a missing history.",
-          "If the context were overflowing, input tokens would grow toward the limit, not stay at 3,100.",
-          "No instruction can make the model remember turns it never receives; this treats a transport bug as a prompt problem.",
-          "Stale cached replies would show other customers' details, not this customer's own earlier messages being forgotten."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-K4"
-      },
-      {
-        "pergunta": "Your electronics retailer's support harness works like this: send the request; if the response contains a tool_use block, run the tools and loop; otherwise send the response text to the customer and close the turn. Since the agent started quoting return-policy excerpts in its replies, 3% of customers receive messages that stop mid-sentence, such as \"Your refund of $189.99 has been approved and will\", and no follow-up arrives. What is the flaw?",
-        "opcoes": [
-          "The model is ending its turn early on long replies, so the system prompt should ask it to finish every sentence before it stops.",
-          "The policy excerpts push the conversation past the context window; trimming tool outputs would leave the reply room to finish.",
-          "The harness should check whether the reply ends with punctuation and, if not, ask the model in a new message to continue it.",
-          "The loop never reads stop_reason, so a \"max_tokens\" cutoff is handled as a finished turn rather than as truncation."
+          "Instruct Claude to examine each function carefully and to treat a function with fewer than three tests as not yet adequately covered.",
+          "Ask Claude to attach a confidence score to each 'already covered' verdict and to suggest new tests only when that score falls below 0.7.",
+          "Add few-shot examples of thoroughly tested functions so that Claude learns what complete coverage looks like before judging new code.",
+          "Add 2–3 few-shot examples of functions whose tests skip a branch, showing the untested branch reported as a gap and why it counts."
         ],
         "correta": 3,
-        "explicacao": "The harness continues on tool_use but treats every other response as complete, including one with stop_reason \"max_tokens\", which is a cutoff, not an end. Branching on stop_reason (continue on \"tool_use\", finish on \"end_turn\", handle \"max_tokens\" as truncation) prevents half-sentences from reaching customers.",
+        "explicacao": "Branch-level coverage gaps are an ambiguous case: a function 'has tests' but not all of its paths do. Few-shot examples that show a skipped branch reported as a gap, with the reason, teach the model this judgment within the prompt-only constraint. The other options use a crude proxy, a confidence filter, or examples of the easy case.",
         "feedbacks": [
-          "The model did not choose to stop; the output hit the max_tokens limit, which a prompt cannot change.",
-          "Context overflow is a different failure; the symptom matches longer outputs hitting the output limit.",
-          "Guessing completion from punctuation is parsing natural language; stop_reason already says whether the reply was cut off.",
-          "Correct. Check stop_reason; \"max_tokens\" is truncation, not completion."
+          "Tempting because it sounds thorough, but 'carefully' is vague and a test count is a poor proxy: three tests can all hit the same branch.",
+          "Tempting because it looks like calibration, but filtering verdicts by self-reported confidence does not teach the model what branch coverage means.",
+          "Tempting because it uses few-shot, but examples of fully covered functions do not show the ambiguous case that fails: a function that has tests while one of its branches has none.",
+          "Correct. Targeted examples demonstrate how to handle the ambiguous case (function tested, branch untested) without new tooling."
         ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.1",
-        "bullet": "1.1-S1"
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K2"
       },
       {
-        "pergunta": "Your HR software platform extracts fields from offer letters. Version 1 asked for \"only valid JSON\" in the prompt, and 3.8% of outputs failed parsing (text before the JSON, trailing commas). Version 2 defines an extract_offer tool whose input_schema is the target schema and reads the tool_use input; parse failures dropped to zero, but QA still finds 2% of records with the start date stored in the signing_date field. Which statement about these results is correct?",
+        "pergunta": "Your game studio extracts structured bug reports from player support tickets using an extraction tool whose JSON schema is enforced, so every response parses. QA leads complain that the content is inconsistent: repro_steps is sometimes a numbered list and sometimes a paragraph, and build_version appears as '1.4.2', 'v1.4.2', or 'patch 1.4'. The prompt already contains two pages of field-by-field formatting rules. What is the most effective first step?",
         "opcoes": [
-          "Tool use with a JSON schema removed the syntax errors, but it does not prevent semantic errors such as a value in the wrong field.",
-          "The remaining errors show the schema is not being enforced, so the tool definition should also be resent with every retry attempt.",
-          "The misplaced dates mean version 2 is less reliable than version 1, which should be restored with stronger format instructions.",
-          "The schema guarantees that each field is correct, so the misplaced dates must come from errors in the source offer letters themselves."
+          "Add a few examples of real tickets paired with the exact expected output, covering list-style repro steps and normalized build versions.",
+          "Expand the formatting rules into a precise grammar for each field and repeat the rules for the two problem fields at the end of the prompt.",
+          "Add a second model call that rewrites each extracted record into the house style before the record is written to the bug tracker.",
+          "Split the extraction into one request per field so that each request carries a shorter and more focused set of formatting rules."
         ],
         "correta": 0,
-        "explicacao": "Tool use with a JSON schema is the most reliable way to get schema-compliant output and eliminates syntax errors, which is what version 2 achieved. Schema compliance says nothing about whether each value is in the right field; semantic errors still need validation and targeted fixes.",
+        "explicacao": "When detailed instructions alone produce inconsistent output, few-shot examples are the most effective way to get consistently formatted, actionable results. The schema already guarantees valid JSON; what varies is the content inside the fields, and concrete input/output pairs show that format directly.",
         "feedbacks": [
-          "Correct. Schema compliance fixes syntax, not semantics.",
-          "The schema is being enforced (zero parse failures); a date in the wrong but valid field passes any schema.",
-          "Version 2 eliminated a 3.8% failure class; the 2% semantic issue would exist in version 1 too, hidden behind parse errors.",
-          "A schema validates structure and types, not meaning; assuming the source is wrong skips the real fix."
+          "Correct. Two pages of rules have not worked; examples of the exact expected output are the most effective next step.",
+          "Tempting because the rules are where the format is defined, but more prose is what has already failed; the model needs to see the format.",
+          "Tempting because it would normalize the output, but it adds a second model and cost before the simplest fix, examples, has been tried.",
+          "Tempting because shorter prompts are easier to follow, but it multiplies calls and still relies on prose rules that are producing variation."
         ],
         "cenario": 6,
         "dominio": "D4",
-        "ts": "4.3",
-        "bullet": "4.3-K1"
+        "ts": "4.2",
+        "bullet": "4.2-K1"
       },
       {
-        "pergunta": "Your HR software platform receives uploads that may be a résumé, an offer letter, or a termination notice; the type is not known in advance, and each type has its own extraction tool. With tool_choice set to \"auto\", 5% of responses are a prose summary instead of a tool call. An engineer proposes forcing {\"type\": \"tool\", \"name\": \"extract_resume\"}, since résumés are 70% of the volume. How should you evaluate the proposal?",
+        "pergunta": "Your logistics company's support agent handles 'delivered but not received' contacts inconsistently: in similar cases it sometimes refunds immediately, sometimes opens a carrier trace, and sometimes escalates to a human. The system prompt already states the policy. You plan to add few-shot examples to the system prompt. Which TWO choices will make these examples most effective? Choose TWO.",
         "opcoes": [
-          "Accept it: forcing the most common tool ends the prose replies, and the other 30% can be rerouted when résumé validation fails.",
-          "Accept it, but add an instruction telling the model to leave résumé fields empty when the document is clearly another type.",
-          "Reject it and keep \"auto\", adding a system prompt rule that the model must always respond by calling one of the three tools.",
-          "Reject it: setting tool_choice to \"any\" makes a tool call mandatory while still letting the model pick the matching schema."
+          "Show only the final tool call in each example, which keeps the prompt short so that the policy text remains the main focus",
+          "In each example, explain why the chosen action beat the plausible alternatives, for instance why a trace came before a refund",
+          "Include 15 to 20 examples so that every combination of order value, carrier, and customer tier has its own demonstration",
+          "Target the examples at the ambiguous situations where decisions currently diverge, such as a delivery scan with no signature",
+          "Draw the examples from the most frequent contact types, such as routine delivery confirmations, so that they mirror production traffic"
+        ],
+        "corretas": [
+          1,
+          3
+        ],
+        "explicacao": "Effective few-shot prompting uses 2–4 examples targeted at the ambiguous scenarios, and each example shows why one action was chosen over the plausible alternatives. That reasoning is what lets the agent apply the same judgment to cases that are not in the examples.",
+        "feedbacks": [
+          "Tempting because shorter prompts are cheaper, but showing only the action teaches the format, not why that action was right.",
+          "Correct. Explaining why the action beat the alternatives teaches the boundary, so the agent can generalize to new cases.",
+          "Tempting because coverage feels safer, but 15–20 examples add cost and push the model to match surface features instead of learning the decision boundary.",
+          "Correct. Examples should be aimed at the cases where the agent's choices diverge, not at the easy ones.",
+          "Tempting because it matches traffic, but common cases are not where the agent fails; examples should target the ambiguous situations."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S1"
+      },
+      {
+        "pergunta": "Your logistics company's support agent must cite the policy clause behind every refund or denial; a compliance audit requires a correct citation on 100% of decisions. Policies come from three regional teams: one cites clauses inline ('per §4.2'), one lists all clause references in a 'Sources' section at the end, and one embeds eligibility conditions in narrative paragraphs instead of an 'Eligibility' section. Citations are missing or wrong in 22% of decisions, almost all from the last two regions. What should you change to meet the requirement?",
+        "opcoes": [
+          "Ask the three regional teams to rewrite their policies into one template with inline clause references and a dedicated eligibility section.",
+          "Add few-shot examples showing correct citation from each structure: inline references, an end-of-document source list, and embedded eligibility text.",
+          "Add an instruction stating that each decision must include a clause citation and that a decision without one will fail the compliance audit.",
+          "Move the policy documents to the start of the context and the customer conversation to the end, so that clause references are not lost in the middle."
+        ],
+        "correta": 1,
+        "explicacao": "Few-shot examples that demonstrate correct handling of varied document structures (inline references vs a reference list at the end, dedicated sections vs details embedded in prose) fix extraction failures that come from structure. The errors cluster in the two non-inline formats, which the agent has never seen handled correctly.",
+        "feedbacks": [
+          "Tempting because a single template would help, but it pushes the work onto other teams and does not fix the documents the agent must read today.",
+          "Correct. Showing correct citation for each structure teaches the agent where references live in each format.",
+          "Tempting because it states the requirement, but the agent already knows it must cite; it fails because it does not recognize the other structures.",
+          "Tempting because position effects are real, but the errors follow document structure, not position; the inline-format policies are cited correctly."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S4"
+      },
+      {
+        "pergunta": "Your logistics company's support agent validates delivery addresses before rescheduling a shipment and flags invalid ones for correction. After a rollout to rural regions, 37% of flagged addresses turn out to be valid: rural-route numbers, named farms with no street number, and PO boxes for services that accept them. The prompt has four few-shot examples, each showing an address the agent should flag and why, and urban accuracy remains high. What is the most likely root cause?",
+        "opcoes": [
+          "The examples show only genuine problems and no valid look-alikes, so the agent treats any unfamiliar address shape as a defect.",
+          "Four examples are too few to cover the address formats in use; the prompt needs at least one example for each region served.",
+          "The validation step has no confidence cutoff, so uncertain flags are raised that a threshold on model confidence would filter out.",
+          "The address lookup tool returns too many fields per call, and the extra data dilutes the agent's attention on the address itself."
+        ],
+        "correta": 0,
+        "explicacao": "Few-shot examples that contrast acceptable patterns with genuine issues reduce false positives and help the model generalize. With only problem examples, anything that resembles them, including valid but unfamiliar formats, gets flagged. Adding valid look-alikes (rural routes, named farms) with the reason they pass fixes the cause.",
+        "feedbacks": [
+          "Correct. Only-negative examples teach 'unusual means invalid'; contrasting valid look-alikes with real problems reduces false positives.",
+          "Tempting because coverage feels safer, but one example per region adds cost without teaching the key distinction between unusual and invalid.",
+          "Tempting because it would cut volume, but filtering by confidence does not tell the agent what makes an address acceptable.",
+          "Tempting because trimming verbose tool output is a real practice, but urban accuracy is high with the same tool, so verbosity is not the cause."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S3"
+      },
+      {
+        "pergunta": "Your energy utility's CI review tells Claude Code: 'Check that error handling in the billing service is adequate.' On the same diff, one run flags 11 catch blocks and another flags 2, and developers say most flags concern logging style. The instruction lives in the project's root CLAUDE.md, the job runs with -p, and findings are posted as inline comments. What is the flaw in this setup?",
+        "opcoes": [
+          "The instruction sits in the root CLAUDE.md; it should move to a .claude/rules/ file scoped to the billing service paths.",
+          "The instruction sets no confidence threshold, so uncertain findings about catch blocks are posted with the same weight.",
+          "The review reads the whole diff at once; error handling should be checked in a separate pass for each file in the PR.",
+          "'Adequate' defines no reportable behavior; the criteria should say what to flag, such as a swallowed exception, and what to skip."
         ],
         "correta": 3,
-        "explicacao": "When several extraction schemas exist and the document type is unknown, tool_choice \"any\" guarantees structured output while letting the model choose the right tool. Forcing one named tool fixes the prose problem by pushing 30% of documents through the wrong schema.",
+        "explicacao": "Vague instructions like 'adequate' leave the model to invent its own standard on every run, which produces inconsistent findings and style noise. Explicit criteria that name the behavior to report (a caught exception that is neither logged nor rethrown) and what to skip (logging style) make the judgment reproducible.",
         "feedbacks": [
-          "Forcing the résumé tool makes 30% of extractions wrong by design and adds a reroute step to recover from it.",
-          "Empty fields on the wrong schema still lose the data the correct schema would have captured.",
-          "A prompt rule lowers the prose rate but cannot guarantee a tool call the way \"any\" does.",
-          "Correct. \"any\" guarantees a tool call and keeps the choice of schema with the model."
+          "Tempting because path-scoped rules are a good way to organize conventions, but moving a vague sentence does not make it any less vague.",
+          "Tempting because it would cut volume, but a confidence filter does not define what counts as inadequate error handling.",
+          "Tempting because per-file passes help with attention dilution on large PRs, but the symptom here is an undefined criterion, not PR size.",
+          "Correct. 'Adequate' is not a criterion; naming what to flag and what to skip makes the review consistent and cuts style noise."
+        ],
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-K1"
+      },
+      {
+        "pergunta": "Your game studio extracts terms from music-licensing contracts with an extraction tool whose schema marks licensor_name and royalty_rate as required. For 18% of contracts both fields come back empty. A spot check of 30 of those contracts finds every value present: the licensor appears only in the signature block, and the rate sits in an annex table instead of the body. The prompt's two examples both state these terms in the opening paragraph. Which statement about this behavior is correct?",
+        "opcoes": [
+          "The empty fields are the expected result for missing data; the schema should mark both fields nullable so that empty strings become proper nulls.",
+          "The annex and signature block are too far from the start of the contract; moving them to the beginning of the input will resolve the gaps.",
+          "The values are present in structures the examples never demonstrate; examples that extract from signature blocks and annex tables should fix it.",
+          "Making both fields non-nullable with a minimum length will force the model to locate the values instead of returning empty strings for them."
+        ],
+        "correta": 2,
+        "explicacao": "When required fields come back empty even though the document contains the data in a different format, the fix is to add few-shot examples showing correct extraction from those formats. Nullable fields are for information that is truly absent, which is not the case here.",
+        "feedbacks": [
+          "Tempting because nullable fields prevent fabrication, but the spot check shows the data is present; marking the fields nullable would accept the misses.",
+          "Tempting because position effects exist, but the end of an input is not where models lose information, and the cause is the unfamiliar structure.",
+          "Correct. The model has only seen these terms in the opening paragraph; examples from signature blocks and annex tables show where else they live.",
+          "Tempting because it seems to force extraction, but tightening a required field invites the model to fabricate a value when it cannot find one."
         ],
         "cenario": 6,
         "dominio": "D4",
-        "ts": "4.3",
-        "bullet": "4.3-K2"
+        "ts": "4.2",
+        "bullet": "4.2-S5"
+      },
+      {
+        "pergunta": "Your logistics company's support agent attaches alerts to tickets for supervisors in four categories. Over the last 500 alerts, 'possible fraud' was 92% accurate, 'address mismatch' 88%, 'damage dispute' 85%, and 'churn risk' only 31%. Supervisors now open fewer than 1 in 5 alerts of any category, fraud included. Which TWO actions best restore supervisor trust while improving the system? Choose TWO.",
+        "opcoes": [
+          "Keep all four categories but show the agent's confidence on each alert so that supervisors can decide which to open",
+          "Instruct the agent to be more conservative in all four categories so that the total alert volume drops by about half",
+          "Pause the alert categories until each of the four reaches at least 90% accuracy on a fresh evaluation set of recent tickets",
+          "Stop emitting churn-risk alerts for now, while all three accurate categories keep running exactly as they do today",
+          "Rewrite the churn-risk criteria with explicit triggers and look-alike examples, then validate on past tickets before re-enabling"
+        ],
+        "corretas": [
+          3,
+          4
+        ],
+        "explicacao": "Temporarily disabling a high false-positive category restores trust in the accurate categories, while the prompt for the noisy category is improved with explicit criteria and examples and validated before it returns. Pausing everything discards the categories that work; confidence displays and blanket conservatism do not fix the noisy one.",
+        "feedbacks": [
+          "Tempting because it gives supervisors more information, but the noise still reaches them and the burden of filtering shifts to humans.",
+          "Tempting because it cuts volume, but 'be more conservative' does not improve precision and also suppresses alerts in the accurate categories.",
+          "Tempting because it sounds rigorous, but it throws away three categories that already work while the problem sits in one.",
+          "Correct. Removing the 31% category stops the noise that is teaching supervisors to ignore the accurate fraud alerts.",
+          "Correct. The category comes back only after explicit criteria and examples are validated on real tickets."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-S2"
+      },
+      {
+        "pergunta": "Your game studio's extraction system ingests localized string tables from translation vendors and flags issues for reviewers, who can handle about 50 flags a day. It currently raises around 400 a day, mostly punctuation and regional spelling preferences, while broken placeholders such as a missing {0} still slip through. A lead proposes keeping only flags whose model confidence is at least 0.9. Given the reviewer capacity, what is the most effective fix?",
+        "opcoes": [
+          "Adopt the 0.9 confidence cutoff, then lower it gradually until the daily flag count settles near the 50 that reviewers can handle.",
+          "Keep all flags but sort them by model-assigned severity so that reviewers work through the top 50 each day and leave the rest queued.",
+          "Add a second model that re-checks each flag and discards the ones it disagrees with before the queue is shown to the reviewers.",
+          "Define what to always report, such as broken placeholders, text over the UI length limit, or untranslated text, and what to skip."
+        ],
+        "correta": 3,
+        "explicacao": "Specific criteria that define which issues to report and which to skip (minor style, regional preferences) reduce false positives at the source and point the model at the issues that matter, such as broken placeholders. Confidence-based filtering only trims volume; the model can be very confident about a punctuation nit.",
+        "feedbacks": [
+          "Tempting because it fits the capacity number, but confidence filtering cuts volume without changing what gets flagged, and placeholders still slip through.",
+          "Tempting because it respects capacity, but the noise is still produced and queued, and severity ranking does not catch the missed placeholders.",
+          "Tempting because a second opinion sounds safer, but it adds a model before the criteria are defined, and it cannot flag placeholders the first pass missed.",
+          "Correct. Categorical report/skip criteria cut the style noise and direct attention to the defects reviewers actually need."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-S1"
+      },
+      {
+        "pergunta": "Your energy utility's PR review bot has posted security findings at 93% precision for six months. Two months ago a 'readability' category was added; it now posts about 30 comments per PR, and developers dispute roughly half of them. Over the same period, the share of security findings dismissed without being read rose from 12% to 64%. What is the most effective first step?",
+        "opcoes": [
+          "Rewrite the security prompt with stricter criteria and more examples, since its findings are now dismissed by most developers.",
+          "Suspend the readability category while its criteria are rewritten, since its noise is what is eroding trust in the security findings.",
+          "Require developers to record a reason before dismissing a security finding, so that team leads can review each of the dismissals.",
+          "Attach a confidence score to each security finding, so that developers can see how certain the bot is before they dismiss it."
+        ],
+        "correta": 1,
+        "explicacao": "A high false-positive category undermines confidence in accurate categories: developers stop reading the bot, so accurate security findings get dismissed too. Security precision has not changed; the new noisy category has. Temporarily disabling it while its criteria improve restores trust in the findings that matter.",
+        "feedbacks": [
+          "Tempting because the security findings are the ones being dismissed, but their precision is still 93%; rewriting them targets the wrong category.",
+          "Correct. The readability noise is what taught developers to ignore the bot; removing it first restores attention to accurate findings.",
+          "Tempting because it creates accountability, but it shifts the burden to developers and leaves the noise that caused the dismissals in place.",
+          "Tempting because it adds transparency, but the security findings are already accurate; the trust problem comes from the readability noise."
+        ],
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-K3"
+      },
+      {
+        "pergunta": "Your game studio classifies player feedback as bug, balance, monetization, or other before extraction. Design A is a prompt with 45 keyword rules ('mentions crash and loading → bug'). Design B is a short set of category definitions plus three examples explaining why borderline messages belong where they do. After a new co-op mode launched, Design A sent 26% of co-op messages to 'other', including clear bugs described in new vocabulary. Which design should you choose, and why?",
+        "opcoes": [
+          "Design A, extended with keyword rules for the co-op vocabulary, because explicit rules give the same label for the same text on each run.",
+          "Design B, because examples that explain the category boundaries let the model generalize to new vocabulary that no rule anticipated.",
+          "Design B, but with about 45 examples instead of three, so that each rule from Design A has a matching demonstration in the prompt.",
+          "Design A for known vocabulary plus a fallback model call for 'other', so that only messages the rules miss get a second look."
+        ],
+        "correta": 1,
+        "explicacao": "Few-shot examples with explained reasoning let the model generalize its judgment to novel patterns instead of matching only pre-specified cases. Keyword rules fail exactly when the vocabulary changes, as the co-op launch showed. Three well-chosen examples teach the boundaries; forty-five would anchor the model on surface features.",
+        "feedbacks": [
+          "Tempting because rules are repeatable, but they only match pre-specified wording and will miss again at the next launch.",
+          "Correct. Examples that explain the boundaries teach the judgment, so the model can classify messages written in new vocabulary.",
+          "Tempting because it keeps Design B, but 45 surface-level examples cost tokens and recreate the rule-matching problem.",
+          "Tempting because it patches the gap, but it adds a second call and keeps a brittle rule layer when Design B alone generalizes."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K3"
+      },
+      {
+        "pergunta": "Your energy utility blocks merges when Claude Code's CI review reports a 'blocker'. Teams require that the same kind of defect always gets the same severity. Last sprint, an unawaited database write was labeled 'blocker' in one PR and 'minor' in two others. The prompt's severity section reads: 'blocker = serious risk; major = significant issue; minor = small issue.' What should you change to meet the requirement?",
+        "opcoes": [
+          "Define each severity level with concrete code examples from your codebase, such as an unawaited write or an N+1 query in a loop.",
+          "Run the full review three times per PR and post, for each finding, the severity label that appears most often across the three runs.",
+          "Ask the model for a confidence score with each finding, and assign the 'blocker' level only when that confidence is above 0.8.",
+          "Collapse the scale to two levels, block and do not block, and keep a one-line description of each level in the prompt."
+        ],
+        "correta": 0,
+        "explicacao": "Consistent severity classification requires explicit severity criteria with concrete code examples for each level. Adjectives like 'serious' and 'significant' are reinterpreted on every run; a code example anchors where a given defect belongs.",
+        "feedbacks": [
+          "Correct. Code examples per level anchor the classification, so the same defect lands on the same level in every PR.",
+          "Tempting because majority voting smooths noise, but it triples cost and still relies on undefined levels, so the majority can be wrong.",
+          "Tempting because it sounds stricter, but confidence measures certainty, not severity; an unawaited write is high severity whatever the confidence.",
+          "Tempting because fewer levels look simpler, but one-line definitions keep the same ambiguity about where a defect belongs."
+        ],
+        "cenario": 5,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-S3"
+      },
+      {
+        "pergunta": "Your logistics company's support agent files carrier-issue reports in three categories. Last month the team disabled 'missing scan' reports, which were 64% false positives, and operations staff started acting on the other two categories again. Yesterday 'missing scan' was re-enabled; the change log shows one line added to its prompt: 'Only report a missing scan when you are confident.' Today staff are dismissing reports from all three categories again. What is the most likely root cause?",
+        "opcoes": [
+          "Disabling the category for a month removed the feedback the agent learns from, so it lost accuracy on missing-scan cases while off.",
+          "Operations staff are still primed by last month's noise, so they will dismiss reports for some weeks regardless of their accuracy.",
+          "The category came back without real criteria or validation; 'when you are confident' does not change which cases get reported.",
+          "Re-enabling a third category raised report volume, and the other two categories lost precision as the agent spread attention."
+        ],
+        "correta": 2,
+        "explicacao": "Disabling a noisy category is only half of the pattern: it should come back after its prompt is improved with explicit criteria and validated. A confidence instruction does not change which cases qualify, so the false positives returned and dragged trust in the other categories down with them.",
+        "feedbacks": [
+          "Tempting if you think the agent learns between calls, but it does not; its behavior is set by the prompt, which barely changed.",
+          "Tempting because trust recovers slowly, but staff were acting on the other categories until yesterday; the re-enabled noise is what changed.",
+          "Correct. Re-enabling without new criteria or validation brought the same false positives back, and they eroded trust again.",
+          "Tempting because volume can matter, but three categories is a small load; the timing points to the unchanged missing-scan criteria."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-S2"
+      },
+      {
+        "pergunta": "Your game studio's contract-extraction system flags anomalies for the legal team in five categories. The weekly dashboard shows one number, overall flag precision of 84%, which leadership treats as healthy. Yet lawyers now skip most flags, including indemnity-clause flags that a spot check found 97% accurate. The 'formatting inconsistency' category produces 20% of all flags and most of the disputed ones. What is the flaw in how this system is being managed?",
+        "opcoes": [
+          "The dashboard should report recall alongside precision, because precision alone cannot show whether important anomalies are being missed.",
+          "Lawyers should be required to open every flag, because skipping flags means even the 97% accurate indemnity flags are left unreviewed.",
+          "Tracking only aggregate precision hides a noisy category whose false positives erode trust in the accurate ones; track it per category.",
+          "The confidence cutoff for flags is too low; raising it until overall precision passes 90% would bring the lawyers back to the flags."
+        ],
+        "correta": 2,
+        "explicacao": "High false-positive categories undermine confidence in accurate ones, and an aggregate metric hides which category is doing the damage. Measuring precision per category exposes the formatting category so it can be disabled and fixed while the accurate indemnity flags keep running.",
+        "feedbacks": [
+          "Tempting because recall matters, but the observed problem is trust lost to false positives, which an aggregate precision number hides.",
+          "Tempting because it would get flags read, but it puts the burden on lawyers and leaves the noisy category in place.",
+          "Correct. Per-category precision reveals the noisy category that is eroding trust in the accurate ones.",
+          "Tempting because it would raise the number, but a confidence cutoff trims volume across all categories instead of fixing the noisy one."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-K3"
+      },
+      {
+        "pergunta": "Your logistics company's support agent extracts package weight and dimensions from customer messages to quote reshipments. Customers write things like 'about 20 kilos', 'the size of a microwave', or '2 by 3 feet-ish'. An audit of 200 quotes found that 23% used exact dimensions the customer never gave, such as 45 × 30 × 30 cm for 'the size of a microwave'. The prompt describes each field but includes no examples. Which statement about this behavior is correct?",
+        "opcoes": [
+          "The invented sizes come from the model's general knowledge of objects, so they can only be removed by adding a product-dimension lookup tool.",
+          "Few-shot examples cannot help here, because informal descriptions vary too much for a handful of examples to cover what customers write.",
+          "Nothing shows the agent how to record informal measurements; examples that flag approximate values and leave vague dimensions null should help.",
+          "The agent is overconfident; asking it for a confidence score on each dimension and dropping scores below 0.7 would remove the invented values."
+        ],
+        "correta": 2,
+        "explicacao": "Few-shot examples are effective at reducing hallucination in extraction, including informal measurements. Examples that record 'about 20 kilos' as approximate and leave 'the size of a microwave' as null with the source text show the agent how to capture what was said without inventing precision.",
+        "feedbacks": [
+          "Tempting because the guesses do look like world knowledge, but a lookup tool is not the only fix; showing the agent what to output for informal input is.",
+          "Tempting because informal language is varied, but few-shot examples work because the model generalizes the handling pattern to new phrasings.",
+          "Correct. Demonstrating how to record approximate and vague measurements reduces the fabricated exact values.",
+          "Tempting because it targets overconfidence, but self-reported confidence is poorly calibrated and does not show the agent what to record instead."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K4"
+      },
+      {
+        "pergunta": "Your game studio routes each player document to one of three extraction tools: extract_bug_report, extract_feature_request, and extract_refund_request. The descriptions were rewritten last month and now state inputs, outputs, and boundaries clearly; routing is 97% correct. Messages that mix concerns ('the new emote crashes my game, please add a way to turn emotes off') still split unpredictably between the bug and feature tools. An engineer proposes a keyword pre-classifier that picks the tool before Claude sees the message. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: a keyword classifier makes tool choice deterministic, and mixed messages can go to whichever tool the first keyword matches.",
+          "Reject it, and instead merge the three tools into one generic extract_player_document tool that returns the union of their fields.",
+          "Reject it, and rewrite the three descriptions again, since the remaining misrouting shows the descriptions still overlap somewhere.",
+          "Reject it for now: add 2–4 examples of mixed messages that show how each should be routed and why the alternative was rejected."
+        ],
+        "correta": 3,
+        "explicacao": "Few-shot examples demonstrate how to handle ambiguous cases, including tool selection for ambiguous requests. The descriptions are already clear, and the failures are limited to genuinely mixed messages, so a few targeted examples with the reasoning are the proportionate fix. A keyword pre-classifier is over-engineering that bypasses the model's understanding.",
+        "feedbacks": [
+          "Tempting because it looks deterministic, but routing by the first keyword is arbitrary for mixed messages and bypasses the model's language understanding.",
+          "Tempting because one tool cannot be misrouted, but it reverses the purpose-specific design and pushes the ambiguity into a generic schema.",
+          "Tempting because descriptions are the first fix for misrouting, but they were already rewritten and routing is 97% correct; the remaining cases are genuinely ambiguous.",
+          "Correct. Targeted examples with reasoning teach how to route mixed messages without adding a classification layer."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-K2"
       }
     ]
   },
   "order": [
-    1,
-    15,
-    3,
-    16,
-    19,
-    8,
-    12,
     5,
-    4,
-    0,
+    13,
     10,
     11,
     17,
+    4,
+    15,
+    19,
     18,
     6,
-    2,
-    9,
-    7,
     14,
-    13
+    12,
+    7,
+    3,
+    16,
+    0,
+    8,
+    1,
+    2,
+    9
   ],
   "pos": 20,
   "answers": [
     {
       "pos": 0,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 1,
       "escolha": [
-        0,
         1
       ],
       "acertou": true
@@ -483,28 +482,28 @@
     {
       "pos": 2,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        0
+        3,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 4,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 5,
       "escolha": [
-        2,
         3
       ],
       "acertou": true
@@ -512,14 +511,14 @@
     {
       "pos": 6,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        0
+        3
       ],
       "acertou": true
     },
@@ -533,6 +532,7 @@
     {
       "pos": 9,
       "escolha": [
+        1,
         3
       ],
       "acertou": true
@@ -540,71 +540,71 @@
     {
       "pos": 10,
       "escolha": [
-        3
+        1
       ],
-      "acertou": false
+      "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        0
+        3
       ],
       "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     },
     {
       "pos": 13,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 15,
       "escolha": [
-        2
+        2,
+        4
       ],
-      "acertou": true
+      "acertou": false
     },
     {
       "pos": 16,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 17,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 18,
       "escolha": [
-        0,
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 19,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     }

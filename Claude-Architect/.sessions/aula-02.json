@@ -164,28 +164,45 @@
       }
     ]
   },
-  "pos": 5,
-  "marco_sessao": 0,
+  "pos": 11,
+  "marco_sessao": 5,
   "status": {
     "intro": "visto",
     "t1": "visto",
     "t2": "visto",
     "t3": "visto",
     "t4": "visto",
-    "t5": "pendente",
-    "t6": "pendente",
-    "t7": "pendente",
-    "q1": "pendente",
-    "prova": "pendente",
-    "fim": "pendente"
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
+    "q1": "visto",
+    "prova": "visto",
+    "fim": "visto"
   },
   "concluido_em": {
     "intro": "2026-10-22T20:36:49+00:00",
     "t1": "2026-10-22T20:42:43+00:00",
     "t2": "2026-10-22T20:47:56+00:00",
     "t3": "2026-10-22T20:55:08+00:00",
-    "t4": "2026-10-22T21:05:24+00:00"
+    "t4": "2026-10-22T21:05:24+00:00",
+    "t5": "2026-11-09T17:57:41+00:00",
+    "t6": "2026-11-09T18:04:27+00:00",
+    "t7": "2026-11-09T18:12:21+00:00",
+    "q1": "2026-11-09T18:25:53+00:00",
+    "prova": "2026-11-09T18:46:42+00:00",
+    "fim": "2026-11-09T18:46:42+00:00"
   },
-  "notes": [],
+  "notes": [
+    {
+      "beat": "q1",
+      "ts": "2026-11-09T18:22:46+00:00",
+      "text": "Quiz M02 Q13: errou (marcou A) — achou que desvio de style guide deve ser reportado e que 'skip vendored files' era o diferencial; reforçar: critério do guia = REPORTA bugs/segurança, PULA estilo menor + padrões locais usados de propósito; numa alternativa em par, a metade errada mata a opção"
+    },
+    {
+      "beat": "prova",
+      "ts": "2026-11-09T18:41:13+00:00",
+      "text": "Prova M02 Q16: errou (C,E em vez de C,D) — marcou few-shot do caso FÁCIL (limites exatos em prosa) em vez de exemplos pareados tabela × prosa; reforçar: few-shot mira os formatos que FALHAM; em 'Choose TWO', mapear cada sintoma do enunciado a uma alternativa (informal → C, tabela → D)"
+    }
+  ],
   "iniciado_em": "2026-10-22T20:34:56+00:00"
 }
