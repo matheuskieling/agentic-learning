@@ -1,495 +1,495 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-04/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-05/questions.json",
   "bank": {
-    "titulo": "Módulo 04 — Prova (estilo exame): design de tools",
+    "titulo": "Módulo 05 — Prova (estilo exame): MCP e tools nativas",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "A cybersecurity vendor's support agent (Agent SDK) uses get_customer, lookup_order, process_refund, check_license_status, and escalate_to_human. Tool descriptions were rewritten last quarter and scored 96% correct selection on an evaluation set. A release two weeks ago added a \"Payments\" section to the system prompt (\"If the customer mentions a refund, charge, or payment, take care of it right away\"), a longer greeting, and a new escalation policy. Since then, process_refund has been called before lookup_order in 9% of conversations, almost all of them containing the word \"charge,\" as in \"why was I charged twice?\" What is the most likely root cause?",
+        "pergunta": "Your developer productivity agent, built with the Claude Agent SDK for an industrial IoT company, loads MCP servers from the repository's .mcp.json. Last week the team moved the sensor-historian server from each engineer's ~/.claude.json into .mcp.json, with the header \"Authorization\": \"Bearer ${HISTORIAN_TOKEN}\". Since then, 8 of 12 engineers run the agent normally, but for the other 4 every historian tool call fails with HTTP 401. All 12 are on the same commit. What is the most likely root cause?",
         "opcoes": [
-          "The new Payments instruction ties words like \"charge\" and \"refund\" to acting at once, and that overrides the tool descriptions.",
-          "The process_refund description lacks a boundary saying that billing questions go to lookup_order before any refund is issued.",
-          "The longer system prompt pushes the tool descriptions into the middle of the context, where the model processes them less reliably.",
-          "The new escalation policy discourages escalate_to_human, so the agent settles billing disputes on its own by calling process_refund."
-        ],
-        "correta": 0,
-        "explicacao": "The misroutes began with the system prompt change and cluster around the word \"charge,\" while the same descriptions had already proven reliable. A keyword-sensitive instruction (\"if the customer mentions a refund, charge, or payment, take care of it right away\") creates an association between those words and the action tool that overrides well-written descriptions. Review the system prompt for keyword triggers and reword them around intent before changing the tools.",
-        "feedbacks": [
-          "Correct. The keyword-triggered instruction ties \"charge\" to taking action, which pulls process_refund ahead of lookup_order despite good descriptions.",
-          "Tempting because missing boundaries are the usual cause of misrouting, but these descriptions scored 96% before the release; the regression tracks the new prompt wording, not the tools.",
-          "Tempting because position effects are real in long inputs, but a longer greeting would degrade selection broadly, not specifically in conversations that contain \"charge.\"",
-          "Tempting because escalation rules do shape tool choice, but the symptom is process_refund before lookup_order on simple billing questions, not disputes that should have been escalated."
-        ],
-        "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-K4"
-      },
-      {
-        "pergunta": "A news publisher's research system has a coordinator plus search, document analysis, and synthesis subagents. To cut round trips, the team gave the synthesis subagent the same web_search and fetch_page tools the search subagent uses; the coordinator still passes it the complete findings. Since the change, 34% of synthesis runs issue 5–12 new searches, latency is up 45%, and editors find citations to blogs and press releases that the search subagent's source-quality criteria would have excluded. What is the flaw in this design?",
-        "opcoes": [
-          "The coordinator passes the findings as prose, so the synthesis subagent cannot map claims to sources and searches again to rebuild attribution.",
-          "The search subagent's queries are too narrow, which leaves gaps in the findings that the synthesis subagent then fills with its own searches.",
-          "Synthesis now holds tools outside its specialization, so it does its own research, without the source criteria, rather than synthesizing.",
-          "The synthesis prompt does not say that searching is out of scope; an explicit rule against new searches would restore its intended role."
-        ],
-        "correta": 2,
-        "explicacao": "The synthesis subagent already receives the complete findings, yet it now runs its own searches, skips the search subagent's source criteria, and adds latency. Agents given tools outside their specialization tend to misuse them: synthesis should combine findings, not research. Remove the search tools from synthesis; if it often needs quick checks, give it a narrow scoped tool instead.",
-        "feedbacks": [
-          "Tempting because structured findings with source metadata do help attribution, but the coordinator already passes the complete findings; the new behavior started when synthesis received search tools.",
-          "Tempting because narrow searches do leave gaps, but nothing changed in the search subagent; the extra searches and weak citations began with the tool change.",
-          "Correct. Giving synthesis web_search and fetch_page put tools outside its specialization in its hands, so it researches without the search subagent's criteria.",
-          "Tempting because it is a cheap change, but a prompt rule is probabilistic while the tools stay available; removing the out-of-role tools removes the misuse."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-K2"
-      },
-      {
-        "pergunta": "A fintech payments startup built a developer productivity agent with the Agent SDK. For simplicity, every subagent (codebase explorer, boilerplate generator, legacy-docs writer) is defined with the same 14 tools, including create_jira_ticket, trigger_ci_pipeline, and run_readonly_sql. In one week the explorer opened 23 Jira tickets for code smells it noticed, and the boilerplate generator triggered 160 CI runs, one after almost every file it wrote. Nobody asked for either. Which statement about this behavior is correct?",
-        "opcoes": [
-          "The descriptions of create_jira_ticket and trigger_ci_pipeline lack boundaries; rewriting them would stop the extra calls without changing which agents hold them.",
-          "The subagents inherit the coordinator's conversation history, where tickets and CI runs were discussed earlier, and they repeat those actions on their own.",
-          "Each subagent uses tools its role never needed because it received all of them; scoping tools by role, with narrow exceptions, prevents this.",
-          "Fourteen tools is within normal limits, so the calls reflect model judgment; a more capable model would choose side-effecting tools more conservatively."
-        ],
-        "correta": 2,
-        "explicacao": "Every subagent received the same 14 tools, so each one uses side-effecting tools its role never needed: the explorer files tickets and the generator triggers CI. Scoped tool access gives each subagent only the tools for its role, adding a narrow cross-role tool only where a specific need is frequent. Smaller, role-relevant tool sets also make each selection decision simpler.",
-        "feedbacks": [
-          "Tempting because descriptions drive selection, but a description cannot remove a capability; as long as every subagent holds every tool, out-of-role use stays possible.",
-          "Tempting because context leakage sounds plausible, but subagents do not inherit the coordinator's history automatically; the cause is the tools each one was given.",
-          "Correct. The subagents act outside their roles because they all received the full set; scope tools by role and add narrow cross-role tools only for frequent needs.",
-          "Tempting because a stronger model may choose better, but 14 tools per agent is far above the 4–5 that keeps selection reliable, and a model change does not fix over-provisioning."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-K3"
-      },
-      {
-        "pergunta": "In a news publisher's research system, the search subagent has search_news_wire (a licensed wire feed covering only the last 72 hours) and search_web. Both descriptions were recently rewritten with input formats, sample queries, and the 72-hour boundary. Still, requests like \"latest research on microplastics in bottled water\" go to search_news_wire 40% of the time and return nothing useful. The subagent's system prompt reads: \"Cite every source. Prefer primary documents. For anything latest or breaking, use the wire.\" An engineer proposes adding three few-shot examples of \"latest\" requests about older topics routed to search_web. How should you evaluate this proposal?",
-        "opcoes": [
-          "Adopt it: few-shot examples are the most effective way to show tool selection for ambiguous requests, and three examples are within the recommended range.",
-          "Reject it for now: the prompt's \"latest or breaking\" rule overrides the rewritten descriptions, so reword that rule around the 72-hour window before adding examples.",
-          "Reject it: merge the two search tools into one that chooses between the wire and the web internally, so the subagent no longer has to pick a source.",
-          "Reject it: the descriptions are still the weak point, so extend the search_news_wire description with more examples of requests outside its window."
+          "Variable expansion in .mcp.json applies only to the env block, so the Authorization header reaches the server as the literal placeholder text for everyone.",
+          "The four engineers never defined HISTORIAN_TOKEN in their own environment, because their token only existed inside the old user-level entry they had pasted it into.",
+          "A project-scoped server authenticates with the credentials of the engineer who committed .mcp.json, and that engineer's token lacks access for some of the users.",
+          "Their agent sessions call the historian tools before the server has finished connecting, so those early requests arrive unauthenticated and the server rejects them."
         ],
         "correta": 1,
-        "explicacao": "The descriptions are already good, so the persistent misrouting points to the system prompt rule \"For anything latest or breaking, use the wire,\" a keyword-sensitive instruction that overrides the 72-hour boundary in the descriptions. Rewording that rule around the actual window is the fix. Adding few-shot examples on top of a conflicting instruction leaves the model with contradictory guidance.",
+        "explicacao": "${HISTORIAN_TOKEN} is expanded from the environment of whoever runs the agent, so each engineer must define the variable. The shared file works for engineers who already export it and fails with an authentication error for those whose token only lived in their old personal configuration. The fix is per-engineer environment setup, not a change to the shared file.",
         "feedbacks": [
-          "Tempting because few-shot examples do help with genuinely ambiguous tool selection, but here the ambiguity is created by a conflicting keyword rule; fix the rule first.",
-          "Correct. The keyword rule overrides well-written descriptions; review and reword the system prompt before considering examples on top of it.",
-          "Tempting because one tool removes the choice, but consolidation is a larger architectural change and leaves in place the prompt rule that causes the misrouting.",
-          "Tempting because descriptions are the usual first fix, but they already state the 72-hour boundary; more description text cannot outweigh an explicit instruction that contradicts it."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-S4"
-      },
-      {
-        "pergunta": "At a fintech payments startup, the developer productivity agent calls an internal MCP tool, query_settlement_logs, to investigate failed payouts. Every failure returns the same text, \"Request failed,\" whether the log store timed out, the date range was malformed, or the engineer lacks access to production logs. The agent retries all three cases up to 5 times and then tells the engineer that the logs are unavailable. Which TWO changes to the tool's error responses would let the agent recover appropriately? Choose TWO.",
-        "opcoes": [
-          "Return an errorCategory (transient, validation, or permission) with an isRetryable boolean, so that the agent retries only the failures that can succeed.",
-          "Include the HTTP status code and the full stack trace in the error text, so that the agent has the complete technical picture when it decides what to do next.",
-          "Add a readable description of what failed and what would fix it, such as the expected date format or the role required, so that the agent can act on it.",
-          "Log the full details on the server and return only a generic error code, so that internal information does not leak into the agent's conversation context.",
-          "Make the MCP server retry each failed request three times before it responds, so that the agent sees an error only after the server has tried enough."
-        ],
-        "corretas": [
-          0,
-          2
-        ],
-        "explicacao": "The agent retries everything because every failure looks the same. An errorCategory with an isRetryable flag tells it which failures are worth retrying, and a human-readable description tells it how to fix the input or what to tell the engineer. Together they turn a failure into a recovery decision instead of five wasted attempts.",
-        "feedbacks": [
-          "Correct. A category plus isRetryable lets the agent retry the timeout and stop retrying the malformed range and the access denial.",
-          "Tempting because more detail seems helpful, but raw status codes and stack traces are not a recovery signal; the agent still has to guess whether a retry can succeed.",
-          "Correct. A readable description (expected date format, required role) lets the agent correct the call or explain to the engineer what is needed.",
-          "Tempting as a security practice, but a generic code leaves the agent unable to choose a recovery; return safe, actionable metadata rather than nothing.",
-          "Tempting because server-side retries can absorb transient failures, but retrying malformed input and missing permissions wastes time, and the agent still gets an uninformative error."
+          "Tempting if you assume expansion is limited to env, but the same header works for 8 engineers on the same commit, so the placeholder is being expanded wherever the variable exists.",
+          "Correct. Expansion reads each engineer's own environment; without the variable there is no token to send, which matches a consistent 401 for exactly those four users.",
+          "Misreads what a shared configuration shares: .mcp.json shares the server definition, not anyone's credential; each run expands the variable from the local environment.",
+          "A connection race would cause sporadic failures on early calls, not a 401 on every historian call for the same four people."
         ],
         "cenario": 4,
         "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-S1"
+        "ts": "2.4",
+        "bullet": "2.4-K2"
       },
       {
-        "pergunta": "A fintech payments startup's developer productivity agent has an MCP tool, analyze_code(path, instructions), that engineers use for three jobs: tracing where card data flows, summarizing legacy modules, and checking whether a code comment's claim matches the code. The agent writes the instructions itself, and the output varies from prose to bullet lists. A dashboard that ingests the results fails to parse 18% of them, and card-data traces sometimes come back as module summaries. What is the most effective first step?",
+        "pergunta": "A municipal transit agency's platform team uses Claude Code daily. They built an internal MCP server for their documentation: about 600 pages organized in a hierarchy (APIs, GTFS feed specs, runbooks). The server exposes one tool, search_docs(query), which returns the top 5 matching snippets. Session logs show Claude making 7 to 11 search_docs calls with guessed keywords before it finds the right section, and sometimes citing a deprecated page. What is the main flaw in this design?",
         "opcoes": [
-          "Expand the analyze_code description with sample instructions for each of the three jobs, so that the agent writes consistent instructions on every call.",
-          "Add a normalization step that converts each analyze_code result into the dashboard's format, so that varied output no longer breaks ingestion.",
-          "Split analyze_code into trace_card_data_flow, summarize_module, and check_comment_claim, so that every job gets its own input schema and output format.",
-          "Add a mode enum (trace, summarize, check) to analyze_code with one free-form result field, so that a single tool still covers all three jobs."
-        ],
-        "correta": 2,
-        "explicacao": "One generic tool with free-form instructions serves three different jobs, so the agent decides what the tool does on every call and the output has no contract. Splitting it into purpose-specific tools, each with a defined input schema and output format, fixes both the mixed-up jobs and the parsing failures. Better descriptions and downstream normalization only treat symptoms of the missing contract.",
-        "feedbacks": [
-          "Tempting because descriptions are the primary selection mechanism, but the problem is a tool with no contract, not a choice between tools; better instructions still produce free-form output.",
-          "Tempting because it fixes parsing quickly, but it patches the symptom downstream while card-data traces keep coming back as summaries.",
-          "Correct. Purpose-specific tools with defined input and output contracts remove the ambiguity and give the dashboard a stable format.",
-          "Tempting because a mode enum looks like a light version of splitting, but the single free-form result keeps the output without a contract, so parsing failures remain."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-S3"
-      },
-      {
-        "pergunta": "A cybersecurity vendor's support agent calls process_refund for license refunds. Policy allows refunds only within 30 days of license activation. For older licenses the tool returns {\"error\": \"REFUND_REJECTED\"}; the agent retries 3–4 times, then tells customers that \"a technical problem occurred,\" and satisfaction scores on refund conversations have dropped 12 points. The team is choosing how process_refund should report this case. Which design should it use?",
-        "opcoes": [
-          "Return isError: true with errorCategory \"validation\", so that the agent re-checks the activation date and amount it sent and then calls the tool again.",
-          "Return a successful result with refund_status \"denied\" and the policy code POL-30D, so that the call is not seen as a failure and retries stop.",
-          "Block these calls in a PreToolUse hook that routes out-of-window refunds to escalate_to_human, so that the agent does not handle the policy itself.",
-          "Return isError: true with errorCategory \"business\", isRetryable: false, and a customer-friendly note on the 30-day rule for the agent to relay."
+          "search_docs returns short snippets instead of full pages, so Claude cannot judge relevance from them and keeps searching until a snippet looks complete.",
+          "The search_docs description lacks example queries and boundaries, so Claude phrases its queries poorly and needs several attempts to land on a section.",
+          "The server offers too few tools; adding list_sections and get_page tools would let Claude browse the hierarchy level by level instead of guessing terms.",
+          "The documentation hierarchy is reachable only through search calls; nothing exposes it as a resource catalog Claude can see before it starts searching."
         ],
         "correta": 3,
-        "explicacao": "An out-of-window refund is a business rule violation, and retrying cannot change the outcome. Reporting it as a business error with isRetryable: false stops the wasted retries, and a customer-friendly explanation lets the agent tell the customer about the 30-day rule and the options that remain. Misclassifying it, hiding it behind a code, or escalating every case all leave the agent unable to explain the policy.",
+        "explicacao": "The guide treats MCP resources as the mechanism for exposing content catalogs such as documentation hierarchies, giving the agent visibility into what exists without exploratory tool calls. Here Claude has no map of the 600 pages, so every session starts with guessed searches. Exposing the hierarchy, including page status, as a resource lets Claude go straight to the right page.",
         "feedbacks": [
-          "Tempting because the agent could double-check its input, but nothing in the request is malformed; calling it validation invites the agent to resubmit a call the policy will always reject.",
-          "Tempting because a non-error result would stop the retries, but an opaque code gives the agent nothing to tell the customer, so it still improvises an explanation.",
-          "Tempting because hooks give deterministic control, but the tool already enforces the rule; escalating every out-of-window case sends routine policy answers to humans and lowers resolution.",
-          "Correct. A business category, isRetryable: false, and a customer-friendly explanation let the agent stop retrying and explain the policy."
+          "Returning full pages would add tokens to every call but still would not tell Claude which pages exist; the guessing comes from missing visibility, not snippet size.",
+          "A better description can improve query phrasing, but Claude would still be searching blind through a hierarchy it cannot see.",
+          "Browsing tools are a reasonable instinct, yet they keep the exploration as tool calls in every session, which is exactly the pattern resources are meant to remove.",
+          "Correct. A documentation hierarchy is a content catalog, which the guide places in MCP resources to avoid exploratory calls."
         ],
-        "cenario": 1,
+        "cenario": 2,
         "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-S2"
+        "ts": "2.4",
+        "bullet": "2.4-K4"
       },
       {
-        "pergunta": "A fintech payments startup's developer productivity agent has two MCP tools: analyze_logs (\"Analyzes log data\") and analyze_events (\"Analyzes event data\"). analyze_logs searches application logs in the observability stack; analyze_events reads payment-provider webhook deliveries from the event store. When engineers ask why a webhook was not processed, the agent calls analyze_logs 31% of the time and reports that nothing was found. Which TWO changes most directly remove the overlap? Choose TWO.",
+        "pergunta": "An engineer at a municipal transit agency asks Claude Code to change the retry delay for the fare-gateway client only. In services.yaml, the line retry_delay_ms: 200 appears in 6 different service blocks. The Edit call fails with an error saying the text was found 6 times, and Claude retries the identical Edit twice more with the same result. Which statement about this behavior is correct?",
         "opcoes": [
-          "Add a system prompt rule sending any question that mentions \"webhook\" or \"event\" to analyze_events, so that those questions skip analyze_logs.",
-          "Rename analyze_events to query_webhook_deliveries, so that the tool's name states the specific data source it reads rather than a generic verb.",
-          "Add six few-shot examples of webhook questions answered with analyze_events, so that the agent learns the routing pattern from demonstrations.",
-          "Merge both tools into a single analyze_data tool with a source parameter, so that the agent no longer has to choose between two similar-looking tools.",
-          "Rewrite both descriptions to state each data source, input format, and when to use the other tool instead, so that their purposes stop overlapping."
+          "The Edit failed because services.yaml had not been read earlier in the session; running Read first and then repeating the same Edit call would let the change succeed.",
+          "Edit needs anchor text that appears exactly once; reading the full file and writing back a version with only the fare-gateway block changed is a reliable fallback.",
+          "Edit matches its anchor approximately, so the retries fail on whitespace differences; normalizing the indentation in the anchor would let one of them succeed.",
+          "Edit replaces every occurrence by default and refused to change all six blocks; running sed through Bash on the fare-gateway line is the expected fallback."
+        ],
+        "correta": 1,
+        "explicacao": "Edit performs targeted modifications using unique text matching, so an anchor that appears in six blocks cannot identify the one to change, and repeating the identical call keeps failing. The guide's fallback is to Read the full file and Write back the modified content, changing only the intended block.",
+        "feedbacks": [
+          "Plausible because some tools require a prior read, but the error states the text was found 6 times; the problem is uniqueness, not a missing read.",
+          "Correct. Unique anchor text is Edit's requirement; Read + Write is the reliable fallback when that requirement cannot be met.",
+          "Edit uses exact matching, not fuzzy matching; whitespace mismatches cause a not-found failure, while this error reports six matches.",
+          "Edit does not replace all occurrences by default, and sed on a pattern or a line number is fragile when the same line exists in six blocks."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S3"
+      },
+      {
+        "pergunta": "At a municipal transit agency, support tickets quote the error text \"Stop ID not found in active feed\", which is defined as a string constant somewhere in the code. A developer wants Claude Code to find every place in the 4,000-file repository that produces this message. A teammate proposes having Claude run Glob with **/*stop*.* and then read the matched files, since stop-related code usually lives in files named after stops. How should you evaluate this proposal?",
+        "opcoes": [
+          "Reject it: the message is inside file contents, so Grep for the message text finds every file that produces it regardless of how that file is named.",
+          "Accept it: naming conventions are enforced in this repository, so files that produce stop errors will match the pattern and reading them is thorough.",
+          "Accept it with a change: run Glob with a broader pattern such as **/*.* first, then Read each matched file in batches and look for the message.",
+          "Reject it: have Claude Read every source file under services/ first, so it builds a full picture of where errors are raised before answering."
+        ],
+        "correta": 0,
+        "explicacao": "Grep searches file contents for patterns such as error messages, function names, or imports; Glob only matches file paths. The message can be produced by any file, such as a shared errors module, a validator, or a controller, whatever its name. Grep for the literal text is the direct and complete approach.",
+        "feedbacks": [
+          "Correct. Locating an error message is a content search, which is exactly what Grep is for.",
+          "Relies on a naming convention to answer a content question; any file that raises the message under another name is silently missed.",
+          "Reading every matched file reproduces a content search by hand and floods the context; Grep performs that search directly.",
+          "Reading all files upfront wastes context and still depends on scanning by eye; a content search with Grep finds the occurrences first."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-K1"
+      },
+      {
+        "pergunta": "A consulting firm is building a customer support resolution agent with the Claude Agent SDK for a subscription retailer; backend access goes through custom MCP tools. Traces show that at the start of most conversations the agent spends 4 to 6 calls on search_policies and list_order_statuses just to learn which refund policies and order status codes exist, adding about 3 seconds before it addresses the customer. Which changes best give the agent visibility into this data without exploratory calls? Choose TWO.",
+        "opcoes": [
+          "Add a get_policy_catalog tool and instruct the agent in the system prompt to call it first in every conversation, before any other tool.",
+          "Expose the refund policy index (titles, sections, effective dates) as an MCP resource that the agent reads when a conversation starts.",
+          "Cache search_policies results across conversations and replay them for new customers whose questions look similar to earlier ones.",
+          "Paste the full text of all 140 refund policy documents into the system prompt, so that the agent never needs to search for a policy.",
+          "Expose the catalog of order status codes and their meanings as an MCP resource instead of discovering them through list_order_statuses."
         ],
         "corretas": [
           1,
           4
         ],
-        "explicacao": "Two tools with generic names and near-identical descriptions overlap functionally, so the agent cannot tell which data source each one reads. Renaming the tool to state its source and rewriting both descriptions with inputs and boundaries removes the overlap at the interface. Keyword rules and few-shot examples treat the symptom, and consolidation changes more than the problem needs.",
+        "explicacao": "Refund policies and status codes are content catalogs: they describe what data exists rather than performing actions. Exposing them as MCP resources gives the agent that visibility up front and removes the exploratory calls at the start of each conversation. Actions such as process_refund remain tools.",
         "feedbacks": [
-          "Tempting because it routes webhook questions quickly, but keyword-triggered rules create unintended associations (log questions that mention events, for example) and override descriptions.",
-          "Correct. A name that states the specific source tells the model what the tool is for, which removes much of the overlap.",
-          "Tempting because examples demonstrate routing, but they add tokens without fixing the overlapping definitions that cause the confusion.",
-          "Tempting because one tool removes the choice, but merging is a larger architectural change than needed and pushes the same source decision into a parameter.",
-          "Correct. Descriptions that state each data source, the input format, and when to use the other tool make the boundary explicit."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-S2"
-      },
-      {
-        "pergunta": "A cybersecurity vendor expanded its support agent into an \"all-in-one\" assistant: alongside get_customer, lookup_order, process_refund, and escalate_to_human, it now has 15 more tools for license management, threat-intel lookups, sandbox reports, and billing. Every tool description follows the same template, with input formats and boundaries. Correct tool selection fell from 95% to 79%, and the errors are spread across many different tool pairs rather than concentrated on one. What is the most likely root cause?",
-        "opcoes": [
-          "The new billing tools overlap with process_refund, and their near-identical descriptions send refund requests to the wrong tool.",
-          "The system prompt grew to explain each new tool family, and its keyword-based rules now conflict with the tool descriptions.",
-          "The new tool families lack few-shot examples, so the agent has no demonstrations of when to prefer them over the original tools.",
-          "With 19 tools in one agent, each selection has more options to weigh, which degrades reliability across the tool set."
-        ],
-        "correta": 3,
-        "explicacao": "The descriptions follow a solid template, and the errors are spread across many tool pairs instead of concentrating on one overlap. That pattern points to tool count: 19 tools in one agent make every selection decision more complex. The fix is to distribute the tools across specialized agents, each with a small, role-relevant set.",
-        "feedbacks": [
-          "Tempting because overlapping descriptions cause misrouting, but an overlap would concentrate errors on specific pairs; here they are spread across the whole tool set.",
-          "Tempting because keyword rules can override descriptions, but nothing points to a wording pattern, and the degradation is broad rather than tied to particular words.",
-          "Tempting because few-shot examples help with ambiguous cases, but adding examples for 15 tools does not shrink the size of each decision.",
-          "Correct. Too many tools in one agent degrade selection reliability across the board; distribute them so each agent has a small, focused set."
+          "Moves the exploration into a single tool call but still spends a call in every conversation, which is the pattern resources are designed to replace.",
+          "Correct. A policy index is a content catalog; as a resource it shows the agent what exists without a search call.",
+          "Speculative caching across customers risks serving stale or wrong policy data and still does not show the agent what exists.",
+          "Gives visibility at a high, constant token cost and goes stale when policies change; a catalog resource is targeted and current.",
+          "Correct. Status codes and their meanings are reference catalog data that fits an MCP resource."
         ],
         "cenario": 1,
         "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-K1"
+        "ts": "2.4",
+        "bullet": "2.4-S5"
       },
       {
-        "pergunta": "A cybersecurity vendor's support agent can reset a customer's MFA device through an MCP tool. The tool maps failures as follows: identity-provider timeout → transient, isRetryable: true; malformed device ID → validation; account managed by an enterprise tenant whose admin must approve resets → transient, isRetryable: true. Logs show the agent retrying tenant-managed resets six times over three minutes and then telling customers that the service is temporarily down. What is the flaw in this implementation?",
+        "pergunta": "At an industrial IoT company, 30 engineers share a repository whose .mcp.json defines the team's MCP servers for Claude Code and for the internal Agent SDK productivity agent. One engineer wants to try an experimental MCP server that wraps her vibration-analysis notebooks. It is unstable, only she needs it, and she wants it available in all of her repositories without affecting teammates. Which actions fit this situation? Choose TWO.",
         "opcoes": [
-          "Identity-provider timeouts should be non-retryable, because repeated reset attempts can lock the customer's account and open a security incident.",
-          "The admin-approval case is a permission error reported as transient, so the agent keeps retrying instead of explaining who must approve the reset.",
-          "The tool should return an empty successful result when approval is missing, so that the agent does not treat a policy-controlled reset as a failure.",
-          "The agent has no retry limit, and adding a maximum of two retries to its system prompt would remove the long delay before it answers the customer."
-        ],
-        "correta": 1,
-        "explicacao": "Admin approval is a permission problem: no number of retries will succeed until the tenant admin approves. Labeling it transient and retryable makes the agent wait through six retries and then misinform the customer. Classifying it as a permission error (isRetryable: false, with a description of who must approve) lets the agent explain the next step right away.",
-        "feedbacks": [
-          "Tempting because security systems can lock accounts, but a timeout is the textbook transient error, and retrying it with a delay is appropriate.",
-          "Correct. The approval case is a permission error marked as transient, so the agent retries something that can never succeed and gives a wrong explanation.",
-          "Tempting because it avoids a failure path, but an empty success hides the real reason and leaves the agent unable to tell the customer what is needed.",
-          "Tempting because it shortens the delay, but the agent would still retry a call that cannot succeed and still report a temporary outage."
-        ],
-        "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-K2"
-      },
-      {
-        "pergunta": "A cybersecurity vendor runs an intake step before its support agent: one Messages API call reads the customer's first message and must end in one of three tools, route_to_billing, route_to_technical, or escalate_to_human. The request sets tool_choice to {\"type\": \"auto\"}. In 6% of calls the response has stop_reason \"end_turn\" and contains only text (for example, \"It sounds like a billing question\"), so the router drops those tickets into a default queue. Which statement about this behavior is correct?",
-        "opcoes": [
-          "With \"auto\" the model may answer in text; tool_choice {\"type\": \"any\"} guarantees a call to one of the three tools and still lets the model pick one.",
-          "Only a forced tool selection guarantees a tool call; {\"type\": \"any\"} raises the likelihood of a call but still allows the model to reply in text.",
-          "The text replies show that the response was cut off before the tool call, so raising max_tokens would let the model reach the routing decision.",
-          "A system prompt rule stating that each reply must call a routing tool guarantees a tool call as reliably as changing the tool_choice setting."
-        ],
-        "correta": 0,
-        "explicacao": "With tool_choice \"auto,\" the model may return text instead of calling a tool, which is exactly what happens in 6% of intake calls. Setting tool_choice to \"any\" guarantees that the model calls one of the provided tools while leaving the choice among them to the model. A forced tool would remove that routing choice, and neither a prompt rule nor max_tokens guarantees a call.",
-        "feedbacks": [
-          "Correct. \"any\" guarantees a tool call and still lets the model choose among the three routing tools.",
-          "Tempting because forced selection does guarantee a call, but \"any\" guarantees one too; forcing a single named tool would remove the routing decision.",
-          "Tempting because truncation can cut responses short, but a truncated response ends with stop_reason \"max_tokens,\" not \"end_turn\"; these are complete text answers.",
-          "Tempting because it is a quick change, but prompt instructions are probabilistic; tool_choice is the setting that guarantees a tool call."
-        ],
-        "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-S5"
-      },
-      {
-        "pergunta": "A cybersecurity vendor's support agent has lookup_license (\"Looks up license information\") and lookup_subscription (\"Looks up subscription information\"). In 17% of license questions the agent calls lookup_subscription, and it sometimes passes order numbers to lookup_license. A teammate proposes rewriting both descriptions to state the accepted inputs (license keys such as XXXX-XXXX-XXXX-XXXX versus subscription IDs), sample questions (\"is my endpoint license still active?\"), edge cases (expired and trial keys return a status, not an error), and when to use the other tool instead. How should you evaluate this proposal?",
-        "opcoes": [
-          "Adopt it: input formats, sample questions, edge cases, and boundaries are what the model relies on when it chooses between two similar tools.",
-          "Adopt only the boundary sentences; input formats and sample questions belong in the input schema and in few-shot examples, not in descriptions.",
-          "Reject it: longer descriptions cost tokens on each call, and a routing layer that matches license-key and order-number patterns is more dependable.",
-          "Reject it: merge lookup_license and lookup_subscription into a single lookup tool, so that the agent does not have to choose between the two of them."
-        ],
-        "correta": 0,
-        "explicacao": "Descriptions are the main signal the model uses to choose between similar tools. The proposal adds exactly what minimal descriptions lack: accepted input formats, sample questions, edge cases, and the boundary with the similar tool. It is the low-effort, high-leverage fix; a routing layer or consolidation is a heavier change that a description problem does not warrant.",
-        "feedbacks": [
-          "Correct. Input formats, sample questions, edge cases, and boundaries are what let the model tell lookup_license from lookup_subscription.",
-          "Tempting because schemas and few-shot examples have their roles, but the description is the primary selection mechanism, and formats and examples belong there too.",
-          "Tempting because pattern matching looks deterministic, but a routing layer is over-engineered for a description problem and bypasses the model's language understanding.",
-          "Tempting because one tool removes the choice, but consolidation is a larger change than a first fix warrants when the descriptions are simply inadequate."
-        ],
-        "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-K2"
-      },
-      {
-        "pergunta": "An ed-tech platform extracts data from uploaded course documents with two extraction tools: extract_syllabus (\"Extracts course information\") and extract_catalog_entry (\"Extracts course data\"). For 14% of syllabi the model calls extract_catalog_entry, so weekly schedules and grading policies are lost. The output schemas are consumed by three other teams and cannot change this quarter, and the team cannot add a new pipeline stage. What is the most effective fix within these constraints?",
-        "opcoes": [
-          "Set tool_choice to {\"type\": \"any\"} to guarantee that each uploaded document produces a tool call instead of a free-text answer.",
-          "Rewrite each description to state the document it handles, the input it expects, what it outputs, and when to use the other tool.",
-          "Add a classification call that detects the document type, then force the matching extraction tool in a second call per document.",
-          "Merge both tools into one extract_course tool whose schema holds the fields from both, with the fields that differ marked optional."
-        ],
-        "correta": 1,
-        "explicacao": "The two extraction tools have near-identical one-line descriptions, so the model cannot tell a syllabus tool from a catalog-entry tool. Rewriting each description to state which document it handles, its expected input, its output, and when to use the other tool fixes selection without changing schemas or adding stages. tool_choice \"any\" only guarantees that some tool is called, not the right one.",
-        "feedbacks": [
-          "Tempting because \"any\" is right when several extraction schemas exist and the document type is unknown, but the model already calls a tool; the problem is which one.",
-          "Correct. Differentiating purpose, inputs, outputs, and when to use each tool fixes selection within both constraints.",
-          "Tempting because classifying and then forcing a tool is reliable, but it adds the pipeline stage the team cannot build, and better descriptions have not been tried yet.",
-          "Tempting because one tool removes the choice, but it changes the schemas that three teams consume, which the constraints rule out."
-        ],
-        "cenario": 6,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-S1"
-      },
-      {
-        "pergunta": "In a news publisher's research system, the document analysis subagent reads articles through an MCP tool, get_archive_article. When an article is under embargo, the archive returns 403 and the tool sends back the text \"Error: access denied\" as a normal result. In 5% of reports the synthesis step quotes \"access denied\" as article content or lists the error message as a finding. What is the most effective first step?",
-        "opcoes": [
-          "Instruct the analysis subagent to discard any article text that begins with \"Error\" and to record that article as a missing source in its structured findings.",
-          "Return the failure with isError: true and structured metadata (category, retryability, description), so that the agent knows the call failed and why.",
-          "Throw an exception in the MCP server so that the tool call fails at the protocol level and the analysis run stops before synthesis can use it.",
-          "Add a PostToolUse hook that removes any tool result shorter than 200 characters before the analysis subagent processes the content."
-        ],
-        "correta": 1,
-        "explicacao": "The tool reports an access failure as successful content, so the agent has no way to know the call failed. The MCP isError flag exists to communicate tool failures back to the agent; with structured metadata (category, retryability, description) the agent can treat the article as unavailable, note the gap, or try another source. Text filters and hooks patch the symptom, and aborting the run throws away the rest of the analysis.",
-        "feedbacks": [
-          "Tempting because it is simple, but it depends on the model parsing message text, and any change in wording breaks it; the tool should signal the failure explicitly.",
-          "Correct. isError: true with structured metadata tells the agent the call failed and how to recover, instead of handing it an error string as content.",
-          "Tempting because a hard failure is unambiguous, but stopping the run discards the remaining analysis; returning the error in the tool result lets the agent continue and note the gap.",
-          "Tempting because a hook filters deterministically, but length is a poor proxy, it silently drops data, and the agent never learns that the source was embargoed."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-K1"
-      },
-      {
-        "pergunta": "A fintech payments startup's developer productivity agent uses find_callers(symbol) on an internal code-search MCP server that indexes 300 repositories. When the index service is unreachable, the tool returns {\"callers\": []}. Last week the agent concluded that the deprecated settleBatchV1 had no callers, generated a PR deleting it, and two services broke after the merge. The team is choosing how find_callers should behave from now on. Which design should it adopt?",
-        "opcoes": [
-          "Return the empty list with an added warning field, and keep the result marked as successful so that index outages do not interrupt the agent loop.",
-          "Retry inside the server until the index responds, so that the agent receives only complete results and does not have to handle an outage itself.",
-          "Keep the current response and instruct the agent to call find_callers twice and compare the results before it trusts an empty list of callers.",
-          "Return isError: true with a transient category when the index is unreachable, and keep an empty callers list for searches that found no match."
-        ],
-        "correta": 3,
-        "explicacao": "An unreachable index is an access failure, not a search that found nothing. Returning it as an empty success led the agent to conclude that the function was unused. The tool should return isError: true with a transient category when it cannot search, and an empty list only when the search completed with no matches, so the agent can retry or report the gap instead of acting on false information.",
-        "feedbacks": [
-          "Tempting because it adds a signal without changing the contract, but a success-marked empty list still reads as \"no callers,\" and the agent can easily act on it.",
-          "Tempting because the agent would only see real results, but retrying until the index returns can hang the session during an outage and takes the decision away from the agent.",
-          "Tempting because a second call might catch a flaky index, but it doubles the cost, an outage returns two identical empty lists, and the ambiguity remains.",
-          "Correct. Separating an access failure (isError, transient) from a valid empty result lets the agent make the right decision."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-S4"
-      },
-      {
-        "pergunta": "An ed-tech platform extracts course records from transcripts sent by 400 universities. An extraction subagent fills the schema, and a catalog subagent with six tools maps course codes such as \"CS 101\" to canonical catalog IDs, which the extraction subagent needs to validate credit hours. 72% of documents need at least one code mapped; about 90% of those codes are exact matches in the catalog table, while renamed or merged courses need the catalog subagent's fuzzy search and registrar lookups. Every mapping now goes extraction → coordinator → catalog subagent → coordinator → extraction. The requirement is to cut per-document latency by 30% without lowering mapping accuracy. What should you change?",
-        "opcoes": [
-          "Give the extraction subagent a scoped lookup_catalog_id tool for exact matches, and keep sending renamed or merged courses through the coordinator.",
-          "Give the extraction subagent the full set of six catalog tools, so that it can resolve each course code on its own without leaving its context.",
-          "Have the extraction subagent collect the unresolved codes and send them to the coordinator as one batch after it finishes the document.",
-          "Preload the course catalogs of the 400 universities into the extraction subagent's prompt, so that each code can be matched in context."
-        ],
-        "correta": 0,
-        "explicacao": "Most mappings are exact matches that need only a simple lookup, yet each one costs four hops through the coordinator. A scoped cross-role tool for that frequent, simple need removes the round trips in the common case, while renamed or merged courses still go through the coordinator to the catalog subagent's specialized tools. This keeps least privilege and preserves accuracy on the hard cases.",
-        "feedbacks": [
-          "Correct. A narrow lookup tool covers the frequent exact-match case, and complex mappings keep using the coordinator and the catalog subagent.",
-          "Tempting because it removes every round trip, but it over-provisions the extraction subagent with tools outside its specialization, which degrades selection and invites misuse.",
-          "Tempting because batching reduces hops, but credit-hour validation depends on the canonical IDs, so deferring every mapping to the end blocks the rest of the extraction.",
-          "Tempting because it avoids lookups entirely, but loading 400 catalogs floods the context with irrelevant data and degrades extraction quality."
-        ],
-        "cenario": 6,
-        "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-S3"
-      },
-      {
-        "pergunta": "In a news publisher's research system, every subagent tool reports failures as {\"status\": \"error\", \"message\": \"Operation failed\"}. Over a month, the coordinator re-dispatched queries against paywalled sources three times each, and none of those attempts ever succeeded, while it dropped a wire feed after one brief timeout even though the same query succeeded 20 seconds later. 15% of reports have coverage gaps. What is the most likely root cause?",
-        "opcoes": [
-          "Every failure looks the same, so the agents cannot tell a permanent restriction from a temporary outage and pick the wrong recovery for each.",
-          "The coordinator's retry policy is miscalibrated: three attempts are too many for paywalled sources and too few for feeds with brief timeouts.",
-          "The subagents do not retry locally with backoff, so every transient failure reaches the coordinator and uses up its limited retry budget.",
-          "The coordinator decomposes each topic too narrowly, so every failed source leaves an entire subtopic without any alternative coverage."
-        ],
-        "correta": 0,
-        "explicacao": "The coordinator wastes retries on paywalled sources and abandons transient timeouts because every failure says \"Operation failed.\" Uniform error responses hide whether a failure is permanent or temporary, so the agents cannot choose the right recovery. Structured errors with a category and an isRetryable flag would separate the two cases.",
-        "feedbacks": [
-          "Correct. Identical failure responses keep the agents from telling permanent access restrictions apart from transient outages.",
-          "Tempting because the retry counts look wrong, but no single number fits both cases; the coordinator needs to know which kind of failure occurred.",
-          "Tempting because local recovery is good practice, but it would not stop the repeated retries against paywalls, which never succeed no matter who retries.",
-          "Tempting because narrow decomposition does cause coverage gaps, but the evidence shows gaps from mishandled failures, not from missing subtopics."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.2",
-        "bullet": "2.2-K3"
-      },
-      {
-        "pergunta": "A news publisher's fact-checking research system has a document analysis subagent with five tools, including summarize_article (\"Summarizes an article and its key claims\") and extract_claims (\"Extracts the key claims from an article\"). Both accept a URL or raw text. When the coordinator asks for claim lists with exact quotes for verification, the subagent calls summarize_article 35% of the time, and the verification step cannot match the paraphrased claims to the source text. What is the flaw in this design?",
-        "opcoes": [
-          "The verification step demands exact string matches instead of fuzzy-matching the paraphrased claims against the source article.",
-          "Five tools on one subagent exceed what it can choose from reliably, so the analysis tools belong in two separate subagents.",
-          "The two descriptions overlap almost completely and never state the output format or when to use one instead of the other.",
-          "The subagent does not force tool_choice to extract_claims on every request, which is what would guarantee exact quotes."
-        ],
-        "correta": 2,
-        "explicacao": "Both tools promise the \"key claims\" of an article and accept the same inputs, so their descriptions overlap almost entirely. Without stating the outputs (a paraphrased summary versus exact quoted claims) and when to use each, the model misroutes between them. Rewrite or rename the tools so the boundary is explicit.",
-        "feedbacks": [
-          "Tempting because it would make verification more tolerant, but it shifts the cost downstream and weakens verification while the misrouting continues.",
-          "Tempting because tool count affects selection, but five tools is within the 4–5 range the guide treats as reliable, and the errors concentrate on one overlapping pair.",
-          "Correct. The overlapping descriptions do not distinguish outputs or usage, which is what causes the misrouting.",
-          "Tempting because forcing a tool guarantees that call, but it would also break the summary requests that this subagent legitimately handles."
-        ],
-        "cenario": 3,
-        "dominio": "D2",
-        "ts": "2.1",
-        "bullet": "2.1-K3"
-      },
-      {
-        "pergunta": "An ed-tech platform's extraction system has a coordinator and three subagents: intake (classifies documents), extractor (fills schemas), and validator (checks records against enrollment rules). All three are defined with the same 12 tools, including write_to_sis (writes to the student information system) and email_registrar. The validator has started calling write_to_sis to \"fix\" records itself, and the extractor emails registrars about 40 times a week when a field is missing. Which TWO changes best prevent this? Choose TWO.",
-        "opcoes": [
-          "Keep write_to_sis and email_registrar with the coordinator, so that subagents report needed fixes and missing fields instead of acting.",
-          "Move the three subagents to a more capable model that follows role instructions closely, so that they stop using tools outside their roles.",
-          "Define each subagent's tools in its own AgentDefinition, so that the validator and the extractor receive only the tools their roles require.",
-          "Add a rule to each subagent's system prompt saying it must not write to the SIS or contact registrars, so that the roles stay separate.",
-          "Rewrite the write_to_sis and email_registrar descriptions to name the agent that should use them, so that other agents stop picking them."
+          "Leave the team's .mcp.json unchanged for now, and propose the server there through a pull request once it is stable and useful.",
+          "Configure the server in her user-level ~/.claude.json, so it is available in every project she opens and is never committed.",
+          "Add the server to the repository's .mcp.json on a personal feature branch, so it loads only while she has that branch checked out locally.",
+          "Describe the server's command and arguments in her ~/.claude/CLAUDE.md, so that Claude starts it whenever one of her tasks needs it.",
+          "Add the server to .mcp.json with an \"experimental\": true flag, so Claude Code loads it only for the engineer who added the entry."
         ],
         "corretas": [
           0,
-          2
+          1
         ],
-        "explicacao": "The subagents act outside their roles because each one holds the full tool set, including side-effecting tools. Restricting each subagent's tools in its AgentDefinition to what its role needs, and keeping write and contact tools with the coordinator, prevents cross-specialization misuse; subagents then report fixes and missing fields instead of acting on them. Prompt rules, descriptions, and bigger models all leave the capability in place.",
+        "explicacao": "The guide places personal or experimental MCP servers in user-scoped ~/.claude.json and shared team tooling in the project's .mcp.json. User-level configuration is available across her projects and is not version-controlled, so teammates are unaffected. If the server later becomes useful to the team, it moves to .mcp.json through normal review.",
         "feedbacks": [
-          "Correct. Keeping side-effecting tools with the coordinator routes those actions through a single, controlled point.",
-          "Tempting because stronger models follow instructions more closely, but the over-provisioned tool sets remain, and each decision still has options the role never needs.",
-          "Correct. Per-subagent tool restrictions in the AgentDefinition limit each one to the tools of its role.",
-          "Tempting because it is quick, but prompt rules are probabilistic while the tools stay available, so the misuse can continue.",
-          "Tempting because descriptions guide selection, but they cannot restrict which agent calls a tool; the capability stays with every subagent."
+          "Correct. The shared file stays reserved for team tooling, and promoting the server later through a pull request keeps it reviewed.",
+          "Correct. User-level ~/.claude.json is the guide's place for personal and experimental servers.",
+          "A branch keeps it out of main but ties it to one repository and to whoever checks out the branch; she wants it everywhere and only for herself.",
+          "CLAUDE.md holds instructions for the model, not MCP server configuration; describing a command does not connect a server.",
+          "There is no such flag; anything in the shared .mcp.json is loaded for everyone who pulls the file."
         ],
-        "cenario": 6,
+        "cenario": 4,
         "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-S1"
+        "ts": "2.4",
+        "bullet": "2.4-S2"
       },
       {
-        "pergunta": "A news publisher's document analysis subagent uses a generic http_get(url) tool. Logs show it sometimes fetches search-result pages, paywall login screens, and social media threads, then analyzes them as if they were source documents; 8% of the analyzed \"documents\" are neither articles nor reports. An engineer proposes replacing http_get with load_publication(url), which accepts only domains on the newsroom's source allowlist, checks that the response is an article or a PDF report, and otherwise returns a validation error naming the reason. How should you evaluate this proposal?",
+        "pergunta": "A transit agency team is changing the signature of computeFare() in pricing/engine.ts. Claude Code ran Grep for computeFare, found 3 call sites, and updated them all, yet the build then broke in 11 other files. It turns out pricing/index.ts re-exports the function as calculateTripFare and legacyFare. Before retrying the change, the team debates how Claude should find every usage. Which approach should they choose?",
         "opcoes": [
-          "Reject it: keep http_get and list the approved domains in the subagent's system prompt, so that the list can change without a deployment.",
-          "Reject it: keep http_get and add a PostToolUse hook that discards pages that are not articles, so that the analysis step does not see them.",
-          "Adopt it, but keep http_get as a fallback for sources outside the allowlist, so that the subagent keeps its full source coverage.",
-          "Adopt it: the narrower tool makes the bad fetches impossible instead of discouraged, and its errors tell the agent why a URL was refused."
+          "Grep again for computeFare with a case-insensitive pattern across all packages, so that differently capitalized spellings of the call are also found.",
+          "Glob for **/*fare*.ts to list every file whose name suggests fare logic, then have Claude Read each of those files to find the remaining calls.",
+          "Read the wrapper module to list every name under which the function is exported, then Grep the codebase for each one of those names.",
+          "Have Claude Read every file in the src/ tree before editing, so it sees each usage directly, whatever name or import path that file uses."
+        ],
+        "correta": 2,
+        "explicacao": "When a wrapper module re-exports a function under other names, consumers call those names, so a Grep for the original name misses them. The guide's approach is to identify all exported names first and then search for each across the codebase. This finds the 11 files without loading the whole tree into context.",
+        "feedbacks": [
+          "Case-insensitivity does not catch aliases; calculateTripFare and legacyFare share no spelling with computeFare.",
+          "File names say nothing about which code calls the function; consumers in other folders are missed and the reads cost context.",
+          "Correct. Listing the wrapper's exported names and searching for each one traces usage through the re-export.",
+          "Reading the whole tree upfront floods the context and dilutes attention; a targeted Grep for each exported name is precise."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S5"
+      },
+      {
+        "pergunta": "Your Agent SDK productivity agent at an industrial IoT company updates device configuration files of 1,500 to 2,500 lines with many operator comments. Today it reads a file and uses Write to save the full new version, even to change a single threshold. Reviewers report diffs touching hundreds of lines and, in 2 of the last 40 changes, deleted comments. The new requirement is that a single-setting change touches only that setting. What should you change?",
+        "opcoes": [
+          "Have the agent use Edit for single-setting changes to existing files, matching unique anchor text around the setting, and keep Write for new files.",
+          "Keep Write, but instruct the agent in the system prompt to reproduce every unchanged line and comment exactly as it appeared in the original.",
+          "Have the agent apply single-setting changes through Bash with sed commands on the setting name, so only matching lines in the file are rewritten.",
+          "Add a hook that intercepts Write calls and rejects any whose diff exceeds 20 lines, so oversized rewrites are blocked before reviewers see them."
+        ],
+        "correta": 0,
+        "explicacao": "Read and Write operate on whole files, while Edit makes targeted modifications using unique anchor text. For a one-setting change in a large existing file, Edit changes only the matched text and leaves comments and ordering untouched, which produces the minimal diff reviewers want. Write remains the right tool for creating new files.",
+        "feedbacks": [
+          "Correct. Targeted modifications are Edit's job; Write is for full-file operations such as creating new files.",
+          "A prompt instruction is probabilistic; rewriting 2,000 lines from memory will still occasionally drop or alter comments.",
+          "sed on a setting name rewrites every matching line and bypasses the built-in editing tools; the same key can appear in several sections.",
+          "Blocking large writes stops the symptom but leaves the agent without a way to make the small change; the fix is choosing the right tool."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-K3"
+      },
+      {
+        "pergunta": "A transit agency's developers use two MCP servers in Claude Code, both written in-house: jira-mcp, which wraps their standard Jira Cloud instance, and gtfs-validator, which runs the agency's own feed-quality rules. Over 4 months, jira-mcp broke after three Jira API changes, still lacks sprint and custom-field support, and costs two engineers about a day per week. gtfs-validator has needed almost no maintenance. What is the most likely root cause of the Jira problems?",
+        "opcoes": [
+          "jira-mcp's tool descriptions are too short, so Claude calls the wrong Jira tools and developers spend their time investigating the failed calls.",
+          "The team built and maintains its own server for a standard integration that existing community Jira MCP servers already cover and keep current.",
+          "jira-mcp is configured in the project's .mcp.json, so every developer's session hits it; per-user configuration would isolate the failures.",
+          "jira-mcp returns a generic error message instead of setting isError with a category, so Claude cannot recover when the Jira API changes."
+        ],
+        "correta": 1,
+        "explicacao": "Jira is a standard integration, and the guide recommends choosing existing community MCP servers for those, reserving custom servers for team-specific workflows like the feed validator. Owning a Jira wrapper puts every API change and missing feature on the team, which matches the symptoms. Adopting a community server removes that burden while gtfs-validator stays custom.",
+        "feedbacks": [
+          "Better descriptions help tool selection, but they do not explain breakages after API changes or the missing sprint and custom-field support.",
+          "Correct. The maintenance cost comes from reimplementing a standard integration that community servers already provide.",
+          "Scope decides who receives the configuration; moving it to per-user config would spread drift without fixing the server itself.",
+          "Structured errors would improve recovery from individual failures, but they cannot keep a homemade wrapper current with Jira's API."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-S4"
+      },
+      {
+        "pergunta": "An industrial IoT company's developer productivity agent, built with the Claude Agent SDK, is configured with three MCP servers: firmware-repo, device-registry, and ticketing. To reduce token usage, a design doc proposes a select_server tool: the agent first names the server it needs, and the application restarts the session connected only to that server. Engineers' tasks often combine a ticket, a firmware diff, and a device lookup. What is the main flaw in this design?",
+        "opcoes": [
+          "The switch should be done by a hook that intercepts each tool call and connects the matching server on demand, rather than by a tool the model must call.",
+          "The three servers should first be merged into one custom MCP server, so that the agent sees a single tool list and never has to choose among servers.",
+          "select_server needs a detailed description of which tasks belong to each server, or the agent will often pick the wrong server at the start of a task.",
+          "It assumes the agent works with one server at a time, but tools from all configured servers are discovered at connection and are available together."
         ],
         "correta": 3,
-        "explicacao": "A generic http_get gives the subagent a capability far broader than its role, so it fetches pages that are not documents. Replacing it with a constrained tool that validates source URLs and content type moves the restriction into the tool itself, and validation errors explain each rejection to the agent. A prompt list, an after-the-fact filter, or keeping the generic tool as a fallback all preserve the misuse.",
+        "explicacao": "Tools from every configured MCP server are discovered when the agent connects and are available simultaneously, so the agent can combine ticketing, firmware, and registry tools in one task. The switcher adds turns, discards context on every restart, and breaks cross-server tasks to solve a problem that does not exist. Keep all three servers connected and rely on clear tool descriptions.",
         "feedbacks": [
-          "Tempting because a prompt list is easy to update, but it is probabilistic; the generic tool still lets the agent fetch anything.",
-          "Tempting because hooks are deterministic, but filtering after the fetch wastes calls and silently drops content; the constrained tool prevents the bad fetch and explains why.",
-          "Tempting because it seems to protect coverage, but keeping http_get as a fallback preserves exactly the capability that causes the misuse.",
-          "Correct. A constrained tool that validates document URLs removes the misuse at its source and returns errors the agent can act on."
+          "Moves the switching into a hook but keeps the false premise that only one server can be active; cross-server tasks still break.",
+          "Merging servers is heavy rework for nothing; the agent already sees the tools of all configured servers in one set.",
+          "A better description would make the switch more accurate, but the switch itself is unnecessary and costly.",
+          "Correct. Simultaneous access to every configured server is the default, so a selection step only adds restarts and lost context."
         ],
-        "cenario": 3,
+        "cenario": 4,
         "dominio": "D2",
-        "ts": "2.3",
-        "bullet": "2.3-S2"
+        "ts": "2.4",
+        "bullet": "2.4-K3"
+      },
+      {
+        "pergunta": "At an industrial IoT company, an engineer asks the Agent SDK productivity agent where the firmware logs \"E-4417 sensor checksum mismatch\". The agent runs Glob with **/*checksum*, gets no matches, and replies that the message does not exist in the codebase. A teammate then finds it on line 212 of telemetry/ingest/frame_parser.c. Which statement about the agent's behavior is correct?",
+        "opcoes": [
+          "The conclusion was reasonable: an empty Glob result usually means the message is assembled at runtime from a template, so no search tool could find it.",
+          "Glob missed the file because its pattern does not reach nested folders; a deeper pattern such as **/**/*checksum* would have matched frame_parser.c.",
+          "Glob matches file paths rather than contents; finding an error message calls for Grep over file contents, which finds the line whatever the file name is.",
+          "The agent should have used Read on the telemetry directory, since Read opens every file in a folder and lets the model scan their contents together."
+        ],
+        "correta": 2,
+        "explicacao": "Glob finds files by name or extension patterns and never looks inside them. frame_parser.c has no 'checksum' in its name, so an empty result says nothing about the message. Grep searches contents and is the tool for locating error messages, function callers, and imports.",
+        "feedbacks": [
+          "An empty Glob result only says that no file name matched; it is no evidence about runtime templates.",
+          "** already matches any depth; the file was missed because its name does not contain the word, not because of nesting.",
+          "Correct. This is a content search, so Grep is the right tool and file names are irrelevant.",
+          "Read loads a specific file, not a whole directory, and scanning folders by reading wastes context compared with Grep."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S1"
+      },
+      {
+        "pergunta": "A transit agency's developers connect Claude Code to an internal MCP server, code-intel, whose find_references tool resolves symbol references across all 14 service repositories, including generated API clients. Its description reads \"Finds references.\" For questions like \"who calls ScheduleBuilder.Publish?\", Claude uses Grep in the local repository about 70% of the time and misses callers in other repositories. A lead proposes adding \"Always use code-intel instead of Grep\" to the project CLAUDE.md. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: CLAUDE.md is loaded in every session, so a project-wide rule is the most direct and reliable way to make Claude pick code-intel.",
+          "Reject it, and instead deny Grep in the project permissions so that Claude has no choice but to call find_references for every search.",
+          "Reject it, and instead add a hook that rewrites every Grep call into a find_references call, so routing no longer depends on the model.",
+          "Reject it, and instead rewrite the description of find_references to explain its cross-repository, symbol-aware coverage and its output."
+        ],
+        "correta": 3,
+        "explicacao": "Claude chooses tools mainly from their descriptions, and \"Finds references.\" gives no reason to prefer the MCP tool over the familiar Grep. Describing its capabilities (cross-repository, symbol-aware, generated clients) and its outputs lets Claude choose it for caller questions while still using Grep for literal text. A blanket \"always\" rule is a keyword-style instruction that also misroutes searches Grep handles well.",
+        "feedbacks": [
+          "Tempting because it is quick, but a blanket rule does not tell Claude when the tool fits and pushes plain text searches to the wrong tool.",
+          "Removing Grep breaks legitimate content searches, such as log messages and string literals, that find_references does not handle.",
+          "A rewriting hook is over-engineered and forces symbol search onto queries that need plain text matching.",
+          "Correct. Detailed descriptions of capabilities and outputs are how the guide keeps the agent from preferring built-in tools over a more capable MCP tool."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-S3"
+      },
+      {
+        "pergunta": "A consulting firm's 9 developers build a customer support resolution agent with the Claude Agent SDK and test it from Claude Code. The backend MCP server (get_customer, lookup_order, process_refund, escalate_to_human) is currently added by each developer to their own ~/.claude.json. Three different server URLs are now in use, and a new hire spent two days without the tools. The constraints are one shared definition, reviewed changes, and no credentials in git. What is the most effective fix?",
+        "opcoes": [
+          "Publish the canonical server URL in the onboarding guide and ask every developer to update their own ~/.claude.json entry so that it matches.",
+          "Describe the backend server and its URL in the project's CLAUDE.md, so that Claude Code knows which server to connect to in every session.",
+          "Define the server once in a project-scoped .mcp.json committed to the repository, referencing its token through an environment variable.",
+          "Run a nightly script that copies a canonical ~/.claude.json to every developer machine, so that all user-level entries stay identical."
+        ],
+        "correta": 2,
+        "explicacao": "Project-level .mcp.json is the guide's place for shared team tooling: it is version-controlled, so every developer who clones or pulls gets the same reviewed definition. Credentials stay out of git through environment variable expansion. User-level ~/.claude.json is for personal or experimental servers, which is why the drift and the onboarding gap appeared.",
+        "feedbacks": [
+          "Pushes the burden onto each developer and does nothing to stop the next drift or the next onboarding gap.",
+          "CLAUDE.md gives instructions to the model; it does not configure or connect MCP servers.",
+          "Correct. A committed project .mcp.json gives one reviewed definition, and ${VAR} keeps the token out of the repository.",
+          "Overwriting personal configuration nightly is fragile, clobbers other user-level servers, and bypasses code review."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-K1"
+      },
+      {
+        "pergunta": "An engineer at an industrial IoT company asks the Agent SDK productivity agent to list every device profile in a 3,400-file monorepo before an audit. Profiles follow the naming convention <model>.profile.yaml and sit in about 60 folders. The agent ran Grep for the key \"profile:\" and returned 900 hits mixing docs, tests, and unrelated YAML files. What is the most effective first step to get the list?",
+        "opcoes": [
+          "Use Glob with the pattern **/*.profile.yaml to list every file that follows the profile naming convention, wherever it sits in the repo.",
+          "Refine the Grep to the key \"device_profile:\" and exclude the docs and tests folders, then deduplicate the matching files from the results.",
+          "Run ls -R from the repository root through Bash and have the agent scan the complete listing for file names that look like device profiles.",
+          "Spawn a subagent per top-level folder to read its YAML files and report which are device profiles, then merge what the subagents return."
+        ],
+        "correta": 0,
+        "explicacao": "The audit asks which files follow a naming pattern, which is a path question, so Glob is the direct tool: a recursive pattern returns every <model>.profile.yaml regardless of folder. Grep searches contents and returns lines matching a key, which mixes in unrelated files and can miss profiles with a different key layout.",
+        "feedbacks": [
+          "Correct. Finding files by name or extension pattern is exactly what Glob does.",
+          "Still answers a naming question with a content search; any profile with a different key layout is missed, and the results stay noisy.",
+          "Works in principle, but dumps thousands of paths into context for the model to filter by eye; Glob filters by pattern directly.",
+          "Over-engineered: several agents reading files to recover information that a single path pattern returns."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-K2"
+      },
+      {
+        "pergunta": "An industrial IoT company wants its Agent SDK productivity agent to explain how an overheating alarm travels from a sensor reading to an operator notification in a 1,800-file legacy SCADA codebase. Design 1 loads all ~240 files in alarms/, notify/, and core/ into context at the start. Design 2 has the agent search for entry points and follow the code from there. Which approach should you choose?",
+        "opcoes": [
+          "Design 2: Grep for entry points, such as where readings are compared with thresholds, Read those files, then follow imports and calls to trace the flow.",
+          "Design 1: loading the three folders upfront makes indirect calls visible from the start, so the explanation does not skip any step of the alarm flow.",
+          "Design 1, with a twist: read all ~240 files first, but have the agent summarize each into a scratchpad file before it starts answering the question.",
+          "Design 2, with a change: use Glob for files whose names contain alarm to find the entry points, then Read every match to trace the alarm flow."
+        ],
+        "correta": 0,
+        "explicacao": "The guide recommends building codebase understanding incrementally: start with Grep to find entry points, then use Read to follow imports and trace flows, rather than reading all files upfront. Loading 240 files fills the context with code unrelated to this flow and dilutes attention. Glob cannot identify entry points because it does not look at code content.",
+        "feedbacks": [
+          "Correct. Grep finds where the flow starts and Read follows it, keeping only relevant code in context.",
+          "Feels thorough, but most of the 240 files are unrelated to this alarm path, and loading them all degrades attention to the parts that matter.",
+          "Summarizing still requires reading every file upfront; the scratchpad adds cost without changing the approach.",
+          "File names do not reveal where the flow starts; entry points are found by searching code content, not file names."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S4"
+      },
+      {
+        "pergunta": "Your Agent SDK productivity agent at an industrial IoT company reads the repository's .mcp.json, which contains this entry: \"fleet-api\": { \"command\": \"npx\", \"args\": [\"-y\", \"fleet-mcp\"], \"env\": { \"FLEET_API_KEY\": \"fk_live_8c1e...\" } }. A security review requires that no credentials live in the repository, that every engineer uses their own key, and that the server definition stays shared and reviewed. What should you change?",
+        "opcoes": [
+          "Move the fleet-api entry into each engineer's ~/.claude.json with that engineer's own key, and remove it from the repository's .mcp.json.",
+          "Replace the literal value with \"${FLEET_API_KEY}\" in .mcp.json and have each engineer and the CI job define FLEET_API_KEY in their environment.",
+          "Move the key into the env block of the versioned .claude/settings.json, so that .mcp.json itself stays free of credentials and shared.",
+          "Commit a template of ~/.claude.json with a placeholder key to the repository, and have each engineer copy it home and fill in their own key."
+        ],
+        "correta": 1,
+        "explicacao": "Environment variable expansion in .mcp.json keeps the shared definition in version control while each engineer, and the CI job, supplies their own key from their environment. That satisfies all three requirements at once. Moving entries to user-level configuration keeps secrets out of git but loses the shared, reviewed definition.",
+        "feedbacks": [
+          "Meets the no-credentials rule but breaks the shared, reviewed definition; each engineer now maintains a separate copy.",
+          "Correct. ${FLEET_API_KEY} keeps the definition shared and the secret in each engineer's environment.",
+          "Only moves the secret into another committed file, and everyone would still share one key instead of using their own.",
+          "Keeps keys out of git, but what actually loads is a hand-copied user-level file that drifts; the reviewed template is not the active definition."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-S1"
+      },
+      {
+        "pergunta": "A transit agency developer asks Claude Code to update all snapshot tests for the timetable UI, which follow the naming convention *.snap.test.ts. Afterward, only 9 of the 31 such files were changed. The transcript shows Claude ran Grep for toMatchSnapshot inside src/timetable/ and edited the files it returned. The other 22 live under packages/*/__tests__/, and several of them use toMatchInlineSnapshot. What is the most likely root cause?",
+        "opcoes": [
+          "Claude's context filled up while it edited the first files, so the session stopped before reaching the snapshot tests stored in other packages.",
+          "The project lacks a path-specific rule for test files, so Claude did not know where snapshot tests are stored in this repository's folder layout.",
+          "The change should have run in plan mode, which explores every directory first and would have listed all 31 snapshot test files before editing.",
+          "Claude selected files by searching content in one folder instead of matching the naming pattern; Glob for **/*.snap.test.ts returns all 31."
+        ],
+        "correta": 3,
+        "explicacao": "The task defined its targets by file name, so the right selection is a path pattern: Glob with **/*.snap.test.ts finds every matching file in any folder. A content search for one assertion in one directory both narrowed the location and missed files using a different assertion style. Grep is for content questions; Glob is for naming patterns.",
+        "feedbacks": [
+          "Nothing points to context exhaustion: Claude edited every file its search returned; the search itself was scoped to one folder and one assertion name.",
+          "Path-specific rules load conventions while editing matching files; they do not make Claude find files it never selected.",
+          "Plan mode helps with architectural changes; this is a tool-selection problem that Glob solves directly.",
+          "Correct. Matching files by naming pattern is Glob's job, regardless of folder or assertion style."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S2"
+      },
+      {
+        "pergunta": "An industrial IoT company's Agent SDK productivity agent must change poll_interval_ms from 500 to 250 only in the [modbus-line-3] block of gateway.conf. The line poll_interval_ms = 500 appears in 9 blocks. The agent's Edit call fails with an error reporting 9 matches, and the agent repeats the same Edit twice before giving up. Which statements about this failure and how to handle it are correct? Choose TWO.",
+        "opcoes": [
+          "Loading the full file with Read and writing back the modified content with Write is a reliable fallback when Edit lacks unique anchor text.",
+          "Retrying the identical Edit call can succeed on a later attempt, because the tool picks a different occurrence of the anchor each time it runs.",
+          "Running sed -i on the poll_interval_ms line through Bash is the safest fallback, because it rewrites only the lines that match its pattern.",
+          "Edit requires its anchor text to appear exactly once in the file, so a line that is repeated across nine blocks cannot be targeted as written.",
+          "The failure means gateway.conf was not read earlier in the session, so a Read followed by the same Edit call will apply the change correctly."
+        ],
+        "corretas": [
+          0,
+          3
+        ],
+        "explicacao": "Edit makes targeted modifications using unique text matching, so an anchor that appears nine times cannot identify the block to change, and repeating the call fails the same way. The guide's fallback is Read + Write: load the full file, change only the [modbus-line-3] block, and write the result back.",
+        "feedbacks": [
+          "Correct. Read + Write is the guide's fallback when Edit cannot find unique anchor text.",
+          "Edit is deterministic; the same non-unique anchor produces the same failure every time.",
+          "The pattern matches all nine blocks, so sed would change every one of them, not only [modbus-line-3].",
+          "Correct. Uniqueness of the anchor is Edit's requirement, and the error says it was not met.",
+          "A missing read would produce a different failure; this error reports nine matches, which a Read does not change."
+        ],
+        "cenario": 4,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-K4"
+      },
+      {
+        "pergunta": "Before deprecating reserveSeat(), a transit agency developer asks Claude Code for every caller in a 5,200-file repository. Because the function is defined in booking/, Claude reads the 38 files in that folder and reports 6 callers. In review, QA finds 4 more callers in reporting/ and api/handlers/, in files whose names never mention booking. Which statement about this outcome is correct?",
+        "opcoes": [
+          "Finding callers is a content search; Grep for reserveSeat( across the repository returns every file and line that calls it, wherever the file sits.",
+          "Reading folder by folder beats Grep for callers, because Grep misses calls split across lines; Claude should have extended its reading to every folder.",
+          "Glob should have come first, using **/*booking* to find files related to the feature; reading those files would then have exposed every caller.",
+          "The missed callers show that built-in tools cannot cope with 5,200 files; finding callers reliably requires a dedicated code-index MCP server."
+        ],
+        "correta": 0,
+        "explicacao": "Callers are found by searching file contents for the function name, which is what Grep does across the whole codebase. Reading the folder where a function is defined only covers callers that happen to live nearby. Grep for the call pattern, then Read the hits that need more context.",
+        "feedbacks": [
+          "Correct. Locating all callers of a function is the guide's example of selecting Grep.",
+          "Multiline calls are an edge case; reading every folder by hand floods the context and is far less complete than a repository-wide Grep.",
+          "File names do not reveal callers; the missed ones live in files without booking in their names.",
+          "A code index can help across many repositories, but within one repository Grep finds callers directly; nothing here requires a new server."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S1"
+      },
+      {
+        "pergunta": "A consulting firm built a customer support resolution agent for a telecom client with the Claude Agent SDK. It recently exposed the plan catalog and the troubleshooting-guide hierarchy as MCP resources, cutting exploratory calls by about 60%. A teammate now proposes converting get_customer, lookup_order, process_refund, and escalate_to_human into MCP resources too, \"so the agent sees everything up front.\" How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: resources load without tool calls, so moving all four backend operations removes the remaining calls and cuts latency in every conversation.",
+          "Adopt it only for process_refund and escalate_to_human, since those are the operations whose outcomes the agent most needs to see before replying.",
+          "Reject it: resources suit content catalogs the agent reads; customer lookups and actions with side effects such as refunds should stay MCP tools.",
+          "Reject it: MCP resources are available only inside Claude Code sessions, so an Agent SDK agent would lose access to the four operations entirely."
+        ],
+        "correta": 2,
+        "explicacao": "MCP resources expose content catalogs, such as plan lists, documentation hierarchies, and issue summaries, so the agent knows what exists without exploratory calls. get_customer and lookup_order are parameterized queries, and process_refund and escalate_to_human are actions with side effects, which is what tools are for. The earlier change worked because it targeted catalogs; this one would misuse the mechanism.",
+        "feedbacks": [
+          "Misreads what resources are: a refund or an escalation is an action the agent decides to take, not content to read up front.",
+          "Those two are the clearest side-effecting actions; turning them into readable content makes no sense for the workflow.",
+          "Correct. Catalogs belong in resources; lookups and actions stay tools.",
+          "Agent SDK agents can use MCP resources; the reason to reject is the nature of these operations, not platform support."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-K4"
       }
     ]
   },
   "order": [
-    11,
-    12,
-    9,
     6,
-    18,
-    13,
-    15,
-    17,
-    8,
-    16,
-    0,
-    4,
-    1,
     19,
-    2,
-    14,
-    5,
+    11,
     10,
+    5,
+    18,
+    8,
+    3,
+    16,
+    17,
     7,
-    3
+    0,
+    14,
+    9,
+    1,
+    12,
+    13,
+    4,
+    2,
+    15
   ],
   "pos": 20,
   "answers": [
     {
       "pos": 0,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 1,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
@@ -497,28 +497,28 @@
       "pos": 4,
       "escolha": [
         0,
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 5,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 6,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
@@ -532,7 +532,8 @@
     {
       "pos": 9,
       "escolha": [
-        0
+        0,
+        3
       ],
       "acertou": true
     },
@@ -546,15 +547,14 @@
     {
       "pos": 11,
       "escolha": [
-        0,
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
@@ -568,36 +568,36 @@
     {
       "pos": 14,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 15,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 16,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 17,
       "escolha": [
-        0
+        1,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 18,
       "escolha": [
-        1,
-        4
+        1
       ],
       "acertou": true
     },
