@@ -1,481 +1,481 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-05/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-06/questions.json",
   "bank": {
-    "titulo": "Módulo 05 — Prova (estilo exame): MCP e tools nativas",
+    "titulo": "Módulo 06 — Prova (estilo exame)",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "Your developer productivity agent, built with the Claude Agent SDK for an industrial IoT company, loads MCP servers from the repository's .mcp.json. Last week the team moved the sensor-historian server from each engineer's ~/.claude.json into .mcp.json, with the header \"Authorization\": \"Bearer ${HISTORIAN_TOKEN}\". Since then, 8 of 12 engineers run the agent normally, but for the other 4 every historian tool call fails with HTTP 401. All 12 are on the same commit. What is the most likely root cause?",
+        "pergunta": "A health insurer runs a multi-agent research system that produces evidence reviews on treatments. The web search subagent sometimes reads member records from an internal claims tool to frame its queries. Compliance requires that no member identifier ever appears in an outbound web search query. The rule is in the subagent's system prompt, yet an audit of 12,000 queries found 9 that contained member IDs. Which TWO changes give the guarantee compliance is asking for? Choose TWO.",
         "opcoes": [
-          "Variable expansion in .mcp.json applies only to the env block, so the Authorization header reaches the server as the literal placeholder text for everyone.",
-          "The four engineers never defined HISTORIAN_TOKEN in their own environment, because their token only existed inside the old user-level entry they had pasted it into.",
-          "A project-scoped server authenticates with the credentials of the engineer who committed .mcp.json, and that engineer's token lacks access for some of the users.",
-          "Their agent sessions call the historian tools before the server has finished connecting, so those early requests arrive unauthenticated and the server rejects them."
-        ],
-        "correta": 1,
-        "explicacao": "${HISTORIAN_TOKEN} is expanded from the environment of whoever runs the agent, so each engineer must define the variable. The shared file works for engineers who already export it and fails with an authentication error for those whose token only lived in their old personal configuration. The fix is per-engineer environment setup, not a change to the shared file.",
-        "feedbacks": [
-          "Tempting if you assume expansion is limited to env, but the same header works for 8 engineers on the same commit, so the placeholder is being expanded wherever the variable exists.",
-          "Correct. Expansion reads each engineer's own environment; without the variable there is no token to send, which matches a consistent 401 for exactly those four users.",
-          "Misreads what a shared configuration shares: .mcp.json shares the server definition, not anyone's credential; each run expands the variable from the local environment.",
-          "A connection race would cause sporadic failures on early calls, not a 401 on every historian call for the same four people."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-K2"
-      },
-      {
-        "pergunta": "A municipal transit agency's platform team uses Claude Code daily. They built an internal MCP server for their documentation: about 600 pages organized in a hierarchy (APIs, GTFS feed specs, runbooks). The server exposes one tool, search_docs(query), which returns the top 5 matching snippets. Session logs show Claude making 7 to 11 search_docs calls with guessed keywords before it finds the right section, and sometimes citing a deprecated page. What is the main flaw in this design?",
-        "opcoes": [
-          "search_docs returns short snippets instead of full pages, so Claude cannot judge relevance from them and keeps searching until a snippet looks complete.",
-          "The search_docs description lacks example queries and boundaries, so Claude phrases its queries poorly and needs several attempts to land on a section.",
-          "The server offers too few tools; adding list_sections and get_page tools would let Claude browse the hierarchy level by level instead of guessing terms.",
-          "The documentation hierarchy is reachable only through search calls; nothing exposes it as a resource catalog Claude can see before it starts searching."
-        ],
-        "correta": 3,
-        "explicacao": "The guide treats MCP resources as the mechanism for exposing content catalogs such as documentation hierarchies, giving the agent visibility into what exists without exploratory tool calls. Here Claude has no map of the 600 pages, so every session starts with guessed searches. Exposing the hierarchy, including page status, as a resource lets Claude go straight to the right page.",
-        "feedbacks": [
-          "Returning full pages would add tokens to every call but still would not tell Claude which pages exist; the guessing comes from missing visibility, not snippet size.",
-          "A better description can improve query phrasing, but Claude would still be searching blind through a hierarchy it cannot see.",
-          "Browsing tools are a reasonable instinct, yet they keep the exploration as tool calls in every session, which is exactly the pattern resources are meant to remove.",
-          "Correct. A documentation hierarchy is a content catalog, which the guide places in MCP resources to avoid exploratory calls."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-K4"
-      },
-      {
-        "pergunta": "An engineer at a municipal transit agency asks Claude Code to change the retry delay for the fare-gateway client only. In services.yaml, the line retry_delay_ms: 200 appears in 6 different service blocks. The Edit call fails with an error saying the text was found 6 times, and Claude retries the identical Edit twice more with the same result. Which statement about this behavior is correct?",
-        "opcoes": [
-          "The Edit failed because services.yaml had not been read earlier in the session; running Read first and then repeating the same Edit call would let the change succeed.",
-          "Edit needs anchor text that appears exactly once; reading the full file and writing back a version with only the fare-gateway block changed is a reliable fallback.",
-          "Edit matches its anchor approximately, so the retries fail on whitespace differences; normalizing the indentation in the anchor would let one of them succeed.",
-          "Edit replaces every occurrence by default and refused to change all six blocks; running sed through Bash on the fare-gateway line is the expected fallback."
-        ],
-        "correta": 1,
-        "explicacao": "Edit performs targeted modifications using unique text matching, so an anchor that appears in six blocks cannot identify the one to change, and repeating the identical call keeps failing. The guide's fallback is to Read the full file and Write back the modified content, changing only the intended block.",
-        "feedbacks": [
-          "Plausible because some tools require a prior read, but the error states the text was found 6 times; the problem is uniqueness, not a missing read.",
-          "Correct. Unique anchor text is Edit's requirement; Read + Write is the reliable fallback when that requirement cannot be met.",
-          "Edit uses exact matching, not fuzzy matching; whitespace mismatches cause a not-found failure, while this error reports six matches.",
-          "Edit does not replace all occurrences by default, and sed on a pattern or a line number is fragile when the same line exists in six blocks."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S3"
-      },
-      {
-        "pergunta": "At a municipal transit agency, support tickets quote the error text \"Stop ID not found in active feed\", which is defined as a string constant somewhere in the code. A developer wants Claude Code to find every place in the 4,000-file repository that produces this message. A teammate proposes having Claude run Glob with **/*stop*.* and then read the matched files, since stop-related code usually lives in files named after stops. How should you evaluate this proposal?",
-        "opcoes": [
-          "Reject it: the message is inside file contents, so Grep for the message text finds every file that produces it regardless of how that file is named.",
-          "Accept it: naming conventions are enforced in this repository, so files that produce stop errors will match the pattern and reading them is thorough.",
-          "Accept it with a change: run Glob with a broader pattern such as **/*.* first, then Read each matched file in batches and look for the message.",
-          "Reject it: have Claude Read every source file under services/ first, so it builds a full picture of where errors are raised before answering."
-        ],
-        "correta": 0,
-        "explicacao": "Grep searches file contents for patterns such as error messages, function names, or imports; Glob only matches file paths. The message can be produced by any file, such as a shared errors module, a validator, or a controller, whatever its name. Grep for the literal text is the direct and complete approach.",
-        "feedbacks": [
-          "Correct. Locating an error message is a content search, which is exactly what Grep is for.",
-          "Relies on a naming convention to answer a content question; any file that raises the message under another name is silently missed.",
-          "Reading every matched file reproduces a content search by hand and floods the context; Grep performs that search directly.",
-          "Reading all files upfront wastes context and still depends on scanning by eye; a content search with Grep finds the occurrences first."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-K1"
-      },
-      {
-        "pergunta": "A consulting firm is building a customer support resolution agent with the Claude Agent SDK for a subscription retailer; backend access goes through custom MCP tools. Traces show that at the start of most conversations the agent spends 4 to 6 calls on search_policies and list_order_statuses just to learn which refund policies and order status codes exist, adding about 3 seconds before it addresses the customer. Which changes best give the agent visibility into this data without exploratory calls? Choose TWO.",
-        "opcoes": [
-          "Add a get_policy_catalog tool and instruct the agent in the system prompt to call it first in every conversation, before any other tool.",
-          "Expose the refund policy index (titles, sections, effective dates) as an MCP resource that the agent reads when a conversation starts.",
-          "Cache search_policies results across conversations and replay them for new customers whose questions look similar to earlier ones.",
-          "Paste the full text of all 140 refund policy documents into the system prompt, so that the agent never needs to search for a policy.",
-          "Expose the catalog of order status codes and their meanings as an MCP resource instead of discovering them through list_order_statuses."
+          "Register a PostToolUse hook on the claims tool that redacts member identifiers from its results before the subagent processes them.",
+          "Move the rule to the top of the web search subagent's system prompt and repeat it in each task the coordinator sends, so it sits next to where queries are written.",
+          "Register a PostToolUse hook on the web search tool that checks each executed query for member IDs and alerts the compliance team when one is found.",
+          "Add a hook before each search that sends the planned query to a review subagent for approval, so a second model catches identifiers the first one missed.",
+          "Register a PreToolUse hook on the web search tool that inspects every outgoing query and denies any call matching the member ID pattern, returning the reason."
         ],
         "corretas": [
-          1,
+          0,
           4
         ],
-        "explicacao": "Refund policies and status codes are content catalogs: they describe what data exists rather than performing actions. Exposing them as MCP resources gives the agent that visibility up front and removes the exploratory calls at the start of each conversation. Actions such as process_refund remain tools.",
+        "explicacao": "A rule that must hold on every call needs deterministic enforcement in code. A PreToolUse hook blocks any outgoing query that carries an identifier, and a PostToolUse hook on the claims tool removes identifiers before they ever reach the subagent's context. Prompt placement and a reviewing model raise the odds of compliance but keep a non-zero failure rate, and a PostToolUse check on the search tool fires only after the query has gone out.",
         "feedbacks": [
-          "Moves the exploration into a single tool call but still spends a call in every conversation, which is the pattern resources are designed to replace.",
-          "Correct. A policy index is a content catalog; as a resource it shows the agent what exists without a search call.",
-          "Speculative caching across customers risks serving stale or wrong policy data and still does not show the agent what exists.",
-          "Gives visibility at a high, constant token cost and goes stale when policies change; a catalog resource is targeted and current.",
-          "Correct. Status codes and their meanings are reference catalog data that fits an MCP resource."
+          "Correct. Transforming the tool result before the model processes it means the identifiers never enter the subagent's context, so they cannot leak into a query.",
+          "Tempting because placement and repetition do improve adherence, but it is still prompt-based compliance: probabilistic, and the 9 leaked queries came from a prompt that already stated the rule.",
+          "Tempting because it is a hook, but PostToolUse runs after the search has executed: the query carrying the identifier has already left. It detects a leak instead of preventing it.",
+          "The hook placement is right, but the decision inside it is a second model's judgment: another probabilistic check that adds cost and latency and can miss identifiers the same way.",
+          "Correct. Intercepting the outgoing call is a deterministic guarantee: every query is checked in code, and the denial reason lets the subagent rephrase."
         ],
-        "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-S5"
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-S3"
       },
       {
-        "pergunta": "At an industrial IoT company, 30 engineers share a repository whose .mcp.json defines the team's MCP servers for Claude Code and for the internal Agent SDK productivity agent. One engineer wants to try an experimental MCP server that wraps her vibration-analysis notebooks. It is unstable, only she needs it, and she wants it available in all of her repositories without affecting teammates. Which actions fit this situation? Choose TWO.",
+        "pergunta": "An online electronics retailer's support agent calls get_customer with the name the customer provides. When several accounts match, the current design has the agent pick the account with the most recent order, because a sample review showed that this heuristic chose the right account 94% of the time. The agent then moves on to lookup_order and, when the order is eligible, process_refund. What is the flaw in this design?",
         "opcoes": [
-          "Leave the team's .mcp.json unchanged for now, and propose the server there through a pull request once it is stable and useful.",
-          "Configure the server in her user-level ~/.claude.json, so it is available in every project she opens and is never committed.",
-          "Add the server to the repository's .mcp.json on a personal feature branch, so it loads only while she has that branch checked out locally.",
-          "Describe the server's command and arguments in her ~/.claude/CLAUDE.md, so that Claude starts it whenever one of her tasks needs it.",
-          "Add the server to .mcp.json with an \"experimental\": true flag, so Claude Code loads it only for the engineer who added the entry."
-        ],
-        "corretas": [
-          0,
-          1
-        ],
-        "explicacao": "The guide places personal or experimental MCP servers in user-scoped ~/.claude.json and shared team tooling in the project's .mcp.json. User-level configuration is available across her projects and is not version-controlled, so teammates are unaffected. If the server later becomes useful to the team, it moves to .mcp.json through normal review.",
-        "feedbacks": [
-          "Correct. The shared file stays reserved for team tooling, and promoting the server later through a pull request keeps it reviewed.",
-          "Correct. User-level ~/.claude.json is the guide's place for personal and experimental servers.",
-          "A branch keeps it out of main but ties it to one repository and to whoever checks out the branch; she wants it everywhere and only for herself.",
-          "CLAUDE.md holds instructions for the model, not MCP server configuration; describing a command does not connect a server.",
-          "There is no such flag; anything in the shared .mcp.json is loaded for everyone who pulls the file."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-S2"
-      },
-      {
-        "pergunta": "A transit agency team is changing the signature of computeFare() in pricing/engine.ts. Claude Code ran Grep for computeFare, found 3 call sites, and updated them all, yet the build then broke in 11 other files. It turns out pricing/index.ts re-exports the function as calculateTripFare and legacyFare. Before retrying the change, the team debates how Claude should find every usage. Which approach should they choose?",
-        "opcoes": [
-          "Grep again for computeFare with a case-insensitive pattern across all packages, so that differently capitalized spellings of the call are also found.",
-          "Glob for **/*fare*.ts to list every file whose name suggests fare logic, then have Claude Read each of those files to find the remaining calls.",
-          "Read the wrapper module to list every name under which the function is exported, then Grep the codebase for each one of those names.",
-          "Have Claude Read every file in the src/ tree before editing, so it sees each usage directly, whatever name or import path that file uses."
-        ],
-        "correta": 2,
-        "explicacao": "When a wrapper module re-exports a function under other names, consumers call those names, so a Grep for the original name misses them. The guide's approach is to identify all exported names first and then search for each across the codebase. This finds the 11 files without loading the whole tree into context.",
-        "feedbacks": [
-          "Case-insensitivity does not catch aliases; calculateTripFare and legacyFare share no spelling with computeFare.",
-          "File names say nothing about which code calls the function; consumers in other folders are missed and the reads cost context.",
-          "Correct. Listing the wrapper's exported names and searching for each one traces usage through the re-export.",
-          "Reading the whole tree upfront floods the context and dilutes attention; a targeted Grep for each exported name is precise."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S5"
-      },
-      {
-        "pergunta": "Your Agent SDK productivity agent at an industrial IoT company updates device configuration files of 1,500 to 2,500 lines with many operator comments. Today it reads a file and uses Write to save the full new version, even to change a single threshold. Reviewers report diffs touching hundreds of lines and, in 2 of the last 40 changes, deleted comments. The new requirement is that a single-setting change touches only that setting. What should you change?",
-        "opcoes": [
-          "Have the agent use Edit for single-setting changes to existing files, matching unique anchor text around the setting, and keep Write for new files.",
-          "Keep Write, but instruct the agent in the system prompt to reproduce every unchanged line and comment exactly as it appeared in the original.",
-          "Have the agent apply single-setting changes through Bash with sed commands on the setting name, so only matching lines in the file are rewritten.",
-          "Add a hook that intercepts Write calls and rejects any whose diff exceeds 20 lines, so oversized rewrites are blocked before reviewers see them."
-        ],
-        "correta": 0,
-        "explicacao": "Read and Write operate on whole files, while Edit makes targeted modifications using unique anchor text. For a one-setting change in a large existing file, Edit changes only the matched text and leaves comments and ordering untouched, which produces the minimal diff reviewers want. Write remains the right tool for creating new files.",
-        "feedbacks": [
-          "Correct. Targeted modifications are Edit's job; Write is for full-file operations such as creating new files.",
-          "A prompt instruction is probabilistic; rewriting 2,000 lines from memory will still occasionally drop or alter comments.",
-          "sed on a setting name rewrites every matching line and bypasses the built-in editing tools; the same key can appear in several sections.",
-          "Blocking large writes stops the symptom but leaves the agent without a way to make the small change; the fix is choosing the right tool."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-K3"
-      },
-      {
-        "pergunta": "A transit agency's developers use two MCP servers in Claude Code, both written in-house: jira-mcp, which wraps their standard Jira Cloud instance, and gtfs-validator, which runs the agency's own feed-quality rules. Over 4 months, jira-mcp broke after three Jira API changes, still lacks sprint and custom-field support, and costs two engineers about a day per week. gtfs-validator has needed almost no maintenance. What is the most likely root cause of the Jira problems?",
-        "opcoes": [
-          "jira-mcp's tool descriptions are too short, so Claude calls the wrong Jira tools and developers spend their time investigating the failed calls.",
-          "The team built and maintains its own server for a standard integration that existing community Jira MCP servers already cover and keep current.",
-          "jira-mcp is configured in the project's .mcp.json, so every developer's session hits it; per-user configuration would isolate the failures.",
-          "jira-mcp returns a generic error message instead of setting isError with a category, so Claude cannot recover when the Jira API changes."
+          "94% is too low for refunds; replace the heuristic with a deterministic scoring rule that also weighs shipping city and device history.",
+          "Any heuristic pick acts on an unconfirmed account; the agent should ask for another identifier, such as an order number or account email.",
+          "Multiple matches should go straight to escalate_to_human, because a human agent can carefully review the candidate accounts before acting.",
+          "The agent should show the customer each matching account with its email and address, so that the customer can pick the right one."
         ],
         "correta": 1,
-        "explicacao": "Jira is a standard integration, and the guide recommends choosing existing community MCP servers for those, reserving custom servers for team-specific workflows like the feed validator. Owning a Jira wrapper puts every API change and missing feature on the team, which matches the symptoms. Adopting a community server removes that burden while gtfs-validator stays custom.",
+        "explicacao": "When a lookup returns several customers, the agent should ask for an additional identifier instead of choosing by heuristic. Any heuristic, however accurate on a sample, acts on an account the customer has not confirmed, and here the next steps move money. Asking for an order number or account email resolves the ambiguity within the agent's own capability.",
         "feedbacks": [
-          "Better descriptions help tool selection, but they do not explain breakages after API changes or the missing sprint and custom-field support.",
-          "Correct. The maintenance cost comes from reimplementing a standard integration that community servers already provide.",
-          "Scope decides who receives the configuration; moving it to per-user config would spread drift without fixing the server itself.",
-          "Structured errors would improve recovery from individual failures, but they cannot keep a homemade wrapper current with Jira's API."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-S4"
-      },
-      {
-        "pergunta": "An industrial IoT company's developer productivity agent, built with the Claude Agent SDK, is configured with three MCP servers: firmware-repo, device-registry, and ticketing. To reduce token usage, a design doc proposes a select_server tool: the agent first names the server it needs, and the application restarts the session connected only to that server. Engineers' tasks often combine a ticket, a firmware diff, and a device lookup. What is the main flaw in this design?",
-        "opcoes": [
-          "The switch should be done by a hook that intercepts each tool call and connects the matching server on demand, rather than by a tool the model must call.",
-          "The three servers should first be merged into one custom MCP server, so that the agent sees a single tool list and never has to choose among servers.",
-          "select_server needs a detailed description of which tasks belong to each server, or the agent will often pick the wrong server at the start of a task.",
-          "It assumes the agent works with one server at a time, but tools from all configured servers are discovered at connection and are available together."
-        ],
-        "correta": 3,
-        "explicacao": "Tools from every configured MCP server are discovered when the agent connects and are available simultaneously, so the agent can combine ticketing, firmware, and registry tools in one task. The switcher adds turns, discards context on every restart, and breaks cross-server tasks to solve a problem that does not exist. Keep all three servers connected and rely on clear tool descriptions.",
-        "feedbacks": [
-          "Moves the switching into a hook but keeps the false premise that only one server can be active; cross-server tasks still break.",
-          "Merging servers is heavy rework for nothing; the agent already sees the tools of all configured servers in one set.",
-          "A better description would make the switch more accurate, but the switch itself is unnecessary and costly.",
-          "Correct. Simultaneous access to every configured server is the default, so a selection step only adds restarts and lost context."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-K3"
-      },
-      {
-        "pergunta": "At an industrial IoT company, an engineer asks the Agent SDK productivity agent where the firmware logs \"E-4417 sensor checksum mismatch\". The agent runs Glob with **/*checksum*, gets no matches, and replies that the message does not exist in the codebase. A teammate then finds it on line 212 of telemetry/ingest/frame_parser.c. Which statement about the agent's behavior is correct?",
-        "opcoes": [
-          "The conclusion was reasonable: an empty Glob result usually means the message is assembled at runtime from a template, so no search tool could find it.",
-          "Glob missed the file because its pattern does not reach nested folders; a deeper pattern such as **/**/*checksum* would have matched frame_parser.c.",
-          "Glob matches file paths rather than contents; finding an error message calls for Grep over file contents, which finds the line whatever the file name is.",
-          "The agent should have used Read on the telemetry directory, since Read opens every file in a folder and lets the model scan their contents together."
-        ],
-        "correta": 2,
-        "explicacao": "Glob finds files by name or extension patterns and never looks inside them. frame_parser.c has no 'checksum' in its name, so an empty result says nothing about the message. Grep searches contents and is the tool for locating error messages, function callers, and imports.",
-        "feedbacks": [
-          "An empty Glob result only says that no file name matched; it is no evidence about runtime templates.",
-          "** already matches any depth; the file was missed because its name does not contain the word, not because of nesting.",
-          "Correct. This is a content search, so Grep is the right tool and file names are irrelevant.",
-          "Read loads a specific file, not a whole directory, and scanning folders by reading wastes context compared with Grep."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S1"
-      },
-      {
-        "pergunta": "A transit agency's developers connect Claude Code to an internal MCP server, code-intel, whose find_references tool resolves symbol references across all 14 service repositories, including generated API clients. Its description reads \"Finds references.\" For questions like \"who calls ScheduleBuilder.Publish?\", Claude uses Grep in the local repository about 70% of the time and misses callers in other repositories. A lead proposes adding \"Always use code-intel instead of Grep\" to the project CLAUDE.md. How should you evaluate this proposal?",
-        "opcoes": [
-          "Adopt it: CLAUDE.md is loaded in every session, so a project-wide rule is the most direct and reliable way to make Claude pick code-intel.",
-          "Reject it, and instead deny Grep in the project permissions so that Claude has no choice but to call find_references for every search.",
-          "Reject it, and instead add a hook that rewrites every Grep call into a find_references call, so routing no longer depends on the model.",
-          "Reject it, and instead rewrite the description of find_references to explain its cross-repository, symbol-aware coverage and its output."
-        ],
-        "correta": 3,
-        "explicacao": "Claude chooses tools mainly from their descriptions, and \"Finds references.\" gives no reason to prefer the MCP tool over the familiar Grep. Describing its capabilities (cross-repository, symbol-aware, generated clients) and its outputs lets Claude choose it for caller questions while still using Grep for literal text. A blanket \"always\" rule is a keyword-style instruction that also misroutes searches Grep handles well.",
-        "feedbacks": [
-          "Tempting because it is quick, but a blanket rule does not tell Claude when the tool fits and pushes plain text searches to the wrong tool.",
-          "Removing Grep breaks legitimate content searches, such as log messages and string literals, that find_references does not handle.",
-          "A rewriting hook is over-engineered and forces symbol search onto queries that need plain text matching.",
-          "Correct. Detailed descriptions of capabilities and outputs are how the guide keeps the agent from preferring built-in tools over a more capable MCP tool."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-S3"
-      },
-      {
-        "pergunta": "A consulting firm's 9 developers build a customer support resolution agent with the Claude Agent SDK and test it from Claude Code. The backend MCP server (get_customer, lookup_order, process_refund, escalate_to_human) is currently added by each developer to their own ~/.claude.json. Three different server URLs are now in use, and a new hire spent two days without the tools. The constraints are one shared definition, reviewed changes, and no credentials in git. What is the most effective fix?",
-        "opcoes": [
-          "Publish the canonical server URL in the onboarding guide and ask every developer to update their own ~/.claude.json entry so that it matches.",
-          "Describe the backend server and its URL in the project's CLAUDE.md, so that Claude Code knows which server to connect to in every session.",
-          "Define the server once in a project-scoped .mcp.json committed to the repository, referencing its token through an environment variable.",
-          "Run a nightly script that copies a canonical ~/.claude.json to every developer machine, so that all user-level entries stay identical."
-        ],
-        "correta": 2,
-        "explicacao": "Project-level .mcp.json is the guide's place for shared team tooling: it is version-controlled, so every developer who clones or pulls gets the same reviewed definition. Credentials stay out of git through environment variable expansion. User-level ~/.claude.json is for personal or experimental servers, which is why the drift and the onboarding gap appeared.",
-        "feedbacks": [
-          "Pushes the burden onto each developer and does nothing to stop the next drift or the next onboarding gap.",
-          "CLAUDE.md gives instructions to the model; it does not configure or connect MCP servers.",
-          "Correct. A committed project .mcp.json gives one reviewed definition, and ${VAR} keeps the token out of the repository.",
-          "Overwriting personal configuration nightly is fragile, clobbers other user-level servers, and bypasses code review."
+          "Tempting because a deterministic rule sounds safer, but a scoring rule is still a heuristic: some refunds still land on the wrong account, and the customer never confirms which one is theirs.",
+          "Correct. Multiple matches call for clarification with an additional identifier, not heuristic selection.",
+          "Over-escalation: the ambiguity is something the agent can resolve by asking one question, so sending these cases to humans lowers first-contact resolution for no gain.",
+          "It involves the customer, which is right in spirit, but it exposes other customers' emails and addresses. Asking for an identifier achieves the same result without the data leak."
         ],
         "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-K1"
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-S5"
       },
       {
-        "pergunta": "An engineer at an industrial IoT company asks the Agent SDK productivity agent to list every device profile in a 3,400-file monorepo before an audit. Profiles follow the naming convention <model>.profile.yaml and sit in about 60 folders. The agent ran Grep for the key \"profile:\" and returned 900 hits mixing docs, tests, and unrelated YAML files. What is the most effective first step to get the list?",
+        "pergunta": "A QA lead at an online electronics retailer reviews two support transcripts. In the first, the customer writes \"Get me a human, now\" and the agent escalates at once with a handoff summary, without looking up the order. In the second, a customer writes \"This is the second broken charger you've sent me!!\" about an in-policy replacement; the agent acknowledges the frustration and offers a replacement, which the customer accepts. The QA lead flags the agent as inconsistent. Which statement about the observed behavior is correct?",
         "opcoes": [
-          "Use Glob with the pattern **/*.profile.yaml to list every file that follows the profile naming convention, wherever it sits in the repo.",
-          "Refine the Grep to the key \"device_profile:\" and exclude the docs and tests folders, then deduplicate the matching files from the results.",
-          "Run ls -R from the repository root through Bash and have the agent scan the complete listing for file names that look like device profiles.",
-          "Spawn a subagent per top-level folder to read its YAML files and report which are device profiles, then merge what the subagents return."
+          "Both are correct: a direct demand for a human is honored at once, while frustration over a simple, in-policy issue gets an offer to resolve it.",
+          "The second is wrong: strong negative sentiment signals a case that needs human judgment, so it should have been escalated like the first.",
+          "The first is wrong: the agent should have checked the order first, since a quick fix might have satisfied the customer without a handoff.",
+          "Both are correct, and the reason is that the agent's confidence was low in the first case and high in the second, which drives escalation."
         ],
         "correta": 0,
-        "explicacao": "The audit asks which files follow a naming pattern, which is a path question, so Glob is the direct tool: a recursive pattern returns every <model>.profile.yaml regardless of folder. Grep searches contents and returns lines matching a key, which mixes in unrelated files and can miss profiles with a different key layout.",
+        "explicacao": "The two situations differ in kind. An explicit request for a human is escalated immediately, without investigating first. A frustrated customer who has not asked for a human and has a straightforward, in-policy issue should have the frustration acknowledged and be offered the resolution, with escalation only if they then ask for a person.",
         "feedbacks": [
-          "Correct. Finding files by name or extension pattern is exactly what Glob does.",
-          "Still answers a naming question with a content search; any profile with a different key layout is missed, and the results stay noisy.",
-          "Works in principle, but dumps thousands of paths into context for the model to filter by eye; Glob filters by pattern directly.",
-          "Over-engineered: several agents reading files to recover information that a single path pattern returns."
+          "Correct. Explicit demand: escalate immediately. Frustration over a straightforward issue: acknowledge and offer to resolve, escalating only if the customer reiterates.",
+          "Sentiment is tempting as a proxy, but it measures emotion, not complexity. This case was a standard replacement the agent was authorized to handle.",
+          "Investigating first looks helpful for first-contact resolution, but the guide says to honor an explicit request for a human immediately, without first attempting investigation.",
+          "The conclusion is right but the reason is wrong: self-reported confidence is an unreliable escalation trigger. The behavior is correct because of the customer's explicit request versus a resolvable issue."
         ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-K2"
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-K2"
       },
       {
-        "pergunta": "An industrial IoT company wants its Agent SDK productivity agent to explain how an overheating alarm travels from a sensor reading to an operator notification in a 1,800-file legacy SCADA codebase. Design 1 loads all ~240 files in alarms/, notify/, and core/ into context at the start. Design 2 has the agent search for entry points and follow the code from there. Which approach should you choose?",
+        "pergunta": "An airline's platform team uses an Agent SDK agent to automate repetitive support-engineering work, such as repairing booking records broken by schedule changes. When a repair needs a fare-rule exception, the agent stops mid-process and opens a ticket for the on-call engineer, who cannot access the agent's session. Today the ticket holds a free-text note such as \"Booking needs manual fix, see logs.\" Engineers spend about 25 minutes rebuilding each case. A lead proposes replacing the note with a structured handoff. How should you evaluate this proposal?",
         "opcoes": [
-          "Design 2: Grep for entry points, such as where readings are compared with thresholds, Read those files, then follow imports and calls to trace the flow.",
-          "Design 1: loading the three folders upfront makes indirect calls visible from the start, so the explanation does not skip any step of the alarm flow.",
-          "Design 1, with a twist: read all ~240 files first, but have the agent summarize each into a scratchpad file before it starts answering the question.",
-          "Design 2, with a change: use Glob for files whose names contain alarm to find the entry points, then Read every match to trace the alarm flow."
+          "Adopt it, with fields for the booking and passenger IDs, the failure's cause, the actions already taken, and the recommended action.",
+          "Reject it and attach the agent's full session transcript to each ticket instead, so the engineer can see each step the agent took in detail.",
+          "Reject it and give on-call engineers access to the agent's sessions, so they can resume each session and read its full history directly.",
+          "Adopt it, but limit the fields to the booking ID and the recommended action, so that engineers can act on each ticket more quickly."
         ],
         "correta": 0,
-        "explicacao": "The guide recommends building codebase understanding incrementally: start with Grep to find entry points, then use Read to follow imports and trace flows, rather than reading all files upfront. Loading 240 files fills the context with code unrelated to this flow and dilutes attention. Glob cannot identify entry points because it does not look at code content.",
+        "explicacao": "When a process escalates mid-way to someone who cannot see the agent's context, the handoff has to carry the case details, the root cause analysis, and the recommended action in a structured form. That lets the engineer act without redoing the investigation, which is where the 25 minutes are going today.",
         "feedbacks": [
-          "Correct. Grep finds where the flow starts and Read follows it, keeping only relevant code in context.",
-          "Feels thorough, but most of the 240 files are unrelated to this alarm path, and loading them all degrades attention to the parts that matter.",
-          "Summarizing still requires reading every file upfront; the scratchpad adds cost without changing the approach.",
-          "File names do not reveal where the flow starts; entry points are found by searching code content, not file names."
+          "Correct. A structured handoff with the record details, root cause, actions taken, and recommended action lets the engineer act without reconstructing the case.",
+          "A transcript looks complete, but it moves the work of finding the root cause and the next step onto the engineer, which is the 25-minute problem the team is trying to remove.",
+          "Session access changes the constraint instead of solving it: the engineer would still read the whole history to rebuild the case, and the agent's findings stay unsummarized.",
+          "Shorter is tempting, but without the root cause and the actions already taken the engineer cannot judge whether the recommendation is right and ends up re-investigating."
         ],
         "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S4"
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-K3"
       },
       {
-        "pergunta": "Your Agent SDK productivity agent at an industrial IoT company reads the repository's .mcp.json, which contains this entry: \"fleet-api\": { \"command\": \"npx\", \"args\": [\"-y\", \"fleet-mcp\"], \"env\": { \"FLEET_API_KEY\": \"fk_live_8c1e...\" } }. A security review requires that no credentials live in the repository, that every engineer uses their own key, and that the server definition stays shared and reviewed. What should you change?",
+        "pergunta": "An online electronics retailer's support agent may issue refunds only to the account that get_customer has verified in the current conversation. After three rounds of system prompt revisions, audits show the agent follows the rule in 99.3% of refund conversations. Legal now requires that no refund ever reach an unverified account, and the business does not want first-contact resolution, currently 82%, to drop. What is the most effective fix given these constraints?",
         "opcoes": [
-          "Move the fleet-api entry into each engineer's ~/.claude.json with that engineer's own key, and remove it from the repository's .mcp.json.",
-          "Replace the literal value with \"${FLEET_API_KEY}\" in .mcp.json and have each engineer and the CI job define FLEET_API_KEY in their environment.",
-          "Move the key into the env block of the versioned .claude/settings.json, so that .mcp.json itself stays free of credentials and shared.",
-          "Commit a template of ~/.claude.json with a placeholder key to the repository, and have each engineer copy it home and fill in their own key."
+          "Keep refining the system prompt and add few-shot examples until audits reach 99.9% compliance, then monitor the rate monthly.",
+          "Add a programmatic gate that blocks every process_refund call for a customer ID that get_customer has not verified.",
+          "Have a second model review each refund conversation and programmatically hold the payout unless it confirms verification took place.",
+          "Route every refund to a human for approval, keeping the agent responsible for collecting the order details and the amount."
         ],
         "correta": 1,
-        "explicacao": "Environment variable expansion in .mcp.json keeps the shared definition in version control while each engineer, and the CI job, supplies their own key from their environment. That satisfies all three requirements at once. Moving entries to user-level configuration keeps secrets out of git but loses the shared, reviewed definition.",
+        "explicacao": "When compliance must be deterministic, such as identity verification before a financial operation, prompt instructions alone keep a non-zero failure rate no matter how well they are tuned. A programmatic gate on process_refund enforces the rule on every call while leaving the agent free to resolve verified cases, so first-contact resolution is unaffected.",
         "feedbacks": [
-          "Meets the no-credentials rule but breaks the shared, reviewed definition; each engineer now maintains a separate copy.",
-          "Correct. ${FLEET_API_KEY} keeps the definition shared and the secret in each engineer's environment.",
-          "Only moves the secret into another committed file, and everyone would still share one key instead of using their own.",
-          "Keeps keys out of git, but what actually loads is a hand-copied user-level file that drifts; the reviewed template is not the active definition."
+          "Tempting because the trend is improving, but 99.9% still means some refunds reach unverified accounts, and the requirement is that none do.",
+          "Correct. A programmatic gate turns the rule into a deterministic guarantee and keeps verified refunds fully automated.",
+          "The hold is enforced in code, but the decision behind it is a model judging the transcript, which is probabilistic and adds latency and cost.",
+          "This meets the legal requirement but breaks the other constraint: sending every refund to a human drives first-contact resolution down."
         ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-S1"
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-K2"
       },
       {
-        "pergunta": "A transit agency developer asks Claude Code to update all snapshot tests for the timetable UI, which follow the naming convention *.snap.test.ts. Afterward, only 9 of the 31 such files were changed. The transcript shows Claude ran Grep for toMatchSnapshot inside src/timetable/ and edited the files it returned. The other 22 live under packages/*/__tests__/, and several of them use toMatchInlineSnapshot. What is the most likely root cause?",
+        "pergunta": "An airline's developer productivity agent, built on the Agent SDK, automates fare-configuration changes through an internal MCP server. The process requires that apply_fare_rule_change run only after get_change_request returns an approved change-request ID. The system prompt states this, but in 5 of 220 runs last month the agent applied changes taken directly from an engineer's chat message, with no approved request. What is the most effective first step?",
         "opcoes": [
-          "Claude's context filled up while it edited the first files, so the session stopped before reaching the snapshot tests stored in other packages.",
-          "The project lacks a path-specific rule for test files, so Claude did not know where snapshot tests are stored in this repository's folder layout.",
-          "The change should have run in plan mode, which explores every directory first and would have listed all 31 snapshot test files before editing.",
-          "Claude selected files by searching content in one folder instead of matching the naming pattern; Glob for **/*.snap.test.ts returns all 31."
+          "Rewrite the system prompt so the approval requirement appears first and is restated before each configuration step the agent plans.",
+          "Add a programmatic check that the agent's reasoning states an approved change-request ID before it calls apply_fare_rule_change.",
+          "Remove apply_fare_rule_change from the agent and have engineers apply each change by hand once the agent has prepared it.",
+          "Add a programmatic prerequisite that blocks apply_fare_rule_change until get_change_request has returned an approved request ID."
         ],
         "correta": 3,
-        "explicacao": "The task defined its targets by file name, so the right selection is a path pattern: Glob with **/*.snap.test.ts finds every matching file in any folder. A content search for one assertion in one directory both narrowed the location and missed files using a different assertion style. Grep is for content questions; Glob is for naming patterns.",
+        "explicacao": "A required tool sequence with real consequences should be enforced in code: block the downstream tool until the prerequisite tool has returned the data it needs, here an approved change-request ID. The agent keeps automating approved changes, and unapproved ones can no longer go through.",
         "feedbacks": [
-          "Nothing points to context exhaustion: Claude edited every file its search returned; the search itself was scoped to one folder and one assertion name.",
-          "Path-specific rules load conventions while editing matching files; they do not make Claude find files it never selected.",
-          "Plan mode helps with architectural changes; this is a tool-selection problem that Glob solves directly.",
-          "Correct. Matching files by naming pattern is Glob's job, regardless of folder or assertion style."
+          "Restating the rule more prominently is still prompt-based guidance; it already failed in 5 of 220 runs and cannot reach zero.",
+          "The check runs in code, but it verifies the model's own statement instead of the tool's result, so an ID the agent asserts without approval would still pass.",
+          "It removes the risk by removing the automation, shifting the work to engineers when a gate would keep the agent useful.",
+          "Correct. A programmatic prerequisite blocks the downstream call until the prerequisite step has produced a verified result."
         ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S2"
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-S1"
       },
       {
-        "pergunta": "An industrial IoT company's Agent SDK productivity agent must change poll_interval_ms from 500 to 250 only in the [modbus-line-3] block of gateway.conf. The line poll_interval_ms = 500 appears in 9 blocks. The agent's Edit call fails with an error reporting 9 matches, and the agent repeats the same Edit twice before giving up. Which statements about this failure and how to handle it are correct? Choose TWO.",
+        "pergunta": "An online electronics retailer's policy covers price adjustments within 14 days when the price drops on the retailer's own website. A customer asks the support agent for a $70 adjustment because the same TV is now cheaper at one of the retailer's physical stores during an in-store-only clearance. The policy says nothing about in-store prices. One team wants the agent to apply the closest existing rule, and another disagrees. Which approach should the agent follow?",
         "opcoes": [
-          "Loading the full file with Read and writing back the modified content with Write is a reliable fallback when Edit lacks unique anchor text.",
-          "Retrying the identical Edit call can succeed on a later attempt, because the tool picks a different occurrence of the anchor each time it runs.",
-          "Running sed -i on the poll_interval_ms line through Bash is the safest fallback, because it rewrites only the lines that match its pattern.",
-          "Edit requires its anchor text to appear exactly once in the file, so a line that is repeated across nine blocks cannot be targeted as written.",
-          "The failure means gateway.conf was not read earlier in the session, so a Read followed by the same Edit call will apply the change correctly."
+          "Apply the website adjustment rule by analogy, since the store and the website belong to the same retailer and the drop is within 14 days.",
+          "Decline the adjustment, since the policy's explicit terms cover website price drops, and offer to watch for an online price drop instead.",
+          "Offer a partial store credit as a compromise, so the customer gets something today without the agent granting the full exception.",
+          "Escalate to a human with a summary of the request, since the policy does not address in-store prices, and keep resolving covered adjustments."
+        ],
+        "correta": 3,
+        "explicacao": "When the policy is silent or ambiguous on the specific request, the agent should escalate rather than invent a rule or treat silence as a refusal. Here the policy covers website price drops only, so an in-store price is a policy gap. Requests the policy does cover stay with the agent, which protects first-contact resolution.",
+        "feedbacks": [
+          "Extending the rule by analogy feels customer-friendly and keeps the case automated, but the agent would be creating policy it has no authority to set.",
+          "Treating silence as a no looks safe, but the policy does not say in-store prices are excluded; the agent would be making a policy decision that belongs to a human.",
+          "A compromise still grants an exception the policy does not define, just a smaller one, and it is the agent improvising policy.",
+          "Correct. A policy gap is an escalation trigger; covered adjustments remain autonomous."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-S4"
+      },
+      {
+        "pergunta": "An airline's internal agent helps support engineers resolve escalated passenger tickets by querying booking, payment, and loyalty MCP servers and the related code. The requirement is one consolidated reply per ticket within 10 minutes. For a ticket reporting a double-charged seat upgrade, missing loyalty miles, and a boarding pass error, the agent finishes the first issue, posts a reply, then starts the next. It takes 26 minutes, and two of the replies contradict each other on how the refund will be paid. What should you change?",
+        "opcoes": [
+          "Split the ticket into its distinct issues, investigate them in parallel against booking data fetched once, then write one reply.",
+          "Start a separate agent session for each issue, with each session fetching its own booking data and posting its own reply to the ticket.",
+          "Keep the sequential flow, raise the agent's turn limit, and add a final step that merges the three replies into one structured message.",
+          "Ask engineers to split multi-issue tickets into separate tickets before the agent runs, so each run handles a single issue."
+        ],
+        "correta": 0,
+        "explicacao": "A multi-concern request should be decomposed into distinct items, each investigated in parallel using shared context, and then synthesized into a single resolution. Parallel investigation fixes the time budget, and the shared booking context keeps the findings consistent, which removes the contradiction about how the refund is paid.",
+        "feedbacks": [
+          "Correct. Decompose, investigate in parallel with shared context, then synthesize one unified resolution.",
+          "Parallel sessions solve the speed problem, but without shared context each one reasons separately and replies separately, which is exactly how contradictions arise.",
+          "A merge step hides the symptom but keeps the 26-minute sequential flow, and the merged text may still contain conflicting findings.",
+          "This pushes the work onto engineers and still produces several replies for one passenger, instead of one consolidated reply."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-S2"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent escalates 31% of conversations, against a 15% target. Its system prompt says: \"Escalate when the case is complex or when you are unsure.\" Most escalated cases are long conversations about multi-item orders that ended as standard returns. Meanwhile, a calm customer who asked for a warranty extension beyond what the policy allows was refused by the agent without any escalation. What is the most likely root cause?",
+        "opcoes": [
+          "The agent lacks a tool that returns the warranty policy, so it cannot tell which requests fall outside of the standard terms.",
+          "Long multi-item conversations exceed what the agent can track, so a larger model with a bigger context window is needed here.",
+          "The criteria key on perceived complexity instead of the right triggers: requests for a human, policy exceptions or gaps, and no progress.",
+          "The agent's self-assessed uncertainty is poorly calibrated, so the \"unsure\" condition fires on long conversations instead of on hard ones."
+        ],
+        "correta": 2,
+        "explicacao": "Appropriate escalation triggers are an explicit request for a human, a policy exception or gap, and an inability to make progress. Complexity is not one of them. A prompt that escalates on \"complex\" sends long but routine cases to humans and misses short, calm requests that actually need a policy exception, which matches both symptoms.",
+        "feedbacks": [
+          "It addresses a different problem: the agent did know the request exceeded the policy, since it refused it. The failure was not escalating a policy exception.",
+          "Tempting because long conversations look hard, but these cases ended as standard returns; the issue is when the agent chooses to escalate, not what it can track.",
+          "Correct. The trigger is wrong: escalation should follow explicit requests, policy exceptions or gaps, and lack of progress, not perceived complexity.",
+          "Partly true, since self-reported uncertainty is unreliable, but it explains only part of the pattern. The underlying issue is criteria built on complexity and uncertainty instead of the proper triggers."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-K1"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent decides return eligibility from three MCP tools: get_customer returns Unix timestamps, lookup_order returns ISO 8601 strings with time-zone offsets, and a third-party carrier server returns numeric status codes. The team added conversion rules and two worked examples to the system prompt. The agent still misjudges the 30-day return window in about 4% of cases. What is the flaw in this approach?",
+        "opcoes": [
+          "It depends on the model converting formats on every call; a PostToolUse hook should normalize results before the model sees them.",
+          "Two worked examples are too few; the prompt needs five to eight examples covering each tool's format and the edge cases around midnight.",
+          "Add a PreToolUse hook on the three tools that converts date arguments to ISO 8601, so that every tool works with a single date format.",
+          "The carrier server should be changed to emit ISO 8601 and named statuses, so that the three tools return the same formats at the source."
+        ],
+        "correta": 0,
+        "explicacao": "Heterogeneous formats from different MCP tools are best normalized by a PostToolUse hook that transforms each result before the agent processes it. Conversion rules in the prompt depend on the model applying them correctly on every call, which is probabilistic. The hook also covers the third-party server without changing it.",
+        "feedbacks": [
+          "Correct. A PostToolUse hook normalizes every result deterministically before the model reasons about dates and statuses.",
+          "More examples may lower the error rate, but the model would still convert formats in its head on every call, so some window checks would still be wrong.",
+          "Right mechanism family, wrong side of the call: PreToolUse changes the arguments going out, but the mixed formats are in the results coming back, which is where PostToolUse applies.",
+          "Fixing the source would work in principle, but the carrier server is third-party and outside your control; a hook achieves the same result on your side."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-S1"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent must call get_customer before lookup_order. Team A added \"Always call get_customer first\" to the system prompt, and correct ordering rose from 91% to 98.5% of conversations. Team B instead added a gate in the agent's harness that rejects lookup_order until get_customer has returned a verified customer ID. A director asks the teams to explain the difference. Which statement is correct?",
+        "opcoes": [
+          "At 98.5%, the prompt is effectively deterministic; the remaining 1.5% is noise, and the gate mostly adds an extra step.",
+          "The remaining 1.5% shows that the tool descriptions are ambiguous; clearer descriptions would let the prompt reach 100%.",
+          "The prompt raised the probability of correct ordering but cannot ensure it; the gate enforces the ordering in code on each call.",
+          "Few-shot examples of the correct order would guarantee the sequence, since the model would then learn it from the examples."
+        ],
+        "correta": 2,
+        "explicacao": "Prompt-based guidance changes how likely the model is to follow an order; programmatic enforcement such as a prerequisite gate makes the order hold on every call. That difference matters whenever a step is mandatory, because any prompt-based approach keeps a non-zero failure rate.",
+        "feedbacks": [
+          "Treating 1.5% as noise is the trap: in a mandatory workflow, 1.5% of conversations still run lookup_order on an unverified customer.",
+          "Tool descriptions drive which tool the model selects, not the required order between tools, and better wording would still be probabilistic.",
+          "Correct. Prompt guidance is probabilistic; a programmatic prerequisite is deterministic.",
+          "Few-shot examples improve consistency, but they are still prompt-based guidance; no number of examples makes the sequence certain."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-K1"
+      },
+      {
+        "pergunta": "At an online electronics retailer, a product manager proposes that the support agent transfer to a human whenever a customer sounds frustrated, for example \"This is the third time I'm writing about this!\". Most of these conversations are about late or missing packages that the policy lets the agent resolve with a reship or a refund. How should you evaluate the proposal?",
+        "opcoes": [
+          "Adopt it: frustrated customers expect human empathy, and an early transfer protects satisfaction scores even when the issue is a simple one.",
+          "Reject it: the agent should acknowledge the frustration and offer the in-policy fix, escalating if the customer asks again for a human.",
+          "Adopt it with a sentiment-score threshold calibrated on past satisfaction surveys, so that just the strongly negative messages get transferred.",
+          "Reject it: the agent should set the emotional tone aside and go straight to the resolution steps, since tone does not change policy."
+        ],
+        "correta": 1,
+        "explicacao": "When the issue is within the agent's capability, the right move is to acknowledge the frustration and offer the resolution, escalating only if the customer reiterates a preference for a human. Frustration alone is not an escalation trigger, and transferring these straightforward cases would lower first-contact resolution.",
+        "feedbacks": [
+          "Tempting because it sounds customer-centric, but it sends straightforward, in-policy cases to humans and lowers first-contact resolution without solving anything the agent could not.",
+          "Correct. Acknowledge the frustration, offer the resolution within the agent's capability, and escalate if the customer reiterates a request for a human.",
+          "Calibrating the threshold does not fix the premise: sentiment measures emotion, not whether the case needs a human.",
+          "Right to keep the case with the agent, but ignoring the frustration skips the acknowledgment and gives no path to a human if the customer asks again."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-S3"
+      },
+      {
+        "pergunta": "An airline's operations team uses an Agent SDK agent to automate repetitive disruption tasks, including issuing travel vouchers through a vendor's MCP server that the team cannot modify. Policy requires supervisor approval for any voucher above $500. The limit is in the system prompt, but last month the agent issued 4 vouchers between $540 and $700 on its own. Vouchers of $500 or less must stay fully automated. What is the most effective fix?",
+        "opcoes": [
+          "Restate the $500 limit in the system prompt with worked examples of amounts above and below it, and add a reminder to each disruption task.",
+          "Add a PostToolUse hook on issue_voucher that alerts a supervisor whenever an issued voucher exceeds $500, so it can be reversed quickly.",
+          "Add a PreToolUse hook on issue_voucher that denies calls above $500 and tells the agent to route the case to request_supervisor_approval.",
+          "Remove issue_voucher from the agent and have it send each voucher to request_supervisor_approval, whatever the amount involved."
+        ],
+        "correta": 2,
+        "explicacao": "Intercepting the outgoing tool call lets code block the policy-violating action before it happens and redirect the agent to the alternative workflow, here supervisor approval. The hook runs in the agent's harness, so it works with a vendor server the team cannot change, and vouchers within the limit stay automated.",
+        "feedbacks": [
+          "More emphasis and examples improve the odds, but the limit was already in the prompt when the 4 vouchers went out; prompt compliance stays probabilistic.",
+          "Tempting because it uses a hook, but PostToolUse runs after the voucher is issued; it can report the violation, not prevent it.",
+          "Correct. A PreToolUse interception blocks calls above the limit and redirects the case to approval, while smaller vouchers flow as before.",
+          "This enforces the limit by removing the automation, which breaks the requirement that vouchers of $500 or less stay automated."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-S2"
+      },
+      {
+        "pergunta": "A customer of an online electronics retailer writes to the support agent: \"Cancel my laptop order, my name is Daniel Kim.\" get_customer returns three accounts named Daniel Kim in the same country, each with orders placed in the last month. The agent can call lookup_order and cancel_order. What is the most effective first step for the agent?",
+        "opcoes": [
+          "Call lookup_order on the three accounts and cancel the one that has an open laptop order, since that matches the request.",
+          "Select the account with the most recent login, because the person writing to support is most likely the one who was active last.",
+          "Escalate to a human agent with a structured summary, because acting on the wrong account would be a privacy and financial incident.",
+          "Ask the customer for an additional identifier, such as the order number or the email on the account, before acting."
+        ],
+        "correta": 3,
+        "explicacao": "Multiple customer matches call for clarification, not heuristic selection. Asking for an order number or account email identifies the right customer with certainty, keeps the case with the agent, and avoids acting on another person's account.",
+        "feedbacks": [
+          "Tempting because it uses real data, but it is still a heuristic: two of the accounts could have laptop orders, and the agent would be browsing other customers' orders to guess.",
+          "Recency is a guess that ignores what the customer can tell you directly; a wrong pick cancels someone else's order.",
+          "The risk is real, but the agent can remove the ambiguity itself with one question, so escalating lowers first-contact resolution unnecessarily.",
+          "Correct. Ask for an additional identifier instead of choosing among matches by heuristic."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-K4"
+      },
+      {
+        "pergunta": "An online electronics retailer escalates refund cases above its autonomous limit to a human team that works in a ticketing tool with no access to the conversation transcript. Human agents currently re-contact 40% of escalated customers to ask questions the support agent had already answered. The architects are choosing what escalate_to_human should send. Which design should they choose?",
+        "opcoes": [
+          "A ticket with the full conversation transcript attached and the customer's messages highlighted, so the human can scan the key points.",
+          "A one-paragraph free-text summary written by the agent, describing the issue, its root cause, and what was done, in plain language.",
+          "A structured ticket linking to the transcript in the agent's logs, with the customer's sentiment score and the agent's confidence.",
+          "A summary that lists the verified customer ID, the root cause, the refund amount, and the recommended action, each in a separate field."
+        ],
+        "correta": 3,
+        "explicacao": "Humans who receive an escalation without the transcript need a structured handoff summary: customer ID, root cause, refund amount, and recommended action. Fixed fields make the case actionable on its own, so the human does not need to re-contact the customer to rebuild what the agent already learned.",
+        "feedbacks": [
+          "Looks complete, but it hands the human a document to read instead of a case to act on, and the key facts still have to be dug out.",
+          "Naming the root cause is a step forward, but free text tends to drop items such as the verified ID, the exact amount, or the next action, so humans keep re-contacting customers.",
+          "Sentiment and self-reported confidence are not what the human needs to act; the root cause, the amount, and the recommended action are missing.",
+          "Correct. A structured handoff with customer ID, root cause, refund amount, and recommended action is actionable without the transcript."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-S3"
+      },
+      {
+        "pergunta": "A health insurer's multi-agent research system produces treatment evidence reports. Compliance requires that a report is never published if it cites a source outside the approved clinical-evidence list. The report subagent's prompt includes the list and the rule, and the coordinator reviews each draft before it calls publish_report. In 2 of the last 300 reports, a health blog slipped through and was published. What should you change to meet the requirement?",
+        "opcoes": [
+          "Add a hook that intercepts each publish_report call and blocks it when a citation is outside the approved list, returning the sources.",
+          "Add few-shot examples to the report subagent's prompt that show sources being rejected whenever they are not on the approved evidence list.",
+          "Add a dedicated citation-review subagent that checks each draft against the approved list before the coordinator's final review.",
+          "Add a PostToolUse hook on publish_report that flags any published report citing an unapproved source, so that it can be retracted."
+        ],
+        "correta": 0,
+        "explicacao": "A business rule that requires guaranteed compliance belongs in a hook, which applies deterministically to every call. Prompt instructions, examples, and model-based reviews all improve compliance but remain probabilistic, as the two published reports show. Intercepting the publish_report call checks the citations in code before anything goes out; a check after the call can only detect the violation.",
+        "feedbacks": [
+          "Correct. A hook on publish_report is a deterministic guarantee; returning the offending sources lets the agents fix the draft.",
+          "Few-shot examples make rejections more consistent, but they are still prompt-based and leave a non-zero rate of published violations.",
+          "Another review layer adds cost and is still a model judging the draft; the coordinator already reviews drafts and two violations got through.",
+          "It uses a hook, but PostToolUse runs after publish_report has executed; the report is already public, so it detects the violation instead of preventing it."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-K3"
+      },
+      {
+        "pergunta": "An airline's productivity agent, built with the Agent SDK, automates refund adjustments for disrupted flights. To enforce a $500 cap, an engineer registered a hook on the refund tool that checks the amount and returns an error message to the agent when the cap is exceeded. In testing, the hook's log line appears for every $650 test case and the agent's next message says the refund needs approval, yet the payments ledger shows that each $650 refund was issued. What is the most likely root cause?",
+        "opcoes": [
+          "The agent ignores the hook's error message, so the cap also needs to be stated in the system prompt with examples of the blocked amounts.",
+          "The hook's matcher uses the short tool name, so it does not match the MCP tool's full name and the amount check does not run on refund calls.",
+          "The hook is registered as PostToolUse, so it runs after the refund has executed; blocking requires intercepting the call in PreToolUse.",
+          "The payments MCP server retries failed calls by itself, so each refund goes through again after the hook has rejected the first call."
+        ],
+        "correta": 2,
+        "explicacao": "Hooks that enforce compliance rules must intercept the outgoing tool call, before it executes. The symptoms show the hook running and the agent reacting to its message, yet the refunds exist, which means the check happens after execution: a PostToolUse hook can transform or annotate a result but cannot stop the action that produced it.",
+        "feedbacks": [
+          "The agent did read the message, since its next reply mentions approval; the money moved before the message existed, so no prompt change would help.",
+          "A matcher problem would mean the hook never fires, but the log line appears on every $650 case, so the hook is running.",
+          "Correct. PostToolUse sees results after execution; interception of outgoing calls needs PreToolUse.",
+          "Plausible in general, but nothing in the logs points to retries; each test case shows a single refund issued alongside the hook's message."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-K2"
+      },
+      {
+        "pergunta": "An online electronics retailer documents this flow for its support agent: when a customer asks to speak with a human, the agent first calls get_customer and lookup_order, checks the refund policy, and offers a resolution; it calls escalate_to_human only if the customer declines the offer. The team says this improves first-contact resolution and gives humans better context. What is the flaw in this flow?",
+        "opcoes": [
+          "The handoff should also include the customer's sentiment, since the human needs to know how upset the customer was before the transfer.",
+          "It holds back a direct request for a human to investigate and offer a fix first; the agent should escalate immediately with what it knows.",
+          "The agent should first ask the customer for explicit confirmation, since many requests for a human concern simple issues it can resolve.",
+          "The lookups should run in parallel with the resolution offer, so the customer waits less before the agent can propose a solution."
+        ],
+        "correta": 1,
+        "explicacao": "An explicit request for a human should be honored immediately, without first attempting investigation. The flow trades the customer's stated preference for a resolution attempt. The agent can still pass along whatever it already knows in the handoff.",
+        "feedbacks": [
+          "Sentiment is not what the human needs to act on, and adding it does not fix the delay before the transfer.",
+          "Correct. Honor an explicit request for a human immediately, without investigating or offering a resolution first.",
+          "Asking for confirmation is a softer version of the same flaw: it pushes back on a request the customer has already made explicitly.",
+          "Faster investigation is still investigation before honoring the request; it addresses latency, not the flaw."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-S2"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent receives lookup_order results that contain full card numbers and delivery dates in mixed formats. The team wants the model never to see card numbers and always to receive dates in one format, and plans to use a PostToolUse hook in the Agent SDK. Which TWO statements about this plan are correct? Choose TWO.",
+        "opcoes": [
+          "A PostToolUse hook's output reaches only the customer-facing reply, so the model still processes the original lookup_order result.",
+          "If a result is malformed, a PostToolUse hook re-runs lookup_order with corrected arguments before the model receives anything.",
+          "Because the hook is code in the agent's harness, the masking and normalization apply to every matching call, whatever the prompt says.",
+          "The hook runs after lookup_order executes and can replace the result, so the model processes only the masked, normalized version.",
+          "A PostToolUse hook can also stop process_refund from running when the requested amount is above the limit that the policy sets."
         ],
         "corretas": [
-          0,
+          2,
           3
         ],
-        "explicacao": "Edit makes targeted modifications using unique text matching, so an anchor that appears nine times cannot identify the block to change, and repeating the call fails the same way. The guide's fallback is Read + Write: load the full file, change only the [modbus-line-3] block, and write the result back.",
+        "explicacao": "PostToolUse hooks intercept tool results after execution and transform them before the model processes them, which is what masking and normalization need. Because the hook is code that the harness runs on every matching call, the transformation is a deterministic guarantee, not something the model has to remember.",
         "feedbacks": [
-          "Correct. Read + Write is the guide's fallback when Edit cannot find unique anchor text.",
-          "Edit is deterministic; the same non-unique anchor produces the same failure every time.",
-          "The pattern matches all nine blocks, so sed would change every one of them, not only [modbus-line-3].",
-          "Correct. Uniqueness of the anchor is Edit's requirement, and the error says it was not met.",
-          "A missing read would produce a different failure; this error reports nine matches, which a Read does not change."
-        ],
-        "cenario": 4,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-K4"
-      },
-      {
-        "pergunta": "Before deprecating reserveSeat(), a transit agency developer asks Claude Code for every caller in a 5,200-file repository. Because the function is defined in booking/, Claude reads the 38 files in that folder and reports 6 callers. In review, QA finds 4 more callers in reporting/ and api/handlers/, in files whose names never mention booking. Which statement about this outcome is correct?",
-        "opcoes": [
-          "Finding callers is a content search; Grep for reserveSeat( across the repository returns every file and line that calls it, wherever the file sits.",
-          "Reading folder by folder beats Grep for callers, because Grep misses calls split across lines; Claude should have extended its reading to every folder.",
-          "Glob should have come first, using **/*booking* to find files related to the feature; reading those files would then have exposed every caller.",
-          "The missed callers show that built-in tools cannot cope with 5,200 files; finding callers reliably requires a dedicated code-index MCP server."
-        ],
-        "correta": 0,
-        "explicacao": "Callers are found by searching file contents for the function name, which is what Grep does across the whole codebase. Reading the folder where a function is defined only covers callers that happen to live nearby. Grep for the call pattern, then Read the hits that need more context.",
-        "feedbacks": [
-          "Correct. Locating all callers of a function is the guide's example of selecting Grep.",
-          "Multiline calls are an edge case; reading every folder by hand floods the context and is far less complete than a repository-wide Grep.",
-          "File names do not reveal callers; the missed ones live in files without booking in their names.",
-          "A code index can help across many repositories, but within one repository Grep finds callers directly; nothing here requires a new server."
-        ],
-        "cenario": 2,
-        "dominio": "D2",
-        "ts": "2.5",
-        "bullet": "2.5-S1"
-      },
-      {
-        "pergunta": "A consulting firm built a customer support resolution agent for a telecom client with the Claude Agent SDK. It recently exposed the plan catalog and the troubleshooting-guide hierarchy as MCP resources, cutting exploratory calls by about 60%. A teammate now proposes converting get_customer, lookup_order, process_refund, and escalate_to_human into MCP resources too, \"so the agent sees everything up front.\" How should you evaluate this proposal?",
-        "opcoes": [
-          "Adopt it: resources load without tool calls, so moving all four backend operations removes the remaining calls and cuts latency in every conversation.",
-          "Adopt it only for process_refund and escalate_to_human, since those are the operations whose outcomes the agent most needs to see before replying.",
-          "Reject it: resources suit content catalogs the agent reads; customer lookups and actions with side effects such as refunds should stay MCP tools.",
-          "Reject it: MCP resources are available only inside Claude Code sessions, so an Agent SDK agent would lose access to the four operations entirely."
-        ],
-        "correta": 2,
-        "explicacao": "MCP resources expose content catalogs, such as plan lists, documentation hierarchies, and issue summaries, so the agent knows what exists without exploratory calls. get_customer and lookup_order are parameterized queries, and process_refund and escalate_to_human are actions with side effects, which is what tools are for. The earlier change worked because it targeted catalogs; this one would misuse the mechanism.",
-        "feedbacks": [
-          "Misreads what resources are: a refund or an escalation is an action the agent decides to take, not content to read up front.",
-          "Those two are the clearest side-effecting actions; turning them into readable content makes no sense for the workflow.",
-          "Correct. Catalogs belong in resources; lookups and actions stay tools.",
-          "Agent SDK agents can use MCP resources; the reason to reject is the nature of these operations, not platform support."
+          "The opposite is true: the transformed result is what the model processes, which is the point of using PostToolUse here.",
+          "Hooks transform or block; they do not re-run tools with new arguments. Recovering from a bad call is the agent's decision in the loop.",
+          "Correct. Hook logic runs on every matching call regardless of prompt instructions, which makes it deterministic.",
+          "Correct. PostToolUse runs after execution and can replace the result before the model processes it.",
+          "Stopping a call before it runs is interception of the outgoing call, which is PreToolUse; PostToolUse runs after the tool has executed."
         ],
         "cenario": 1,
-        "dominio": "D2",
-        "ts": "2.4",
-        "bullet": "2.4-K4"
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-K1"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent escalates a conversation when customer sentiment falls below -0.6 or when the agent rates its own confidence below 7 out of 10. A review of 500 escalations finds that most were angry customers with simple in-policy issues, while several calm customers asking for policy exceptions were handled autonomously with confidence ratings of 9. Which TWO conclusions does this evidence support? Choose TWO.",
+        "opcoes": [
+          "Combining sentiment and confidence into one calibrated, weighted score would cancel out the errors each signal makes on its own.",
+          "The confidence threshold should rise from 7 to 9, so that more of the difficult exception requests are routed to human agents.",
+          "A classifier trained on historical tickets is now the proportionate first step, because both signals have already failed in production.",
+          "The agent rated itself most confident on cases it should have escalated, so its self-reported score cannot separate easy from hard.",
+          "Sentiment reflects how the customer feels, not whether the case needs an exception or a decision beyond the agent's authority."
+        ],
+        "corretas": [
+          3,
+          4
+        ],
+        "explicacao": "Sentiment-based escalation and self-reported confidence are unreliable proxies for case complexity. Sentiment tracks emotion, so it escalates angry customers with easy cases, and the agent was most confident on the exception requests it should have escalated. The fix is explicit escalation criteria, not a different threshold or a new model.",
+        "feedbacks": [
+          "Combining two unreliable proxies does not produce a reliable one; neither signal measures whether a policy exception is involved.",
+          "Raising the threshold would escalate far more cases overall, and it would still miss exceptions the agent rated at 9 or 10, because the score itself is unreliable.",
+          "Over-engineering: explicit escalation criteria with few-shot examples in the system prompt should come before building and training a classifier.",
+          "Correct. The agent was confidently wrong on the hard cases, so its self-reported confidence does not track complexity.",
+          "Correct. Emotion and case complexity are different things; angry customers with in-policy issues are resolvable."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-K3"
       }
     ]
   },
   "order": [
-    6,
-    19,
     11,
-    10,
-    5,
-    18,
+    9,
+    13,
+    6,
+    4,
+    19,
+    12,
     8,
+    2,
     3,
     16,
     17,
-    7,
-    0,
+    15,
     14,
-    9,
+    18,
+    7,
     1,
-    12,
-    13,
-    4,
-    2,
-    15
+    0,
+    5,
+    10
   ],
   "pos": 20,
   "answers": [
     {
       "pos": 0,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 1,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
@@ -489,14 +489,13 @@
     {
       "pos": 3,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 4,
       "escolha": [
-        0,
         1
       ],
       "acertou": true
@@ -504,43 +503,43 @@
     {
       "pos": 5,
       "escolha": [
-        0
+        3,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 6,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 8,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 9,
       "escolha": [
-        0,
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
@@ -568,6 +567,7 @@
     {
       "pos": 14,
       "escolha": [
+        2,
         3
       ],
       "acertou": true
@@ -575,36 +575,36 @@
     {
       "pos": 15,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 16,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 17,
       "escolha": [
-        1,
-        4
+        0,
+        2
       ],
-      "acertou": true
+      "acertou": false
     },
     {
       "pos": 18,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 19,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     }
