@@ -1,467 +1,467 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-06/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-07/questions.json",
   "bank": {
-    "titulo": "Módulo 06 — Prova (estilo exame)",
+    "titulo": "Módulo 07 — Prova (estilo exame)",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "A health insurer runs a multi-agent research system that produces evidence reviews on treatments. The web search subagent sometimes reads member records from an internal claims tool to frame its queries. Compliance requires that no member identifier ever appears in an outbound web search query. The rule is in the subagent's system prompt, yet an audit of 12,000 queries found 9 that contained member IDs. Which TWO changes give the guarantee compliance is asking for? Choose TWO.",
+        "pergunta": "A pharmaceutical company's developer productivity agent, built with the Claude Agent SDK, was asked to \"add comprehensive tests\" to a 15-year-old laboratory information management system with 1,100 source files. The agent was configured with a plan that walks the repository alphabetically and generates one test file per source file. After three days it has written 640 tests, mostly for DTOs and simple getters. The sample-tracking and dose-calculation modules, where 80% of last year's production incidents originated, still have no new tests, and 90 of the generated tests fail because they mock classes that turned out to depend on a shared static configuration singleton. What is the most likely root cause?",
         "opcoes": [
-          "Register a PostToolUse hook on the claims tool that redacts member identifiers from its results before the subagent processes them.",
-          "Move the rule to the top of the web search subagent's system prompt and repeat it in each task the coordinator sends, so it sits next to where queries are written.",
-          "Register a PostToolUse hook on the web search tool that checks each executed query for member IDs and alerts the compliance team when one is found.",
-          "Add a hook before each search that sends the planned query to a review subagent for approval, so a second model catches identifiers the first one missed.",
-          "Register a PreToolUse hook on the web search tool that inspects every outgoing query and denies any call matching the member ID pattern, returning the reason."
+          "The test-generation prompt has no few-shot examples of high-value tests, so the agent falls back on shallow tests that exercise simple data classes and property getters.",
+          "The task was decomposed as a fixed file-by-file sequence instead of mapping the structure, prioritizing high-impact areas, and adapting as dependencies surfaced.",
+          "The agent's context filled up during the three-day run, so it lost track of which modules carry the most business risk and drifted toward the easiest files.",
+          "The agent was not allowed to run the test suite through Bash, so it did not see that its mocks were failing and could not correct them before moving on."
+        ],
+        "correta": 1,
+        "explicacao": "An open-ended task like adding comprehensive tests to a legacy system needs adaptive decomposition: map the structure, find the high-impact areas (here, the modules behind 80% of incidents), and follow a prioritized plan that changes when dependencies such as the static singleton appear. A fixed alphabetical file-by-file plan guarantees effort goes to whatever comes first and cannot react to what is discovered.",
+        "feedbacks": [
+          "Few-shot examples could improve the quality of each test, but they would not change which files the plan visits or make the agent prioritize the risky modules; the symptom is about coverage order, not test style.",
+          "Correct. The fixed sequence ignores impact and cannot adapt when a shared dependency is discovered; mapping, prioritizing, and adapting the plan is the recommended decomposition.",
+          "Context degradation is real in long sessions, but the agent was never told to consider risk in the first place: an alphabetical plan sends it to DTOs whether or not its context is fresh.",
+          "Running the tests would expose the 90 failing mocks, but the agent would still be walking the alphabet; it would not reach the high-incident modules any sooner or plan around the singleton."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-S3"
+      },
+      {
+        "pergunta": "A pharmaceutical company runs an internal developer assistant built with the Claude Agent SDK. A coordinator delegates to four subagents: codebase-explorer, dependency-analyzer, doc-writer, and test-planner. The design document states: \"For consistency, every request passes through all four subagents in order; a subagent with nothing relevant returns an empty section.\" Engineers report that a question such as \"Where is the batch-release validation function defined?\" takes about four minutes and comes back as a three-page answer that includes an unrequested test plan. Which flaw in the design best explains this?",
+        "opcoes": [
+          "The four subagents run one after another instead of in parallel, so the total latency of every request equals the sum of all four subagent runs.",
+          "The doc-writer and test-planner subagents have no tool restrictions, so they run exploratory searches outside their specialization on every request.",
+          "The coordinator routes every request through the full pipeline instead of analyzing what each query needs and invoking only the relevant subagents.",
+          "The codebase-explorer returns verbose findings without a concise format, so its raw output spreads into each downstream subagent's section."
+        ],
+        "correta": 2,
+        "explicacao": "The coordinator's job includes deciding which subagents to invoke based on the query's complexity. A lookup question needs only the explorer; forcing it through all four subagents adds latency and produces output nobody asked for. The fix is a coordinator that analyzes each query and selects subagents dynamically.",
+        "feedbacks": [
+          "Parallel execution would shorten the wait, but the coordinator would still invoke the doc-writer and test-planner for a simple lookup, so the unrequested test plan and most of the cost would remain.",
+          "Tool restrictions matter for preventing cross-specialization misuse, but even perfectly scoped subagents would run here, because the design invokes all four for every request.",
+          "Correct. Always routing through the full pipeline is the flaw; the coordinator should analyze the query and invoke only the subagents it needs.",
+          "A more concise explorer output would trim the answer somewhat, but the doc-writer and test-planner would still run and still add sections that the engineer never requested."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-S1"
+      },
+      {
+        "pergunta": "An energy utility runs Claude Code in its CI pipeline to review pull requests to its grid-telemetry ingestion service. The team recently restructured the review into two steps. Step 1 reviews each changed file on its own with the same criteria. Step 2 receives the step-1 findings plus the interfaces of the changed modules and looks only at data flow between files. Since the change, findings are equally detailed across files, and step 2 caught a parser that emits kWh while an aggregator in another file expects MWh, which the previous single-pass review had missed. Which statement about this pipeline is correct?",
+        "opcoes": [
+          "It is dynamic decomposition: the integration step exists because the coordinator generated it after detecting the unit mismatch in the per-file reviews.",
+          "It is prompt chaining, but the gain comes from the extra tokens it spends; one pass with a larger output budget would catch the same set of issues.",
+          "It is prompt chaining: fixed steps where focused per-file passes avoid attention dilution and a separate pass covers the cross-file data flow.",
+          "It is a consensus design: two passes examine the same code independently, and only the issues that both passes confirm are posted to the PR."
+        ],
+        "correta": 2,
+        "explicacao": "Breaking a review into a fixed sequence of focused steps (each file on its own, then a cross-file integration pass) is the prompt chaining pattern. Per-file passes give every file the same attention instead of diluting it across the whole PR, and the integration pass looks at what no single file shows, such as a unit mismatch between a parser and an aggregator.",
+        "feedbacks": [
+          "The steps were designed in advance and run on every PR; nothing is generated from intermediate findings. Dynamic decomposition is for open-ended investigations, not for a predictable review.",
+          "The label is right but the explanation is wrong: a longer output budget for a single pass does not fix attention dilution, which is why the old review gave uneven depth and missed the cross-file bug.",
+          "Correct. This is prompt chaining for a predictable review: per-file passes for consistent local depth plus a separate integration pass for cross-file issues.",
+          "The two steps look at different things (local issues versus cross-file data flow); they do not review the same code twice, and requiring agreement would suppress real findings."
+        ],
+        "cenario": 5,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-K2"
+      },
+      {
+        "pergunta": "A university library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to search, document-analysis, synthesis, and report subagents. To reduce latency, an engineer piloted a change that lets the document-analysis subagent send follow-up queries straight to the search subagent through a shared queue, bypassing the coordinator. The pilot was 18% faster, but when the search subagent timed out, the analysis subagent waited without reporting anything, and the coordinator's trace had no record of about 40% of the searches that were run. Which TWO statements correctly evaluate this change? Choose TWO.",
+        "opcoes": [
+          "The latency gain justifies direct traffic between analysis and search, provided that the synthesis subagent still receives all of its inputs from the coordinator.",
+          "With the coordinator in the path, failures such as the search timeout are handled consistently in one place rather than separately by each pair of agents.",
+          "A cleaner fix is to merge the analysis and search subagents into one agent that holds both tool sets, which removes the round trip without a shared queue.",
+          "Routing every subagent request through the coordinator keeps one place that sees all requests and results, which the missing trace entries show was lost.",
+          "The change is acceptable once the queue logs every message, because a complete message log restores the coordinator's control over the flow of information."
+        ],
+        "corretas": [
+          1,
+          3
+        ],
+        "explicacao": "In a hub-and-spoke design, all communication between subagents goes through the coordinator. That gives observability (the coordinator sees every request and result, which the 40% gap in the trace shows was lost) and consistent error handling (the coordinator decides how to recover from the search timeout instead of the analysis subagent silently waiting).",
+        "feedbacks": [
+          "The 18% gain is real, but it was bought by losing observability and error handling for exactly the traffic that failed; keeping only synthesis on the coordinator does not recover them.",
+          "Correct. Centralized routing means errors like the timeout are handled consistently by the coordinator instead of disappearing between two subagents.",
+          "Merging the two subagents removes the hop, but it gives one agent tools outside its specialization and recreates the problems that separate, scoped subagents were meant to avoid.",
+          "Correct. Routing everything through the coordinator gives one observable place for all requests and results; bypassing it is why 40% of searches are missing from the trace.",
+          "Logging restores part of the visibility, but not control: the coordinator still cannot decide what analysis receives, notice gaps, or handle the search timeout, which went unreported in the pilot."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-S4"
+      },
+      {
+        "pergunta": "A pharmaceutical company's developer productivity tool uses the Claude Agent SDK. The coordinator defines two subagents, legacy-explorer and boilerplate-generator, each with a description, a system prompt, and a restricted tool list. The coordinator's options include allowedTools: [\"Read\", \"Grep\", \"Glob\", \"Bash\"]. Logs show the coordinator never delegates: it makes 60 or more Grep and Read calls itself, its context fills up on large repositories, and the subagent definitions are never used. The team wants to keep the coordinator's context small without rewriting the subagents. What is the most effective fix?",
+        "opcoes": [
+          "Rewrite both subagent descriptions to say \"use proactively for any codebase exploration\", so that the coordinator is more likely to select them.",
+          "Add a rule to the coordinator's system prompt stating that all codebase exploration must be delegated to subagents rather than done directly.",
+          "Add \"Task\" to the coordinator's allowedTools, so that it can spawn the defined subagents instead of exploring the whole repository by itself.",
+          "Remove Grep and Read from the coordinator's allowedTools, so that it has no option other than handing exploration work to the subagents."
+        ],
+        "correta": 2,
+        "explicacao": "Subagents are spawned through the Task tool, and a coordinator can only invoke them if its allowedTools includes \"Task\". Here the agent definitions exist, but the coordinator has no way to call them, so it does the exploration itself and fills its context.",
+        "feedbacks": [
+          "Better descriptions help the coordinator choose between subagents, but it cannot choose any of them while the Task tool is unavailable to it.",
+          "A prompt rule cannot give the coordinator a capability it lacks; without \"Task\" in allowedTools, it has no tool for delegating, whatever the prompt says.",
+          "Correct. Adding \"Task\" to allowedTools is what lets the coordinator spawn the subagents that are already defined.",
+          "Taking away Grep and Read would stop the coordinator from exploring, but it still could not delegate without the Task tool; it would simply fail at the work instead."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-K1"
+      },
+      {
+        "pergunta": "In a university library's multi-agent research system, a librarian spends 12 turns with the coordinator narrowing a request: peer-reviewed sources only, published 2015–2024, no preprints, focused on open-access mandates at EU universities. The coordinator then delegates to the search subagent with the prompt \"Find sources for the topic we agreed on.\" The search subagent returns 30 results about open access in general; 11 are preprints and 9 were published before 2015. What is the most effective first step?",
+        "opcoes": [
+          "Have the coordinator write the agreed topic, date range, and source-type exclusions directly into the search subagent's prompt for every delegation.",
+          "Give the search subagent read access to the coordinator's conversation log, so that it can recover the constraints agreed with the librarian.",
+          "Add the library's standing rules, such as peer-reviewed only and no preprints, to the system prompt in the search subagent's AgentDefinition.",
+          "Add a filtering step to the synthesis subagent that discards any result outside the agreed date range or the allowed source types."
+        ],
+        "correta": 0,
+        "explicacao": "Subagents run with isolated context: they do not inherit the coordinator's conversation history. Everything the librarian agreed on exists only in the coordinator's turns, so the coordinator must put the topic, dates, and exclusions explicitly into each delegation prompt.",
+        "feedbacks": [
+          "Correct. The subagent never saw the 12 turns; the coordinator has to pass the agreed constraints explicitly in the delegation prompt.",
+          "Pointing the subagent at the coordinator's log hands it a long, unfiltered transcript instead of the specific constraints, and gives up the coordinator's control over what each subagent receives.",
+          "Standing rules in the system prompt would help with preprints, but this request's topic and date range change from request to request and still would not reach the subagent.",
+          "Filtering downstream treats the symptom: the search would keep returning off-topic results, and sources that were never retrieved because the query was too broad cannot be filtered back in."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-K2"
+      },
+      {
+        "pergunta": "An energy utility is designing two Claude Code workflows for its CI system. Workflow 1 reviews every pull request to the billing-rules repository for the same three aspects: security, rate-calculation correctness, and logging conventions. Workflow 2 runs when the nightly meter-reconciliation job fails and must find the root cause, which in past incidents was sometimes bad input data, sometimes a configuration change, and sometimes code. The team lead wants a single decomposition design for both. Which choice is best?",
+        "opcoes": [
+          "Dynamic decomposition for both, because a coordinator that plans each run adapts better to pull requests of different sizes and to new kinds of job failures.",
+          "Prompt chaining for both, because fixed sequential steps are easier to test and audit, and auditability matters more than flexibility at a regulated utility.",
+          "Prompt chaining for the failure investigation, whose steps can be listed in advance, and dynamic decomposition for the reviews, whose pull requests vary in size.",
+          "Prompt chaining for the reviews, which check the same aspects every time, and dynamic decomposition for the investigation, whose next step depends on findings."
+        ],
+        "correta": 3,
+        "explicacao": "The two workflows have different shapes. A review that checks the same aspects on every PR is predictable, so a fixed prompt chain fits. A root-cause investigation is open-ended: what to check next depends on what the previous step found, so it needs dynamic, adaptive decomposition. One design for both forces one workflow into the wrong pattern.",
+        "feedbacks": [
+          "Dynamic planning for a review that always checks the same three aspects adds unpredictability and cost without benefit; PR size does not change which aspects are reviewed.",
+          "Fixed steps suit the review, but an investigation whose cause can be data, configuration, or code cannot follow a script written in advance; the chain would miss causes outside it.",
+          "This inverts the patterns: the investigation is the open-ended task, and varying PR size does not make the review unpredictable, since the aspects checked are always the same.",
+          "Correct. Prompt chaining fits the predictable multi-aspect review; dynamic decomposition fits the open-ended failure investigation."
+        ],
+        "cenario": 5,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-S1"
+      },
+      {
+        "pergunta": "A university library's multi-agent research system offers a replication check for computational papers: the document-analysis subagent reviews the paper's code repository for errors that could invalidate the results. For one paper with 22 R scripts, a single analysis pass over all scripts produced detailed notes on the first few scripts and one-line comments on the rest, missed a reversed sign in a script in the middle, and did not notice that the cleaning script drops rows with missing values while the modeling script assumes the full sample size. The requirement is consistent depth for every script plus detection of problems between scripts. What should you change?",
+        "opcoes": [
+          "Analyze each script in its own focused pass, then run a separate integration pass over the per-script findings to check data flow between scripts.",
+          "Spawn one analysis subagent per script and have the synthesis subagent merge their findings into the report, so every script receives the same depth of review.",
+          "Have the analysis subagent first summarize every script and then review the summaries for errors, so the whole repository fits comfortably within one prompt.",
+          "Order the scripts from largest to smallest before the single pass, so that the most complex code is reviewed while the model's attention is at its strongest."
+        ],
+        "correta": 0,
+        "explicacao": "A single pass over 22 scripts suffers from attention dilution: depth drops after the first files and obvious bugs are missed. Splitting the work into per-script local passes gives each script full attention, and a separate integration pass is needed for issues that only appear between scripts, such as the cleaning script changing the sample the model script relies on.",
+        "feedbacks": [
+          "Correct. Per-file passes give consistent local depth, and the separate integration pass catches cross-file data flow problems like the dropped rows.",
+          "This gets the per-script depth, but merging findings in synthesis is not an integration review: no step examines how data flows from the cleaning script into the modeling script.",
+          "Reviewing summaries discards the details where bugs live, such as a reversed sign, and still compresses the whole repository into one pass with diluted attention.",
+          "Reordering only changes which scripts get the thin coverage; the single pass still dilutes attention and still has no step that looks across scripts."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-S2"
+      },
+      {
+        "pergunta": "A food-delivery marketplace uses Claude Code to investigate why courier arrival estimates became 25% less accurate after a release. A developer created a custom slash command that runs fixed steps: read the ETA service, list the recent commits to that service, and propose a fix. On every run the command proposes a confident change to the ETA code, yet the accuracy problem persists. In 3 of 5 runs, the notes from the first step mention that the ETA model reads travel times from an external traffic feed, but the next step still lists only ETA-service commits. A teammate later finds the cause in a traffic-feed configuration change made in another repository. What is the most likely root cause?",
+        "opcoes": [
+          "The command has no few-shot examples of past root-cause analyses, so the final step jumps to a fix without weighing the evidence from earlier steps.",
+          "An open-ended investigation was run as a fixed chain of steps, so the plan could not adapt when early findings pointed to a source outside the ETA service.",
+          "The command runs inside the developer's long-lived session, so stale tool results from earlier work bias every analysis toward the ETA service code.",
+          "The command does not use plan mode, so Claude edits the ETA service before it explores the other services and feeds that supply data to the model."
+        ],
+        "correta": 1,
+        "explicacao": "Fixed sequential pipelines suit predictable work; investigations whose next step depends on what was just found need dynamic, adaptive decomposition. Here step 1 found the right lead (the traffic feed), but the fixed chain had no way to generate a new subtask to follow it, so every run ended with a fix in the wrong place.",
+        "feedbacks": [
+          "Few-shot examples could improve how the fix is argued, but the chain would still look only at ETA-service commits; the evidence that matters was never gathered.",
+          "Correct. The investigation was forced into a fixed chain that could not follow the traffic-feed lead discovered in step 1; it needed adaptive decomposition.",
+          "Stale context can bias a resumed session, but the stem shows the same miss on every run and points to the command's fixed steps, not to old tool results.",
+          "Plan mode helps before large changes, but the command did not fail by editing too early; it failed because its steps could never look outside the ETA service."
+        ],
+        "cenario": 2,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-K1"
+      },
+      {
+        "pergunta": "A university library's multi-agent research system received the request \"How did the shift to hybrid teaching change the way students use the university library since 2020?\" The coordinator's log shows three subtasks: \"e-book loan statistics\", \"database login trends\", and \"off-campus proxy usage\". Every subagent returned well-sourced findings for its subtask, and the final report is accurate, but faculty reviewers say it ignores study-space occupancy, reference and tutoring services, and interlibrary loan. What is the flaw?",
+        "opcoes": [
+          "The coordinator decomposed the question only into digital-access metrics, so no subagent was ever assigned the other dimensions of student library use.",
+          "The search subagent's queries are too literal, so they retrieve only usage statistics instead of sources covering the full range of student library activity.",
+          "The synthesis subagent has no coverage check, so it does not flag that study spaces, reference services, and interlibrary loan are missing from the report.",
+          "The document-analysis subagent applies relevance criteria that are too strict, so it discards sources about physical spaces and in-person services."
+        ],
+        "correta": 0,
+        "explicacao": "The log shows that all three subtasks are about digital access. Each subagent did its assigned work well; the gap comes from what they were assigned. An overly narrow decomposition by the coordinator leads to incomplete coverage of a broad topic, so the fix belongs in the coordinator's decomposition.",
+        "feedbacks": [
+          "Correct. The coordinator's decomposition was too narrow: it never assigned the physical, service, or interlibrary dimensions of the question.",
+          "The search subagent answered the subtasks it was given; broader queries for \"e-book loan statistics\" would still not produce sources on study spaces or tutoring.",
+          "A coverage check would help notice the gap, but it treats the symptom downstream; the missing dimensions were never researched because no subtask asked for them.",
+          "Nothing indicates that sources were discarded; the subagents were never asked to look for physical spaces or in-person services in the first place."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-K4"
+      },
+      {
+        "pergunta": "A university library's research system logs two requests from the same afternoon. For \"In what year did the library join the HathiTrust consortium?\", the coordinator invoked only the search subagent and answered from its result in 9 seconds. For \"Compare the citation impact of open-access and paywalled chemistry articles from 2010 to 2023\", the coordinator created four subtasks, ran three searches in parallel, then invoked document analysis, synthesis, and report generation, taking 6 minutes. A stakeholder asks whether this inconsistency is a defect. Which statement is correct?",
+        "opcoes": [
+          "It is a defect: every request should follow the same subagent sequence so that answers stay consistent and the cost of each request stays comparable.",
+          "It is expected: the coordinator chooses which subagents to invoke based on each query's complexity, then decomposes, delegates, and aggregates.",
+          "It is expected only for factual lookups; complex requests should follow a decomposition fixed in code rather than one that the coordinator chooses.",
+          "It shows a missing routing classifier, which should label each request's type before the coordinator receives it and then pick the pipeline."
+        ],
+        "correta": 1,
+        "explicacao": "Deciding which subagents to invoke based on query complexity is part of the coordinator's role, together with task decomposition, delegation, and result aggregation. A one-fact lookup needs only search; a comparative analysis needs several searches, analysis, synthesis, and a report.",
+        "feedbacks": [
+          "Forcing the same sequence on every request is the full-pipeline anti-pattern: the lookup would take minutes and return sections nobody needs.",
+          "Correct. Selecting subagents by query complexity, then decomposing, delegating, and aggregating, is exactly the coordinator's job.",
+          "Fixing the decomposition in code for complex requests removes the coordinator's ability to adapt subtasks to each question, which is why it exists.",
+          "The coordinator already analyzes the request; adding a classifier in front of it is extra infrastructure that duplicates what the coordinator is designed to do."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-K3"
+      },
+      {
+        "pergunta": "A pharmaceutical company's developer productivity system uses a coordinator with three subagents: legacy-explorer, dependency-mapper, and migration-planner. To simplify the design, an architect proposes removing the coordinator. Each subagent would write its outputs to a shared document store, poll the store for the other subagents' outputs, and decide on its own what to do next. How should you evaluate this proposal?",
+        "opcoes": [
+          "Accept it, because a shared store gives every subagent the complete outputs of the others, which removes the need to pass context explicitly.",
+          "Accept it if every store entry records a timestamp and the author agent, because that keeps the system as traceable as it is with a coordinator.",
+          "Reject it, because polling adds latency; replace the store with direct calls between subagents so that each one can request what it needs.",
+          "Reject it, because the coordinator is what manages communication between subagents, error handling, and routing, which the shared store would scatter."
+        ],
+        "correta": 3,
+        "explicacao": "In a hub-and-spoke architecture the coordinator manages all communication between subagents, handles their errors, and routes information. Replacing it with a shared store lets every subagent read everything and act on its own, so no component controls what each agent receives, handles failures consistently, or sees the whole flow.",
+        "feedbacks": [
+          "Giving everyone everything is not a substitute for explicit, controlled context: subagents would act on whatever they find in the store, and nobody would decide what each one should receive.",
+          "Timestamps and authorship give an audit trail, but nothing would still decide what each subagent receives or how failures are handled; traceability is only part of what the coordinator provides.",
+          "Direct calls fix the polling delay but keep the core problem: communication between subagents still bypasses a coordinator, so control and error handling remain scattered.",
+          "Correct. The coordinator is the hub that manages inter-subagent communication, error handling, and routing; removing it scatters all three across the subagents."
+        ],
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-K1"
+      },
+      {
+        "pergunta": "In a university library's research system, the synthesis subagent is invoked twice per report: once to write a draft, and again, after the coordinator collects reviewer comments, to revise it. For the second invocation the coordinator's prompt is \"Revise your draft according to the reviewer comments below,\" followed by the comments. The revised versions often have little in common with the drafts and cite none of the original sources. Which TWO changes should you make? Choose TWO.",
+        "opcoes": [
+          "Include the complete draft and its list of sources in the prompt of the second invocation, since the subagent keeps nothing from its first invocation.",
+          "Add an instruction to the synthesis subagent's system prompt telling it to build on its earlier draft whenever it is invoked to revise a report.",
+          "Ask reviewers to write self-contained comments that quote the sentences they object to, so that the subagent can locate them in its draft.",
+          "Have the coordinator condense the draft into two or three sentences before the revision call, so that the revision prompt stays short and focused.",
+          "Pass the original search and analysis findings along with the comments, since the synthesis subagent cannot see the coordinator's history."
         ],
         "corretas": [
           0,
           4
         ],
-        "explicacao": "A rule that must hold on every call needs deterministic enforcement in code. A PreToolUse hook blocks any outgoing query that carries an identifier, and a PostToolUse hook on the claims tool removes identifiers before they ever reach the subagent's context. Prompt placement and a reviewing model raise the odds of compliance but keep a non-zero failure rate, and a PostToolUse check on the search tool fires only after the query has gone out.",
+        "explicacao": "Subagents do not inherit the coordinator's context and do not share memory between invocations. The second synthesis call starts from nothing, so the coordinator must pass the full draft, its sources, and the underlying findings explicitly in the prompt, along with the comments.",
         "feedbacks": [
-          "Correct. Transforming the tool result before the model processes it means the identifiers never enter the subagent's context, so they cannot leak into a query.",
-          "Tempting because placement and repetition do improve adherence, but it is still prompt-based compliance: probabilistic, and the 9 leaked queries came from a prompt that already stated the rule.",
-          "Tempting because it is a hook, but PostToolUse runs after the search has executed: the query carrying the identifier has already left. It detects a leak instead of preventing it.",
-          "The hook placement is right, but the decision inside it is a second model's judgment: another probabilistic check that adds cost and latency and can miss identifiers the same way.",
-          "Correct. Intercepting the outgoing call is a deterministic guarantee: every query is checked in code, and the denial reason lets the subagent rephrase."
+          "Correct. Each invocation starts fresh, so the draft and its sources must be in the revision prompt.",
+          "An instruction to build on the earlier draft cannot work: the subagent has no memory of that draft, so the prompt refers to something it never receives.",
+          "Quoted comments help locate passages, but the subagent still has no draft to locate them in; this shifts work to reviewers without fixing the missing context.",
+          "A two-sentence summary keeps the prompt short but throws away the content and citations the revision needs, which is exactly what the revised versions are missing.",
+          "Correct. The findings live in the coordinator's context; the synthesis subagent only sees what the coordinator passes in its prompt."
         ],
         "cenario": 3,
         "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-S3"
+        "ts": "1.3",
+        "bullet": "1.3-K2"
       },
       {
-        "pergunta": "An online electronics retailer's support agent calls get_customer with the name the customer provides. When several accounts match, the current design has the agent pick the account with the most recent order, because a sample review showed that this heuristic chose the right account 94% of the time. The agent then moves on to lookup_order and, when the order is eligible, process_refund. What is the flaw in this design?",
+        "pergunta": "A university library's research coordinator has a system prompt with a 14-step procedure: \"1. Search the catalog using the user's exact keywords. 2. Keep the top 5 results. 3. Send each result to document analysis ... 14. Format citations in APA.\" Subagents follow these steps literally. For interdisciplinary requests, such as the effect of urban heat on student health, reports miss key sources: exact-keyword catalog searches return few results, and no step allows alternative terms or other databases. What is the most effective first step?",
         "opcoes": [
-          "94% is too low for refunds; replace the heuristic with a deterministic scoring rule that also weighs shipping city and device history.",
-          "Any heuristic pick acts on an unconfirmed account; the agent should ask for another identifier, such as an order number or account email.",
-          "Multiple matches should go straight to escalate_to_human, because a human agent can carefully review the candidate accounts before acting.",
-          "The agent should show the customer each matching account with its email and address, so that the customer can pick the right one."
-        ],
-        "correta": 1,
-        "explicacao": "When a lookup returns several customers, the agent should ask for an additional identifier instead of choosing by heuristic. Any heuristic, however accurate on a sample, acts on an account the customer has not confirmed, and here the next steps move money. Asking for an order number or account email resolves the ambiguity within the agent's own capability.",
-        "feedbacks": [
-          "Tempting because a deterministic rule sounds safer, but a scoring rule is still a heuristic: some refunds still land on the wrong account, and the customer never confirms which one is theirs.",
-          "Correct. Multiple matches call for clarification with an additional identifier, not heuristic selection.",
-          "Over-escalation: the ambiguity is something the agent can resolve by asking one question, so sending these cases to humans lowers first-contact resolution for no gain.",
-          "It involves the customer, which is right in spirit, but it exposes other customers' emails and addresses. Asking for an identifier achieves the same result without the data leak."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-S5"
-      },
-      {
-        "pergunta": "A QA lead at an online electronics retailer reviews two support transcripts. In the first, the customer writes \"Get me a human, now\" and the agent escalates at once with a handoff summary, without looking up the order. In the second, a customer writes \"This is the second broken charger you've sent me!!\" about an in-policy replacement; the agent acknowledges the frustration and offers a replacement, which the customer accepts. The QA lead flags the agent as inconsistent. Which statement about the observed behavior is correct?",
-        "opcoes": [
-          "Both are correct: a direct demand for a human is honored at once, while frustration over a simple, in-policy issue gets an offer to resolve it.",
-          "The second is wrong: strong negative sentiment signals a case that needs human judgment, so it should have been escalated like the first.",
-          "The first is wrong: the agent should have checked the order first, since a quick fix might have satisfied the customer without a handoff.",
-          "Both are correct, and the reason is that the agent's confidence was low in the first case and high in the second, which drives escalation."
+          "Rewrite the coordinator prompt around the research goal and quality criteria, such as coverage of each discipline and source standards, and let subagents choose how to search.",
+          "Add steps to the procedure for interdisciplinary requests, such as searching two more databases and trying three synonyms whenever fewer than five results come back.",
+          "Add few-shot examples of interdisciplinary requests to the procedure, showing which keywords to use for each discipline and which databases to search for each.",
+          "Add a classifier before the coordinator that detects interdisciplinary requests and routes them to a separate pipeline with a broader 20-step procedure."
         ],
         "correta": 0,
-        "explicacao": "The two situations differ in kind. An explicit request for a human is escalated immediately, without investigating first. A frustrated customer who has not asked for a human and has a straightforward, in-policy issue should have the frustration acknowledged and be offered the resolution, with escalation only if they then ask for a person.",
+        "explicacao": "Coordinator prompts should state research goals and quality criteria rather than step-by-step procedures, so subagents can adapt their approach when a request does not fit the script. The failures come from the rigid procedure itself; stating what a good result looks like lets subagents pick terms and databases that fit each topic.",
         "feedbacks": [
-          "Correct. Explicit demand: escalate immediately. Frustration over a straightforward issue: acknowledge and offer to resolve, escalating only if the customer reiterates.",
-          "Sentiment is tempting as a proxy, but it measures emotion, not complexity. This case was a standard replacement the agent was authorized to handle.",
-          "Investigating first looks helpful for first-contact resolution, but the guide says to honor an explicit request for a human immediately, without first attempting investigation.",
-          "The conclusion is right but the reason is wrong: self-reported confidence is an unreliable escalation trigger. The behavior is correct because of the customer's explicit request versus a resolvable issue."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-K2"
-      },
-      {
-        "pergunta": "An airline's platform team uses an Agent SDK agent to automate repetitive support-engineering work, such as repairing booking records broken by schedule changes. When a repair needs a fare-rule exception, the agent stops mid-process and opens a ticket for the on-call engineer, who cannot access the agent's session. Today the ticket holds a free-text note such as \"Booking needs manual fix, see logs.\" Engineers spend about 25 minutes rebuilding each case. A lead proposes replacing the note with a structured handoff. How should you evaluate this proposal?",
-        "opcoes": [
-          "Adopt it, with fields for the booking and passenger IDs, the failure's cause, the actions already taken, and the recommended action.",
-          "Reject it and attach the agent's full session transcript to each ticket instead, so the engineer can see each step the agent took in detail.",
-          "Reject it and give on-call engineers access to the agent's sessions, so they can resume each session and read its full history directly.",
-          "Adopt it, but limit the fields to the booking ID and the recommended action, so that engineers can act on each ticket more quickly."
-        ],
-        "correta": 0,
-        "explicacao": "When a process escalates mid-way to someone who cannot see the agent's context, the handoff has to carry the case details, the root cause analysis, and the recommended action in a structured form. That lets the engineer act without redoing the investigation, which is where the 25 minutes are going today.",
-        "feedbacks": [
-          "Correct. A structured handoff with the record details, root cause, actions taken, and recommended action lets the engineer act without reconstructing the case.",
-          "A transcript looks complete, but it moves the work of finding the root cause and the next step onto the engineer, which is the 25-minute problem the team is trying to remove.",
-          "Session access changes the constraint instead of solving it: the engineer would still read the whole history to rebuild the case, and the agent's findings stay unsummarized.",
-          "Shorter is tempting, but without the root cause and the actions already taken the engineer cannot judge whether the recommendation is right and ends up re-investigating."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-K3"
-      },
-      {
-        "pergunta": "An online electronics retailer's support agent may issue refunds only to the account that get_customer has verified in the current conversation. After three rounds of system prompt revisions, audits show the agent follows the rule in 99.3% of refund conversations. Legal now requires that no refund ever reach an unverified account, and the business does not want first-contact resolution, currently 82%, to drop. What is the most effective fix given these constraints?",
-        "opcoes": [
-          "Keep refining the system prompt and add few-shot examples until audits reach 99.9% compliance, then monitor the rate monthly.",
-          "Add a programmatic gate that blocks every process_refund call for a customer ID that get_customer has not verified.",
-          "Have a second model review each refund conversation and programmatically hold the payout unless it confirms verification took place.",
-          "Route every refund to a human for approval, keeping the agent responsible for collecting the order details and the amount."
-        ],
-        "correta": 1,
-        "explicacao": "When compliance must be deterministic, such as identity verification before a financial operation, prompt instructions alone keep a non-zero failure rate no matter how well they are tuned. A programmatic gate on process_refund enforces the rule on every call while leaving the agent free to resolve verified cases, so first-contact resolution is unaffected.",
-        "feedbacks": [
-          "Tempting because the trend is improving, but 99.9% still means some refunds reach unverified accounts, and the requirement is that none do.",
-          "Correct. A programmatic gate turns the rule into a deterministic guarantee and keeps verified refunds fully automated.",
-          "The hold is enforced in code, but the decision behind it is a model judging the transcript, which is probabilistic and adds latency and cost.",
-          "This meets the legal requirement but breaks the other constraint: sending every refund to a human drives first-contact resolution down."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-K2"
-      },
-      {
-        "pergunta": "An airline's developer productivity agent, built on the Agent SDK, automates fare-configuration changes through an internal MCP server. The process requires that apply_fare_rule_change run only after get_change_request returns an approved change-request ID. The system prompt states this, but in 5 of 220 runs last month the agent applied changes taken directly from an engineer's chat message, with no approved request. What is the most effective first step?",
-        "opcoes": [
-          "Rewrite the system prompt so the approval requirement appears first and is restated before each configuration step the agent plans.",
-          "Add a programmatic check that the agent's reasoning states an approved change-request ID before it calls apply_fare_rule_change.",
-          "Remove apply_fare_rule_change from the agent and have engineers apply each change by hand once the agent has prepared it.",
-          "Add a programmatic prerequisite that blocks apply_fare_rule_change until get_change_request has returned an approved request ID."
-        ],
-        "correta": 3,
-        "explicacao": "A required tool sequence with real consequences should be enforced in code: block the downstream tool until the prerequisite tool has returned the data it needs, here an approved change-request ID. The agent keeps automating approved changes, and unapproved ones can no longer go through.",
-        "feedbacks": [
-          "Restating the rule more prominently is still prompt-based guidance; it already failed in 5 of 220 runs and cannot reach zero.",
-          "The check runs in code, but it verifies the model's own statement instead of the tool's result, so an ID the agent asserts without approval would still pass.",
-          "It removes the risk by removing the automation, shifting the work to engineers when a gate would keep the agent useful.",
-          "Correct. A programmatic prerequisite blocks the downstream call until the prerequisite step has produced a verified result."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-S1"
-      },
-      {
-        "pergunta": "An online electronics retailer's policy covers price adjustments within 14 days when the price drops on the retailer's own website. A customer asks the support agent for a $70 adjustment because the same TV is now cheaper at one of the retailer's physical stores during an in-store-only clearance. The policy says nothing about in-store prices. One team wants the agent to apply the closest existing rule, and another disagrees. Which approach should the agent follow?",
-        "opcoes": [
-          "Apply the website adjustment rule by analogy, since the store and the website belong to the same retailer and the drop is within 14 days.",
-          "Decline the adjustment, since the policy's explicit terms cover website price drops, and offer to watch for an online price drop instead.",
-          "Offer a partial store credit as a compromise, so the customer gets something today without the agent granting the full exception.",
-          "Escalate to a human with a summary of the request, since the policy does not address in-store prices, and keep resolving covered adjustments."
-        ],
-        "correta": 3,
-        "explicacao": "When the policy is silent or ambiguous on the specific request, the agent should escalate rather than invent a rule or treat silence as a refusal. Here the policy covers website price drops only, so an in-store price is a policy gap. Requests the policy does cover stay with the agent, which protects first-contact resolution.",
-        "feedbacks": [
-          "Extending the rule by analogy feels customer-friendly and keeps the case automated, but the agent would be creating policy it has no authority to set.",
-          "Treating silence as a no looks safe, but the policy does not say in-store prices are excluded; the agent would be making a policy decision that belongs to a human.",
-          "A compromise still grants an exception the policy does not define, just a smaller one, and it is the agent improvising policy.",
-          "Correct. A policy gap is an escalation trigger; covered adjustments remain autonomous."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-S4"
-      },
-      {
-        "pergunta": "An airline's internal agent helps support engineers resolve escalated passenger tickets by querying booking, payment, and loyalty MCP servers and the related code. The requirement is one consolidated reply per ticket within 10 minutes. For a ticket reporting a double-charged seat upgrade, missing loyalty miles, and a boarding pass error, the agent finishes the first issue, posts a reply, then starts the next. It takes 26 minutes, and two of the replies contradict each other on how the refund will be paid. What should you change?",
-        "opcoes": [
-          "Split the ticket into its distinct issues, investigate them in parallel against booking data fetched once, then write one reply.",
-          "Start a separate agent session for each issue, with each session fetching its own booking data and posting its own reply to the ticket.",
-          "Keep the sequential flow, raise the agent's turn limit, and add a final step that merges the three replies into one structured message.",
-          "Ask engineers to split multi-issue tickets into separate tickets before the agent runs, so each run handles a single issue."
-        ],
-        "correta": 0,
-        "explicacao": "A multi-concern request should be decomposed into distinct items, each investigated in parallel using shared context, and then synthesized into a single resolution. Parallel investigation fixes the time budget, and the shared booking context keeps the findings consistent, which removes the contradiction about how the refund is paid.",
-        "feedbacks": [
-          "Correct. Decompose, investigate in parallel with shared context, then synthesize one unified resolution.",
-          "Parallel sessions solve the speed problem, but without shared context each one reasons separately and replies separately, which is exactly how contradictions arise.",
-          "A merge step hides the symptom but keeps the 26-minute sequential flow, and the merged text may still contain conflicting findings.",
-          "This pushes the work onto engineers and still produces several replies for one passenger, instead of one consolidated reply."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-S2"
-      },
-      {
-        "pergunta": "An online electronics retailer's support agent escalates 31% of conversations, against a 15% target. Its system prompt says: \"Escalate when the case is complex or when you are unsure.\" Most escalated cases are long conversations about multi-item orders that ended as standard returns. Meanwhile, a calm customer who asked for a warranty extension beyond what the policy allows was refused by the agent without any escalation. What is the most likely root cause?",
-        "opcoes": [
-          "The agent lacks a tool that returns the warranty policy, so it cannot tell which requests fall outside of the standard terms.",
-          "Long multi-item conversations exceed what the agent can track, so a larger model with a bigger context window is needed here.",
-          "The criteria key on perceived complexity instead of the right triggers: requests for a human, policy exceptions or gaps, and no progress.",
-          "The agent's self-assessed uncertainty is poorly calibrated, so the \"unsure\" condition fires on long conversations instead of on hard ones."
-        ],
-        "correta": 2,
-        "explicacao": "Appropriate escalation triggers are an explicit request for a human, a policy exception or gap, and an inability to make progress. Complexity is not one of them. A prompt that escalates on \"complex\" sends long but routine cases to humans and misses short, calm requests that actually need a policy exception, which matches both symptoms.",
-        "feedbacks": [
-          "It addresses a different problem: the agent did know the request exceeded the policy, since it refused it. The failure was not escalating a policy exception.",
-          "Tempting because long conversations look hard, but these cases ended as standard returns; the issue is when the agent chooses to escalate, not what it can track.",
-          "Correct. The trigger is wrong: escalation should follow explicit requests, policy exceptions or gaps, and lack of progress, not perceived complexity.",
-          "Partly true, since self-reported uncertainty is unreliable, but it explains only part of the pattern. The underlying issue is criteria built on complexity and uncertainty instead of the proper triggers."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-K1"
-      },
-      {
-        "pergunta": "An online electronics retailer's support agent decides return eligibility from three MCP tools: get_customer returns Unix timestamps, lookup_order returns ISO 8601 strings with time-zone offsets, and a third-party carrier server returns numeric status codes. The team added conversion rules and two worked examples to the system prompt. The agent still misjudges the 30-day return window in about 4% of cases. What is the flaw in this approach?",
-        "opcoes": [
-          "It depends on the model converting formats on every call; a PostToolUse hook should normalize results before the model sees them.",
-          "Two worked examples are too few; the prompt needs five to eight examples covering each tool's format and the edge cases around midnight.",
-          "Add a PreToolUse hook on the three tools that converts date arguments to ISO 8601, so that every tool works with a single date format.",
-          "The carrier server should be changed to emit ISO 8601 and named statuses, so that the three tools return the same formats at the source."
-        ],
-        "correta": 0,
-        "explicacao": "Heterogeneous formats from different MCP tools are best normalized by a PostToolUse hook that transforms each result before the agent processes it. Conversion rules in the prompt depend on the model applying them correctly on every call, which is probabilistic. The hook also covers the third-party server without changing it.",
-        "feedbacks": [
-          "Correct. A PostToolUse hook normalizes every result deterministically before the model reasons about dates and statuses.",
-          "More examples may lower the error rate, but the model would still convert formats in its head on every call, so some window checks would still be wrong.",
-          "Right mechanism family, wrong side of the call: PreToolUse changes the arguments going out, but the mixed formats are in the results coming back, which is where PostToolUse applies.",
-          "Fixing the source would work in principle, but the carrier server is third-party and outside your control; a hook achieves the same result on your side."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-S1"
-      },
-      {
-        "pergunta": "An online electronics retailer's support agent must call get_customer before lookup_order. Team A added \"Always call get_customer first\" to the system prompt, and correct ordering rose from 91% to 98.5% of conversations. Team B instead added a gate in the agent's harness that rejects lookup_order until get_customer has returned a verified customer ID. A director asks the teams to explain the difference. Which statement is correct?",
-        "opcoes": [
-          "At 98.5%, the prompt is effectively deterministic; the remaining 1.5% is noise, and the gate mostly adds an extra step.",
-          "The remaining 1.5% shows that the tool descriptions are ambiguous; clearer descriptions would let the prompt reach 100%.",
-          "The prompt raised the probability of correct ordering but cannot ensure it; the gate enforces the ordering in code on each call.",
-          "Few-shot examples of the correct order would guarantee the sequence, since the model would then learn it from the examples."
-        ],
-        "correta": 2,
-        "explicacao": "Prompt-based guidance changes how likely the model is to follow an order; programmatic enforcement such as a prerequisite gate makes the order hold on every call. That difference matters whenever a step is mandatory, because any prompt-based approach keeps a non-zero failure rate.",
-        "feedbacks": [
-          "Treating 1.5% as noise is the trap: in a mandatory workflow, 1.5% of conversations still run lookup_order on an unverified customer.",
-          "Tool descriptions drive which tool the model selects, not the required order between tools, and better wording would still be probabilistic.",
-          "Correct. Prompt guidance is probabilistic; a programmatic prerequisite is deterministic.",
-          "Few-shot examples improve consistency, but they are still prompt-based guidance; no number of examples makes the sequence certain."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-K1"
-      },
-      {
-        "pergunta": "At an online electronics retailer, a product manager proposes that the support agent transfer to a human whenever a customer sounds frustrated, for example \"This is the third time I'm writing about this!\". Most of these conversations are about late or missing packages that the policy lets the agent resolve with a reship or a refund. How should you evaluate the proposal?",
-        "opcoes": [
-          "Adopt it: frustrated customers expect human empathy, and an early transfer protects satisfaction scores even when the issue is a simple one.",
-          "Reject it: the agent should acknowledge the frustration and offer the in-policy fix, escalating if the customer asks again for a human.",
-          "Adopt it with a sentiment-score threshold calibrated on past satisfaction surveys, so that just the strongly negative messages get transferred.",
-          "Reject it: the agent should set the emotional tone aside and go straight to the resolution steps, since tone does not change policy."
-        ],
-        "correta": 1,
-        "explicacao": "When the issue is within the agent's capability, the right move is to acknowledge the frustration and offer the resolution, escalating only if the customer reiterates a preference for a human. Frustration alone is not an escalation trigger, and transferring these straightforward cases would lower first-contact resolution.",
-        "feedbacks": [
-          "Tempting because it sounds customer-centric, but it sends straightforward, in-policy cases to humans and lowers first-contact resolution without solving anything the agent could not.",
-          "Correct. Acknowledge the frustration, offer the resolution within the agent's capability, and escalate if the customer reiterates a request for a human.",
-          "Calibrating the threshold does not fix the premise: sentiment measures emotion, not whether the case needs a human.",
-          "Right to keep the case with the agent, but ignoring the frustration skips the acknowledgment and gives no path to a human if the customer asks again."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-S3"
-      },
-      {
-        "pergunta": "An airline's operations team uses an Agent SDK agent to automate repetitive disruption tasks, including issuing travel vouchers through a vendor's MCP server that the team cannot modify. Policy requires supervisor approval for any voucher above $500. The limit is in the system prompt, but last month the agent issued 4 vouchers between $540 and $700 on its own. Vouchers of $500 or less must stay fully automated. What is the most effective fix?",
-        "opcoes": [
-          "Restate the $500 limit in the system prompt with worked examples of amounts above and below it, and add a reminder to each disruption task.",
-          "Add a PostToolUse hook on issue_voucher that alerts a supervisor whenever an issued voucher exceeds $500, so it can be reversed quickly.",
-          "Add a PreToolUse hook on issue_voucher that denies calls above $500 and tells the agent to route the case to request_supervisor_approval.",
-          "Remove issue_voucher from the agent and have it send each voucher to request_supervisor_approval, whatever the amount involved."
-        ],
-        "correta": 2,
-        "explicacao": "Intercepting the outgoing tool call lets code block the policy-violating action before it happens and redirect the agent to the alternative workflow, here supervisor approval. The hook runs in the agent's harness, so it works with a vendor server the team cannot change, and vouchers within the limit stay automated.",
-        "feedbacks": [
-          "More emphasis and examples improve the odds, but the limit was already in the prompt when the 4 vouchers went out; prompt compliance stays probabilistic.",
-          "Tempting because it uses a hook, but PostToolUse runs after the voucher is issued; it can report the violation, not prevent it.",
-          "Correct. A PreToolUse interception blocks calls above the limit and redirects the case to approval, while smaller vouchers flow as before.",
-          "This enforces the limit by removing the automation, which breaks the requirement that vouchers of $500 or less stay automated."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-S2"
-      },
-      {
-        "pergunta": "A customer of an online electronics retailer writes to the support agent: \"Cancel my laptop order, my name is Daniel Kim.\" get_customer returns three accounts named Daniel Kim in the same country, each with orders placed in the last month. The agent can call lookup_order and cancel_order. What is the most effective first step for the agent?",
-        "opcoes": [
-          "Call lookup_order on the three accounts and cancel the one that has an open laptop order, since that matches the request.",
-          "Select the account with the most recent login, because the person writing to support is most likely the one who was active last.",
-          "Escalate to a human agent with a structured summary, because acting on the wrong account would be a privacy and financial incident.",
-          "Ask the customer for an additional identifier, such as the order number or the email on the account, before acting."
-        ],
-        "correta": 3,
-        "explicacao": "Multiple customer matches call for clarification, not heuristic selection. Asking for an order number or account email identifies the right customer with certainty, keeps the case with the agent, and avoids acting on another person's account.",
-        "feedbacks": [
-          "Tempting because it uses real data, but it is still a heuristic: two of the accounts could have laptop orders, and the agent would be browsing other customers' orders to guess.",
-          "Recency is a guess that ignores what the customer can tell you directly; a wrong pick cancels someone else's order.",
-          "The risk is real, but the agent can remove the ambiguity itself with one question, so escalating lowers first-contact resolution unnecessarily.",
-          "Correct. Ask for an additional identifier instead of choosing among matches by heuristic."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-K4"
-      },
-      {
-        "pergunta": "An online electronics retailer escalates refund cases above its autonomous limit to a human team that works in a ticketing tool with no access to the conversation transcript. Human agents currently re-contact 40% of escalated customers to ask questions the support agent had already answered. The architects are choosing what escalate_to_human should send. Which design should they choose?",
-        "opcoes": [
-          "A ticket with the full conversation transcript attached and the customer's messages highlighted, so the human can scan the key points.",
-          "A one-paragraph free-text summary written by the agent, describing the issue, its root cause, and what was done, in plain language.",
-          "A structured ticket linking to the transcript in the agent's logs, with the customer's sentiment score and the agent's confidence.",
-          "A summary that lists the verified customer ID, the root cause, the refund amount, and the recommended action, each in a separate field."
-        ],
-        "correta": 3,
-        "explicacao": "Humans who receive an escalation without the transcript need a structured handoff summary: customer ID, root cause, refund amount, and recommended action. Fixed fields make the case actionable on its own, so the human does not need to re-contact the customer to rebuild what the agent already learned.",
-        "feedbacks": [
-          "Looks complete, but it hands the human a document to read instead of a case to act on, and the key facts still have to be dug out.",
-          "Naming the root cause is a step forward, but free text tends to drop items such as the verified ID, the exact amount, or the next action, so humans keep re-contacting customers.",
-          "Sentiment and self-reported confidence are not what the human needs to act; the root cause, the amount, and the recommended action are missing.",
-          "Correct. A structured handoff with customer ID, root cause, refund amount, and recommended action is actionable without the transcript."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.4",
-        "bullet": "1.4-S3"
-      },
-      {
-        "pergunta": "A health insurer's multi-agent research system produces treatment evidence reports. Compliance requires that a report is never published if it cites a source outside the approved clinical-evidence list. The report subagent's prompt includes the list and the rule, and the coordinator reviews each draft before it calls publish_report. In 2 of the last 300 reports, a health blog slipped through and was published. What should you change to meet the requirement?",
-        "opcoes": [
-          "Add a hook that intercepts each publish_report call and blocks it when a citation is outside the approved list, returning the sources.",
-          "Add few-shot examples to the report subagent's prompt that show sources being rejected whenever they are not on the approved evidence list.",
-          "Add a dedicated citation-review subagent that checks each draft against the approved list before the coordinator's final review.",
-          "Add a PostToolUse hook on publish_report that flags any published report citing an unapproved source, so that it can be retracted."
-        ],
-        "correta": 0,
-        "explicacao": "A business rule that requires guaranteed compliance belongs in a hook, which applies deterministically to every call. Prompt instructions, examples, and model-based reviews all improve compliance but remain probabilistic, as the two published reports show. Intercepting the publish_report call checks the citations in code before anything goes out; a check after the call can only detect the violation.",
-        "feedbacks": [
-          "Correct. A hook on publish_report is a deterministic guarantee; returning the offending sources lets the agents fix the draft.",
-          "Few-shot examples make rejections more consistent, but they are still prompt-based and leave a non-zero rate of published violations.",
-          "Another review layer adds cost and is still a model judging the draft; the coordinator already reviews drafts and two violations got through.",
-          "It uses a hook, but PostToolUse runs after publish_report has executed; the report is already public, so it detects the violation instead of preventing it."
+          "Correct. Goals and quality criteria let subagents adapt their search strategy instead of following a script that does not fit interdisciplinary topics.",
+          "More steps patch this one case but keep the rigid structure; the next request that does not fit the extended procedure will fail the same way.",
+          "Examples tied to specific disciplines still assume the procedure covers every case; subagents would follow them literally and remain stuck on topics the examples do not show.",
+          "A classifier and a second, longer procedure add infrastructure while keeping the real problem, which is a procedural prompt that prevents subagents from adapting."
         ],
         "cenario": 3,
         "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-K3"
+        "ts": "1.3",
+        "bullet": "1.3-S4"
       },
       {
-        "pergunta": "An airline's productivity agent, built with the Agent SDK, automates refund adjustments for disrupted flights. To enforce a $500 cap, an engineer registered a hook on the refund tool that checks the amount and returns an error message to the agent when the cap is exceeded. In testing, the hook's log line appears for every $650 test case and the agent's next message says the refund needs approval, yet the payments ledger shows that each $650 refund was issued. What is the most likely root cause?",
+        "pergunta": "A university library's research system spent 40 minutes building a shared analysis of 120 sources for a grant proposal: claims extracted, sources assessed, and conflicts noted. The team now wants two alternative report framings, one that emphasizes policy impact and one that emphasizes methodological gaps, so that they can compare them. They do not want to redo the analysis, and they do not want the reasoning behind one framing to influence the other. Which design best meets these goals?",
         "opcoes": [
-          "The agent ignores the hook's error message, so the cap also needs to be stated in the system prompt with examples of the blocked amounts.",
-          "The hook's matcher uses the short tool name, so it does not match the MCP tool's full name and the amount check does not run on refund calls.",
-          "The hook is registered as PostToolUse, so it runs after the refund has executed; blocking requires intercepting the call in PreToolUse.",
-          "The payments MCP server retries failed calls by itself, so each refund goes through again after the hook has rejected the first call."
+          "Fork the session that holds the completed analysis with fork_session, creating two independent branches that each develop one framing from that baseline.",
+          "Continue the same session and request the policy framing first and the methodological framing next, so that the second can reuse everything the first produced.",
+          "Start two new sessions and paste a one-paragraph summary of the analysis into each, so that both framings begin from the same independent and compact context.",
+          "Spawn two subagents from the coordinator with the prompt \"Write the report in your assigned framing,\" relying on them to work from the analysis already done."
+        ],
+        "correta": 0,
+        "explicacao": "Fork-based session management exists for this case: fork_session creates independent branches from a shared analysis baseline, so each branch keeps the full 40-minute analysis and develops its own approach without seeing the other branch's reasoning.",
+        "feedbacks": [
+          "Correct. Forking from the analysis baseline keeps the full shared context in both branches while keeping their reasoning independent.",
+          "Running both framings in one session lets the first framing's reasoning shape the second, which is the influence the team wants to avoid.",
+          "Fresh sessions are independent, but a one-paragraph summary discards most of the 120-source analysis that both framings need to build on.",
+          "Subagents do not inherit the coordinator's context; a prompt that relies on the earlier analysis without including it leaves them without the baseline."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-K4"
+      },
+      {
+        "pergunta": "A logistics company's customer support agent, built with the Claude Agent SDK, delegates parcel questions to a shipment-tracker subagent and damage claims to a claims-assistant subagent. Today both subagents receive every MCP tool, including process_refund. In 2 of 500 test conversations, the shipment-tracker called process_refund after confirming that a parcel was lost. Compliance now requires that the shipment-tracker be unable to issue refunds at all, while the claims-assistant keeps that ability. What should you change to meet the requirement?",
+        "opcoes": [
+          "Add an instruction to the shipment-tracker's prompt stating that it must never call process_refund and must report lost parcels to the coordinator instead.",
+          "Have the coordinator review each shipment-tracker result and reverse any refund that the subagent issued before the reply is sent to the customer.",
+          "Add a PostToolUse hook that records every process_refund call made by the shipment-tracker, so that compliance can audit those refunds each week.",
+          "Define the shipment-tracker with an AgentDefinition whose tool list contains only the tracking tools, alongside its description and system prompt."
+        ],
+        "correta": 3,
+        "explicacao": "Each subagent type is configured with an AgentDefinition that includes its description, system prompt, and tool restrictions. Restricting the shipment-tracker's tools removes process_refund from its reach entirely, which is what compliance requires, while the claims-assistant's definition can keep it.",
+        "feedbacks": [
+          "A prompt instruction lowers the rate but does not make the call impossible; the requirement is that the subagent be unable to refund, not that it usually refrains.",
+          "Reversing refunds after the fact means they were issued in the first place; it adds work and risk without meeting the requirement that the subagent cannot refund.",
+          "A PostToolUse hook runs after the refund has already happened; it provides an audit trail but does not prevent the call that compliance wants to rule out.",
+          "Correct. Tool restrictions in the subagent's AgentDefinition make process_refund unavailable to the shipment-tracker while the claims-assistant keeps it."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-K3"
+      },
+      {
+        "pergunta": "A pharmaceutical company's developer productivity system produces migration-readiness reports for legacy modules. The coordinator delegates to an explorer subagent and a dependency-analysis subagent, then invokes a synthesis subagent. About a third of the reports end with an \"Open questions\" section, such as \"Could not determine whether module LabSync is called by the nightly batch jobs\", and engineers later find those answers within minutes. The coordinator's logs show that each synthesis output is returned to the requester after a single pass. What is the most likely root cause?",
+        "opcoes": [
+          "The synthesis subagent has no Grep or Read tools, so it cannot look up the missing call sites itself before it writes the open-questions section of the report.",
+          "The explorer subagent's description is too vague, so the coordinator does not select it when a question involves finding callers among the nightly batch jobs.",
+          "The coordinator does not evaluate the synthesis for gaps and re-delegate targeted queries to the explorer and analysis subagents before synthesizing again.",
+          "The dependency-analysis subagent drops findings with partial evidence, so call sites it found in batch scripts never reach the synthesis step at all."
         ],
         "correta": 2,
-        "explicacao": "Hooks that enforce compliance rules must intercept the outgoing tool call, before it executes. The symptoms show the hook running and the agent reacting to its message, yet the refunds exist, which means the check happens after execution: a PostToolUse hook can transform or annotate a result but cannot stop the action that produced it.",
+        "explicacao": "An iterative refinement loop has the coordinator evaluate the synthesis for gaps, re-delegate targeted queries to the search or exploration and analysis subagents, and re-invoke synthesis until coverage is sufficient. The logs show a single pass: the gaps are identified in the open-questions section, but nothing acts on them.",
         "feedbacks": [
-          "The agent did read the message, since its next reply mentions approval; the money moved before the message existed, so no prompt change would help.",
-          "A matcher problem would mean the hook never fires, but the log line appears on every $650 case, so the hook is running.",
-          "Correct. PostToolUse sees results after execution; interception of outgoing calls needs PreToolUse.",
-          "Plausible in general, but nothing in the logs points to retries; each test case shows a single refund issued alongside the hook's message."
+          "Giving synthesis exploration tools would push it outside its specialization; the gap should go back to the coordinator, which can send a targeted query to the explorer.",
+          "If the explorer were never selected, the reports would lack structure overall; here the gap is specific and named in the report, yet no follow-up is attempted.",
+          "Correct. The coordinator returns the first synthesis without evaluating its gaps and re-delegating, which is the missing refinement loop.",
+          "Nothing in the logs suggests dropped findings; the open questions are the system telling you what it did not investigate, and the coordinator never follows up."
         ],
         "cenario": 4,
         "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-K2"
+        "ts": "1.2",
+        "bullet": "1.2-S3"
       },
       {
-        "pergunta": "An online electronics retailer documents this flow for its support agent: when a customer asks to speak with a human, the agent first calls get_customer and lookup_order, checks the refund policy, and offers a resolution; it calls escalate_to_human only if the customer declines the offer. The team says this improves first-contact resolution and gives humans better context. What is the flaw in this flow?",
+        "pergunta": "A university library is building a feature that investigates sudden drops in a faculty member's citation count on the library's research dashboard. In the current design, the coordinator creates a fixed list of six checks at the start (data import errors, author-name variants, DOI mismatches, and three others), runs all six, and reports. In one test case, the author-name check found that 40% of the researcher's papers had been reassigned to a different author ID after a profile merge, but the remaining checks still ran against the original ID and the report never followed up on the merge. What is the flaw?",
         "opcoes": [
-          "The handoff should also include the customer's sentiment, since the human needs to know how upset the customer was before the transfer.",
-          "It holds back a direct request for a human to investigate and offer a fix first; the agent should escalate immediately with what it knows.",
-          "The agent should first ask the customer for explicit confirmation, since many requests for a human concern simple issues it can resolve.",
-          "The lookups should run in parallel with the resolution offer, so the customer waits less before the agent can propose a solution."
+          "The checks ran in parallel, so later checks could not use the author-name finding; running the same six checks one after another would have fixed it.",
+          "The author-name subagent should have reversed the profile merge itself instead of only reporting it, since it already had all the evidence it needed.",
+          "The list of checks is too short; adding more predefined checks, including one for profile merges, would have covered this case from the very start.",
+          "The plan is fixed at the start, so it cannot generate new subtasks from what each step discovers, such as following up on the profile merge it found."
+        ],
+        "correta": 3,
+        "explicacao": "Adaptive investigation plans generate subtasks based on what each step discovers. Here the key discovery (the profile merge) should have produced new subtasks, such as re-running the checks against the new author ID, but a plan fixed at the start has no way to add them.",
+        "feedbacks": [
+          "Running the same fixed checks in sequence would not add the follow-up that the merge requires; the checks would still target the original author ID.",
+          "Reversing a profile merge is an action outside an investigation subagent's role; the problem is that nothing followed up on the finding, not who fixes it.",
+          "A longer predefined list still cannot anticipate every discovery; the next unexpected finding would go unfollowed in the same way.",
+          "Correct. A plan fixed up front cannot generate subtasks from intermediate findings; an adaptive plan would have followed up on the merge."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-K3"
+      },
+      {
+        "pergunta": "A logistics company's support coordinator, built with the Claude Agent SDK, handles a customer asking about three delayed shipments by delegating each one to a shipment-tracker subagent. The trace shows: turn 1, one Task call for shipment A, then its result; turn 2, one Task call for shipment B, then its result; turn 3, one Task call for shipment C. Each subagent run takes about 8 seconds, so the reply takes 26 seconds, while the target is under 12 seconds. The three lookups do not depend on each other. Which statement is correct?",
+        "opcoes": [
+          "The delay is unavoidable, because Task calls share one execution slot in the coordinator's loop, so subagents run one at a time whatever the coordinator emits.",
+          "Emitting all three Task calls in a single coordinator response would run them in parallel; separate turns force each to wait for the one before.",
+          "Merging the three shipments into one Task call, so that a single subagent handles all of them, would cut the total time to that of a single lookup.",
+          "The coordinator should call the tracking tool itself for each shipment, because the overhead of starting subagents cannot be recovered by parallel runs."
         ],
         "correta": 1,
-        "explicacao": "An explicit request for a human should be honored immediately, without first attempting investigation. The flow trades the customer's stated preference for a resolution attempt. The agent can still pass along whatever it already knows in the handoff.",
+        "explicacao": "Parallel subagents are spawned by emitting multiple Task tool calls in a single coordinator response. One Task call per turn makes each delegation wait for the previous result, so the latency becomes the sum of all three runs.",
         "feedbacks": [
-          "Sentiment is not what the human needs to act on, and adding it does not fix the delay before the transfer.",
-          "Correct. Honor an explicit request for a human immediately, without investigating or offering a resolution first.",
-          "Asking for confirmation is a softer version of the same flaw: it pushes back on a request the customer has already made explicitly.",
-          "Faster investigation is still investigation before honoring the request; it addresses latency, not the flaw."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-S2"
-      },
-      {
-        "pergunta": "An online electronics retailer's support agent receives lookup_order results that contain full card numbers and delivery dates in mixed formats. The team wants the model never to see card numbers and always to receive dates in one format, and plans to use a PostToolUse hook in the Agent SDK. Which TWO statements about this plan are correct? Choose TWO.",
-        "opcoes": [
-          "A PostToolUse hook's output reaches only the customer-facing reply, so the model still processes the original lookup_order result.",
-          "If a result is malformed, a PostToolUse hook re-runs lookup_order with corrected arguments before the model receives anything.",
-          "Because the hook is code in the agent's harness, the masking and normalization apply to every matching call, whatever the prompt says.",
-          "The hook runs after lookup_order executes and can replace the result, so the model processes only the masked, normalized version.",
-          "A PostToolUse hook can also stop process_refund from running when the requested amount is above the limit that the policy sets."
-        ],
-        "corretas": [
-          2,
-          3
-        ],
-        "explicacao": "PostToolUse hooks intercept tool results after execution and transform them before the model processes them, which is what masking and normalization need. Because the hook is code that the harness runs on every matching call, the transformation is a deterministic guarantee, not something the model has to remember.",
-        "feedbacks": [
-          "The opposite is true: the transformed result is what the model processes, which is the point of using PostToolUse here.",
-          "Hooks transform or block; they do not re-run tools with new arguments. Recovering from a bad call is the agent's decision in the loop.",
-          "Correct. Hook logic runs on every matching call regardless of prompt instructions, which makes it deterministic.",
-          "Correct. PostToolUse runs after execution and can replace the result before the model processes it.",
-          "Stopping a call before it runs is interception of the outgoing call, which is PreToolUse; PostToolUse runs after the tool has executed."
+          "Multiple Task calls emitted in the same response run in parallel; the serialization here comes from the coordinator issuing one call per turn, not from a shared slot.",
+          "Correct. Three Task calls in one response let the independent lookups run in parallel, bringing the reply close to the time of one lookup.",
+          "One subagent handling three shipments would process them in sequence inside its own run, so the total would still be close to the sum of the three lookups.",
+          "Doing the lookups in the coordinator gives up the subagents' isolation and scoped tools, and the problem is not startup overhead but the sequential turns."
         ],
         "cenario": 1,
         "dominio": "D1",
-        "ts": "1.5",
-        "bullet": "1.5-K1"
+        "ts": "1.3",
+        "bullet": "1.3-S3"
       },
       {
-        "pergunta": "An online electronics retailer's support agent escalates a conversation when customer sentiment falls below -0.6 or when the agent rates its own confidence below 7 out of 10. A review of 500 escalations finds that most were angry customers with simple in-policy issues, while several calm customers asking for policy exceptions were handled autonomously with confidence ratings of 9. Which TWO conclusions does this evidence support? Choose TWO.",
+        "pergunta": "A pharmaceutical company's developer productivity tool generates briefs for legacy modules. An explorer subagent maps each module (files, entry points, call graph), and a dependency-analysis subagent lists the external services and database tables it uses. A writer subagent then produces the brief from this prompt: \"Write the brief for module {name} using the findings from the previous steps.\" The briefs describe structure in generic terms, such as \"a typical layered architecture\", and omit most of the database tables the analysis found. Which TWO changes address this? Choose TWO.",
         "opcoes": [
-          "Combining sentiment and confidence into one calibrated, weighted score would cancel out the errors each signal makes on its own.",
-          "The confidence threshold should rise from 7 to 9, so that more of the difficult exception requests are routed to human agents.",
-          "A classifier trained on historical tickets is now the proportionate first step, because both signals have already failed in production.",
-          "The agent rated itself most confident on cases it should have escalated, so its self-reported score cannot separate easy from hard.",
-          "Sentiment reflects how the customer feels, not whether the case needs an exception or a decision beyond the agent's authority."
+          "Insert the coordinator's own short summary of both outputs into the writer's prompt, so that the writer's context stays small and focused.",
+          "Insert the explorer's complete output, with the files, entry points, and call graph it found, directly into the writer's prompt.",
+          "Insert the dependency-analysis output, with each external service and database table it listed, directly into the writer's prompt.",
+          "Add a line to the writer's system prompt telling it to avoid generic descriptions and to mention every database table the module uses.",
+          "Give the writer subagent Read and Grep, so that it can explore the module again and confirm the structure before it starts writing the brief."
         ],
         "corretas": [
-          3,
-          4
+          1,
+          2
         ],
-        "explicacao": "Sentiment-based escalation and self-reported confidence are unreliable proxies for case complexity. Sentiment tracks emotion, so it escalates angry customers with easy cases, and the agent was most confident on the exception requests it should have escalated. The fix is explicit escalation criteria, not a different threshold or a new model.",
+        "explicacao": "The writer subagent does not inherit context from the coordinator or from the other subagents, so \"the findings from the previous steps\" refers to something it never received. The coordinator must include the complete findings of the prior agents directly in the writer's prompt; only then can the brief be specific and list the tables.",
         "feedbacks": [
-          "Combining two unreliable proxies does not produce a reliable one; neither signal measures whether a policy exception is involved.",
-          "Raising the threshold would escalate far more cases overall, and it would still miss exceptions the agent rated at 9 or 10, because the score itself is unreliable.",
-          "Over-engineering: explicit escalation criteria with few-shot examples in the system prompt should come before building and training a classifier.",
-          "Correct. The agent was confidently wrong on the hard cases, so its self-reported confidence does not track complexity.",
-          "Correct. Emotion and case complexity are different things; angry customers with in-policy issues are resolvable."
+          "A short summary is better than nothing, but it compresses away the specific files and tables the briefs are missing; prior findings should be passed complete.",
+          "Correct. The explorer's complete output in the prompt gives the writer the concrete structure it currently replaces with generic text.",
+          "Correct. Passing the full dependency-analysis output lets the writer list the services and tables it currently omits.",
+          "The writer cannot mention tables it never received; an instruction to be specific does not supply the missing findings.",
+          "Re-exploring duplicates the explorer's work and gives the writer tools outside its role, while the dependency findings would still be missing from its prompt."
         ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.2",
-        "bullet": "5.2-K3"
+        "cenario": 4,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-S1"
       }
     ]
   },
   "order": [
-    11,
-    9,
+    0,
+    2,
+    15,
+    3,
+    18,
     13,
-    6,
+    7,
+    10,
+    9,
     4,
+    6,
+    1,
     19,
     12,
-    8,
-    2,
-    3,
-    16,
-    17,
-    15,
-    14,
-    18,
-    7,
-    1,
-    0,
     5,
-    10
+    8,
+    16,
+    11,
+    17,
+    14
   ],
   "pos": 20,
   "answers": [
@@ -475,7 +475,7 @@
     {
       "pos": 1,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
@@ -489,6 +489,7 @@
     {
       "pos": 3,
       "escolha": [
+        1,
         3
       ],
       "acertou": true
@@ -503,22 +504,21 @@
     {
       "pos": 5,
       "escolha": [
-        3,
-        4
+        0
       ],
       "acertou": true
     },
     {
       "pos": 6,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
@@ -532,67 +532,67 @@
     {
       "pos": 9,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        1
+        0
       ],
-      "acertou": true
+      "acertou": false
     },
     {
       "pos": 12,
       "escolha": [
-        0
+        1,
+        2
       ],
       "acertou": true
     },
     {
       "pos": 13,
       "escolha": [
-        3
+        0,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        2,
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 15,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 16,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 17,
       "escolha": [
-        0,
-        2
+        3
       ],
-      "acertou": false
+      "acertou": true
     },
     {
       "pos": 18,
@@ -604,7 +604,7 @@
     {
       "pos": 19,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     }

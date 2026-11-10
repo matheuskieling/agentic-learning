@@ -171,7 +171,7 @@
     ]
   },
   "pos": 11,
-  "marco_sessao": 0,
+  "marco_sessao": 11,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -238,6 +238,11 @@
       "beat": "prova",
       "ts": "2026-11-10T18:17:09+00:00",
       "text": "Prova M06: 19/20 (modo intensivo, sem quiz). Errou Q18 Choose TWO (marcou Post no web_search em vez de Pre): mesmo evento, tool diferente — perguntar 'em qual chamada acontece o dano?'. Choose TWO Q6 e Q15 certas"
+    },
+    {
+      "beat": "fim",
+      "ts": "2026-11-10T18:18:49+00:00",
+      "text": "Dúvida pós-prova: por que no M04 tool_choice forçado garantia a 1ª tool e aqui é hook? → tool_choice = força a CHAMADA no próximo turno (1º passo de pipeline que você controla); gate = invariante em toda chamada, condicionado ao RESULTADO verificado; em conversa aberta não se sabe em que turno o reembolso aparece (seria router/classificador)"
     }
   ],
   "iniciado_em": "2026-11-10T17:14:17+00:00"

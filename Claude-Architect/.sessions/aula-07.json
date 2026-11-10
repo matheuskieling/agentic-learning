@@ -1,0 +1,252 @@
+{
+  "roteiro_path": "/home/mkieling/dev/courses/Claude-Architect/07-multiagente/roteiro.json",
+  "roteiro": {
+    "modulo": "07",
+    "titulo": "Orquestração multiagente: coordenador, subagents e decomposição",
+    "beats": [
+      {
+        "id": "intro",
+        "fase": "teoria",
+        "titulo": "Abertura — um loop que chama outros loops",
+        "pontos": [
+          "Linguagem dos exemplos: leia Claude-Architect/.sessions/preferencias.json e adapte ao vivo qualquer trecho de código para a linguagem salva",
+          "Escopo: TS 1.2 (coordenador e subagents), 1.3 (Task, contexto, spawn) e 1.6 (prompt chaining × decomposição dinâmica), todos do D1 (27% da prova)",
+          "Ponte com o M01: o coordenador é um loop agêntico cuja tool mais importante (Task) cria outros loops; vários tool_use na mesma resposta = paralelismo",
+          "Fica para depois (só ponte): sessões --resume/fork_session em detalhe no M10; revisão por instância independente no M09; propagação de erro e proveniência no M11; verify_fact e distribuição de tools no M04",
+          "Fio condutor: toda questão pergunta 'quem sabe o quê' (contexto do subagent) e 'quem decide o quê' (o coordenador)",
+          "Onde cai: cenário 3 (pesquisa multiagente) acima de todos; também 4 (produtividade/legado), 5 (CI: revisão em passos), 2 (Claude Code: investigação com passos fixos × dinâmica) e 1 (suporte)"
+        ],
+        "checkpoint": "Pergunte (em inglês, estilo exame): if the coordinator emits three tool_use blocks in one response, what happens to them before the next request? (resposta esperada: todos executam e os três tool_result voltam juntos no próximo request — base do paralelismo de subagents)",
+        "ref": "07-multiagente/teoria.md"
+      },
+      {
+        "id": "t1",
+        "fase": "teoria",
+        "titulo": "Hub-and-spoke: toda comunicação passa pelo coordenador",
+        "pontos": [
+          "O coordenador gerencia TODA a comunicação entre subagents, o tratamento de erros e o roteamento da informação; subagents não conversam entre si",
+          "Os três ganhos que o guia nomeia: observabilidade, tratamento de erro consistente e fluxo de informação controlado",
+          "Distratores: 'análise chama a busca direto para cortar latência', 'store compartilhado onde cada um lê a saída dos outros', 'pode ir direto desde que logue tudo' (log não devolve controle nem erro centralizado), 'fundir dois subagents com as tools dos dois'",
+          "Nuance: recuperação local de falha transitória no subagent continua valendo (propaga só o que não resolveu); e uma tool escopada verify_fact na síntese não quebra o hub-and-spoke (é tool, não conversa entre subagents)",
+          "Sintomas típicos no enunciado: 'o trace do coordenador não registra 40% das buscas', 'no timeout da busca, a análise esperou em silêncio'"
+        ],
+        "checkpoint": "Pergunte (em inglês): an engineer proposes letting the analysis subagent query the search subagent directly, logging every call. How should you evaluate it? (rejeitar: log não devolve ao coordenador o controle do fluxo nem o tratamento de erro)",
+        "ref": "07-multiagente/teoria.md#1-hub-and-spoke-toda-comunicação-passa-pelo-coordenador"
+      },
+      {
+        "id": "t2",
+        "fase": "teoria",
+        "titulo": "O coordenador decide quem chamar",
+        "pontos": [
+          "Papel do coordenador: decompor, delegar, agregar e decidir quais subagents invocar conforme a complexidade da consulta",
+          "Seleção dinâmica: 'em que ano entramos no consórcio X?' → só a busca; 'compare citação de artigos abertos × pagos, 2010–2023' → várias buscas em paralelo + análise + síntese + relatório",
+          "Comportamento diferente por consulta é ESPERADO, não bug",
+          "Anti-padrão: pipeline completo para toda consulta 'por consistência' (latência, custo e seções que ninguém pediu)",
+          "Distrator clássico: classificador/routing layer antes do coordenador = over-engineering (mesmo tipo das oficiais 1, 2 e 3); 'rodar o pipeline em paralelo' reduz latência mas segue chamando quem não precisa"
+        ],
+        "checkpoint": "Pergunte (em inglês): a simple 'where is function X defined?' takes 4 minutes and returns an unrequested test plan. What is the design flaw? (pipeline completo para tudo; o coordenador deve invocar só o necessário)",
+        "ref": "07-multiagente/teoria.md#2-o-papel-do-coordenador-decompor-delegar-agregar-e-escolher-quem-chamar"
+      },
+      {
+        "id": "t3",
+        "fase": "teoria",
+        "titulo": "Decomposição estreita demais e particionamento do escopo",
+        "pontos": [
+          "Decomposição estreita: tema amplo quebrado em subtarefas que cobrem só uma fatia → cobertura incompleta; os subagents fazem bem o que receberam, o defeito está NO QUE receberam",
+          "Exemplo: 'adaptação das bibliotecas ao acesso aberto' decomposto só em custos (assinaturas, APC, big deals) → somem repositórios, capacitação, política de acervo",
+          "Particionar para minimizar duplicação: subtemas distintos ou tipos de fonte distintos por subagent; 3 subagents com a mesma consulta ampla = 70% de fontes repetidas",
+          "Boa partição = ampla E sem sobreposição",
+          "Distratores (os da oficial 7): culpar a busca ('queries literais'), a análise ('relevância estrita') ou a síntese ('sem checagem de lacunas'); 'mesma consulta para todos por redundância e deduplicar depois'"
+        ],
+        "checkpoint": "Pergunte (em inglês): two search subagents return 70% of the same sources for every request. What should the coordinator change? (particionar por subtema ou tipo de fonte)",
+        "ref": "07-multiagente/teoria.md#3-decomposição-estreita-demais-e-particionamento-do-escopo"
+      },
+      {
+        "id": "t4",
+        "fase": "teoria",
+        "titulo": "Refinamento iterativo: avaliar a síntese e redelegar",
+        "pontos": [
+          "Loop: coordenador avalia a síntese procurando lacunas → redelega à busca e à análise com consultas DIRECIONADAS → re-invoca a síntese → repete até a cobertura ser suficiente",
+          "Por quê: só o coordenador enxerga o pedido original e tudo o que voltou",
+          "Distratores: entregar a 1ª síntese com 'questões em aberto' que ninguém investiga; síntese 'completando lacunas' de memória ou ganhando tools de busca; rodar o pipeline inteiro de novo com a mesma consulta",
+          "Teto de iterações pode existir como rede de segurança, mas o critério de parada é cobertura suficiente",
+          "Ponte M11: lacuna que não fecha (fonte indisponível) vira coverage annotation na síntese"
+        ],
+        "checkpoint": "Pergunte (em inglês): reports often say 'could not determine whether module X is called by nightly jobs', the answer was easy to find, and logs show one pass. What is missing? (o loop avaliar → redelegar direcionado → re-sintetizar)",
+        "ref": "07-multiagente/teoria.md#4-refinamento-iterativo-avaliar-a-síntese-e-redelegar"
+      },
+      {
+        "id": "t5",
+        "fase": "teoria",
+        "titulo": "A tool Task, allowedTools e AgentDefinition",
+        "pontos": [
+          "Subagents são criados pela tool Task; allowedTools do coordenador PRECISA incluir \"Task\" — sem isso as definições existem mas nunca são usadas e o coordenador faz tudo sozinho",
+          "Mostre o JSON: options.allowedTools com \"Task\" e o tool_use { name: \"Task\", input: { subagent_type, description, prompt } } na resposta do coordenador",
+          "AgentDefinition = description (o coordenador lê para escolher, como descrição de tool) + system prompt (papel e formato) + restrição de tools (menor privilégio)",
+          "[volátil] A doc atual renomeou Task para Agent (v2.1.63), com Task como alias, e descreve allowedTools como lista de tools auto-aprovadas: na prova, responda Task e 'Task' em allowedTools. (O equivalente em arquivo no Claude Code, .claude/agents/, é extra da doc e não cai)",
+          "Distratores: 'mande delegar no system prompt', 'description com use proactively', 'tire Grep/Read do coordenador' (nada disso habilita o spawn); proibir tool por prompt ou só logar com PostToolUse em vez de tirar a tool do AgentDefinition"
+        ],
+        "checkpoint": "Pergunte (em inglês): the coordinator has well-written agent definitions but runs 60 Grep calls itself and never delegates. What do you check first? (\"Task\" em allowedTools)",
+        "ref": "07-multiagente/teoria.md#5-criando-subagents-a-tool-task-allowedtools-e-agentdefinition"
+      },
+      {
+        "id": "t6",
+        "fase": "teoria",
+        "titulo": "Contexto isolado: tudo explícito e estruturado no prompt",
+        "pontos": [
+          "Subagent NÃO herda o histórico do coordenador e NÃO guarda memória entre invocações (a 2ª chamada começa do zero)",
+          "Logo, o prompt do Task leva os achados COMPLETOS dos agentes anteriores (ex.: resultados da busca + saídas da análise no prompt da síntese)",
+          "Formato estruturado separando conteúdo (claim, excerpt) de metadados (source_url, document, page, published) para preservar a atribuição; o JSON vai dentro de content[].input.prompt do tool_use Task",
+          "Ruim × bom: 'busque sobre o tema que combinamos' × meta + escopo + restrições + formato; 'revise seu rascunho' × rascunho + fontes + comentários",
+          "Distratores: dar ao subagent o log da conversa do coordenador; resumir achados em 2–3 frases; corrigir só por prompt ('não seja genérico'); pôr regras do pedido no system prompt fixo do AgentDefinition",
+          "[volátil] o 'fork subagent' do Claude Code herda a conversa, mas é posterior ao guia: na prova, contexto de subagent é sempre explícito no prompt"
+        ],
+        "checkpoint": "Peça ao aluno para reescrever a delegação 'Write the brief using the findings from the previous steps' de forma que funcione num subagent isolado, e diga o que separar em metadados",
+        "ref": "07-multiagente/teoria.md#6-contexto-isolado-tudo-o-que-o-subagent-precisa-vai-no-prompt"
+      },
+      {
+        "id": "t7",
+        "fase": "teoria",
+        "titulo": "Paralelismo, metas em vez de procedimento e fork_session",
+        "pontos": [
+          "Paralelo = vários tool_use Task numa ÚNICA resposta do coordenador; um Task por turno = sequencial (latência = soma). Mostre o JSON com dois Task no mesmo content",
+          "Distratores do paralelismo: juntar N subtarefas num só Task; coordenador fazer as consultas ele mesmo; aumentar timeout",
+          "Prompt do coordenador: metas de pesquisa + critérios de qualidade, não passo a passo procedural → subagents se adaptam quando o tema foge do roteiro",
+          "Distratores das metas: acrescentar passos ao procedimento; few-shot de palavras-chave por caso; classificador que manda o caso difícil para outro pipeline",
+          "fork_session: ramos independentes a partir de uma análise compartilhada para explorar abordagens divergentes (options { resume, forkSession: true }); ramifica a conversa, não o filesystem; detalhe no M10",
+          "Distratores do fork: seguir na mesma sessão (contamina); duas sessões novas com resumo de um parágrafo (perde detalhe)"
+        ],
+        "checkpoint": "Pergunte (em inglês): three independent shipment lookups take 26 s and the trace shows one Task per turn. What should change? (emitir os três Task na mesma resposta)",
+        "ref": "07-multiagente/teoria.md#7-paralelismo-prompt-do-coordenador-por-metas-e-fork_session"
+      },
+      {
+        "id": "t8",
+        "fase": "teoria",
+        "titulo": "Prompt chaining × decomposição dinâmica",
+        "pontos": [
+          "Prompt chaining = pipeline sequencial fixo, para revisões previsíveis multi-aspecto; decomposição dinâmica/adaptativa = subtarefas geradas pelo que se descobre, para investigação aberta",
+          "Revisão grande em passos (é prompt chaining): cada arquivo individualmente + passo de integração entre arquivos (recebe os achados locais e olha fluxo de dados, contratos, unidades) → evita diluição de atenção",
+          "Distratores da revisão: passada única 'com mais atenção', janela/modelo maior, devs quebrarem o PR, votar entre 3 execuções, SÓ passos por arquivo (perde o bug entre arquivos)",
+          "Tarefa aberta ('testes abrangentes num legado'): mapear a estrutura → identificar áreas de alto impacto → plano priorizado que se adapta às dependências descobertas; plano fixo alfabético enche de testes de DTO",
+          "Erro inverso: comando de passos fixos para investigar uma regressão cuja causa está fora do roteiro",
+          "Nota de contexto (1 parágrafo): o artigo 'Building Effective Agents' tem outros padrões, mas como estratégia de decomposição (1.6) o guia só cobra chaining e dinâmica (orchestrator-workers e paralelismo já apareceram com o vocabulário do guia: coordenador-subagent e vários Task na mesma resposta); routing/classificador e votação são distratores de over-engineering",
+          "Ponte M09: revisão por instância independente (4.6)"
+        ],
+        "checkpoint": "Pergunte (em inglês): one workflow reviews every PR for the same three aspects; another investigates nightly job failures with unknown causes. Which decomposition pattern fits each? (chaining para a revisão; dinâmica para a investigação)",
+        "ref": "07-multiagente/teoria.md#8-estratégias-de-decomposição-prompt-chaining--decomposição-dinâmica"
+      },
+      {
+        "id": "q1",
+        "fase": "quiz",
+        "titulo": "Quiz de fixação — Módulo 07",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "15 questões de fixação cobrindo 1.2, 1.3 e 1.6: hub-and-spoke, seleção dinâmica, decomposição estreita, particionamento, refinamento, Task/allowedTools, AgentDefinition, contexto explícito e estruturado, paralelismo, metas × procedimento, fork_session, chaining × dinâmica",
+          "Depois de cada resposta, explique em PT-BR por que cada alternativa errada é tentadora e em que situação ela seria a certa"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/apps/modulo-07/questions.json",
+        "checkpoint": "Ao terminar, comente o resultado e revise os tópicos errados antes da prova",
+        "ref": "Claude-Architect/apps/modulo-07/questions.json"
+      },
+      {
+        "id": "prova",
+        "fase": "prova",
+        "titulo": "Prova do Módulo 07 (estilo exame)",
+        "pontos": [
+          "Questões em INGLÊS, como na prova real: apresente enunciado, alternativas e feedback do banco em inglês, sem traduzir; seus comentários de instrutor seguem em PT-BR",
+          "20 questões de cenário (3, 4, 5, 2 e 1), com feedback por alternativa; três são de múltipla resposta (Choose TWO)",
+          "Depois de cada questão, explique em PT-BR por que cada errada é tentadora e qual anti-padrão ela representa",
+          "Aprovação 70%; abaixo disso, revise a 'Cola de véspera' e os tópicos errados e refaça"
+        ],
+        "acao": "Rodar: python3 engine/session.py start Claude-Architect/provas/modulo-07/questions.json --id prova",
+        "checkpoint": "Se passou, proponha o Módulo 08; se não, revise os pontos errados e refaça",
+        "ref": "Claude-Architect/provas/modulo-07/questions.json"
+      },
+      {
+        "id": "fim",
+        "fase": "fechamento",
+        "titulo": "Fechamento do Módulo 07",
+        "pontos": [
+          "Recap: hub-and-spoke (coordenador roteia tudo, trata erro, dá observabilidade); coordenador escolhe quem chamar; decomposição ampla e sem sobreposição; refinamento iterativo até cobrir",
+          "Task em allowedTools; AgentDefinition com description, system prompt e tools restritas; contexto isolado → achados completos e estruturados no prompt; paralelo = vários Task na mesma resposta; metas + critérios; fork_session",
+          "Chaining para revisões previsíveis (por arquivo + integração); dinâmica para investigação aberta (mapear → alto impacto → plano adaptável)",
+          "Com o M06 e este, o grosso do D1 está coberto; sessões (1.7) voltam no M10",
+          "Próximo: Módulo 08 — Configurando o Claude Code: CLAUDE.md, rules, commands/skills e plan mode. Para começar: python3 engine/aula.py start Claude-Architect/08-claude-code-config/roteiro.json"
+        ],
+        "checkpoint": "Pergunte se quer emendar o Módulo 08 ou parar por aqui (sugira um /revisar dos Módulos 06–07 antes, por ser o maior domínio)",
+        "ref": "Claude-Architect/08-claude-code-config/roteiro.json"
+      }
+    ]
+  },
+  "pos": 10,
+  "marco_sessao": 0,
+  "status": {
+    "intro": "visto",
+    "t1": "visto",
+    "t2": "visto",
+    "t3": "visto",
+    "t4": "visto",
+    "t5": "visto",
+    "t6": "visto",
+    "t7": "visto",
+    "t8": "visto",
+    "q1": "visto",
+    "prova": "pendente",
+    "fim": "pendente"
+  },
+  "concluido_em": {
+    "intro": "2026-11-10T20:09:54+00:00",
+    "t1": "2026-11-10T20:09:54+00:00",
+    "t2": "2026-11-10T20:09:54+00:00",
+    "t3": "2026-11-10T20:52:54+00:00",
+    "t4": "2026-11-10T20:52:54+00:00",
+    "t5": "2026-11-10T21:06:45+00:00",
+    "t6": "2026-11-10T21:44:39+00:00",
+    "t7": "2026-11-10T21:44:39+00:00",
+    "t8": "2026-11-10T22:08:35+00:00",
+    "q1": "2026-11-10T22:08:35+00:00"
+  },
+  "notes": [
+    {
+      "beat": "intro",
+      "ts": "2026-11-10T20:09:54+00:00",
+      "text": "Bloco A (intro+t1+t2, TS 1.2): checkpoint MC 3/3 (3 Task → tool_results juntos no próximo request; direto+log rejeitado pelo erro/fluxo centralizado; coordenador invoca só o necessário). Conceitos novos explicados antes: subagent, coordenador, Task (tool do SDK), hub-and-spoke, onde roda (loop C# chamando loop)"
+    },
+    {
+      "beat": "t3",
+      "ts": "2026-11-10T20:32:29+00:00",
+      "text": "Bloco C (t5+t6, TS 1.3/1.2): checkpoint MC 4/4 (Task em allowedTools; tirar tool do AgentDefinition; escopo explícito no prompt do Task; Choose TWO estruturado+rascunho completo). Dúvida forte: allowedTools × tools[] → allowedTools/agents são OPÇÕES DO SDK (seu código, nunca vão à API, lista de nomes); o SDK monta com elas o tools[] (objetos completos) do request do coordenador; AgentDefinition.prompt/tools viram system/tools[] de um 2º request (o do subagent); input.prompt do Task vira messages[0]. 1 config → 2 requests"
+    },
+    {
+      "beat": "t3",
+      "ts": "2026-11-10T20:39:06+00:00",
+      "text": "Dúvida de base (t5): aluno achava que montava o request na mão também com o Agent SDK. Explicado: Client SDK (M01, você escreve request+loop+tools) × Agent SDK (você chama query({prompt, options}) uma vez; a lib escreve o loop, monta cada request, traz as tools nativas prontas, chama MCP e hooks). Analogia ADO.NET × EF Core. Tabela quem faz o quê: você / SDK no seu processo / Anthropic só gera / servidor MCP executa"
+    },
+    {
+      "beat": "t3",
+      "ts": "2026-11-10T20:46:37+00:00",
+      "text": "Aluno pediu: SEM analogias .NET e sem exemplos em C# (a prova cobra Agent SDK TS/Python) → preferencias.json trocado para TypeScript. Reclamou que query/options foi introduzido sem explicar a diferença Client SDK (loop na mão) × Agent SDK. Dúvida: tools custom no Agent SDK → tool()+createSdkMcpServer no options.mcpServers (in-process) ou servidor MCP externo; nome mcp__<srv>__<tool>; SDK descobre via tools/list"
+    },
+    {
+      "beat": "t5",
+      "ts": "2026-11-10T21:03:29+00:00",
+      "text": "Bloco D (t7, TS 1.3): checkpoint MC 3/3 (vários Task na mesma resposta; metas+critérios; fork_session). Dúvida: quem decide o fork? → SEU CÓDIGO, entre chamadas de query() (opção resume+forkSession), por decisão humana ou fluxo planejado; não é tool, o modelo não pode forkar nem sabe que é fork. Contraste: Task = tool → o modelo decide no loop; fork = opção → sua app decide fora do loop. CLI: claude --resume <id> --fork-session"
+    },
+    {
+      "beat": "t6",
+      "ts": "2026-11-10T21:35:13+00:00",
+      "text": "Bloco E (t8, TS 1.6): checkpoint 2/3 — Q1 A ok (mas questionou: 3 aspectos não se alimentam, por que chaining?), Q2 marcou só E (faltou B: Choose TWO = marcar as duas; sem os passos por arquivo a integração não tem entrada e a diluição continua), Q3 C ok. Dúvida forte: confundiu 'raciocínio profundo dentro do passo' com 'dinâmica' e leu 'investigação com roteiro fixo' como dinâmica (era o ERRO). Regra dada: um achado num passo CRIA/MUDA os passos seguintes? não → chaining; sim → dinâmica. Fixo = roteiro de passos, não a profundidade"
+    },
+    {
+      "beat": "t7",
+      "ts": "2026-11-10T21:44:39+00:00",
+      "text": "Q4 extra (regra chaining × dinâmica: raciocínio profundo dentro do passo ≠ dinâmica): certo (B). Quiz q1 pulado (modo intensivo: direto para a prova)"
+    },
+    {
+      "beat": "t8",
+      "ts": "2026-11-10T22:08:35+00:00",
+      "text": "Prova M07: 19/20 (modo intensivo, sem quiz). Errou Q12 (marcou 'rodar em paralelo' no pipeline completo p/ tudo): alternativa verdadeira que explica só 1 dos 2 sintomas (latência, não o plano de testes não pedido) — conferir se a alternativa explica TODOS os sintomas. Choose TWO Q4, Q13, Q14 certas"
+    }
+  ],
+  "iniciado_em": "2026-11-10T19:58:58+00:00"
+}
