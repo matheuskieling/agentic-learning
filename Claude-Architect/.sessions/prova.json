@@ -1,467 +1,467 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-07/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-08/questions.json",
   "bank": {
-    "titulo": "Módulo 07 — Prova (estilo exame)",
+    "titulo": "Módulo 08 — Prova (estilo exame)",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "A pharmaceutical company's developer productivity agent, built with the Claude Agent SDK, was asked to \"add comprehensive tests\" to a 15-year-old laboratory information management system with 1,100 source files. The agent was configured with a plan that walks the repository alphabetically and generates one test file per source file. After three days it has written 640 tests, mostly for DTOs and simple getters. The sample-tracking and dose-calculation modules, where 80% of last year's production incidents originated, still have no new tests, and 90 of the generated tests fail because they mock classes that turned out to depend on a shared static configuration singleton. What is the most likely root cause?",
+        "pergunta": "Your team at a real-estate listings portal uses Claude Code for refactoring. A developer asked Claude to replace the geocoding library used by listing search. Before the first edit, the session transcript shows 140 Read and Grep results (full handler files, map-tile code, test fixtures), and context usage reached 88%. During implementation, Claude asked again which geocoding provider had been chosen and contradicted two design decisions it had agreed on with the developer an hour earlier. What is the most likely root cause?",
         "opcoes": [
-          "The test-generation prompt has no few-shot examples of high-value tests, so the agent falls back on shallow tests that exercise simple data classes and property getters.",
-          "The task was decomposed as a fixed file-by-file sequence instead of mapping the structure, prioritizing high-impact areas, and adapting as dependencies surfaced.",
-          "The agent's context filled up during the three-day run, so it lost track of which modules carry the most business risk and drifted toward the easiest files.",
-          "The agent was not allowed to run the test suite through Bash, so it did not see that its mocks were failing and could not correct them before moving on."
-        ],
-        "correta": 1,
-        "explicacao": "An open-ended task like adding comprehensive tests to a legacy system needs adaptive decomposition: map the structure, find the high-impact areas (here, the modules behind 80% of incidents), and follow a prioritized plan that changes when dependencies such as the static singleton appear. A fixed alphabetical file-by-file plan guarantees effort goes to whatever comes first and cannot react to what is discovered.",
-        "feedbacks": [
-          "Few-shot examples could improve the quality of each test, but they would not change which files the plan visits or make the agent prioritize the risky modules; the symptom is about coverage order, not test style.",
-          "Correct. The fixed sequence ignores impact and cannot adapt when a shared dependency is discovered; mapping, prioritizing, and adapting the plan is the recommended decomposition.",
-          "Context degradation is real in long sessions, but the agent was never told to consider risk in the first place: an alphabetical plan sends it to DTOs whether or not its context is fresh.",
-          "Running the tests would expose the 90 failing mocks, but the agent would still be walking the alphabet; it would not reach the high-incident modules any sooner or plan around the singleton."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-S3"
-      },
-      {
-        "pergunta": "A pharmaceutical company runs an internal developer assistant built with the Claude Agent SDK. A coordinator delegates to four subagents: codebase-explorer, dependency-analyzer, doc-writer, and test-planner. The design document states: \"For consistency, every request passes through all four subagents in order; a subagent with nothing relevant returns an empty section.\" Engineers report that a question such as \"Where is the batch-release validation function defined?\" takes about four minutes and comes back as a three-page answer that includes an unrequested test plan. Which flaw in the design best explains this?",
-        "opcoes": [
-          "The four subagents run one after another instead of in parallel, so the total latency of every request equals the sum of all four subagent runs.",
-          "The doc-writer and test-planner subagents have no tool restrictions, so they run exploratory searches outside their specialization on every request.",
-          "The coordinator routes every request through the full pipeline instead of analyzing what each query needs and invoking only the relevant subagents.",
-          "The codebase-explorer returns verbose findings without a concise format, so its raw output spreads into each downstream subagent's section."
-        ],
-        "correta": 2,
-        "explicacao": "The coordinator's job includes deciding which subagents to invoke based on the query's complexity. A lookup question needs only the explorer; forcing it through all four subagents adds latency and produces output nobody asked for. The fix is a coordinator that analyzes each query and selects subagents dynamically.",
-        "feedbacks": [
-          "Parallel execution would shorten the wait, but the coordinator would still invoke the doc-writer and test-planner for a simple lookup, so the unrequested test plan and most of the cost would remain.",
-          "Tool restrictions matter for preventing cross-specialization misuse, but even perfectly scoped subagents would run here, because the design invokes all four for every request.",
-          "Correct. Always routing through the full pipeline is the flaw; the coordinator should analyze the query and invoke only the subagents it needs.",
-          "A more concise explorer output would trim the answer somewhat, but the doc-writer and test-planner would still run and still add sections that the engineer never requested."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-S1"
-      },
-      {
-        "pergunta": "An energy utility runs Claude Code in its CI pipeline to review pull requests to its grid-telemetry ingestion service. The team recently restructured the review into two steps. Step 1 reviews each changed file on its own with the same criteria. Step 2 receives the step-1 findings plus the interfaces of the changed modules and looks only at data flow between files. Since the change, findings are equally detailed across files, and step 2 caught a parser that emits kWh while an aggregator in another file expects MWh, which the previous single-pass review had missed. Which statement about this pipeline is correct?",
-        "opcoes": [
-          "It is dynamic decomposition: the integration step exists because the coordinator generated it after detecting the unit mismatch in the per-file reviews.",
-          "It is prompt chaining, but the gain comes from the extra tokens it spends; one pass with a larger output budget would catch the same set of issues.",
-          "It is prompt chaining: fixed steps where focused per-file passes avoid attention dilution and a separate pass covers the cross-file data flow.",
-          "It is a consensus design: two passes examine the same code independently, and only the issues that both passes confirm are posted to the PR."
-        ],
-        "correta": 2,
-        "explicacao": "Breaking a review into a fixed sequence of focused steps (each file on its own, then a cross-file integration pass) is the prompt chaining pattern. Per-file passes give every file the same attention instead of diluting it across the whole PR, and the integration pass looks at what no single file shows, such as a unit mismatch between a parser and an aggregator.",
-        "feedbacks": [
-          "The steps were designed in advance and run on every PR; nothing is generated from intermediate findings. Dynamic decomposition is for open-ended investigations, not for a predictable review.",
-          "The label is right but the explanation is wrong: a longer output budget for a single pass does not fix attention dilution, which is why the old review gave uneven depth and missed the cross-file bug.",
-          "Correct. This is prompt chaining for a predictable review: per-file passes for consistent local depth plus a separate integration pass for cross-file issues.",
-          "The two steps look at different things (local issues versus cross-file data flow); they do not review the same code twice, and requiring agreement would suppress real findings."
-        ],
-        "cenario": 5,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-K2"
-      },
-      {
-        "pergunta": "A university library runs a multi-agent research system built with the Claude Agent SDK: a coordinator delegates to search, document-analysis, synthesis, and report subagents. To reduce latency, an engineer piloted a change that lets the document-analysis subagent send follow-up queries straight to the search subagent through a shared queue, bypassing the coordinator. The pilot was 18% faster, but when the search subagent timed out, the analysis subagent waited without reporting anything, and the coordinator's trace had no record of about 40% of the searches that were run. Which TWO statements correctly evaluate this change? Choose TWO.",
-        "opcoes": [
-          "The latency gain justifies direct traffic between analysis and search, provided that the synthesis subagent still receives all of its inputs from the coordinator.",
-          "With the coordinator in the path, failures such as the search timeout are handled consistently in one place rather than separately by each pair of agents.",
-          "A cleaner fix is to merge the analysis and search subagents into one agent that holds both tool sets, which removes the round trip without a shared queue.",
-          "Routing every subagent request through the coordinator keeps one place that sees all requests and results, which the missing trace entries show was lost.",
-          "The change is acceptable once the queue logs every message, because a complete message log restores the coordinator's control over the flow of information."
-        ],
-        "corretas": [
-          1,
-          3
-        ],
-        "explicacao": "In a hub-and-spoke design, all communication between subagents goes through the coordinator. That gives observability (the coordinator sees every request and result, which the 40% gap in the trace shows was lost) and consistent error handling (the coordinator decides how to recover from the search timeout instead of the analysis subagent silently waiting).",
-        "feedbacks": [
-          "The 18% gain is real, but it was bought by losing observability and error handling for exactly the traffic that failed; keeping only synthesis on the coordinator does not recover them.",
-          "Correct. Centralized routing means errors like the timeout are handled consistently by the coordinator instead of disappearing between two subagents.",
-          "Merging the two subagents removes the hop, but it gives one agent tools outside its specialization and recreates the problems that separate, scoped subagents were meant to avoid.",
-          "Correct. Routing everything through the coordinator gives one observable place for all requests and results; bypassing it is why 40% of searches are missing from the trace.",
-          "Logging restores part of the visibility, but not control: the coordinator still cannot decide what analysis receives, notice gaps, or handle the search timeout, which went unreported in the pilot."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-S4"
-      },
-      {
-        "pergunta": "A pharmaceutical company's developer productivity tool uses the Claude Agent SDK. The coordinator defines two subagents, legacy-explorer and boilerplate-generator, each with a description, a system prompt, and a restricted tool list. The coordinator's options include allowedTools: [\"Read\", \"Grep\", \"Glob\", \"Bash\"]. Logs show the coordinator never delegates: it makes 60 or more Grep and Read calls itself, its context fills up on large repositories, and the subagent definitions are never used. The team wants to keep the coordinator's context small without rewriting the subagents. What is the most effective fix?",
-        "opcoes": [
-          "Rewrite both subagent descriptions to say \"use proactively for any codebase exploration\", so that the coordinator is more likely to select them.",
-          "Add a rule to the coordinator's system prompt stating that all codebase exploration must be delegated to subagents rather than done directly.",
-          "Add \"Task\" to the coordinator's allowedTools, so that it can spawn the defined subagents instead of exploring the whole repository by itself.",
-          "Remove Grep and Read from the coordinator's allowedTools, so that it has no option other than handing exploration work to the subagents."
-        ],
-        "correta": 2,
-        "explicacao": "Subagents are spawned through the Task tool, and a coordinator can only invoke them if its allowedTools includes \"Task\". Here the agent definitions exist, but the coordinator has no way to call them, so it does the exploration itself and fills its context.",
-        "feedbacks": [
-          "Better descriptions help the coordinator choose between subagents, but it cannot choose any of them while the Task tool is unavailable to it.",
-          "A prompt rule cannot give the coordinator a capability it lacks; without \"Task\" in allowedTools, it has no tool for delegating, whatever the prompt says.",
-          "Correct. Adding \"Task\" to allowedTools is what lets the coordinator spawn the subagents that are already defined.",
-          "Taking away Grep and Read would stop the coordinator from exploring, but it still could not delegate without the Task tool; it would simply fail at the work instead."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-K1"
-      },
-      {
-        "pergunta": "In a university library's multi-agent research system, a librarian spends 12 turns with the coordinator narrowing a request: peer-reviewed sources only, published 2015–2024, no preprints, focused on open-access mandates at EU universities. The coordinator then delegates to the search subagent with the prompt \"Find sources for the topic we agreed on.\" The search subagent returns 30 results about open access in general; 11 are preprints and 9 were published before 2015. What is the most effective first step?",
-        "opcoes": [
-          "Have the coordinator write the agreed topic, date range, and source-type exclusions directly into the search subagent's prompt for every delegation.",
-          "Give the search subagent read access to the coordinator's conversation log, so that it can recover the constraints agreed with the librarian.",
-          "Add the library's standing rules, such as peer-reviewed only and no preprints, to the system prompt in the search subagent's AgentDefinition.",
-          "Add a filtering step to the synthesis subagent that discards any result outside the agreed date range or the allowed source types."
-        ],
-        "correta": 0,
-        "explicacao": "Subagents run with isolated context: they do not inherit the coordinator's conversation history. Everything the librarian agreed on exists only in the coordinator's turns, so the coordinator must put the topic, dates, and exclusions explicitly into each delegation prompt.",
-        "feedbacks": [
-          "Correct. The subagent never saw the 12 turns; the coordinator has to pass the agreed constraints explicitly in the delegation prompt.",
-          "Pointing the subagent at the coordinator's log hands it a long, unfiltered transcript instead of the specific constraints, and gives up the coordinator's control over what each subagent receives.",
-          "Standing rules in the system prompt would help with preprints, but this request's topic and date range change from request to request and still would not reach the subagent.",
-          "Filtering downstream treats the symptom: the search would keep returning off-topic results, and sources that were never retrieved because the query was too broad cannot be filtered back in."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-K2"
-      },
-      {
-        "pergunta": "An energy utility is designing two Claude Code workflows for its CI system. Workflow 1 reviews every pull request to the billing-rules repository for the same three aspects: security, rate-calculation correctness, and logging conventions. Workflow 2 runs when the nightly meter-reconciliation job fails and must find the root cause, which in past incidents was sometimes bad input data, sometimes a configuration change, and sometimes code. The team lead wants a single decomposition design for both. Which choice is best?",
-        "opcoes": [
-          "Dynamic decomposition for both, because a coordinator that plans each run adapts better to pull requests of different sizes and to new kinds of job failures.",
-          "Prompt chaining for both, because fixed sequential steps are easier to test and audit, and auditability matters more than flexibility at a regulated utility.",
-          "Prompt chaining for the failure investigation, whose steps can be listed in advance, and dynamic decomposition for the reviews, whose pull requests vary in size.",
-          "Prompt chaining for the reviews, which check the same aspects every time, and dynamic decomposition for the investigation, whose next step depends on findings."
+          "The design decisions were made in the conversation instead of being written to the project `CLAUDE.md`, the only place Claude rereads mid-session.",
+          "The task ran in plan mode, which keeps every file read during planning pinned in context until the developer approves the final plan.",
+          "The model's context window is too small for a 140-file library migration, so the session needed a model with a larger window.",
+          "The discovery phase ran in the main conversation instead of in the Explore subagent, so verbose file contents crowded out earlier decisions."
         ],
         "correta": 3,
-        "explicacao": "The two workflows have different shapes. A review that checks the same aspects on every PR is predictable, so a fixed prompt chain fits. A root-cause investigation is open-ended: what to check next depends on what the previous step found, so it needs dynamic, adaptive decomposition. One design for both forces one workflow into the wrong pattern.",
+        "explicacao": "The symptoms point to verbose discovery output (140 file reads and search results) filling the main conversation until earlier decisions were pushed out of effective attention. The Explore subagent exists for this: it performs the discovery in its own context and returns only a summary, preserving the main conversation for planning and implementation. The fix is to isolate discovery, not to change where decisions are written or which model runs.",
         "feedbacks": [
-          "Dynamic planning for a review that always checks the same three aspects adds unpredictability and cost without benefit; PR size does not change which aspects are reviewed.",
-          "Fixed steps suit the review, but an investigation whose cause can be data, configuration, or code cannot follow a script written in advance; the chain would miss causes outside it.",
-          "This inverts the patterns: the investigation is the open-ended task, and varying PR size does not make the review unpredictable, since the aspects checked are always the same.",
-          "Correct. Prompt chaining fits the predictable multi-aspect review; dynamic decomposition fits the open-ended failure investigation."
-        ],
-        "cenario": 5,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-S1"
-      },
-      {
-        "pergunta": "A university library's multi-agent research system offers a replication check for computational papers: the document-analysis subagent reviews the paper's code repository for errors that could invalidate the results. For one paper with 22 R scripts, a single analysis pass over all scripts produced detailed notes on the first few scripts and one-line comments on the rest, missed a reversed sign in a script in the middle, and did not notice that the cleaning script drops rows with missing values while the modeling script assumes the full sample size. The requirement is consistent depth for every script plus detection of problems between scripts. What should you change?",
-        "opcoes": [
-          "Analyze each script in its own focused pass, then run a separate integration pass over the per-script findings to check data flow between scripts.",
-          "Spawn one analysis subagent per script and have the synthesis subagent merge their findings into the report, so every script receives the same depth of review.",
-          "Have the analysis subagent first summarize every script and then review the summaries for errors, so the whole repository fits comfortably within one prompt.",
-          "Order the scripts from largest to smallest before the single pass, so that the most complex code is reviewed while the model's attention is at its strongest."
-        ],
-        "correta": 0,
-        "explicacao": "A single pass over 22 scripts suffers from attention dilution: depth drops after the first files and obvious bugs are missed. Splitting the work into per-script local passes gives each script full attention, and a separate integration pass is needed for issues that only appear between scripts, such as the cleaning script changing the sample the model script relies on.",
-        "feedbacks": [
-          "Correct. Per-file passes give consistent local depth, and the separate integration pass catches cross-file data flow problems like the dropped rows.",
-          "This gets the per-script depth, but merging findings in synthesis is not an integration review: no step examines how data flows from the cleaning script into the modeling script.",
-          "Reviewing summaries discards the details where bugs live, such as a reversed sign, and still compresses the whole repository into one pass with diluted attention.",
-          "Reordering only changes which scripts get the thin coverage; the single pass still dilutes attention and still has no step that looks across scripts."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-S2"
-      },
-      {
-        "pergunta": "A food-delivery marketplace uses Claude Code to investigate why courier arrival estimates became 25% less accurate after a release. A developer created a custom slash command that runs fixed steps: read the ETA service, list the recent commits to that service, and propose a fix. On every run the command proposes a confident change to the ETA code, yet the accuracy problem persists. In 3 of 5 runs, the notes from the first step mention that the ETA model reads travel times from an external traffic feed, but the next step still lists only ETA-service commits. A teammate later finds the cause in a traffic-feed configuration change made in another repository. What is the most likely root cause?",
-        "opcoes": [
-          "The command has no few-shot examples of past root-cause analyses, so the final step jumps to a fix without weighing the evidence from earlier steps.",
-          "An open-ended investigation was run as a fixed chain of steps, so the plan could not adapt when early findings pointed to a source outside the ETA service.",
-          "The command runs inside the developer's long-lived session, so stale tool results from earlier work bias every analysis toward the ETA service code.",
-          "The command does not use plan mode, so Claude edits the ETA service before it explores the other services and feeds that supply data to the model."
-        ],
-        "correta": 1,
-        "explicacao": "Fixed sequential pipelines suit predictable work; investigations whose next step depends on what was just found need dynamic, adaptive decomposition. Here step 1 found the right lead (the traffic feed), but the fixed chain had no way to generate a new subtask to follow it, so every run ended with a fix in the wrong place.",
-        "feedbacks": [
-          "Few-shot examples could improve how the fix is argued, but the chain would still look only at ETA-service commits; the evidence that matters was never gathered.",
-          "Correct. The investigation was forced into a fixed chain that could not follow the traffic-feed lead discovered in step 1; it needed adaptive decomposition.",
-          "Stale context can bias a resumed session, but the stem shows the same miss on every run and points to the command's fixed steps, not to old tool results.",
-          "Plan mode helps before large changes, but the command did not fail by editing too early; it failed because its steps could never look outside the ETA service."
+          "Tempting because CLAUDE.md is the persistent memory you know best, but decisions made in the session were still in the conversation; they were drowned out by tool output, not missing. CLAUDE.md is also not reread 'mid-session' as a special channel.",
+          "Tempting because plan mode involves a lot of reading, but plan mode does not pin files until approval, and the transcript shows the reads happening in the main conversation regardless of mode. The problem is where discovery ran, not the mode.",
+          "Tempting (the 'bigger window' distractor): more room only postpones the problem, and attention over a context dominated by raw file contents still degrades. The root cause is unisolated discovery output.",
+          "Correct. Discovery output belonged in an Explore subagent, which keeps verbose reads in its own context and returns a summary."
         ],
         "cenario": 2,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-K1"
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-K4"
       },
       {
-        "pergunta": "A university library's multi-agent research system received the request \"How did the shift to hybrid teaching change the way students use the university library since 2020?\" The coordinator's log shows three subtasks: \"e-book loan statistics\", \"database login trends\", and \"off-campus proxy usage\". Every subagent returned well-sourced findings for its subtask, and the final report is accurate, but faculty reviewers say it ignores study-space occupancy, reference and tutoring services, and interlibrary loan. What is the flaw?",
+        "pergunta": "Your real-estate portal monorepo has three packages: `packages/listings-api` (.NET), `packages/agent-portal` (React) and `packages/mortgage-calc` (a shared pricing library). Standards live in `docs/standards/`: `dotnet-api.md`, `react-ui.md`, `accessibility.md` and `money-rounding.md`. Today the root `CLAUDE.md` pastes all four files (1,100 lines), and Claude applies React conventions while editing .NET code. Maintainers want each package to receive only the standards relevant to it, while each standard stays in a single file. Which TWO actions use `@import` correctly for this goal? Choose TWO.",
         "opcoes": [
-          "The coordinator decomposed the question only into digital-access metrics, so no subagent was ever assigned the other dimensions of student library use.",
-          "The search subagent's queries are too literal, so they retrieve only usage statistics instead of sources covering the full range of student library activity.",
-          "The synthesis subagent has no coverage check, so it does not flag that study spaces, reference services, and interlibrary loan are missing from the report.",
-          "The document-analysis subagent applies relevance criteria that are too strict, so it discards sources about physical spaces and in-person services."
+          "Turn each standards file into a skill in `.claude/skills/`, so developers invoke the right standard before editing a package.",
+          "Replace the pasted text in the root `CLAUDE.md` with `@` lines for all four files, so the standards stay in separate files.",
+          "Let each package's maintainers decide which standards files their `CLAUDE.md` imports, since they know what their domain needs.",
+          "Copy the relevant sections of each standards file into every package's `CLAUDE.md`, so that each package is fully self-contained.",
+          "Add lines such as `@../../docs/standards/react-ui.md` to each package's `CLAUDE.md`, pulling in only the files that apply there."
+        ],
+        "corretas": [
+          2,
+          4
+        ],
+        "explicacao": "`@import` lets a CLAUDE.md pull in external files, so each standard stays in one place while each package's CLAUDE.md imports only what applies to it. Who chooses those imports matters too: the package maintainers know which conventions their domain needs. Importing everything from the root keeps the files separate but still loads all of them in every session, which does not meet the goal.",
+        "feedbacks": [
+          "Tempting because skills are modular, but skills load on demand; standards that must apply whenever a package is edited would depend on someone remembering to invoke them.",
+          "Tempting because it does modularize the root file, but the root CLAUDE.md loads for every package, and imported files load with it, so React rules still reach .NET work.",
+          "Correct. Selective imports are chosen per package based on maintainer domain knowledge, which is how the guide describes this pattern.",
+          "Tempting because each package becomes self-contained, but copying text duplicates the standards and lets the copies drift; the requirement is a single file per standard.",
+          "Correct. Selective `@` imports in each package's CLAUDE.md give each package only its relevant standards while the source files stay unique."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-K3"
+      },
+      {
+        "pergunta": "A hospital network runs Claude Code in CI to review every pull request. The project `CLAUDE.md` holds two universal rules (patient identifiers must never be logged; use the `PatientId` value type) plus a 90-line, step-by-step procedure for generating HL7 interface regression tests, which the team runs on about 6% of PRs. Reviews of frontend PRs now carry that procedure in context, and in 3 of 40 frontend reviews Claude suggested HL7 regression tests. Which statement about this behavior is correct?",
+        "opcoes": [
+          "`CLAUDE.md` is loaded in every session, so the task-specific HL7 procedure belongs in an on-demand skill while the two universal rules stay in `CLAUDE.md`.",
+          "Moving the HL7 procedure into a file imported with an `@` line from `CLAUDE.md` would keep it out of frontend reviews while HL7 PRs still get it.",
+          "Moving the HL7 procedure and both universal rules into skills would cut context on every review without making the logging rule less consistent.",
+          "The procedure leaks into frontend reviews only because it sits near the top of `CLAUDE.md`; moving it to the end would make Claude treat it as background."
         ],
         "correta": 0,
-        "explicacao": "The log shows that all three subtasks are about digital access. Each subagent did its assigned work well; the gap comes from what they were assigned. An overly narrow decomposition by the coordinator leads to incomplete coverage of a broad topic, so the fix belongs in the coordinator's decomposition.",
+        "explicacao": "CLAUDE.md is always loaded, so anything in it costs context in every review and can influence unrelated work. A procedure used on a small share of PRs is a task-specific workflow and belongs in a skill invoked on demand, while universal standards such as the logging rule must stay always-loaded. This is the skills (on-demand) versus CLAUDE.md (always-loaded) choice.",
         "feedbacks": [
-          "Correct. The coordinator's decomposition was too narrow: it never assigned the physical, service, or interlibrary dimensions of the question.",
-          "The search subagent answered the subtasks it was given; broader queries for \"e-book loan statistics\" would still not produce sources on study spaces or tutoring.",
-          "A coverage check would help notice the gap, but it treats the symptom downstream; the missing dimensions were never researched because no subtask asked for them.",
-          "Nothing indicates that sources were discarded; the subagents were never asked to look for physical spaces or in-person services in the first place."
+          "Correct. Task-specific workflow goes to an on-demand skill; universal standards stay in the always-loaded CLAUDE.md.",
+          "Tempting because imports split the file, but imported files load together with the CLAUDE.md that references them, so the procedure would still reach every review.",
+          "Tempting because it shrinks CLAUDE.md the most, but universal rules moved into skills apply only when someone invokes the skill, so the logging rule would stop applying consistently.",
+          "Tempting because position effects exist in long inputs, but reordering does not stop always-loaded content from being in context; the procedure is in the wrong mechanism, not the wrong place in the file."
         ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-K4"
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S5"
       },
       {
-        "pergunta": "A university library's research system logs two requests from the same afternoon. For \"In what year did the library join the HathiTrust consortium?\", the coordinator invoked only the search subagent and answered from its result in 9 seconds. For \"Compare the citation impact of open-access and paywalled chemistry articles from 2010 to 2023\", the coordinator created four subtasks, ran three searches in parallel, then invoked document analysis, synthesis, and report generation, taking 6 minutes. A stakeholder asks whether this inconsistency is a defect. Which statement is correct?",
+        "pergunta": "At a real-estate portal, a developer wrote a `/listing-audit` command in `~/.claude/commands/listing-audit.md`. Nine of the twelve developers now use it, each with a hand-copied file; there are already three diverging versions, and the two newest hires do not have it at all. The tech lead proposes keeping the command in each developer's `~/.claude/commands/` and posting the canonical version on the wiki so people can refresh their copies. How should you evaluate this proposal?",
         "opcoes": [
-          "It is a defect: every request should follow the same subagent sequence so that answers stay consistent and the cost of each request stays comparable.",
-          "It is expected: the coordinator chooses which subagents to invoke based on each query's complexity, then decomposes, delegates, and aggregates.",
-          "It is expected only for factual lookups; complex requests should follow a decomposition fixed in code rather than one that the coordinator chooses.",
-          "It shows a missing routing classifier, which should label each request's type before the coordinator receives it and then pick the pipeline."
+          "Accept it: user-level commands are available in every project on the machine, so a wiki copy reaches everyone without touching the repo.",
+          "Reject it: move the command into the repository as `.claude/commands/listing-audit.md`, so every developer gets it on clone or pull.",
+          "Reject it: describe the audit steps in the project `CLAUDE.md`, so that Claude runs the audit whenever a developer mentions the listings.",
+          "Accept it, adding a startup hook that copies the wiki version into each developer's `~/.claude/commands/` folder before every session."
         ],
         "correta": 1,
-        "explicacao": "Deciding which subagents to invoke based on query complexity is part of the coordinator's role, together with task decomposition, delegation, and result aggregation. A one-fact lookup needs only search; a comparative analysis needs several searches, analysis, synthesis, and a report.",
+        "explicacao": "Commands in `~/.claude/commands/` are personal and are not shared through version control, which is exactly why copies drift and new hires miss them. A team command belongs in the project's `.claude/commands/` directory, where it is versioned with the repository and available to every developer on clone or pull. Changes then go through normal code review instead of wiki updates.",
         "feedbacks": [
-          "Forcing the same sequence on every request is the full-pipeline anti-pattern: the lookup would take minutes and return sections nobody needs.",
-          "Correct. Selecting subagents by query complexity, then decomposing, delegating, and aggregating, is exactly the coordinator's job.",
-          "Fixing the decomposition in code for complex requests removes the coordinator's ability to adapt subtasks to each question, which is why it exists.",
-          "The coordinator already analyzes the request; adding a classifier in front of it is extra infrastructure that duplicates what the coordinator is designed to do."
+          "Tempting because user-level commands do work across that user's projects, but each developer still holds a private copy that must be refreshed by hand, which is what caused the drift.",
+          "Correct. Project-scoped commands in `.claude/commands/` are version-controlled and reach the whole team automatically.",
+          "Tempting because CLAUDE.md is shared, but it holds instructions and context, not command definitions, and it would load the audit steps into every session.",
+          "Tempting because it automates the copying, but it is over-engineering around the wrong scope; the repository already distributes files to everyone through `.claude/commands/`."
         ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-K3"
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-K1"
       },
       {
-        "pergunta": "A pharmaceutical company's developer productivity system uses a coordinator with three subagents: legacy-explorer, dependency-mapper, and migration-planner. To simplify the design, an architect proposes removing the coordinator. Each subagent would write its outputs to a shared document store, poll the store for the other subagents' outputs, and decide on its own what to do next. How should you evaluate this proposal?",
+        "pergunta": "On a real-estate portal, a developer asked Claude Code, in direct execution, to switch the listings API from offset to cursor pagination. Claude edited 23 files before the developer learned that the mobile app and two partner feeds depend on offset semantics; reverting and redoing 17 files took two days. The next task, moving listing photos from local disk to a blob storage service, touches an unknown number of files, and the team lead requires that the approach be reviewed before any file is changed. What is the most effective way to run the next task?",
         "opcoes": [
-          "Accept it, because a shared store gives every subagent the complete outputs of the others, which removes the need to pass context explicitly.",
-          "Accept it if every store entry records a timestamp and the author agent, because that keeps the system as traceable as it is with a coordinator.",
-          "Reject it, because polling adds latency; replace the store with direct calls between subagents so that each one can request what it needs.",
-          "Reject it, because the coordinator is what manages communication between subagents, error handling, and routing, which the shared store would scatter."
+          "Use direct execution but have Claude commit after every file, so that any change can be reverted on its own if a dependency surfaces late.",
+          "Start in plan mode, so Claude explores callers and dependencies and proposes an approach for review before it edits any file at all.",
+          "Use direct execution with a detailed upfront specification that lists every file to change and the exact storage interface to adopt.",
+          "Start in direct execution on a few files, and switch to plan mode only if Claude reports dependencies that it did not expect to find."
         ],
-        "correta": 3,
-        "explicacao": "In a hub-and-spoke architecture the coordinator manages all communication between subagents, handles their errors, and routes information. Replacing it with a shared store lets every subagent read everything and act on its own, so no component controls what each agent receives, handles failures consistently, or sees the whole flow.",
+        "correta": 1,
+        "explicacao": "Plan mode lets Claude explore the codebase and design an approach before committing to changes, which is what prevents the costly rework seen in the pagination change. It also meets the constraint directly, because the approach is reviewed before any file is edited. The other options either accept rework, assume knowledge nobody has yet, or wait for complexity that is already known.",
         "feedbacks": [
-          "Giving everyone everything is not a substitute for explicit, controlled context: subagents would act on whatever they find in the store, and nobody would decide what each one should receive.",
-          "Timestamps and authorship give an audit trail, but nothing would still decide what each subagent receives or how failures are handled; traceability is only part of what the coordinator provides.",
-          "Direct calls fix the polling delay but keep the core problem: communication between subagents still bypasses a coordinator, so control and error handling remain scattered.",
-          "Correct. The coordinator is the hub that manages inter-subagent communication, error handling, and routing; removing it scatters all three across the subagents."
+          "Tempting because small commits make reverting easier, but it only reduces the cost of rework instead of preventing it, and files still change before any review.",
+          "Correct. Plan mode explores dependencies and produces a reviewable approach before changes, preventing costly rework.",
+          "Tempting because detail feels safe, but writing the full specification assumes you already know every caller and dependency, which is what the pagination change lacked.",
+          "Tempting as a cautious middle ground, but the unknown scope is stated up front; waiting for surprises means files are edited before the approach is reviewed."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-K3"
+      },
+      {
+        "pergunta": "A fashion e-commerce team builds developer productivity tooling on Claude Code, including a project skill, `/scaffold-collection`, that generates the boilerplate for a new seasonal collection: a page component, a style module and a test stub. In 2 of 31 runs last week, the skill ran shell commands to 'clean up' after a failed attempt and discarded a developer's uncommitted changes. The skill only ever needs to create files. What is the most effective first step?",
+        "opcoes": [
+          "Add a sentence to `SKILL.md` telling Claude never to run shell commands that delete files or discard changes while it scaffolds.",
+          "Add `context: fork` to the frontmatter, so its actions run in an isolated sub-agent that cannot touch the developer's working tree.",
+          "Set `allowed-tools` in the frontmatter to file-writing tools only, so that the skill cannot run shell commands while it executes.",
+          "Move the scaffolding steps into the project `CLAUDE.md`, so the standing rule there against destructive commands also covers them."
+        ],
+        "correta": 2,
+        "explicacao": "The skill needs only to create files, so the proportionate first step is to configure `allowed-tools` in its frontmatter and restrict tool access during the skill to file-writing operations. That removes the ability to run destructive shell commands while the skill runs, instead of hoping an instruction is followed. Isolation with `context: fork` addresses conversation context, not what the skill is allowed to do on disk.",
+        "feedbacks": [
+          "Tempting because it is the quickest edit, but a prompt instruction is probabilistic guidance; the skill already ignored implicit expectations in 2 of 31 runs.",
+          "Tempting because 'isolated' sounds protective, but `context: fork` isolates the skill's conversation context; the sub-agent still works on the same files.",
+          "Correct. Restricting `allowed-tools` to file-writing operations prevents destructive actions during the skill.",
+          "Tempting because CLAUDE.md is always loaded, but it is still guidance rather than a restriction, and it would load the scaffolding steps into every session."
         ],
         "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-K1"
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S3"
       },
       {
-        "pergunta": "In a university library's research system, the synthesis subagent is invoked twice per report: once to write a draft, and again, after the coordinator collects reviewer comments, to revise it. For the second invocation the coordinator's prompt is \"Revise your draft according to the reviewer comments below,\" followed by the comments. The revised versions often have little in common with the drafts and cite none of the original sources. Which TWO changes should you make? Choose TWO.",
+        "pergunta": "A hospital network's CI job runs Claude Code with `-p` on each pull request. The prompt first invokes a project skill, `/phi-audit`, which reads about 180 files and prints every call that might log patient data (roughly 2,500 lines), and then asks Claude to review the PR diff. Since the audit was added, reviews miss issues in the diff and cite line numbers from audited files instead. The team is weighing how the audit should run relative to the review. Which design is best?",
         "opcoes": [
-          "Include the complete draft and its list of sources in the prompt of the second invocation, since the subagent keeps nothing from its first invocation.",
-          "Add an instruction to the synthesis subagent's system prompt telling it to build on its earlier draft whenever it is invoked to revise a report.",
-          "Ask reviewers to write self-contained comments that quote the sentences they object to, so that the subagent can locate them in its draft.",
-          "Have the coordinator condense the draft into two or three sentences before the revision call, so that the revision prompt stays short and focused.",
-          "Pass the original search and analysis findings along with the comments, since the synthesis subagent cannot see the coordinator's history."
+          "Keep the audit inline and add `/compact` between the audit and the review, so the review starts from a condensed version of the audit.",
+          "Keep the audit inline but run the review on a model with a larger context window, so the audit output and the diff both fit with room.",
+          "Add `context: fork` to the `/phi-audit` skill, so the audit runs in an isolated sub-agent and only its summary returns to the review.",
+          "Split `/phi-audit` into six smaller skills, one per hospital system, so that each invocation adds less output to the review session."
+        ],
+        "correta": 2,
+        "explicacao": "The audit produces verbose output that then competes with the diff for the reviewer's attention. `context: fork` runs the skill in an isolated sub-agent context, so the 2,500 lines stay there and only the findings summary reaches the review session. This prevents the pollution rather than cleaning it up afterwards.",
+        "feedbacks": [
+          "Tempting because `/compact` does reduce context, but it summarizes after the damage is done, loses detail from the whole history, and is awkward inside a non-interactive `-p` run.",
+          "Tempting (the 'bigger window' distractor): the output still sits in the same conversation and dilutes attention on the diff; size is not the issue.",
+          "Correct. `context: fork` keeps the verbose audit output out of the main session and returns only what the review needs.",
+          "Tempting because each piece is smaller, but six inline runs still add the same total output to the review session; nothing is isolated."
+        ],
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S2"
+      },
+      {
+        "pergunta": "A fashion e-commerce company's root `CLAUDE.md` has grown to 1,400 lines maintained by five teams (testing, API, deployment, styling, data). It causes merge conflicts almost every week, and reviewers cannot tell which team owns which section. The new requirement: each team owns and reviews its conventions in its own file, and every convention keeps applying in every session, because all of them are repository-wide. What should you change?",
+        "opcoes": [
+          "Move each team's section into a `CLAUDE.md` inside the directory that team edits most, so that each file is owned by that team.",
+          "Convert each team's section into a skill in `.claude/skills/`, so developers invoke the conventions for the area they are changing.",
+          "Split the file into topic files in `.claude/rules/`, such as `testing.md`, `api-conventions.md` and `deployment.md`, one per team.",
+          "Keep one `CLAUDE.md` with an ownership header per section and a CODEOWNERS entry that requires all five teams to approve changes."
+        ],
+        "correta": 2,
+        "explicacao": "`.claude/rules/` is the directory for topic-specific rule files as an alternative to a monolithic CLAUDE.md. Files without `paths` frontmatter load in every session, so repository-wide conventions keep applying, while each team owns and reviews its own file. That solves the merge conflicts and the ownership problem without changing when the conventions load.",
+        "feedbacks": [
+          "Tempting because it gives each team a file, but directory-level files apply only when Claude works in that directory, and these conventions are repository-wide.",
+          "Tempting because skills are modular, but they load on demand; always-applicable conventions would depend on someone invoking them.",
+          "Correct. Topic files in `.claude/rules/` replace the monolith, give each team its own file, and still load in every session.",
+          "Tempting because it clarifies ownership on paper, but a single file keeps the merge conflicts and adds approval overhead from all five teams."
+        ],
+        "cenario": 4,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-S3"
+      },
+      {
+        "pergunta": "Your real-estate portal team is organizing three Claude Code instructions: (a) 'all prices use the `Money` type', which every developer and the CI job must follow; (b) Luiza's personal preference to have diffs explained in Portuguese; (c) a date-format convention that applies only inside the `legacy-mls-importer/` directory. Which TWO placements match the CLAUDE.md configuration hierarchy? Choose TWO.",
+        "opcoes": [
+          "Put the `Money` rule in the project-level `CLAUDE.md` (root or `.claude/CLAUDE.md`) and commit it to the repository.",
+          "Put Luiza's preference in the project's `.claude/CLAUDE.md` under a heading with her name, so it applies only to her own sessions.",
+          "Put the importer's date convention in the root `CLAUDE.md`, because root instructions override the subdirectory files.",
+          "Put the importer's date convention in `legacy-mls-importer/CLAUDE.md`, so it applies when Claude works in that directory.",
+          "Put the `Money` rule in `~/.claude/CLAUDE.md` on the CI runner, so every pipeline run and every developer inherits it from there."
         ],
         "corretas": [
           0,
-          4
+          3
         ],
-        "explicacao": "Subagents do not inherit the coordinator's context and do not share memory between invocations. The second synthesis call starts from nothing, so the coordinator must pass the full draft, its sources, and the underlying findings explicitly in the prompt, along with the comments.",
+        "explicacao": "The hierarchy has three levels: user (`~/.claude/CLAUDE.md`, personal and not shared through version control), project (root `CLAUDE.md` or `.claude/CLAUDE.md`, shared with the team) and directory (a `CLAUDE.md` in a subdirectory). A team-wide rule goes to the project level, and a convention for one directory goes to that directory's CLAUDE.md. Luiza's preference would belong in her own user-level file.",
         "feedbacks": [
-          "Correct. Each invocation starts fresh, so the draft and its sources must be in the revision prompt.",
-          "An instruction to build on the earlier draft cannot work: the subagent has no memory of that draft, so the prompt refers to something it never receives.",
-          "Quoted comments help locate passages, but the subagent still has no draft to locate them in; this shifts work to reviewers without fixing the missing context.",
-          "A two-sentence summary keeps the prompt short but throws away the content and citations the revision needs, which is exactly what the revised versions are missing.",
-          "Correct. The findings live in the coordinator's context; the synthesis subagent only sees what the coordinator passes in its prompt."
+          "Correct. Team-wide instructions go to the project-level CLAUDE.md, versioned with the repository.",
+          "Tempting because a heading looks like scoping, but the project file is shared with everyone, so her preference would reach the whole team; it belongs in her `~/.claude/CLAUDE.md`.",
+          "Tempting because the root file is always read, but levels are combined rather than overriding each other, and this would load a local convention for all work.",
+          "Correct. A convention scoped to one directory belongs in that directory's CLAUDE.md.",
+          "Tempting because CI runs on that machine, but a user-level file is personal to one account on one machine; developers never receive it through the repository."
         ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-K2"
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-K1"
       },
       {
-        "pergunta": "A university library's research coordinator has a system prompt with a 14-step procedure: \"1. Search the catalog using the user's exact keywords. 2. Keep the top 5 results. 3. Send each result to document analysis ... 14. Format citations in APA.\" Subagents follow these steps literally. For interdisciplinary requests, such as the effect of urban heat on student health, reports miss key sources: exact-keyword catalog searches return few results, and no step allows alternative terms or other databases. What is the most effective first step?",
+        "pergunta": "A hospital network runs Claude Code in CI to review pull requests and generate tests. Its FHIR mapping conventions sit in the root `CLAUDE.md` and load for every review, although they matter only for files under `integrations/fhir/` and for `*.fhir.json` fixtures stored in many service folders. The team wants to move them to `.claude/rules/fhir.md`. Which TWO statements about configuring this rule are correct? Choose TWO.",
         "opcoes": [
-          "Rewrite the coordinator prompt around the research goal and quality criteria, such as coverage of each discipline and source standards, and let subagents choose how to search.",
-          "Add steps to the procedure for interdisciplinary requests, such as searching two more databases and trying three synonyms whenever fewer than five results come back.",
-          "Add few-shot examples of interdisciplinary requests to the procedure, showing which keywords to use for each discipline and which databases to search for each.",
-          "Add a classifier before the coordinator that detects interdisciplinary requests and routes them to a separate pipeline with a broader 20-step procedure."
-        ],
-        "correta": 0,
-        "explicacao": "Coordinator prompts should state research goals and quality criteria rather than step-by-step procedures, so subagents can adapt their approach when a request does not fit the script. The failures come from the rigid procedure itself; stating what a good result looks like lets subagents pick terms and databases that fit each topic.",
-        "feedbacks": [
-          "Correct. Goals and quality criteria let subagents adapt their search strategy instead of following a script that does not fit interdisciplinary topics.",
-          "More steps patch this one case but keep the rigid structure; the next request that does not fit the extended procedure will fail the same way.",
-          "Examples tied to specific disciplines still assume the procedure covers every case; subagents would follow them literally and remain stuck on topics the examples do not show.",
-          "A classifier and a second, longer procedure add infrastructure while keeping the real problem, which is a procedural prompt that prevents subagents from adapting."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-S4"
-      },
-      {
-        "pergunta": "A university library's research system spent 40 minutes building a shared analysis of 120 sources for a grant proposal: claims extracted, sources assessed, and conflicts noted. The team now wants two alternative report framings, one that emphasizes policy impact and one that emphasizes methodological gaps, so that they can compare them. They do not want to redo the analysis, and they do not want the reasoning behind one framing to influence the other. Which design best meets these goals?",
-        "opcoes": [
-          "Fork the session that holds the completed analysis with fork_session, creating two independent branches that each develop one framing from that baseline.",
-          "Continue the same session and request the policy framing first and the methodological framing next, so that the second can reuse everything the first produced.",
-          "Start two new sessions and paste a one-paragraph summary of the analysis into each, so that both framings begin from the same independent and compact context.",
-          "Spawn two subagents from the coordinator with the prompt \"Write the report in your assigned framing,\" relying on them to work from the analysis already done."
-        ],
-        "correta": 0,
-        "explicacao": "Fork-based session management exists for this case: fork_session creates independent branches from a shared analysis baseline, so each branch keeps the full 40-minute analysis and develops its own approach without seeing the other branch's reasoning.",
-        "feedbacks": [
-          "Correct. Forking from the analysis baseline keeps the full shared context in both branches while keeping their reasoning independent.",
-          "Running both framings in one session lets the first framing's reasoning shape the second, which is the influence the team wants to avoid.",
-          "Fresh sessions are independent, but a one-paragraph summary discards most of the 120-source analysis that both framings need to build on.",
-          "Subagents do not inherit the coordinator's context; a prompt that relies on the earlier analysis without including it leaves them without the baseline."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-K4"
-      },
-      {
-        "pergunta": "A logistics company's customer support agent, built with the Claude Agent SDK, delegates parcel questions to a shipment-tracker subagent and damage claims to a claims-assistant subagent. Today both subagents receive every MCP tool, including process_refund. In 2 of 500 test conversations, the shipment-tracker called process_refund after confirming that a parcel was lost. Compliance now requires that the shipment-tracker be unable to issue refunds at all, while the claims-assistant keeps that ability. What should you change to meet the requirement?",
-        "opcoes": [
-          "Add an instruction to the shipment-tracker's prompt stating that it must never call process_refund and must report lost parcels to the coordinator instead.",
-          "Have the coordinator review each shipment-tracker result and reverse any refund that the subagent issued before the reply is sent to the customer.",
-          "Add a PostToolUse hook that records every process_refund call made by the shipment-tracker, so that compliance can audit those refunds each week.",
-          "Define the shipment-tracker with an AgentDefinition whose tool list contains only the tracking tools, alongside its description and system prompt."
-        ],
-        "correta": 3,
-        "explicacao": "Each subagent type is configured with an AgentDefinition that includes its description, system prompt, and tool restrictions. Restricting the shipment-tracker's tools removes process_refund from its reach entirely, which is what compliance requires, while the claims-assistant's definition can keep it.",
-        "feedbacks": [
-          "A prompt instruction lowers the rate but does not make the call impossible; the requirement is that the subagent be unable to refund, not that it usually refrains.",
-          "Reversing refunds after the fact means they were issued in the first place; it adds work and risk without meeting the requirement that the subagent cannot refund.",
-          "A PostToolUse hook runs after the refund has already happened; it provides an audit trail but does not prevent the call that compliance wants to rule out.",
-          "Correct. Tool restrictions in the subagent's AgentDefinition make process_refund unavailable to the shipment-tracker while the claims-assistant keeps it."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-K3"
-      },
-      {
-        "pergunta": "A pharmaceutical company's developer productivity system produces migration-readiness reports for legacy modules. The coordinator delegates to an explorer subagent and a dependency-analysis subagent, then invokes a synthesis subagent. About a third of the reports end with an \"Open questions\" section, such as \"Could not determine whether module LabSync is called by the nightly batch jobs\", and engineers later find those answers within minutes. The coordinator's logs show that each synthesis output is returned to the requester after a single pass. What is the most likely root cause?",
-        "opcoes": [
-          "The synthesis subagent has no Grep or Read tools, so it cannot look up the missing call sites itself before it writes the open-questions section of the report.",
-          "The explorer subagent's description is too vague, so the coordinator does not select it when a question involves finding callers among the nightly batch jobs.",
-          "The coordinator does not evaluate the synthesis for gaps and re-delegate targeted queries to the explorer and analysis subagents before synthesizing again.",
-          "The dependency-analysis subagent drops findings with partial evidence, so call sites it found in batch scripts never reach the synthesis step at all."
-        ],
-        "correta": 2,
-        "explicacao": "An iterative refinement loop has the coordinator evaluate the synthesis for gaps, re-delegate targeted queries to the search or exploration and analysis subagents, and re-invoke synthesis until coverage is sufficient. The logs show a single pass: the gaps are identified in the open-questions section, but nothing acts on them.",
-        "feedbacks": [
-          "Giving synthesis exploration tools would push it outside its specialization; the gap should go back to the coordinator, which can send a targeted query to the explorer.",
-          "If the explorer were never selected, the reports would lack structure overall; here the gap is specific and named in the report, yet no follow-up is attempted.",
-          "Correct. The coordinator returns the first synthesis without evaluating its gaps and re-delegating, which is the missing refinement loop.",
-          "Nothing in the logs suggests dropped findings; the open questions are the system telling you what it did not investigate, and the coordinator never follows up."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.2",
-        "bullet": "1.2-S3"
-      },
-      {
-        "pergunta": "A university library is building a feature that investigates sudden drops in a faculty member's citation count on the library's research dashboard. In the current design, the coordinator creates a fixed list of six checks at the start (data import errors, author-name variants, DOI mismatches, and three others), runs all six, and reports. In one test case, the author-name check found that 40% of the researcher's papers had been reassigned to a different author ID after a profile merge, but the remaining checks still ran against the original ID and the report never followed up on the merge. What is the flaw?",
-        "opcoes": [
-          "The checks ran in parallel, so later checks could not use the author-name finding; running the same six checks one after another would have fixed it.",
-          "The author-name subagent should have reversed the profile merge itself instead of only reporting it, since it already had all the evidence it needed.",
-          "The list of checks is too short; adding more predefined checks, including one for profile merges, would have covered this case from the very start.",
-          "The plan is fixed at the start, so it cannot generate new subtasks from what each step discovers, such as following up on the profile merge it found."
-        ],
-        "correta": 3,
-        "explicacao": "Adaptive investigation plans generate subtasks based on what each step discovers. Here the key discovery (the profile merge) should have produced new subtasks, such as re-running the checks against the new author ID, but a plan fixed at the start has no way to add them.",
-        "feedbacks": [
-          "Running the same fixed checks in sequence would not add the follow-up that the merge requires; the checks would still target the original author ID.",
-          "Reversing a profile merge is an action outside an investigation subagent's role; the problem is that nothing followed up on the finding, not who fixes it.",
-          "A longer predefined list still cannot anticipate every discovery; the next unexpected finding would go unfollowed in the same way.",
-          "Correct. A plan fixed up front cannot generate subtasks from intermediate findings; an adaptive plan would have followed up on the merge."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.6",
-        "bullet": "1.6-K3"
-      },
-      {
-        "pergunta": "A logistics company's support coordinator, built with the Claude Agent SDK, handles a customer asking about three delayed shipments by delegating each one to a shipment-tracker subagent. The trace shows: turn 1, one Task call for shipment A, then its result; turn 2, one Task call for shipment B, then its result; turn 3, one Task call for shipment C. Each subagent run takes about 8 seconds, so the reply takes 26 seconds, while the target is under 12 seconds. The three lookups do not depend on each other. Which statement is correct?",
-        "opcoes": [
-          "The delay is unavoidable, because Task calls share one execution slot in the coordinator's loop, so subagents run one at a time whatever the coordinator emits.",
-          "Emitting all three Task calls in a single coordinator response would run them in parallel; separate turns force each to wait for the one before.",
-          "Merging the three shipments into one Task call, so that a single subagent handles all of them, would cut the total time to that of a single lookup.",
-          "The coordinator should call the tracking tool itself for each shipment, because the overhead of starting subagents cannot be recovered by parallel runs."
-        ],
-        "correta": 1,
-        "explicacao": "Parallel subagents are spawned by emitting multiple Task tool calls in a single coordinator response. One Task call per turn makes each delegation wait for the previous result, so the latency becomes the sum of all three runs.",
-        "feedbacks": [
-          "Multiple Task calls emitted in the same response run in parallel; the serialization here comes from the coordinator issuing one call per turn, not from a shared slot.",
-          "Correct. Three Task calls in one response let the independent lookups run in parallel, bringing the reply close to the time of one lookup.",
-          "One subagent handling three shipments would process them in sequence inside its own run, so the total would still be close to the sum of the three lookups.",
-          "Doing the lookups in the coordinator gives up the subagents' isolation and scoped tools, and the problem is not startup overhead but the sequential turns."
-        ],
-        "cenario": 1,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-S3"
-      },
-      {
-        "pergunta": "A pharmaceutical company's developer productivity tool generates briefs for legacy modules. An explorer subagent maps each module (files, entry points, call graph), and a dependency-analysis subagent lists the external services and database tables it uses. A writer subagent then produces the brief from this prompt: \"Write the brief for module {name} using the findings from the previous steps.\" The briefs describe structure in generic terms, such as \"a typical layered architecture\", and omit most of the database tables the analysis found. Which TWO changes address this? Choose TWO.",
-        "opcoes": [
-          "Insert the coordinator's own short summary of both outputs into the writer's prompt, so that the writer's context stays small and focused.",
-          "Insert the explorer's complete output, with the files, entry points, and call graph it found, directly into the writer's prompt.",
-          "Insert the dependency-analysis output, with each external service and database table it listed, directly into the writer's prompt.",
-          "Add a line to the writer's system prompt telling it to avoid generic descriptions and to mention every database table the module uses.",
-          "Give the writer subagent Read and Grep, so that it can explore the module again and confirm the structure before it starts writing the brief."
+          "A rule file without frontmatter loads only when its file name matches a directory being edited, so `fhir.md` would cover the folder.",
+          "The `paths` field accepts directory names only, so the fixture convention needs a `CLAUDE.md` in every folder holding fixtures.",
+          "The glob patterns must also be registered under a `rules` key in `.claude/settings.json` before Claude Code evaluates `paths`.",
+          "With a `paths` field, the rule is activated conditionally: it enters context when Claude works with a matching file, not otherwise.",
+          "The rule file can start with YAML frontmatter whose `paths` field lists globs such as `integrations/fhir/**/*` and `**/*.fhir.json`."
         ],
         "corretas": [
-          1,
-          2
+          3,
+          4
         ],
-        "explicacao": "The writer subagent does not inherit context from the coordinator or from the other subagents, so \"the findings from the previous steps\" refers to something it never received. The coordinator must include the complete findings of the prior agents directly in the writer's prompt; only then can the brief be specific and list the tables.",
+        "explicacao": "Files in `.claude/rules/` can declare YAML frontmatter with a `paths` field containing glob patterns, and the rule is then activated conditionally when Claude works with matching files. Globs can mix a directory pattern and a file-type pattern, so one rule covers both the FHIR folder and fixtures anywhere in the codebase. No extra registration is needed, and a rule without frontmatter simply loads every session.",
         "feedbacks": [
-          "A short summary is better than nothing, but it compresses away the specific files and tables the briefs are missing; prior findings should be passed complete.",
-          "Correct. The explorer's complete output in the prompt gives the writer the concrete structure it currently replaces with generic text.",
-          "Correct. Passing the full dependency-analysis output lets the writer list the services and tables it currently omits.",
-          "The writer cannot mention tables it never received; an instruction to be specific does not supply the missing findings.",
-          "Re-exploring duplicates the explorer's work and gives the writer tools outside its role, while the dependency findings would still be missing from its prompt."
+          "Tempting because the file name looks meaningful, but a rule without `paths` loads in every session; the file name only documents the topic.",
+          "Tempting for anyone used to directory-bound CLAUDE.md files, but `paths` takes glob patterns, so `**/*.fhir.json` matches fixtures in any folder.",
+          "Tempting because many tools need registration, but no such settings key exists; the frontmatter in the rule file is the whole configuration.",
+          "Correct. Path-scoped rules load only when matching files are worked on, which is the point of conditional activation.",
+          "Correct. `paths` takes a list of glob patterns, including directory globs and file-type globs."
+        ],
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-K1"
+      },
+      {
+        "pergunta": "On a real-estate portal, the team added `.claude/rules/sql-migrations.md` with the frontmatter `paths: [\"db/migrations/**/*.sql\"]` and conventions such as 'do not drop a column in the same release that stops using it'. A developer spent an hour editing React components in `web/src/`, and the migration conventions never appeared in context. When she then asked Claude to edit `db/migrations/2026_10_add_geo_index.sql`, Claude followed them. Which statement about this behavior is correct?",
+        "opcoes": [
+          "This is the intended behavior: a path-scoped rule loads only once Claude works with a matching file, so it stays out of unrelated work.",
+          "The frontmatter failed to parse, so the rule never loaded, and Claude inferred the conventions by reading other migrations in the folder.",
+          "The rule loaded at startup in both cases, but Claude disregarded it while editing React files because its instructions mention only SQL.",
+          "The rule loaded only because she named the migration file in her prompt; naming a path in the prompt is what activates a scoped rule."
+        ],
+        "correta": 0,
+        "explicacao": "A rule in `.claude/rules/` with `paths` frontmatter loads only when Claude works with files that match its glob patterns. Editing React components never touched a migration file, so the rule stayed out of context; editing the `.sql` file matched `db/migrations/**/*.sql` and loaded it. That is the designed behavior that keeps unrelated conventions from consuming context.",
+        "feedbacks": [
+          "Correct. Path-scoped rules activate when a matching file is worked on, and stay out of unrelated sessions.",
+          "Tempting because a parse error is a real failure mode, but nothing in the symptoms suggests it, and the conventions appeared exactly when a matching file was edited.",
+          "Tempting because it describes how a rule without `paths` would behave, but this rule is path-scoped, so it was not in context during the React work.",
+          "Tempting because the file was named in the prompt, but activation comes from Claude working with a matching file, not from text in the prompt."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-S1"
+      },
+      {
+        "pergunta": "A fashion e-commerce platform team wrote a `/new-promo-banner` command that generates the boilerplate for a promotional banner (component, copy file, analytics event, test). Forty front-end developers across three squads should all use the same version, and changes to it should go through code review. An engineer proposes committing it to the storefront repository as `.claude/commands/new-promo-banner.md`. How should you evaluate this proposal?",
+        "opcoes": [
+          "Reject it: put a copy of the generator in each developer's `~/.claude/skills/`, so each squad can tune the template without a review.",
+          "Approve it, but also paste the generator steps into the project `CLAUDE.md`, so that Claude can create banners without the command.",
+          "Reject it: document the banner steps in the README and let developers ask Claude to follow them, which avoids a command file to maintain.",
+          "Approve it: a file in `.claude/commands/` is versioned with the repository, so every developer gets the same command on clone or pull."
+        ],
+        "correta": 3,
+        "explicacao": "Project-scoped slash commands in `.claude/commands/` are shared through version control, so every developer who clones or pulls the repository gets the same command, and changes go through the normal review process. That matches both requirements: one version for forty developers and reviewed changes. Personal copies, CLAUDE.md text or README instructions each break one of the requirements.",
+        "feedbacks": [
+          "Tempting because it lets squads customize, but personal copies diverge and bypass review, which contradicts both requirements.",
+          "Tempting as a fallback, but duplicating the steps in CLAUDE.md loads them into every session and creates a second version to keep in sync.",
+          "Tempting because it avoids a new file, but relying on developers to ask Claude to follow a README gives no consistent, invocable command.",
+          "Correct. A command committed to `.claude/commands/` is available team-wide via version control and reviewed like any other change."
         ],
         "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.3",
-        "bullet": "1.3-S1"
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S1"
+      },
+      {
+        "pergunta": "A real-estate portal developer is running a three-phase task in one Claude Code session: (1) find every place that computes agent commissions across 12 services, (2) design a shared `CommissionCalculator`, (3) implement it. In two earlier attempts, phase 1 alone consumed about 70% of the context window, and the session ran out of room in the middle of phase 3. The task must stay in a single session. What is the most effective fix?",
+        "opcoes": [
+          "Ask Claude to read only the first 50 lines of each file during phase 1, so that the discovery output stays below 40% of the window.",
+          "Delegate phase 1 to the Explore subagent, so that the file reads stay in its own context and only a summary of the call sites comes back.",
+          "Have Claude keep a scratchpad file with the full text of every file read in phase 1, and reread it at the start of each later phase.",
+          "Switch to a model with a larger context window, so that all three phases fit without changing how the discovery phase is done."
+        ],
+        "correta": 1,
+        "explicacao": "The context is exhausted by the verbose discovery phase, which is what the Explore subagent is for: it runs the searches and reads in its own context and returns a summary, so the main session keeps room for design and implementation. This prevents context window exhaustion during multi-phase tasks while keeping the task in one session.",
+        "feedbacks": [
+          "Tempting because it caps the output, but commission logic may sit anywhere in a file, so discovery becomes unreliable while still filling the main context.",
+          "Correct. The Explore subagent isolates verbose discovery and returns a summary, preserving the main context for later phases.",
+          "Tempting because scratchpad files help persist findings, but storing and rereading raw file contents brings the same volume back into the main context; the discovery itself needs isolating.",
+          "Tempting (the 'bigger window' distractor): it postpones exhaustion and leaves the conversation dominated by raw file contents."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-S3"
+      },
+      {
+        "pergunta": "A fashion e-commerce engineer is using Claude Code to add a virtual try-on feature. There are two candidate integrations: the vendor's JavaScript SDK in the storefront (a new CDN origin and content-security-policy changes), or server-side rendering through vendor webhooks (a new message queue and a worker service). Either option touches checkout, product pages and infrastructure code. What is the most effective first step?",
+        "opcoes": [
+          "Ask Claude to implement the client-side SDK option directly, since it needs fewer new services, and revisit the choice if performance suffers.",
+          "Ask Claude to implement both options on separate branches in direct execution, and then compare the two diffs to decide which one to keep.",
+          "Write a detailed specification of the webhook option and have Claude execute it directly, since server-side integration is the common pattern.",
+          "Use plan mode so Claude explores the affected code and infrastructure and lays out both approaches with their trade-offs before any change."
+        ],
+        "correta": 3,
+        "explicacao": "Choosing between integration approaches with different infrastructure requirements is an architectural decision with several valid options and multi-file impact, which is what plan mode is designed for. Exploring first and laying out the trade-offs lets the engineer decide before any code or infrastructure changes. Implementation can then proceed directly once a plan is approved.",
+        "feedbacks": [
+          "Tempting because it picks the option with fewer moving parts, but it commits to an architecture before exploring how checkout and infrastructure are affected.",
+          "Tempting because comparing real diffs seems thorough, but building both is the costly rework that planning is meant to avoid.",
+          "Tempting because a detailed spec looks rigorous, but it chooses the approach on popularity and assumes knowledge of the codebase that nobody has gathered yet.",
+          "Correct. Plan mode fits tasks with architectural implications and competing approaches that need infrastructure decisions."
+        ],
+        "cenario": 4,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-S1"
+      },
+      {
+        "pergunta": "A hospital network's CI pipeline runs Claude Code reviews using a 980-line project `CLAUDE.md` that mixes review criteria, testing standards, logging rules for patient data and a deployment checklist. Two designs are proposed: (A) keep the single file but reorder its sections by importance; (B) move each topic into its own file under `.claude/rules/`, without frontmatter, because every topic applies to every PR. Which assessment of the trade-off is correct?",
+        "opcoes": [
+          "B gives each topic a focused file that its owners maintain and review on their own, and a topic can later get `paths` if it narrows.",
+          "B lowers context on every CI run by itself, because files in `.claude/rules/` load only when Claude decides they are relevant to the PR.",
+          "A is preferable, because rule files load after `CLAUDE.md` and Claude treats them as lower-priority suggestions during code review.",
+          "A is preferable, because splitting the same content across several files raises the number of tokens loaded on each CI run."
+        ],
+        "correta": 0,
+        "explicacao": "The `.claude/rules/` directory is the alternative to a monolithic CLAUDE.md: topic-specific files that are easier to own and maintain. Without `paths` frontmatter these files load in every session, just like CLAUDE.md, so B keeps every topic applying to every PR while improving organization. Path scoping remains available if a topic later applies only to some files.",
+        "feedbacks": [
+          "Correct. Topic files in `.claude/rules/` replace the monolith with focused, separately owned files, and can be path-scoped later.",
+          "Tempting because rules are often associated with saving context, but only rules with `paths` load conditionally; Claude does not decide relevance for rule files.",
+          "Tempting because load order sounds like priority, but rules without `paths` load at launch alongside the project instructions and are not demoted to suggestions.",
+          "Tempting because more files feel heavier, but the same content costs about the same tokens whether it sits in one file or several."
+        ],
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-K4"
+      },
+      {
+        "pergunta": "A fashion e-commerce engineering team's guideline says 'always use direct execution in Claude Code for speed'. Last quarter, 120 small tasks went smoothly, but 4 of 6 large tasks had to be partly redone, including moving size-chart logic from three services into a shared package (60 files) and choosing between two caching strategies for the catalog. The team wants to cut this rework without slowing small tasks. What should you change in the guideline?",
+        "opcoes": [
+          "Use plan mode for large multi-file work, several valid approaches or architectural choices, and keep direct execution for small tasks.",
+          "Use plan mode for every task, so that small changes also receive a reviewed plan before Claude edits any file in the repository.",
+          "Keep direct execution for all tasks, but require Claude to run the full test suite after every file that it changes during the large tasks.",
+          "Use plan mode only for tasks that touch more than 50 files, regardless of whether the team has already decided on the approach."
+        ],
+        "correta": 0,
+        "explicacao": "Plan mode is designed for complex tasks: large-scale changes, multiple valid approaches, architectural decisions and multi-file modifications. Direct execution remains right for simple, well-scoped changes, which is why the 120 small tasks went fine. Splitting the guideline by task complexity cuts rework on large tasks without adding overhead to small ones.",
+        "feedbacks": [
+          "Correct. Match the mode to the task: plan mode for complex or architectural work, direct execution for small, well-scoped changes.",
+          "Tempting because it is consistent, but planning a one-line fix adds overhead with no benefit and violates the 'without slowing small tasks' constraint.",
+          "Tempting because tests catch errors, but they detect a wrong approach after the files are changed; the rework comes from not exploring and deciding first.",
+          "Tempting because file count is easy to measure, but a caching-strategy decision can touch few files and still need planning; complexity is about approaches and architecture, not just size."
+        ],
+        "cenario": 4,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-K1"
+      },
+      {
+        "pergunta": "A hospital network's CI job asks Claude Code to generate unit tests for changed .NET code. The rule `.claude/rules/testing.md` has the frontmatter `paths: [\"tests/**/*.cs\"]` and requires xUnit with FluentAssertions. Generated tests follow it in 4 of 37 projects, such as `tests/Pharmacy.Tests/DispenseTests.cs`, but in the other 33, for example `src/Scheduling/AppointmentServiceTests.cs`, Claude writes MSTest. What is the most likely root cause?",
+        "opcoes": [
+          "The conventions are written as prose without code samples, so Claude applies them inconsistently from one project to the next one.",
+          "The glob is anchored to the top-level `tests/` folder, so test files placed next to the code under `src/` never match the rule.",
+          "The 33 failing projects have no `CLAUDE.md` of their own, so there is no directory-level file to which the testing rule can attach.",
+          "Path-scoped rules load for files Claude reads but not for files it creates, so newly generated test files never activate the rule."
+        ],
+        "correta": 1,
+        "explicacao": "The split follows file location exactly: tests under `tests/` match `tests/**/*.cs`, and tests next to the code under `src/` do not, so the rule never loads for them. A glob based on file type, such as `**/*Tests.cs`, applies the convention regardless of directory. This is why glob patterns by file type are preferred for conventions on files spread across the codebase.",
+        "feedbacks": [
+          "Tempting because prose-only rules can be followed inconsistently, but that would not produce a clean split that matches the folder of each test file.",
+          "Correct. The glob is directory-anchored; a file-type glob like `**/*Tests.cs` would match tests wherever they live.",
+          "Tempting for anyone who thinks rules attach to CLAUDE.md files, but rules in `.claude/rules/` are independent of directory-level CLAUDE.md files.",
+          "Tempting because generated files are new, but writing a matching file also activates the rule, and the 4 working projects show generated tests can match."
+        ],
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-S2"
+      },
+      {
+        "pergunta": "A real-estate portal team wants to cut the roughly 18,000 tokens of instructions loaded at the start of each Claude Code session. Most of it is Terraform, SQL migration and email-template conventions that matter for a few dozen files. They moved those sections out of `CLAUDE.md` into `.claude/rules/terraform.md`, `sql-migrations.md` and `email-templates.md`, keeping the text as is. A week later, startup context has not changed. What is the flaw in this implementation?",
+        "opcoes": [
+          "The new rule files have no `paths` frontmatter, so they still load at the start of every session instead of only when matching files are edited.",
+          "The old sections remain cached from earlier sessions, so Claude Code keeps loading them alongside the rules until that cache is cleared.",
+          "The team should have referenced the three files with `@` lines in `CLAUDE.md`, because imported files load only when Claude needs them.",
+          "Moving text out of `CLAUDE.md` cannot reduce startup context, because Claude Code loads every Markdown file under `.claude/` at launch."
+        ],
+        "correta": 0,
+        "explicacao": "Rules without `paths` frontmatter load unconditionally at launch, just like CLAUDE.md, so moving text into them changes organization but not context usage. Adding `paths` globs (for example `infra/**/*.tf` or `db/migrations/**/*.sql`) makes each rule load only when matching files are edited, which is what reduces irrelevant context and token usage.",
+        "feedbacks": [
+          "Correct. Without `paths`, rule files load every session; path scoping is what makes them conditional.",
+          "Tempting because caching explains 'nothing changed', but there is no such instruction cache; the rule files themselves are what keep loading.",
+          "Tempting because imports split files, but imported files load at launch with the CLAUDE.md that references them, so this would not cut startup context either.",
+          "Tempting because the result looks that way, but skills, commands and path-scoped rules under `.claude/` do not load at launch; only these unscoped rules did."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-K2"
+      },
+      {
+        "pergunta": "A hospital network's monorepo has packages `pharmacy-api`, `scheduling-ui` and `hl7-gateway`. `pharmacy-api/CLAUDE.md` imports `@../standards/hipaa-logging.md` and `@../standards/dotnet-api.md`; `scheduling-ui/CLAUDE.md` imports `@../standards/react-ui.md` and `@../standards/accessibility.md`. In CI, Claude Code reviews of `pharmacy-api` PRs cite the logging rules for patient data, but reviews of `scheduling-ui` PRs never do, and a bug that wrote patient names to the browser console got through. Which statement about this behavior is correct?",
+        "opcoes": [
+          "Imports in package-level `CLAUDE.md` files are ignored when the CI job starts at the repository root, so the logging rules must move to the root file.",
+          "Every import in the repository is collected at launch, so the logging file is loaded for `scheduling-ui` too, but Claude judged it irrelevant to UI code.",
+          "Only one package-level `CLAUDE.md` can be active per session, so the imports in `pharmacy-api/CLAUDE.md` take precedence over those in `scheduling-ui`.",
+          "Each package receives only the standards its own `CLAUDE.md` imports, so the `scheduling-ui` maintainers need to add the logging standard to its imports."
+        ],
+        "correta": 3,
+        "explicacao": "With `@import` used selectively per package, each package's CLAUDE.md pulls in only the standards its maintainers chose. `scheduling-ui` never imported the patient-data logging standard, so its reviews never saw it. The fix stays within the pattern: the maintainers, who know the package now handles patient data, add that standards file to its imports.",
+        "feedbacks": [
+          "Tempting because CI starts at the root, but the `pharmacy-api` reviews show that package-level imports do work in CI; the issue is what `scheduling-ui` imports.",
+          "Tempting because it sounds like a relevance judgment, but imports are not collected repository-wide; a package only gets what its own CLAUDE.md imports.",
+          "Tempting because it would explain the asymmetry, but there is no such precedence between package files; each applies to work in its own package.",
+          "Correct. Selective imports mean each package gets only what it imports; the maintainers must add the logging standard to `scheduling-ui`."
+        ],
+        "cenario": 5,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-S2"
+      },
+      {
+        "pergunta": "A real-estate portal team has a `/brainstorm-ranking` skill that asks Claude to generate and critique six alternative ranking strategies for listing search, producing about 4,000 tokens of exploratory notes. Developers then implement the chosen strategy in the same session, but Claude keeps mixing in details from the discarded alternatives. A developer proposes adding `context: fork` to the skill's frontmatter. How should you evaluate this proposal?",
+        "opcoes": [
+          "Reject it: `context: fork` makes the skill commit its output to a new git branch, which does not change what the main conversation holds.",
+          "Reject it: a forked skill cannot return anything to the main session, so developers would lose the chosen strategy along with the others.",
+          "Accept it: the brainstorm runs in an isolated sub-agent context and only its result returns, so discarded ideas stay out of the session.",
+          "Accept it, but add `/compact` after each run too, because a forked skill still appends its full exploration transcript to the main session."
+        ],
+        "correta": 2,
+        "explicacao": "`context: fork` runs a skill in an isolated sub-agent context, so its exploratory output stays there and only the result comes back to the main conversation. That is exactly what prevents the discarded alternatives from polluting the implementation work. The proposal addresses the root cause directly.",
+        "feedbacks": [
+          "Tempting because 'fork' suggests git, but the option forks the execution context into a sub-agent; it has nothing to do with branches.",
+          "Tempting because the sub-agent is isolated, but it does return its result; only the intermediate exploration stays out of the main session.",
+          "Correct. A forked skill keeps exploratory context isolated and returns only its result, preventing pollution of the main conversation.",
+          "Tempting as a belt-and-braces step, but a forked skill does not append its transcript to the main session, so `/compact` is unnecessary here."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-K3"
       }
     ]
   },
   "order": [
-    0,
-    2,
-    15,
-    3,
-    18,
-    13,
-    7,
-    10,
-    9,
     4,
-    6,
-    1,
-    19,
-    12,
-    5,
-    8,
-    16,
+    13,
+    9,
+    0,
+    14,
+    10,
+    3,
     11,
+    2,
+    6,
     17,
-    14
+    18,
+    19,
+    5,
+    7,
+    12,
+    1,
+    8,
+    15,
+    16
   ],
   "pos": 20,
   "answers": [
@@ -475,21 +475,21 @@
     {
       "pos": 1,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        3
+        3,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        1,
         3
       ],
       "acertou": true
@@ -497,7 +497,7 @@
     {
       "pos": 4,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
@@ -511,14 +511,14 @@
     {
       "pos": 6,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 7,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
@@ -539,21 +539,20 @@
     {
       "pos": 10,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        0
+        3
       ],
-      "acertou": false
+      "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        1,
         2
       ],
       "acertou": true
@@ -561,15 +560,14 @@
     {
       "pos": 13,
       "escolha": [
-        0,
-        4
+        2
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
@@ -583,13 +581,15 @@
     {
       "pos": 16,
       "escolha": [
-        2
+        2,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 17,
       "escolha": [
+        0,
         3
       ],
       "acertou": true
@@ -597,14 +597,14 @@
     {
       "pos": 18,
       "escolha": [
-        3
+        0
       ],
       "acertou": true
     },
     {
       "pos": 19,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     }
