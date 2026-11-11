@@ -1,509 +1,511 @@
 {
-  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-10/questions.json",
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/provas/modulo-11/questions.json",
   "bank": {
-    "titulo": "Módulo 10 — Prova (estilo exame)",
+    "titulo": "Módulo 11 — Prova (estilo exame)",
     "aprovacao": 70,
     "questoes": [
       {
-        "pergunta": "A retail pharmacy chain extracts terms from supplier contracts with a two-stage pipeline. For each contract, an upstream extraction agent returns its full analysis: the relevant clause text, its step-by-step reasoning, and the extracted values (about 7,500 tokens per contract). A downstream reconciliation agent with a fixed context budget compares each contract against the chain's purchase records. Batches of up to 8 contracts reconcile correctly, but in batches of 20 the agent skips or only partially checks the last 6 to 9 contracts. What is the most likely root cause?",
+        "pergunta": "An HR software company extracts fields from customers' employment contracts into its payroll product. Extractions whose fields all score above a calibrated 0.92 confidence threshold are posted to payroll automatically; the rest go to a review queue, and the monitoring dashboard computes the error rate from reviewer corrections. For five months the dashboard showed a stable 1.2% error rate. Then a customer audit found that 18% of auto-posted probation end dates had been wrong since a large client adopted a new contract template, all with confidence of at least 0.95. What is the most likely reason this went undetected?",
         "opcoes": [
-          "The reconciliation prompt lacks explicit criteria for what counts as a discrepancy, so the agent applies weaker checks as the batch grows longer.",
-          "The extraction schema marks too many fields as required, so the upstream agent fabricates values that hide discrepancies in the larger batches.",
-          "The upstream agent returns verbose content and reasoning chains instead of compact key facts with citations, so the downstream budget runs out first.",
-          "The reconciliation agent runs on a model whose context window is too small for this workload, so it needs a larger-context model for 20 contracts."
+          "The 0.92 threshold was calibrated on a labeled set that was too small for date fields, so it should have been set higher for them from the start.",
+          "The extraction prompt had no few-shot examples of the new template, so the model could not handle the changed position of the probation clause.",
+          "The dashboard averaged the error rate across all customers instead of reporting it per customer account, which diluted the large client's errors.",
+          "Error rates were measured only on extractions sent to reviewers; no random sample of the auto-posted, high-confidence ones was ever checked."
         ],
-        "correta": 2,
-        "explicacao": "The failure depends on batch size, and most of each upstream output is clause text and reasoning that the reconciliation step does not need. When a downstream agent has a limited context budget, the upstream agents should return structured data (key facts, citations, relevance scores) instead of verbose content and reasoning chains, so the whole batch fits and every contract is checked.",
+        "correta": 3,
+        "explicacao": "The dashboard only saw extractions that reviewers touched, which are the low-confidence ones, so errors in the auto-posted set were invisible by construction. Stratified random sampling of high-confidence extractions (by document type, field, and template), reviewed by people, measures their ongoing error rate and surfaces novel error patterns such as a new contract template. Without it, a confidently wrong segment can run for months.",
         "feedbacks": [
-          "Explicit criteria improve consistency, but they do not explain why the checks collapse only as the batch grows; the input volume changes, not the definition of a discrepancy.",
-          "Required fields can cause fabrication, but that would appear at any batch size; here the last contracts are skipped, which points to an exhausted context budget.",
-          "Correct. Upstream verbosity consumes the downstream agent's limited budget; returning key facts, citations, and relevance scores fixes the cause.",
-          "A larger window treats the symptom and keeps paying for reasoning text that nobody downstream uses; the efficient fix is to change what the upstream agents return."
+          "Calibration quality matters, but the errors started when a new template appeared after calibration; a higher threshold set once would not have revealed them. The gap is that nobody measured the auto-posted set over time.",
+          "This may explain why the dates were wrong, but the question is why the problem went undetected for five months. Missing few-shot examples do not explain a monitoring blind spot.",
+          "Splitting the same data per customer would still include only reviewer-corrected extractions. The auto-posted ones were never in the data, so segmenting it would not have shown the errors.",
+          "Correct. Only a random sample of the auto-approved, high-confidence extractions measures their real error rate and catches novel error patterns such as a changed template."
         ],
         "cenario": 6,
         "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-S6"
+        "ts": "5.5",
+        "bullet": "5.5-K2"
       },
       {
-        "pergunta": "A developer at a municipal transit agency is using Claude Code to investigate a fare-capping bug over several days. Each evening she closes the terminal, and each morning she runs `claude --continue` to pick up the investigation. On Wednesday afternoon she opened a separate session to ask a quick question about the GTFS feed parser. On Thursday morning, `claude --continue` opened the parser conversation, and she spent 25 minutes re-explaining the fare-capping findings in a new session. What is the flaw in her workflow?",
+        "pergunta": "A health insurer uses a multi-agent research system to produce a quarterly brief on specialty drug spending. Subagents return quarterly cost figures per drug class from financial filings, recent news coverage of pricing policy, and technical findings from clinical studies. The report subagent's prompt says: \"Convert every finding into a bullet of at most 25 words so that all sections look consistent.\" Reviewers say the cost comparison across 9 drug classes and 6 quarters is hard to follow and the pricing news reads as disconnected fragments. What is the flaw in this implementation?",
         "opcoes": [
-          "She should run /compact before closing the terminal each evening, because a session that has not been compacted is not saved for the next day.",
-          "She relies on reopening the most recent session instead of naming the investigation session and continuing it with `claude --resume <session-name>`.",
-          "She should paste a copy of the previous day's transcript into a fresh session each morning, because resumed sessions carry stale context forward.",
-          "She should keep both topics in one long-running session, so that `claude --continue` returns to the conversation that holds every finding."
+          "The bullets lack worked examples; few-shot examples of well-written bullets would make each cost and news item more informative to reviewers.",
+          "It forces one format on all content; cost figures should be rendered as a table, news as prose, and the study findings as a structured list.",
+          "The bullets carry no claim-source mappings, so reviewers cannot trace each figure or headline back to the filing or article it came from.",
+          "The brief carries too many raw figures; synthesis should report average quarter-over-quarter change per class to keep each bullet short."
         ],
         "correta": 1,
-        "explicacao": "`claude --continue` reopens the most recent session in the directory, so any side conversation becomes the new target. Naming the investigation session and returning to it with `--resume <session-name>` continues that specific prior conversation across work sessions, with its still-valid context intact.",
+        "explicacao": "The complaints come from the uniform format: a 9-by-6 cost comparison is a table, news needs connected prose for context, and study results fit a structured list. Synthesis outputs should render each content type appropriately rather than converting everything into one format. The other options address real concerns, but not the readability problem described.",
         "feedbacks": [
-          "Sessions are saved as you work; /compact reduces context usage within a session and has nothing to do with whether it can be resumed the next day.",
-          "Correct. A named session resumed with `--resume <session-name>` targets the specific investigation instead of whatever ran last.",
-          "Pasting a full transcript re-injects everything, including verbose output, and gains nothing here: the code has not changed, so the prior context is still valid and resuming is the better choice.",
-          "Mixing unrelated topics in one session pollutes the investigation's context; the real problem is selecting the right session, which naming solves."
+          "Better-written bullets still scatter a 54-cell comparison across bullets and chop the news into fragments. Few-shot examples improve consistency within a format; they do not fix choosing the wrong format.",
+          "Correct. Financial data reads best as a table, news as prose, and technical findings as a structured list; forcing every finding into uniform bullets causes exactly these complaints.",
+          "Claim-source mappings matter for provenance, but reviewers did not complain about traceability. They complained about readability, which comes from the forced format.",
+          "Averaging discards the per-quarter figures reviewers need to compare and still leaves the news as fragments. It treats a rendering problem by losing data."
         ],
-        "cenario": 2,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-S1"
-      },
-      {
-        "pergunta": "An industrial IoT company built a developer productivity agent with the Claude Agent SDK to explore its legacy firmware-update service. In phase 1, subagents map the module structure and report back to the coordinator. In phase 2, the coordinator spawns new subagents to trace specific flows, passing each one only its task, such as \"trace the OTA rollback flow.\" The phase-2 subagents repeat most of the Glob and Grep discovery from phase 1, take about three times longer, and two of them describe `DeviceRegistry` as active code although phase 1 identified it as deprecated. Which statement about this behavior is correct?",
-        "opcoes": [
-          "Phase-2 subagents start with isolated context, so without a phase-1 summary in their initial prompt they rediscover the structure and can contradict it.",
-          "Phase-2 subagents inherit the coordinator's history but rank it below their own tool results, so they override the phase-1 conclusions with whatever they find.",
-          "Phase-1 subagents returned too little detail, so they should pass their complete tool outputs forward for the phase-2 subagents to reuse directly.",
-          "The contradictions come from running phase-2 subagents in parallel; running them one at a time would let each one build on the previous conclusions."
-        ],
-        "correta": 0,
-        "explicacao": "Subagents do not inherit the coordinator's context, so a bare task string forces them to rediscover the codebase and lets them reach conclusions that conflict with phase 1. Summarizing the key findings of one exploration phase and injecting that summary into the initial context of the next phase's subagents removes the duplicated discovery and keeps the phases consistent.",
-        "feedbacks": [
-          "Correct. Isolated context with no injected phase-1 summary explains both the repeated discovery and the contradiction.",
-          "Subagents do not inherit the coordinator's conversation history at all, so there is no ranking between inherited history and tool results.",
-          "Forwarding complete tool outputs would flood the phase-2 subagents with verbose discovery data; a concise summary of the key findings is what they need.",
-          "Sequential execution does not share context between subagents either; each one still starts with only what its own prompt contains."
-        ],
-        "cenario": 4,
+        "cenario": 3,
         "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-S3"
+        "ts": "5.6",
+        "bullet": "5.6-S5"
       },
       {
-        "pergunta": "At an industrial IoT company, an engineer used an Agent SDK-based assistant yesterday to analyze a telemetry ingestion service: the session read 58 files and produced a migration plan. Overnight, a teammate merged a refactor that rewrote the message-parsing layer and renamed the queue client; 39 of the 58 files changed. The engineer proposes resuming yesterday's session by its session ID and asking it to continue the migration plan. How should you evaluate this proposal?",
+        "pergunta": "A health insurer's research system studies outcomes of remote monitoring for heart-failure patients. The web search and document analysis subagents each return a few paragraphs summarizing what they read. In a 42-claim report, compliance reviewers find that 11 claims cite the wrong study or no study, although every one of those claims appears in at least one source the subagents read. Checked one by one, the subagent summaries are accurate. Which statement about this behavior is correct?",
         "opcoes": [
-          "Reject it: most prior tool results are stale, so start a new session and inject a structured summary of the findings that still hold and of the changes.",
-          "Accept it: resuming preserves the full analysis, and the agent will notice the refactor on its own the next time it reads any of the changed files.",
-          "Accept it, but fork the session first with fork_session, so that the stale history stays in the original session and the new branch starts clean.",
-          "Reject it: start a new session with no prior context and have it rebuild a structured map by re-reading the 58 files, so no old assumption carries over."
+          "The synthesis subagent is producing unsupported claims, so it needs a verify_fact tool to confirm each statement on the web before the report goes out.",
+          "Attribution was lost when the findings were compressed into prose; subagents should return each claim with its source URL, document name, and excerpt.",
+          "The synthesis subagent receives too much text, so the coordinator should pass it only the highest-ranked summaries to keep its citations accurate.",
+          "The citations are unstable between runs, so the system should run synthesis twice and keep only citations that both runs attach to the same claim."
         ],
-        "correta": 0,
-        "explicacao": "With two-thirds of the analyzed files rewritten, the session's earlier tool results describe code that no longer exists, and the model treats its history as current. Starting fresh with an injected structured summary of what is still valid is more reliable than resuming with stale tool results; resumption is the right choice when prior context is mostly valid.",
+        "correta": 1,
+        "explicacao": "The claims are true and the summaries accurate, so the facts survived; what was lost is which source supports which claim. When findings are compressed into prose, claim-source mappings disappear. Having subagents emit structured mappings (source URL, document name, relevant excerpt) that synthesis preserves fixes attribution at its root.",
         "feedbacks": [
-          "Correct. The prior results are mostly stale, so a fresh session seeded with a structured summary and the change list is the reliable choice.",
-          "A resumed model trusts its history; it has no reason to re-read files it believes it already knows, so it keeps planning against the old code.",
-          "A fork starts with a copy of the original history, stale tool results included, so the new branch does not start clean.",
-          "Starting fresh is right, but discarding the findings that still hold forces an unnecessary full re-exploration; inject a structured summary instead."
+          "The claims are supported by sources the subagents read, so they are not hallucinated. A verification tool re-finds facts but does not restore which source each claim came from.",
+          "Correct. Prose summaries drop the link between claim and source; structured claim-source mappings let the synthesis keep attribution intact.",
+          "Trimming input can help when context is overloaded, but the issue is that attribution was never passed in a structured form. Fewer summaries would also drop valid findings.",
+          "Voting between runs only keeps citations that are consistently guessed. If the mapping was never passed, both runs can agree on the wrong source."
         ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-S3"
-      },
-      {
-        "pergunta": "Engineers at an industrial IoT company use a developer productivity agent in long sessions to ask questions about a legacy SCADA gateway. After roughly 90 minutes, answers stop naming the specific classes found earlier, such as `ModbusFrameAssembler`, and instead say the gateway \"likely follows a typical adapter pattern\"; two answers contradict earlier ones. Engineers need to keep asking follow-up questions in the same working session, and the team cannot change the model. What is the most effective fix?",
-        "opcoes": [
-          "Have the agent keep a scratchpad file of key findings (class names, file paths, confirmed behaviors) and consult it before each follow-up answer.",
-          "Add a system prompt rule requiring the agent to name specific classes and file paths in every answer and to avoid describing typical design patterns.",
-          "Have the agent re-read every file it has opened so far before answering each follow-up question, so that its answers are based on fresh file content.",
-          "Restart the session automatically every 45 minutes, so that each follow-up question is answered from a short context that has not yet degraded."
-        ],
-        "correta": 0,
-        "explicacao": "Generic \"typical pattern\" answers and contradictions are classic context degradation in an extended session. A scratchpad file that records key findings and is consulted for subsequent questions keeps the specific discoveries available without changing the model or breaking session continuity.",
-        "feedbacks": [
-          "Correct. Persisted findings that the agent consults counteract degradation and preserve continuity.",
-          "A prompt rule cannot restore findings that are diluted in a long context; the agent may comply by naming classes that are wrong.",
-          "Re-reading every file adds even more output to an already crowded context and makes each answer slower and more expensive.",
-          "Periodic restarts discard the findings along with the noise and break the continuity the engineers need."
-        ],
-        "cenario": 4,
+        "cenario": 3,
         "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-S2"
+        "ts": "5.6",
+        "bullet": "5.6-S1"
       },
       {
-        "pergunta": "A municipal transit agency uses Claude Code to migrate its scheduling application to a new data-access library. A coordinator session delegates each of 15 services to a subagent. After six hours, the terminal crashed while service 9 was in progress. On restart, the coordinator had no reliable record of what had finished: it re-ran services 1 to 5 and overwrote manual fixes that engineers had applied. What is the most effective first step to make this workflow recoverable?",
+        "pergunta": "An HR software company extracts data from onboarding packets: offer letters, tax withholding forms, direct-deposit forms, and emergency-contact forms, in four languages. After three months in which a person reviewed every extraction, accuracy on extractions above 0.9 confidence is 98.6%, above the 97% target set by the payroll team. The product manager proposes turning off human review for all extractions above 0.9 starting next sprint. How should you evaluate this proposal?",
         "opcoes": [
-          "Resume the crashed coordinator session with `--resume` and ask it to list which services it had completed before the crash, then skip those services.",
-          "Add an explicit CLAUDE.md instruction telling the coordinator to check the git log for already-migrated services before it delegates new work.",
-          "Assign the 15 services to separate developers who each run their own session, so that a single crash affects only the service in progress.",
-          "Have each subagent export its state (service, status, changed files) to a known location, and have the coordinator load that manifest on resume."
-        ],
-        "correta": 3,
-        "explicacao": "The conversation history of a crashed process is not a reliable record of completed work, especially for work done inside subagents. Structured state persistence, where each agent writes its state to a known location and the coordinator loads a manifest on resume and injects it into agent prompts, lets the workflow continue exactly where it stopped.",
-        "feedbacks": [
-          "The coordinator's transcript holds neither the partial work of the subagent in progress nor a verified per-service status; asking the model to recall progress is a heuristic, not recoverable state.",
-          "Git history does not record which services are verified, in progress, or manually fixed, and a prompt instruction leaves the check to the model's judgment.",
-          "Splitting the work across people shifts the burden to developers and still provides no recovery state when any one session crashes.",
-          "Correct. Exported per-agent state plus a manifest that the coordinator loads on resume is the designed crash-recovery mechanism."
-        ],
-        "cenario": 2,
-        "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-K4"
-      },
-      {
-        "pergunta": "A retail pharmacy chain's extraction system has subagents that pull dosing limits and interaction warnings from supplier bulletins and clinical notices; a synthesis step merges them into formulary updates. Reviewers found that the synthesis flagged two dosing limits as contradictory when one came from a 2023 bulletin and the other from a 2026 label revision, and that it mixed figures from a pilot study with label values. Which design should the team adopt?",
-        "opcoes": [
-          "Require each subagent's structured output to carry metadata for every value (publication date, source document and page, methodology) for synthesis to use.",
-          "Keep the subagents' structured outputs to the extracted values only, so the synthesis context stays small, and let synthesis reopen the sources when values disagree.",
-          "Require the same structured metadata on every value, and have synthesis keep the most recent value whenever two records disagree, so no conflict reaches the formulary.",
-          "Keep subagent outputs to the extracted values only, and have the synthesis step send every disagreement to a pharmacist as a contradiction, so a human resolves it."
+          "Hold it until accuracy is broken down by document type, field, and language, then automate only the segments that meet the target on their own.",
+          "Approve it, since three months of full review is a large labeled sample and 98.6% clears the payroll team's 97% target by a safe margin.",
+          "Hold it until a uniform 2% random sample of production documents confirms the 98.6% figure over one more full month of live traffic.",
+          "Approve it first for the highest-volume document types, since they dominate the 98.6% figure and account for most of the review cost."
         ],
         "correta": 0,
-        "explicacao": "The synthesis errors come from values arriving without their dates, source locations, and methodological context, so a temporal difference looks like a contradiction and pilot data looks like label data. Requiring subagents to include that metadata in their structured outputs gives the downstream synthesis what it needs to interpret each value accurately.",
+        "explicacao": "A 98.6% aggregate can hide a document type, field, or language that performs far worse, because high-volume segments dominate the average. Before automating high-confidence extractions, validate accuracy per segment and automate only the segments that meet the target independently. The three months of reviewed data already make that breakdown possible.",
         "feedbacks": [
-          "Correct. Dates, source locations, and methodology in the structured output let synthesis tell an update from a conflict and a pilot result from a label value.",
-          "Small outputs save context, but without dates and methods the synthesis step cannot tell which value is newer or how it was obtained, and it will not know which sources to reopen.",
-          "The metadata is right, but always keeping the newest value discards information arbitrarily; conflicting credible values should be annotated, not silently resolved.",
-          "Sending every disagreement to a pharmacist pushes the burden onto humans and still labels a legitimate 2023-to-2026 update as a contradiction."
+          "Correct. Segmenting by document type and field (and here, language) shows whether performance is consistent before review is removed.",
+          "The sample is large, but it is summarized as one number. A weak segment, such as one language or one form, can sit well below 97% while the aggregate looks safe.",
+          "Another month of a uniform sample re-measures the same aggregate; a weak document type or field stays hidden inside 98.6% however long you wait.",
+          "Volume is not a readiness criterion. A high-volume type may still have a weak field, and the decision should rest on each segment's measured accuracy."
         ],
         "cenario": 6,
         "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-S5"
+        "ts": "5.5",
+        "bullet": "5.5-K4"
       },
       {
-        "pergunta": "A consulting firm runs a Claude Agent SDK support agent for clients of its subscription analytics product. To control length, the conversation history is progressively summarized after 30 turns. In escalated billing disputes, the summary reads \"client disputes some charges on a recent invoice and wants this resolved soon,\" while the transcript says \"INV-30412, $1,840 overcharge, 12% above the contract rate; client expects a credit before the March 31 board meeting.\" Which TWO changes address this problem? Choose TWO.",
+        "pergunta": "An HR software company extracts pay figures from about 300 published salary surveys and compensation reports to build a benchmark report for its customers. For some roles the surveys agree; for others they diverge, and some surveys describe their own figures as \"preliminary\" or \"base pay only, n=48\". Today the report shows one median per role, with all source names in a footnote. Several customers made offers based on figures that turned out to be disputed among the surveys. Which TWO changes best address this? Choose TWO.",
         "opcoes": [
-          "Persist the client's stated expectations, such as the requested credit and its deadline, as explicit fields sent with every prompt instead of the summary.",
-          "Rewrite the summarization prompt with explicit instructions to be thorough and to preserve every important number, date, and commitment from earlier turns.",
-          "Have the summarizer append a case facts section to every summary it writes, listing the amounts, dates, and invoice numbers that it decided to keep.",
-          "Extract amounts, percentages, dates, and invoice numbers into a persistent case facts block that is included in every prompt, outside the summarized history.",
-          "Move the agent to a model with a larger context window, so that summarization starts later in each conversation and affects fewer of the disputes."
+          "Rewrite every survey's description of its figures into one standard phrase, so that customers are not confused by each survey's own terminology.",
+          "Split each role's results into a well-established section where surveys agree and a contested section listing the diverging figures with their sources.",
+          "Compute a single figure per role as a median weighted by each survey's sample size, so that the largest and most robust surveys drive the value customers see.",
+          "Keep only the figures from the three most-cited surveys for each role, so the report shows one consistent value that customers can rely on.",
+          "Show each survey's own qualifiers and method notes, such as \"preliminary\" or \"base pay only, n=48\", right next to the figures they describe."
         ],
         "corretas": [
-          0,
-          3
-        ],
-        "explicacao": "Progressive summarization condenses numbers, percentages, dates, and customer-stated expectations into vague text. Transactional facts belong in a persistent case facts block outside the summarized history, and the client's stated expectations must be captured explicitly as well, because they are exactly what a narrative summary blurs.",
-        "feedbacks": [
-          "Correct. Customer-stated expectations are among the details that summaries turn vague, so they need explicit, persisted fields.",
-          "A better summarization prompt is still probabilistic condensation; it can reduce the loss of exact values but cannot guarantee they survive.",
-          "A case facts section written by the summarizer still passes through the summarizer, so it keeps only what the model chose to keep; the facts must be extracted outside the summarized history.",
-          "Correct. Exact amounts, percentages, dates, and IDs survive only if they never pass through the summarizer.",
-          "A larger window delays summarization but does not change what it loses once it runs; long disputes are still blurred."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-K1"
-      },
-      {
-        "pergunta": "A consulting firm's support agent for its software clients often handles several issues in one session, such as a duplicate charge on one invoice, a seat-count change, and a refund for a cancelled workshop. The code appends every confirmed transactional value to a single case facts list that is included in each prompt. In 9% of multi-issue sessions, the agent applies the refund amount from one issue to another issue's invoice or reports the wrong status; single-issue sessions show no such errors. What is the most likely root cause?",
-        "opcoes": [
-          "The progressive summary is dropping amounts from earlier turns, so the agent reconstructs values for older issues from the vague narrative that remains.",
-          "Facts from different issues share one flat list, so the agent cannot tell which invoice, amount, and status belong together; each issue needs its own record.",
-          "The agent has access to too many tools in multi-issue sessions, which makes it call process_refund with parameters that belong to a different tool call.",
-          "The issues are investigated one after another instead of in parallel, so details of the earlier issues expire from context before the agent resolves them."
-        ],
-        "correta": 1,
-        "explicacao": "The values are present in the case facts list, so they were not lost to summarization; they are mixed up because nothing ties each amount and status to its issue. In multi-issue sessions, structured issue data (order or invoice IDs, amounts, statuses) should be persisted in a separate context layer with one record per issue.",
-        "feedbacks": [
-          "Summarization loss would affect single-issue sessions too, and the values here are in the case facts list; the errors are cross-issue mix-ups, not missing values.",
-          "Correct. A flat list loses the association between each issue and its values; per-issue structured records fix it.",
-          "Tool count can hurt selection, but the agent is calling the right tool with values from the wrong issue, which points to how the facts are organized.",
-          "Parallel investigation does not change how the facts are stored, and the confirmed values remain in the prompt either way."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-S2"
-      },
-      {
-        "pergunta": "A municipal transit agency's team wrote a runbook for long Claude Code exploration sessions in its route-planning codebase. Sessions fill with dozens of Grep results and full-file reads, and responses slow down and start missing earlier conclusions. The runbook says: \"When the context indicator passes 80%, open a new session, paste in the last 20 messages from the old one, and continue exploring.\" What is the flaw in this runbook?",
-        "opcoes": [
-          "It carries the latest verbose output forward and drops earlier conclusions; /compact would replace the long history with a summary instead.",
-          "It acts too late; the copy should happen at 50% so that less verbose discovery output accumulates in each session before switching to a new one.",
-          "The new session does not load the project's CLAUDE.md, so the team's conventions are lost every time the developer switches to a fresh session.",
-          "Copying messages loses the session's permission grants; the developer should reopen the original session with `--resume` and keep exploring there."
-        ],
-        "correta": 0,
-        "explicacao": "The last 20 messages are mostly recent tool output, while the conclusions reached early in the session are left behind. `/compact` is designed for this situation: it reduces context usage during extended exploration by replacing the verbose history with a summary, which can be focused on the findings that matter.",
-        "feedbacks": [
-          "Correct. /compact replaces the verbose discovery history with a summary instead of keeping only the most recent messages.",
-          "Switching earlier still keeps only recent messages and still drops earlier conclusions; the threshold is not the flaw.",
-          "A new Claude Code session loads the project CLAUDE.md, so conventions are not what gets lost.",
-          "Resuming the original session restores the same full context, so it does nothing to reduce context usage."
-        ],
-        "cenario": 2,
-        "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-S5"
-      },
-      {
-        "pergunta": "Engineers at an industrial IoT company use a developer productivity agent built on the Claude Agent SDK for a four-hour exploration of a legacy PLC integration codebase. No code changes during the session. Which TWO observations most indicate context degradation in the extended session rather than a different problem? Choose TWO.",
-        "opcoes": [
-          "It gives a retry interval for the PLC poller that contradicts what it reported an hour earlier in the same session.",
-          "Answers take longer because each new question leads it to read several files it has not opened earlier in the session.",
-          "It asks for clarification when an engineer's question names a class that does not exist anywhere in the repository.",
-          "It says the alarm handler follows a typical observer pattern instead of naming the AlarmDispatcher class it read.",
-          "A Grep for a function returns no matches because that function was renamed in a commit merged before the session."
-        ],
-        "corretas": [
-          0,
-          3
-        ],
-        "explicacao": "Context degradation in extended sessions shows up as answers that fall back on \"typical patterns\" instead of the specific classes discovered earlier, and as inconsistent answers about facts that have not changed. Asking about a nonexistent class, a valid empty search result, and slower answers during new exploration are expected behavior or different issues.",
-        "feedbacks": [
-          "Correct. Inconsistent answers about unchanged facts are a core symptom of context degradation.",
-          "Reading new files for new questions is normal incremental exploration; it costs time but does not indicate degradation.",
-          "Asking for clarification about a class that does not exist is correct behavior, not a sign of degradation.",
-          "Correct. Falling back on a generic pattern instead of the specific class it discovered is a hallmark of degraded context.",
-          "This is a valid empty result: the search worked and found nothing because the code changed before the session, which is a different issue."
-        ],
-        "cenario": 4,
-        "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-K1"
-      },
-      {
-        "pergunta": "A developer at a municipal transit agency runs three investigations with Claude Code during the same week: a timetable import bug, a fare-capping refactor, and a real-time vehicle feed latency issue. Each investigation has accumulated analysis that is still valid. A teammate proposes keeping a notes file per investigation and starting a fresh session each morning by pasting the notes in, arguing that there is no reliable way to return to a specific earlier conversation. How should you evaluate this proposal?",
-        "opcoes": [
-          "Accept it: resuming earlier sessions always reintroduces stale context, so a fresh session with pasted notes is the safer default for multi-day work.",
-          "Reject it: give each investigation a session name and continue it with `claude --resume <session-name>`, which restores that exact conversation.",
-          "Accept it, but merge the three investigations into a single long session, so that the notes file only needs to be pasted in once each morning.",
-          "Reject it: keep one terminal open per investigation for the whole week, so that each conversation stays live and does not have to be resumed later."
-        ],
-        "correta": 1,
-        "explicacao": "Named session resumption exists for exactly this: `--resume <session-name>` continues a specific prior conversation, and because each investigation's analysis is still valid, resuming keeps the full context that pasted notes would lose. Starting fresh with a summary is the better choice only when prior tool results have become stale.",
-        "feedbacks": [
-          "Stale context is a risk only when files or sources have changed; here the analysis is still valid, so resuming is better and \"always\" overgeneralizes.",
-          "Correct. Named sessions resumed with `--resume <session-name>` return to the specific investigation with its context intact.",
-          "Merging unrelated investigations pollutes each one's context and makes answers less focused; separate named sessions avoid that.",
-          "Keeping terminals open all week is fragile and unnecessary: sessions are saved as you work, and a named session can be resumed directly whenever it is needed."
-        ],
-        "cenario": 2,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-K1"
-      },
-      {
-        "pergunta": "An engineer at an industrial IoT company spent 90 minutes with an Agent SDK-based assistant analyzing a device provisioning service. She now wants to compare two refactoring approaches: extracting a provisioning state machine, or moving the logic into an event-driven pipeline. She tried both in the same session, but the second plan kept referring to decisions made for the first (\"since the state already lives in the FSM...\"). The 90-minute analysis must not be redone. What is the most effective fix?",
-        "opcoes": [
-          "Tell the assistant in the same session to disregard the state-machine plan before it drafts the pipeline plan, so both plans still share the analysis.",
-          "Start two new sessions that each redo the analysis from scratch, so that the two refactoring plans stay fully independent of each other.",
-          "Spawn two subagents that receive only the description of their approach, so that each plan is produced in an independent, isolated context.",
-          "Resume the analysis session twice with fork_session, creating one independent branch per approach from the shared analysis as the common baseline."
-        ],
-        "correta": 3,
-        "explicacao": "fork_session creates independent branches that each start from a copy of the shared analysis, so each refactoring approach builds on the 90-minute baseline without seeing the other approach's decisions. Exploring divergent approaches from a common baseline is exactly what forking is for.",
-        "feedbacks": [
-          "An instruction to disregard earlier reasoning does not remove it from the context; the first plan's decisions keep leaking into the second.",
-          "Fresh sessions avoid contamination but violate the constraint by repeating the 90-minute analysis twice.",
-          "Subagents do not inherit the session's analysis, so each would plan without the baseline unless it were passed in explicitly.",
-          "Correct. Each fork inherits the shared analysis and then diverges independently, which isolates the two approaches."
-        ],
-        "cenario": 4,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-K2"
-      },
-      {
-        "pergunta": "A video-on-demand service uses a multi-agent research system built on the Claude Agent SDK. This morning the coordinator's session built a shared baseline on subscriber churn: 38 vetted sources, the key findings, and the open questions. Product leads now want two follow-up directions explored, a pricing-sensitivity deep dive and a content-catalog gap analysis, both starting from that baseline and without either one influencing the other. What is the most effective first step?",
-        "opcoes": [
-          "Continue in the coordinator's session and run the pricing direction first, then the catalog direction, so that the second can reuse what the first found.",
-          "Use fork_session on the coordinator's session to create two branches from the shared baseline, one for each direction, and run each branch on its own.",
-          "Export the coordinator's full transcript and paste it into two brand-new sessions, so that each direction begins with an identical copy of the baseline.",
-          "Start the catalog direction in a new, independent coordinator session given only the original churn topic, so the baseline cannot bias it."
-        ],
-        "correta": 1,
-        "explicacao": "Both directions need the same starting analysis but must not influence each other. fork_session creates parallel exploration branches from a shared baseline: each branch inherits the morning's work and then diverges independently.",
-        "feedbacks": [
-          "Running both in one session lets the first direction's findings shape the second, which is exactly the influence the product leads want to avoid.",
-          "Correct. Forking gives each direction the shared baseline and keeps the two explorations independent.",
-          "Pasting a raw transcript carries verbose tool output into each session and is a manual approximation of what forking already provides.",
-          "Avoiding bias by discarding the baseline forces the catalog direction to repeat the morning's research."
-        ],
-        "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-S2"
-      },
-      {
-        "pergunta": "In a video-on-demand service's multi-agent research system, a subagent calls a catalog lookup tool that returns more than 60 fields per title (cast, crew, artwork URLs, regional ratings, encoding profiles), while the analysis uses six: title, release date, genre, region, viewing hours, and source. After about 25 lookups, the subagent's context is dominated by these results and it starts omitting findings it recorded earlier. Which design should the team adopt?",
-        "opcoes": [
-          "Append each full lookup result to the context and have the subagent summarize older results periodically, so no field is lost if a later question needs it.",
-          "Append each full lookup result to the context and move the subagent to a larger-context model, so that all 60 fields from every lookup stay available.",
-          "Trim each lookup result to the six relevant fields before it is appended, so that token use always stays proportional to what the analysis needs.",
-          "Trim each lookup result by having the subagent restate the six relevant fields after every call, so later reasoning can rely on the short restatement."
-        ],
-        "correta": 2,
-        "explicacao": "Tool results accumulate in context and consume tokens far out of proportion to their relevance when only six of 60+ fields matter. Trimming verbose tool outputs to the relevant fields before they accumulate keeps the context focused and protects the earlier findings.",
-        "feedbacks": [
-          "Periodic summaries add lossy condensation on top of the bloat; it is simpler and safer never to keep the irrelevant fields.",
-          "A larger window postpones the problem while every lookup still pays for 54 unused fields that compete for attention.",
-          "Correct. Trimming before accumulation keeps token use proportional to relevance.",
-          "Restating the fields adds tokens on top of the full result, which is still appended to the context; trimming has to happen before the result accumulates."
-        ],
-        "cenario": 3,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-S3"
-      },
-      {
-        "pergunta": "A video-on-demand service's research system passes the outputs of seven subagents to a synthesis agent as one input of about 90,000 tokens, concatenated in the order the subagents finished. The requirement is that every subagent's key findings appear in the final report. Findings from the outputs placed first and last are always included, but in about one report in four, findings from the outputs in positions 3 to 5 are missing. What should you change to meet the requirement?",
-        "opcoes": [
-          "Randomize the order of the subagent outputs on every run, so that no subagent's findings are consistently placed in the middle of the input.",
-          "Add an explicit self-check in which the synthesis agent compares its draft with the full input, so that any findings it missed are added back.",
-          "Put a summary of all subagents' key findings at the start of the input, and place each detailed output under its own explicit section header.",
-          "Run seven synthesis calls, one per subagent output, and concatenate the seven partial reports, so that each output receives undivided attention."
-        ],
-        "correta": 2,
-        "explicacao": "First and last outputs covered while the middle positions drop out is the lost-in-the-middle effect. Placing a key-findings summary at the beginning of the aggregated input and organizing the detailed results under explicit section headers mitigates position effects, so every subagent's findings are processed.",
-        "feedbacks": [
-          "Randomizing spreads the omission across subagents instead of preventing it; some findings still land in the middle on every run.",
-          "A self-check over the same long input suffers the same position effect, so the middle findings are likely to be missed again.",
-          "Correct. Key findings up front plus explicit headers counteract the position effect.",
-          "Separate syntheses lose the cross-source integration the report needs, and stitching partial reports together produces duplication and inconsistency."
-        ],
-        "cenario": 3,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-S4"
-      },
-      {
-        "pergunta": "A consulting firm's support agent for its training-services clients receives, at the start of each session, a long input: the client profile followed by 14 policy documents (about 40,000 tokens), with the client's contract terms inserted between policy documents 7 and 8. In 6% of late-cancellation cases, the agent charges the standard fee even though the contract includes a waiver clause. Logs confirm that the waiver clause is present in the input every time. What is the most likely root cause?",
-        "opcoes": [
-          "The retrieval step sometimes loads an outdated contract version for these clients, so the waiver clause the agent sees does not apply to the case.",
-          "The system prompt lacks explicit escalation criteria for fee disputes, so the agent defaults to the standard policy instead of escalating.",
-          "Content in the middle of a long input is processed less reliably than content at the beginning or end, so the waiver clause is overlooked.",
-          "The input is close to the context limit, so the earliest documents are truncated before the agent reasons about the cancellation request."
-        ],
-        "correta": 2,
-        "explicacao": "The clause is present but sits in the middle of a long input, between policy documents, which is where models process information least reliably. This is the lost-in-the-middle effect; the fix is to place key facts such as contract exceptions at the beginning and organize the input with explicit section headers.",
-        "feedbacks": [
-          "Nothing points to a version problem: the logs show the applicable waiver clause in the input, which rules out a retrieval error.",
-          "Escalation criteria govern when to hand off, but here the agent misapplies a fee it should have waived; the clause is being overlooked, not escalated.",
-          "Correct. Middle-of-input content is the most likely to be omitted, which matches an intermittent miss on a clause placed there.",
-          "Truncation would remove content consistently, and the logs show the full input, clause included, reaching the model; the clause is present yet ignored."
-        ],
-        "cenario": 1,
-        "dominio": "D5",
-        "ts": "5.1",
-        "bullet": "5.1-K2"
-      },
-      {
-        "pergunta": "An industrial IoT company's developer productivity agent investigates a large firmware build system over several days. The investigation crosses context boundaries: /compact runs, new sessions on later days, and subagents launched for specific questions. The team adds a scratchpad file, `NOTES.md`, to the workflow. Which TWO practices make the scratchpad effective across these boundaries? Choose TWO.",
-        "opcoes": [
-          "Clear the scratchpad whenever /compact runs, so that older findings do not conflict with the summary that replaces the conversation.",
-          "Keep the scratchpad as a running message inside the conversation that the agent rewrites each turn, so it stays visible without file reads.",
-          "Log every tool call with its full output to the scratchpad, so that nothing the agent has discovered can be lost at a context boundary.",
-          "Have the agent consult the scratchpad before answering follow-up questions and pass its relevant entries to the subagents it launches.",
-          "Record confirmed findings in the scratchpad as they are established: class names, file paths, verified behaviors, and ruled-out hypotheses."
-        ],
-        "corretas": [
-          3,
+          1,
           4
         ],
-        "explicacao": "A scratchpad works because key findings are written outside the conversation and referenced later. Recording confirmed findings as they emerge, and consulting the file for subsequent questions (including handing relevant entries to new subagents), carries those findings across compaction, new sessions, and subagent boundaries.",
+        "explicacao": "Customers need to see which figures are consensus and which are disputed, so the report should separate well-established from contested findings, with each diverging value tied to its source. It should also preserve each source's own characterizations and methodological context, because \"preliminary\" or \"base pay only\" changes how a figure should be used. Collapsing to one value or normalizing the wording removes exactly that information.",
         "feedbacks": [
-          "Compaction is exactly when the scratchpad matters most; clearing it throws away the findings that the summary may have blurred.",
-          "A message inside the conversation is summarized away by /compact and is absent from new sessions and subagents; the file must live outside the context.",
-          "Logging full outputs turns the scratchpad into another verbose dump; it should hold distilled key findings.",
-          "Correct. The scratchpad counteracts degradation only if the agent references it for later questions and handoffs.",
-          "Correct. Persisting distilled findings as they are confirmed is what lets them survive context boundaries."
+          "Normalizing the wording strips the original characterizations, such as \"preliminary\", that tell customers how much weight a figure can bear.",
+          "Correct. Explicit well-established and contested sections let customers see which figures are disputed and by which sources.",
+          "A weighted median is still one number that no survey published, and it hides that the surveys disagree. It also discards each survey's qualifiers.",
+          "Dropping surveys hides the disagreement instead of reporting it, so customers would again treat a disputed figure as settled.",
+          "Correct. Preserving each source's qualifiers and method notes keeps the context needed to judge and compare figures."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-S2"
+      },
+      {
+        "pergunta": "A health insurer's research system is evaluating a home-nursing program. The document analysis subagent reviews 14 studies, and two credible studies of comparable populations report 30-day readmission reductions of 12% and 21%. Today, when the subagent detects a conflict like this, it stops and returns only \"conflicting data found\" to the coordinator, so the remaining 9 studies are never analyzed and the run ends without a report. What is the most effective first step?",
+        "opcoes": [
+          "Have the subagent keep the value from the study with the larger sample, note the other one in a footnote, and continue with the remaining studies.",
+          "Have the subagent send both conflicting studies straight to the synthesis subagent, which already compares sources while drafting the report.",
+          "Have the subagent pause and ask the user which study to trust, then resume the remaining studies once the user has answered the question.",
+          "Have the subagent finish all 14 studies with both values included and annotated, and let the coordinator decide how to reconcile them."
+        ],
+        "correta": 3,
+        "explicacao": "The subagent should complete its analysis, including the conflicting values explicitly annotated with their sources, and hand the decision to the coordinator, which reconciles before passing anything to synthesis. That keeps the 9 unanalyzed studies in scope and puts reconciliation where the overall context is. Picking a value, bypassing the coordinator, or blocking on the user each lose either information or progress.",
+        "feedbacks": [
+          "Choosing by sample size is an arbitrary resolution made by the wrong agent; both credible values should be reported with attribution so the conflict stays visible.",
+          "This bypasses the coordinator, which should decide how to reconcile before synthesis, and the synthesis agent may silently pick one value while writing.",
+          "Blocking the analysis on a user answer stalls the run; the subagent can finish its work and let the coordinator handle the conflict.",
+          "Correct. Finish the analysis with the conflicting values annotated, and let the coordinator decide how to reconcile before synthesis."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-S3"
+      },
+      {
+        "pergunta": "A health insurer's research system has a document analysis subagent that downloads papers from a journal repository. On a run about biosimilar insulin switching, the repository returned 503 errors for 6 of 19 papers even after the subagent's own retries. The team is debating the subagent's return value. Design X returns {\"status\": \"error\", \"message\": \"document analysis failed\"} so the coordinator re-runs the delegation. Design Y returns the 13 completed analyses as a normal result and leaves out the 6 failures. Which approach best enables coordinator recovery?",
+        "opcoes": [
+          "Design X, because an explicit failure status stops the coordinator from moving on to synthesis with an incomplete set of papers.",
+          "Design Y, because 13 of 19 papers is adequate coverage and it spares the coordinator from repeating the whole delegation.",
+          "Neither: return the 13 analyses with the failure type, the 6 paper IDs and retries attempted, and options like a preprint server.",
+          "Design X, with exponential backoff added in the coordinator, so the delegation is repeated until all 19 papers download successfully."
+        ],
+        "correta": 2,
+        "explicacao": "The coordinator can only choose well (retry just the 6 later, try another source, or proceed and annotate the gap) if it knows what failed, what was tried, and what already succeeded. Design X throws away 13 good analyses behind a generic status; Design Y hides the failure as if the set were complete. Structured error context with partial results and alternatives enables intelligent recovery.",
+        "feedbacks": [
+          "A generic failure discards the 13 completed analyses and gives the coordinator nothing to decide with; it can only repeat the whole task.",
+          "Silently dropping the 6 failures looks like success, so neither the coordinator nor the final report would know the coverage is incomplete.",
+          "Correct. Failure type, attempted items, partial results, and alternatives give the coordinator what it needs to recover intelligently.",
+          "Repeating the full delegation until everything succeeds wastes the completed work and may never finish if the repository stays down."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-S1"
+      },
+      {
+        "pergunta": "An HR software company builds a benefits profile for each employee by merging three extraction passes: one over the benefits enrollment form, one over the plan summary PDF, and one over the payroll deduction report. Today the merge step outputs only the final value of each field. When the enrollment form lists 3 dependents and the deduction report implies 2, auditors cannot tell which document said what and must reopen all three files. Which TWO design choices best preserve provenance through the merge? Choose TWO.",
+        "opcoes": [
+          "Have the merge step keep the value from the most recently dated document and drop the others, so the profile has no duplicate entries.",
+          "Have the merge step write a short narrative summary of each profile, so auditors read the context before checking values.",
+          "Have each extraction pass emit every value together with its source document ID, page number, and the exact excerpt it was read from.",
+          "Have the merge step combine entries for the same field into one that keeps all supporting sources and flags differing values.",
+          "Have each extraction pass attach a confidence score to every value, so the merge step can keep the highest-confidence value per field."
+        ],
+        "corretas": [
+          2,
+          3
+        ],
+        "explicacao": "Provenance survives only if each value carries its source mapping from the start and the merge step preserves and merges those mappings instead of collapsing them. Emitting document, page, and excerpt per value, then merging same-field entries while keeping every source and flagging disagreements, lets auditors see which document said what. Keeping one value, whether by recency or confidence, discards the other sources.",
+        "feedbacks": [
+          "Keeping the most recent value arbitrarily resolves the disagreement and erases which document said what.",
+          "A narrative summary compresses the findings and loses the field-to-document links that auditors need.",
+          "Correct. Structured claim-source mappings at extraction time are what later steps need in order to preserve attribution.",
+          "Correct. Merging same-field entries while keeping all sources and flagging differences preserves the mappings through the merge.",
+          "Confidence can help route review, but keeping only the highest-confidence value still discards the other sources and hides the disagreement."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-K2"
+      },
+      {
+        "pergunta": "An HR software company extracts fields from employee expense documents: hotel invoices, taxi receipts, meal receipts, and mileage logs. The monthly accuracy report, based on a labeled review sample, has shown 97.4% for six months. One customer's finance team nevertheless reports frequent errors in mileage reimbursements, which they check line by line. Mileage logs are about 3% of all documents processed. What is the most likely root cause of the gap between the reported metric and the customer's experience?",
+        "opcoes": [
+          "The 97.4% figure is an aggregate across document types and fields; a small segment such as mileage logs can perform much worse without moving it.",
+          "The monthly review sample is too small to measure accuracy precisely, so the true overall rate is likely several points below the reported 97.4%.",
+          "The customer's finance team applies stricter matching rules than the labeled sample does, so it flags values as errors that the metric accepts.",
+          "The schema marks the distance field as required, so whenever a log omits it the model fabricates a value just to satisfy the schema."
+        ],
+        "correta": 0,
+        "explicacao": "A 3% segment can have poor accuracy and barely move a 97.4% average, so the aggregate metric masks it. Reporting accuracy by document type and field would show the mileage-log segment directly. The other options describe possible issues but do not explain why a stable aggregate coexists with frequent errors in one document type.",
+        "feedbacks": [
+          "Correct. Aggregate accuracy can hide poor performance on a specific document type or field; segment the metric to see it.",
+          "Sample size affects precision, but the customer's problem is concentrated in one document type, and even a perfectly precise aggregate would hide it.",
+          "Different matching rules could inflate the complaint, but nothing in the situation suggests it; the simpler explanation is a weak segment hidden by the average.",
+          "Required fields can cause fabrication, and that might be one source of the errors, but it does not explain why the monthly metric failed to reveal them."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.5",
+        "bullet": "5.5-K1"
+      },
+      {
+        "pergunta": "An online electronics retailer's support agent, built with the Claude Agent SDK, delegates warranty checks to a warranty subagent that calls manufacturer APIs. Whenever a manufacturer call fails, the subagent immediately returns {\"error\": \"warranty check failed\"} and the coordinator re-runs the whole warranty delegation. Logs show that 70% of these failures are brief 503 responses that succeed on a second call, and each full re-run adds about 40 seconds while the customer waits. What is the flaw in this implementation?",
+        "opcoes": [
+          "The coordinator retries instead of escalating; it should hand the conversation to a human whenever the subagent reports any failure.",
+          "The subagent surfaces failures; it should return \"no active warranty\" on any API error so that the conversation keeps moving.",
+          "The subagent does not recover locally; it should retry transient errors itself and pass up only unresolved ones with what it tried.",
+          "The coordinator retries without backoff; it should wait with exponential backoff before each re-run so the API has time to recover."
+        ],
+        "correta": 2,
+        "explicacao": "Most failures are transient and resolve on a second call, so the subagent should retry them locally and propagate only errors it cannot resolve, together with what it attempted and any partial results. Bubbling every 503 up makes the coordinator repeat the full delegation and multiplies latency. Escalating every failure, suppressing failures, or centralizing retries in the coordinator each create a different problem.",
+        "feedbacks": [
+          "Escalating every failure pushes recoverable, transient errors onto human agents and hurts first-contact resolution.",
+          "Returning \"no active warranty\" on an API error is silent suppression: the customer is told something false about their warranty.",
+          "Correct. Local recovery for transient failures, propagating only unresolved errors with attempts and partial results, removes the full re-runs.",
+          "Backoff in the coordinator still repeats the whole delegation for errors the subagent could have retried cheaply, and it adds waiting time."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-S3"
+      },
+      {
+        "pergunta": "A health insurer's research system reports on type 2 diabetes prevalence among members aged 40 to 64. A recent report labeled two sources as contradictory: a national survey giving 11.3% and a state registry giving 14.8%. An analyst found that the survey data were collected in 2019 and the registry data in 2025, but neither date appeared in the subagents' outputs. Similar false conflicts appear in 6 of the last 22 reports. Which TWO changes best address this? Choose TWO.",
+        "opcoes": [
+          "Have the synthesis compare values only within the same collection period and present values from different periods as a trend.",
+          "Instruct the synthesis subagent to prefer the most recently published source whenever two credible values for the same measure differ.",
+          "Have the coordinator drop sources older than five years before delegating, so synthesis compares current data only.",
+          "Have the synthesis average differing values from credible sources and show the full range in a footnote, so readers see both.",
+          "Require the search and analysis subagents to output each statistic with its publication date and its data collection period."
+        ],
+        "corretas": [
+          0,
+          4
+        ],
+        "explicacao": "The conflict was an artifact of missing dates: values from 2019 and 2025 describe different periods, not a contradiction. Subagents must include publication and data collection dates in their structured outputs, and the synthesis must use those dates to interpret values over time. Preferring recent sources, dropping older ones, or averaging all discard or distort real information.",
+        "feedbacks": [
+          "Correct. Using the dates to compare like with like turns false contradictions into the time series they actually are.",
+          "Preferring recency arbitrarily picks one value and would also hide genuine conflicts between sources from the same period.",
+          "Dropping older sources removes valid data, such as the baseline of a trend, instead of interpreting it correctly.",
+          "Averaging values from different years produces a figure no source reported and still treats a temporal difference as a conflict.",
+          "Correct. Publication and collection dates in the structured output are what make correct temporal interpretation possible."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-S4"
+      },
+      {
+        "pergunta": "An airline's platform team built an Agent SDK tool that, before a library upgrade, maps every call site of a deprecated booking-API client across 38 internal repositories, using one subagent per group of repositories. Today, if any subagent fails, for example on a repository it lacks permission to clone, the coordinator raises an exception and the whole 25-minute run is lost. A teammate proposes wrapping each subagent in a try/catch that returns an empty call-site list on failure, so the run always completes. How should you evaluate this proposal?",
+        "opcoes": [
+          "Accept it, since an unreadable repository has no call sites the agent could change anyway, so an empty list is accurate for planning.",
+          "Reject it; report each failed repository with the failure and what was attempted, and let the run finish for the other repositories.",
+          "Accept it if each caught failure is logged to a file, so that engineers can check the log for any gaps before they merge the upgrade.",
+          "Reject it and keep the current behavior, since an upgrade plan with any missing repository is unreliable and must be rerun in full."
+        ],
+        "correta": 1,
+        "explicacao": "Both the current behavior and the proposal are anti-patterns: aborting the whole run discards the work done on every other repository, while returning an empty list presents a failure as \"no call sites\". The run should continue for the repositories that succeeded and report each failure with its type and what was attempted, so the coordinator and the plan show the gap explicitly.",
+        "feedbacks": [
+          "An empty list claims the repository has no call sites when the agent never read it; the upgrade would then break code nobody analyzed.",
+          "Correct. Neither suppress nor abort: continue with the successful repositories and propagate each failure with its context.",
+          "Logging moves the burden to engineers who must remember to check a file, while the plan itself still reports the failure as \"no call sites\".",
+          "Terminating on a single failure throws away every successful analysis; a plan with an explicit, annotated gap is more useful than no plan."
         ],
         "cenario": 4,
         "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-K2"
+        "ts": "5.3",
+        "bullet": "5.3-K4"
       },
       {
-        "pergunta": "A video-on-demand service's research system ran yesterday in a coordinator session that collected subscription pricing data from 22 sources. Overnight, five sources published revised figures and two pages were taken down. This morning the team resumed yesterday's session and asked for an updated report. The report repeated yesterday's figures for the revised sources and cited the removed pages as current. Which statement about this behavior is correct?",
+        "pergunta": "An online electronics retailer's support coordinator delegates order-history lookups to an order subagent that queries two backends: the current order service and a legacy archive for orders older than 18 months. The archive often times out. When it does, the subagent returns {\"status\": \"failed\"}, even though it already has the customer's recent orders, and the coordinator tells the customer it cannot access their orders; 23% of those conversations then escalate. The archive cannot be changed this quarter. What is the most effective fix?",
         "opcoes": [
-          "Resuming discarded yesterday's tool results, so the coordinator fell back on general knowledge, which explains why the revised figures were not used.",
-          "Resumed sessions cannot run new tool calls until they are forked, so the coordinator was unable to fetch the revised figures from the five sources.",
-          "The session should have been compacted before resuming, because /compact refreshes old tool results from their sources as it builds a structured summary.",
-          "The resumed session still held yesterday's tool results and treated them as current; a new session seeded with a structured summary is more reliable."
+          "Have the coordinator transfer the conversation to a human whenever the order subagent reports a failure, since the archive is unreliable.",
+          "Remove the archive query from the subagent, so it relies on the current order service and stops reporting failures to the coordinator.",
+          "Raise the subagent's archive timeout from 8 to 30 seconds, so that more archive queries finish before the subagent gives up on them.",
+          "Have the subagent return the recent orders plus the failure type, the archive query attempted, and options such as retrying later."
         ],
         "correta": 3,
-        "explicacao": "Resuming restores the full prior conversation, including tool results that are now stale, and the model treats them as current facts. When prior tool results are outdated, starting a new session with a structured summary of what remains valid, plus a note of what changed, is more reliable than resuming.",
+        "explicacao": "With structured context (failure type, attempted query, partial results, and alternatives), the coordinator can answer from the recent orders it already has and decide how to handle questions about older ones. That turns an all-or-nothing failure into an informed recovery decision without changing the archive.",
         "feedbacks": [
-          "Resuming keeps the prior tool results rather than discarding them; the problem is that they were kept and trusted.",
-          "Resumed sessions can call tools normally; forking creates a branch of the history and has nothing to do with enabling tool calls.",
-          "/compact summarizes the conversation; it does not re-fetch anything, so the stale results would simply be summarized.",
-          "Correct. Stale tool results in a resumed session are trusted as current, so a fresh session with a structured summary is safer."
+          "Escalating every failure sends cases the agent could resolve with recent orders to humans, which lowers first-contact resolution.",
+          "Silently dropping the archive means older orders appear not to exist, so customers asking about them would get wrong answers.",
+          "A longer timeout makes customers wait and still fails when the archive is down; it does not change the all-or-nothing result.",
+          "Correct. Structured error context with partial results lets the coordinator answer from recent orders and decide how to handle the archive gap."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-K1"
+      },
+      {
+        "pergunta": "An HR software company extracts headcount and turnover figures from companies' annual reports and regulatory filings for a benchmarking product. A validation step sets conflict_detected to true when two documents for the same company give different headcounts. Now 31% of companies are flagged, and analysts find that most flags compare a 2023 annual report with a 2025 filing. The extraction schema has no date fields. What is the most effective first step?",
+        "opcoes": [
+          "Add fields for each figure's publication date and the period it refers to, so validation compares values only within the same period.",
+          "Have validation keep the larger headcount when two values differ by less than 15%, so that small differences stop raising conflict flags.",
+          "Route every flagged company to an analyst for review, since a person should decide which headcount is correct before benchmarking.",
+          "Add few-shot examples that show the model how to pick the more reliable document when two headcount figures for a company differ."
+        ],
+        "correta": 0,
+        "explicacao": "Most flags are temporal differences, not contradictions: a 2023 and a 2025 headcount are expected to differ. Capturing publication date and reference period in the structured output lets validation compare like with like while true conflicts stay flagged. Tolerance thresholds, mass human review, or picking a document treat the symptom without the missing data.",
+        "feedbacks": [
+          "Correct. Dates in the structured output prevent temporal differences from being misread as contradictions.",
+          "A tolerance threshold hides real conflicts below 15% and still flags genuine growth above it; it ignores the information that explains the flags.",
+          "Sending 31% of companies to analysts overloads reviewers with cases that are mostly not conflicts at all.",
+          "Picking one document arbitrarily resolves what is mostly a time difference, and it would also hide real conflicts."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-K4"
+      },
+      {
+        "pergunta": "An airline's developer productivity agent writes a dossier on the legacy crew-scheduling service by combining code analysis with Grep and Read, the internal wiki through one MCP server, and incident tickets through another. During one run the wiki server was unreachable for the whole session, so the architecture and runbook sections were written from code alone. Design X holds the dossier until every source is available. Design Y publishes it as usual. Which approach should the team adopt?",
+        "opcoes": [
+          "Design X, since a dossier written without the wiki could mislead on-call engineers, so it should wait until every source responds.",
+          "Design Y, with a general notice at the top saying the dossier may be incomplete and that readers should verify important details.",
+          "Design Y, with coverage annotations stating which sections are well supported and which have gaps because the wiki was down.",
+          "Design Y, with the agent filling the missing runbook steps from the dossiers of similar services and clearly marking them as inferred."
+        ],
+        "correta": 2,
+        "explicacao": "A dossier is still valuable when one source is down, as long as readers know where it is solid and where it is not. Coverage annotations mark well-supported findings versus topic areas with gaps due to unavailable sources, which a generic disclaimer cannot do. Blocking the output or filling gaps from other systems are both worse.",
+        "feedbacks": [
+          "Blocking the dossier until every source is up is the terminate-on-single-failure pattern; most of the content is valid and useful now.",
+          "A generic notice does not say which sections lack support, so readers cannot tell the architecture gap from the solid incident history.",
+          "Correct. Coverage annotations distinguish well-supported sections from gaps caused by the unavailable wiki.",
+          "Borrowing runbook steps from other services fills the gap with content that may not apply here; the gap itself should be stated."
+        ],
+        "cenario": 4,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-S4"
+      },
+      {
+        "pergunta": "An HR software company's compliance team sets a requirement: human review of extracted onboarding data may be reduced only where extraction is reliable for every field that feeds payroll. The current plan uses a weekly report of overall accuracy on reviewed samples (98.1% last week) and cuts review to 10% of documents once that figure stays above 98% for four consecutive weeks. What should you change to meet the requirement?",
+        "opcoes": [
+          "Raise the weekly bar from 98% to 99.5% and extend the stability window to eight weeks before review is reduced anywhere.",
+          "Report accuracy per document type and per payroll field, and reduce review only for segments that meet the target on their own.",
+          "Replace the weekly figure with a rolling 30-day average, so that short dips in accuracy cannot trigger a premature reduction.",
+          "Attach a document-level confidence score and reduce review only for documents whose score is above 0.95 on the review sample."
+        ],
+        "correta": 1,
+        "explicacao": "The requirement is per field, but the plan measures one overall number, which can stay above 98% while a payroll field fails. Breaking accuracy down by document type and field, and reducing review only where each segment meets the target, satisfies the requirement directly. Stricter or smoother aggregates are still aggregates.",
+        "feedbacks": [
+          "A higher aggregate bar is still a single number; one payroll field can be failing while the overall figure exceeds 99.5%.",
+          "Correct. Per-document-type and per-field accuracy verifies consistent performance across segments before review is reduced.",
+          "Smoothing changes timing, not granularity; a weak field stays hidden inside the rolling average.",
+          "A document-level score blends strong and weak fields together, so it cannot show that every payroll field is reliable."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.5",
+        "bullet": "5.5-S2"
+      },
+      {
+        "pergunta": "A health insurer's research system compiles coverage policies for continuous glucose monitors across 12 state Medicaid programs. The report states \"no published coverage policy found\" for 4 states, but a policy analyst finds published policies for 3 of them. Logs show that the document analysis subagent's portal requests for those 3 states ran for 30 seconds and ended without a response, while the request for the 4th state returned HTTP 200 with an empty list. The subagent's output was identical for all four states. What is the most likely root cause?",
+        "opcoes": [
+          "The synthesis subagent lacks explicit instructions to double-check negative findings, so it reported missing policies without questioning them.",
+          "The coordinator assigned all 12 states to a single subagent instead of splitting them, so that subagent ran out of time on some states.",
+          "The subagent's portal searches used terms that were too narrow, so the 3 published policies did not match its search keywords.",
+          "The subagent reported failed requests the same way as searches with no matches, so each lookup failure read as \"no policy exists\"."
+        ],
+        "correta": 3,
+        "explicacao": "Three lookups never completed, yet the subagent reported them exactly like the one search that genuinely found nothing. Access failures need retry or recovery decisions, while valid empty results are findings; conflating them turned failures into false negatives. The subagent should report the timeouts as structured errors so the coordinator can retry or annotate the gap.",
+        "feedbacks": [
+          "Double-checking at synthesis treats the symptom; the synthesis had no way to know which empty results were failures because the subagent made them identical.",
+          "Decomposition can matter at scale, but the logs show the portal requests themselves timed out, not that the subagent ran out of time on its task.",
+          "Narrow search terms would yield an HTTP 200 with no matches; these requests never got a response at all.",
+          "Correct. Distinguishing access failures from valid empty results lets the coordinator retry or flag the 3 states instead of reporting false negatives."
         ],
         "cenario": 3,
-        "dominio": "D1",
-        "ts": "1.7",
-        "bullet": "1.7-K4"
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-K2"
       },
       {
-        "pergunta": "At a municipal transit agency, a developer is using Claude Code to plan a migration of the real-time vehicle tracking module. While mapping where the `VehiclePosition` type is used, the main session has already filled about 40% of its context with Grep output and file reads, and many more searches remain. A teammate proposes keeping all discovery in the main session \"so Claude sees every raw result,\" relying on automatic compaction if it fills up. How should you evaluate this proposal?",
+        "pergunta": "An HR software company extracts data from about 4,000 employment-verification letters a day; three reviewers can check about 350. The model outputs field-level confidence scores, and thresholds were calibrated on a labeled validation set. Extractions are queued for review in arrival order; reviewers work from the top until the day ends, and whatever is left is posted automatically. Letters whose header and body state different job titles or salaries are handled like any other letter. What is the flaw in this workflow?",
         "opcoes": [
-          "Accept it: the main session plans best when it holds every raw search result, and automatic compaction will handle any overflow without losing the plan.",
-          "Accept it, but have Claude read every file in the module upfront, so that the remaining discovery needs fewer Grep calls and less output overall.",
-          "Reject it: switch the session to a model with a larger context window, so that the discovery output and the migration plan fit in one context.",
-          "Reject it: delegate verbose discovery, such as finding every consumer of VehiclePosition, to subagents like Explore that return only summaries."
+          "The thresholds come from a set labeled only once; calibration should be redone every day on the latest letters before the queue is built.",
+          "Letters should not be posted without review at all; every letter should wait in the queue until a reviewer is able to check it.",
+          "Reviewer time goes by arrival order; low-confidence fields and letters with contradictory content should be routed and reviewed first.",
+          "Reviewers should check a uniform random 350 letters each day instead, so that the accuracy they measure is unbiased across all letters."
         ],
-        "correta": 3,
-        "explicacao": "Verbose discovery output crowds the context that the main session needs for high-level planning. Delegating exploration to subagents, such as the Explore subagent, isolates the raw output in their own context and returns only summaries, so the main agent keeps coordinating with a clean context.",
+        "correta": 2,
+        "explicacao": "With limited reviewer capacity, the queue must be prioritized: route extractions with low calibrated confidence and documents with ambiguous or contradictory content to review first, and let the rest post. Arrival order spends reviewers on easy letters while risky ones post unchecked. Random sampling of the auto-posted set still has a role, but for measuring error rates, not for routing the day's risky cases.",
         "feedbacks": [
-          "Raw results compete with the plan for attention, and compaction replaces the details with a summary on its own terms; neither keeps the main session focused.",
-          "Reading the whole module upfront adds even more output to the main context, which is the opposite of what the session needs.",
-          "A bigger window delays the overflow but still mixes verbose discovery with planning in one context, diluting attention.",
-          "Correct. Subagent delegation isolates verbose exploration while the main session keeps the high-level coordination."
+          "Daily recalibration is heavy and does not change the core problem: the queue ignores which letters are risky.",
+          "Holding every letter for review ignores the 350-per-day capacity; the backlog would grow by thousands of letters each day.",
+          "Correct. Route low-confidence and contradictory extractions to people first, so limited reviewer capacity goes where errors are likely.",
+          "A uniform sample measures accuracy, but as a routing policy it sends mostly easy letters to reviewers and lets the risky ones post."
         ],
-        "cenario": 2,
+        "cenario": 6,
         "dominio": "D5",
-        "ts": "5.4",
-        "bullet": "5.4-K3"
+        "ts": "5.5",
+        "bullet": "5.5-S4"
+      },
+      {
+        "pergunta": "A health insurer's research system asks its document analysis subagent to analyze 8 payer policy PDFs on gene therapy coverage. The subagent returns {\"status\": \"source unavailable\"}. Its logs show 5 PDFs analyzed successfully, 2 behind a login page, and 1 that timed out twice. The coordinator re-delegated the whole task three times, each failing the same way, and then reported that the analysis was unavailable. Which statement about this behavior is correct?",
+        "opcoes": [
+          "The generic status hid what failed, so the coordinator could not keep the 5 analyses, skip the 2 login-gated PDFs, and retry only the timeout.",
+          "The coordinator retried too few times; with a longer backoff schedule, the login-gated PDFs would likely have opened on a later attempt.",
+          "The subagent should have retried the 2 login-gated PDFs locally with backoff before reporting, since local recovery would resolve them.",
+          "The coordinator behaved correctly, since a source-unavailable status means the subagent's entire task has to be treated as failed."
+        ],
+        "correta": 0,
+        "explicacao": "A single \"source unavailable\" status collapsed three different situations: 5 successes, 2 permission failures that retries cannot fix, and 1 transient timeout worth retrying. Without that context the coordinator could only repeat the whole task. Structured error context would have let it keep the partial results, skip futile retries, and retry only the timeout.",
+        "feedbacks": [
+          "Correct. Generic error statuses hide the information the coordinator needs to choose a targeted recovery.",
+          "Login-gated documents are a permission problem; more retries with longer backoff would fail the same way and waste time.",
+          "Local recovery is right for transient failures, but a login page is not transient, so retrying it locally would not resolve it.",
+          "Treating the whole task as failed discards 5 good analyses; the status should have described what failed and what succeeded."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-K3"
+      },
+      {
+        "pergunta": "An HR software company extracts 22 fields from employment contracts, and the model outputs a confidence score for each field. An engineer proposes routing any contract with a field below 0.85 to human review, using the same threshold for every field, because the scores looked reasonable on 30 contracts he checked by hand. The team also has 1,200 contracts that reviewers labeled last quarter. How should you evaluate this proposal?",
+        "opcoes": [
+          "Keep the per-field scores, but set each field's threshold from the 1,200 labeled contracts by checking accuracy at each score level.",
+          "Accept it as proposed, since one shared threshold is easier for reviewers to understand and the hand check showed sensible scores.",
+          "Replace the per-field scores with one contract-level score averaged over the 22 fields, so routing relies on a single stable number.",
+          "Drop confidence-based routing and send a uniform 15% random sample of contracts to review, since model scores cannot be trusted."
+        ],
+        "correta": 0,
+        "explicacao": "Field-level confidence is a valid routing signal once it is calibrated: use the labeled validation set to see how accuracy varies with the score for each field, and set per-field thresholds that meet the error target. A single threshold validated on 30 contracts is uncalibrated, averaging hides weak fields, and abandoning confidence routing throws away a useful signal.",
+        "feedbacks": [
+          "Correct. Calibrating per-field thresholds on a labeled validation set turns the model's scores into a reliable routing signal.",
+          "Thirty hand-checked contracts cannot show how accuracy varies with the score for each of 22 fields, and fields differ in how well their scores track accuracy.",
+          "Averaging across fields hides a weak field behind strong ones, which is exactly what field-level scores are meant to expose.",
+          "Raw scores need calibration, but calibrated field-level confidence is the recommended routing signal; a uniform sample spends reviewer time on easy contracts."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.5",
+        "bullet": "5.5-S3"
       }
     ]
   },
   "order": [
-    11,
-    1,
-    4,
-    0,
-    9,
-    14,
-    3,
-    2,
-    18,
-    13,
-    17,
-    8,
-    15,
     6,
-    10,
-    5,
     12,
+    10,
+    3,
+    9,
     7,
     19,
-    16
+    1,
+    14,
+    13,
+    8,
+    4,
+    2,
+    16,
+    18,
+    15,
+    0,
+    17,
+    11,
+    5
   ],
   "pos": 20,
   "answers": [
     {
       "pos": 0,
       "escolha": [
-        1
+        2
       ],
       "acertou": true
     },
     {
       "pos": 1,
       "escolha": [
-        1
+        3
       ],
       "acertou": true
     },
     {
       "pos": 2,
       "escolha": [
-        0
+        0,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 3,
       "escolha": [
-        2
+        0
       ],
       "acertou": true
     },
     {
       "pos": 4,
       "escolha": [
-        0
+        2
       ],
       "acertou": true
     },
     {
       "pos": 5,
       "escolha": [
-        2
+        2,
+        3
       ],
       "acertou": true
     },
@@ -517,65 +519,64 @@
     {
       "pos": 7,
       "escolha": [
-        0
+        1
       ],
       "acertou": true
     },
     {
       "pos": 8,
       "escolha": [
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 9,
       "escolha": [
-        1
+        0
       ],
       "acertou": true
     },
     {
       "pos": 10,
       "escolha": [
-        3,
-        4
+        0
       ],
       "acertou": true
     },
     {
       "pos": 11,
       "escolha": [
-        1
+        1,
+        4
       ],
       "acertou": true
     },
     {
       "pos": 12,
       "escolha": [
-        2
+        1
       ],
       "acertou": true
     },
     {
       "pos": 13,
       "escolha": [
-        0
+        3
       ],
       "acertou": true
     },
     {
       "pos": 14,
       "escolha": [
-        1,
-        3
+        0
       ],
-      "acertou": false
+      "acertou": true
     },
     {
       "pos": 15,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     },
@@ -589,22 +590,21 @@
     {
       "pos": 17,
       "escolha": [
-        0,
-        3
+        2
       ],
       "acertou": true
     },
     {
       "pos": 18,
       "escolha": [
-        3
+        1
       ],
       "acertou": true
     },
     {
       "pos": 19,
       "escolha": [
-        2
+        3
       ],
       "acertou": true
     }
