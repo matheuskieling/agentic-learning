@@ -178,7 +178,7 @@
     ]
   },
   "pos": 12,
-  "marco_sessao": 0,
+  "marco_sessao": 12,
   "status": {
     "intro": "visto",
     "t1": "visto",
@@ -227,6 +227,11 @@
       "beat": "prova",
       "ts": "2026-11-11T21:27:00+00:00",
       "text": "Prova M11: 20/20 (modo intensivo, sem quiz). Choose TWO Q3, Q6, Q12 certas. Conteúdo do curso concluído (M01–M11); próximo: simulados (qui 12/11: S1 manhã + S3 tarde)"
+    },
+    {
+      "beat": "fim",
+      "ts": "2026-11-12T16:52:25+00:00",
+      "text": "Simulado 1 (12/11, 13:01–13:51, 50 min): 58/60 = 97%, aprovado. D1 16/16 · D2 10/11 · D3 12/12 · D4 11/12 · D5 9/9. Erros: Q3 (4.2-S5, Choose TWO) marcou B (mais prosa) no lugar de A (few-shot mostrando ONDE achou o valor); Q45 (2.2-K2) marcou isRetryable (binário) no lugar de errorCategory (4 ações de recuperação = 4 categorias). Sessão salva em .sessions/simulado-1.json"
     }
   ],
   "iniciado_em": "2026-11-11T20:18:25+00:00"

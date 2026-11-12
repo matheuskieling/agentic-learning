@@ -1,0 +1,1809 @@
+{
+  "bank_path": "/home/mkieling/dev/courses/Claude-Architect/simulados/simulado-1.json",
+  "bank": {
+    "titulo": "Simulado 1 — CCAR-F (60 questões · 120 min · 4 cenários)",
+    "aprovacao": 72,
+    "questoes": [
+      {
+        "pergunta": "Scenario: Customer Support Resolution Agent. Calder & Wynn, a consumer law firm that sells fixed-fee legal services online (wills, trademark filings, tenant demand letters) and monthly legal plans, is building a support resolution agent with the Claude Agent SDK. The agent handles refund requests, billing disputes, and account issues through custom MCP tools (get_customer, lookup_order, process_refund, escalate_to_human), and the target is 80%+ first-contact resolution while knowing when to escalate.\n\nTo cut latency, a developer proposes a change to the loop: when a response arrives with stop_reason \"tool_use\" for lookup_order, the backend runs the tool, formats the order record as a chat message, and sends it directly to the client, ending the turn without another call to Claude. How should you evaluate this proposal?",
+        "opcoes": [
+          "Accept it for read-only tools such as lookup_order, and keep sending results back to Claude only for tools that change state, such as process_refund.",
+          "Reject it, because the tool result must be appended to the conversation and sent back to Claude, which keeps deciding until stop_reason is \"end_turn\".",
+          "Accept it, and add a system prompt note telling Claude which tool results are shown to clients directly, so its later replies stay consistent.",
+          "Reject it, and have Claude request every tool it may need in its first response instead, so one iteration covers lookup, refund, and reply."
+        ],
+        "correta": 1,
+        "explicacao": "In the agentic loop, stop_reason \"tool_use\" means Claude is waiting for the tool result: you execute the tool, append the result to the conversation history, and send the next request so the model can reason about it. The loop ends only when Claude returns \"end_turn\". Short-circuiting after a tool call removes the model from exactly the step where it decides whether the order is refundable, needs clarification, or must be escalated.",
+        "feedbacks": [
+          "Tempting because read-only calls feel harmless, but side effects are not the issue: after lookup_order, Claude still has to interpret the record and decide what to tell the client or which tool to call next. Skipping that step breaks the loop for the most common tool.",
+          "Correct. A \"tool_use\" stop means the loop must continue: run the tool, append the tool_result to the history, and call Claude again until it returns \"end_turn\".",
+          "Documenting the shortcut in the prompt does not restore the missing step. Claude never sees the result in the turn where it would decide what to do with it, so the client still gets a raw record instead of an answer.",
+          "This replaces model-driven decisions with a pre-planned sequence. Claude cannot know which tools it needs before seeing the order record; the loop still has to return results so the model can reason about them."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-K1"
+      },
+      {
+        "pergunta": "At Calder & Wynn, the support agent is being split into a coordinator plus two subagents defined with AgentDefinition: billing-investigator and matter-status. Both definitions have clear descriptions and their own tool lists. In testing, the coordinator never delegates: it handles billing disputes itself with get_customer and lookup_order, and sometimes writes \"I'll ask our billing specialist\" before replying without any subagent running. Its configuration includes allowedTools: [\"get_customer\", \"lookup_order\", \"escalate_to_human\"]. Without changing the subagent definitions, what is the most effective fix?",
+        "opcoes": [
+          "Add \"Task\" to the coordinator's allowedTools, since subagents are spawned through the Task tool and the coordinator has no way to invoke them now.",
+          "Add the subagents' tools, including process_refund, to the coordinator's allowedTools so that it can complete billing disputes without delegating.",
+          "Add a section to the coordinator's system prompt that names both subagents and says billing disputes must always go to billing-investigator.",
+          "Pass the coordinator's conversation history to both subagents at startup, so they already share the case context before work is handed to them."
+        ],
+        "correta": 0,
+        "explicacao": "In the Agent SDK, subagents are spawned through the Task tool, and allowedTools must include \"Task\" for a coordinator to invoke them. Here the AgentDefinitions are fine, but the coordinator's allowed tools only cover direct lookups, so delegation is impossible however the prompt is written.",
+        "feedbacks": [
+          "Correct. Subagents are invoked through the Task tool, and a coordinator can only call tools listed in its allowedTools. Without \"Task\" there, the definitions exist but can never be spawned.",
+          "This turns the coordinator into a generalist with more tools and does not enable delegation at all; it gives up the specialization the subagents were created for and makes tool selection harder.",
+          "A prompt instruction cannot make the coordinator call a tool it is not allowed to use. The \"I'll ask our billing specialist\" text shows the intent; what is missing is the mechanism, the Task tool.",
+          "Context must indeed be passed explicitly once a subagent is invoked, but that does not explain why no subagent is ever spawned. The blocker is the missing Task tool."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-K1"
+      },
+      {
+        "pergunta": "At Calder & Wynn, before opening a billing dispute the agent extracts a dispute record (invoice_number, disputed_amount, service_date) from the documents clients attach: firm invoices with itemized tables, card statement excerpts, and forwarded emails such as \"you billed me twice for the $349 trademark search.\" The prompt describes each field in detail, yet disputed_amount comes back null in 17% of disputes, even though a reviewer finds the amount in the document every time. Which TWO changes are most likely to fix this? Choose TWO.",
+        "opcoes": [
+          "Use few-shot examples whose answers first note where the amount was found (e.g., \"second sentence of the email\"), then give the record.",
+          "Replace the field descriptions with a longer paragraph that lists every place where a disputed amount can appear in client documents.",
+          "Make disputed_amount non-nullable in the extraction schema, so the model can no longer return a dispute record without an amount.",
+          "Add few-shot examples that all use the firm's standard invoice layout, so the model learns one consistent place to look for the amount.",
+          "Add few-shot examples in different layouts (itemized invoice, card statement line, narrative email), each with the correctly filled record."
+        ],
+        "corretas": [
+          0,
+          4
+        ],
+        "explicacao": "Few-shot examples are the most effective fix when fields that do exist in the source come back empty because documents vary in format. The examples should cover the different structures (tables, statement lines, narrative text) and can show where the value was found, so the model generalizes instead of matching a single layout. Forcing the field to be required would invite fabricated values.",
+        "feedbacks": [
+          "Correct. Examples that first note where the value was located demonstrate the reasoning behind the extraction, which helps the model generalize to layouts the examples do not cover.",
+          "The prompt already describes the fields in detail and still yields inconsistent results. When instructions alone are not enough, concrete examples are more effective than more prose.",
+          "Tempting because it forces a value, but requiring a field the model cannot locate pushes it to fabricate one. The problem is finding the amount in unfamiliar layouts, not permission to leave it empty.",
+          "Examples are the right tool, but identical examples only teach the layout that already works. The nulls come from statements and emails, which these examples would not cover.",
+          "Correct. The nulls come from layouts the model does not handle; examples covering each document structure show how the same field appears in different formats."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S5"
+      },
+      {
+        "pergunta": "Calder & Wynn's malpractice insurer requires that process_refund never runs on an order whose matter_status is \"filed\" (the work was already submitted to a court or agency); those requests must go to a partner. Two designs are on the table: (1) a hook that intercepts every process_refund call, checks matter_status, blocks filed matters, and redirects to escalate_to_human; (2) a system prompt rule with six few-shot examples, which complied in 497 of 500 test transcripts. Which design should you choose?",
+        "opcoes": [
+          "Design 1, because the insurer's rule has to hold on every call, and an interception hook enforces it regardless of what the model decides.",
+          "Design 2, because the model must understand the rule to explain it to clients, and a hook blocks the call without giving a reason it can relay.",
+          "Design 2, because 99.4% compliance in testing shows the prompt is reliable, and a hook would add a status lookup to every refund attempt.",
+          "Design 1, implemented as a PostToolUse hook that reverses refunds issued on filed matters, so valid refunds are never delayed by a check."
+        ],
+        "correta": 0,
+        "explicacao": "Hooks give deterministic guarantees; prompt instructions give probabilistic compliance. When a business rule must hold every time, as with this insurer requirement, choose a hook that intercepts process_refund before it executes and redirects the case to escalation. The 0.6% failure rate in testing is the reason to do so, not an argument against it.",
+        "feedbacks": [
+          "Correct. When a business rule requires guaranteed compliance, a hook that intercepts the outgoing tool call gives a deterministic guarantee; prompt instructions, even with examples, leave a non-zero failure rate.",
+          "Tempting, but it assumes a hook is opaque. A blocking hook can return a reason (\"matter already filed; route to a partner\") that the model uses in its reply, so you get both enforcement and an explanation.",
+          "Three violations in 500 is exactly the non-zero failure rate that prompt-based compliance leaves. For a rule the insurer requires every time, \"usually\" is not enough, and one status lookup is a small cost.",
+          "A PostToolUse hook runs after the refund was already issued, so it detects the violation instead of preventing it, and reversals can fail. Compliance rules are enforced by intercepting the call before it executes."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-S3"
+      },
+      {
+        "pergunta": "At Calder & Wynn, the agent adds an internal note for the finance team whenever it sees a billing problem; the instruction is \"Flag any unusual charges on the client's account.\" Finance now receives about 60 flags a day, mostly legitimate rush fees, court filing fees, and prorated plan charges, and has started ignoring the queue. Finance wants flags only for real billing errors. What should you change in the prompt?",
+        "opcoes": [
+          "Add a second review prompt that checks whether each flagged charge is truly unusual before the note reaches the finance team's queue.",
+          "Ask the agent to score each potential flag from 1 to 10 for how likely it is an error, and send finance only flags that score 8 or higher.",
+          "Flag a charge only if it differs from the price on the signed order, or if the same service is billed more than once in a billing period.",
+          "List the legitimate charge types finance sees most often (rush fee, filing fee, proration) and tell the agent never to flag those types."
+        ],
+        "correta": 2,
+        "explicacao": "Vague instructions such as \"flag unusual charges\" produce false positives because the model has to invent its own definition of a problem. Explicit criteria that state what to report (amount differs from the signed order, duplicate billing) improve precision far more than confidence thresholds or extra review layers, and protect finance's trust in the flags.",
+        "feedbacks": [
+          "A second pass that applies the same vague notion of \"unusual\" inherits the same ambiguity, and adds cost. The missing piece is a definition of what counts as an error.",
+          "Confidence-based filtering does not define what counts as an error, and self-assigned scores are not calibrated. Finance may simply receive fewer of the same wrong flags.",
+          "Correct. Explicit, checkable criteria (the amount differs from the signed order; the same service is billed twice) replace a vague instruction and tell the agent exactly what to report, which is what raises precision.",
+          "A skip list helps with today's noise but still leaves \"unusual\" undefined: any legitimate charge not on the list (a new fee, a discount reversal) would still be flagged. It says what to ignore, not what to report."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-K1"
+      },
+      {
+        "pergunta": "At Calder & Wynn, two transcripts were escalated in the same week. In the first, the payment processor timed out during process_refund, and the agent told the client that the refund was \"declined under firm policy.\" In the second, the refund was refused because the order was outside the 30-day refund window, and the agent retried process_refund four times before apologizing for \"a technical problem.\" What is the most likely root cause?",
+        "opcoes": [
+          "The system prompt does not tell the agent how to respond to a failed tool call, so it improvises a different explanation for every failure.",
+          "process_refund reports every failure the same way, with no error category or retry flag, so the agent cannot tell a timeout from a policy denial.",
+          "The MCP server does not set isError on failed calls, so the agent reads the failure text as a normal result and invents a reason for it.",
+          "The agent has too many tools available, which makes it unreliable at choosing between retrying process_refund and calling escalate_to_human."
+        ],
+        "correta": 1,
+        "explicacao": "When a tool returns the same generic failure for every case, the agent cannot make the right recovery decision. Structured error metadata (an errorCategory such as transient vs business, an isRetryable boolean, and a human-readable description) lets the agent retry the timeout and explain the window violation to the client instead of retrying it.",
+        "feedbacks": [
+          "Tempting, but better prompt instructions cannot help the agent react correctly if the tool result looks the same for both failures. The agent needs information that distinguishes them, not more guidance.",
+          "Correct. With a uniform error, the agent cannot know that the timeout is transient and retryable while the window violation is a business error that must not be retried. Structured metadata (errorCategory, isRetryable, a readable description) fixes both behaviors.",
+          "If isError were missing, the agent would treat the calls as successful, but it clearly recognized both as failures: it retried one and apologized for the other. The issue is what the failure says, not whether it is flagged.",
+          "Too many tools does degrade selection, but this agent has four and chose process_refund correctly. Its mistake is in interpreting the failure, which points to the error response itself."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.2",
+        "bullet": "2.2-S1"
+      },
+      {
+        "pergunta": "The Calder & Wynn engineers who build the support agent use Claude Code with a shared MCP server for the firm's case-management API. The original developer added it with a command that stored it in her ~/.claude.json, and the three engineers who joined this month do not have it, so Claude Code cannot query test matters in their sessions. Each engineer has their own API token. Which TWO changes should you make? Choose TWO.",
+        "opcoes": [
+          "Ask each new engineer to run the command the original developer used, so the server is added to each engineer's own ~/.claude.json file.",
+          "Have the server configuration read the API token from ${CASE_API_TOKEN}, an environment variable each engineer sets on their own machine.",
+          "Keep the server at user level and add a setup step to the README, since servers that use credentials belong in user configuration.",
+          "Move the server definition into a .mcp.json file at the repository root and commit it, so every engineer gets the server when they pull.",
+          "Commit a single shared service-account token in the server configuration, so every engineer can authenticate without any extra setup steps."
+        ],
+        "corretas": [
+          1,
+          3
+        ],
+        "explicacao": "MCP scoping follows who needs the server: project-level .mcp.json for shared team tooling, user-level ~/.claude.json for personal or experimental servers. A server the whole team needs goes in the committed .mcp.json, with ${VAR} expansion so each engineer provides their own token without secrets in the repository.",
+        "feedbacks": [
+          "This works for today's three engineers but keeps the configuration personal and unversioned; every future hire must repeat the step, and configurations drift apart. Shared tooling belongs at project level.",
+          "Correct. Environment variable expansion (${VAR}) keeps the shared configuration free of secrets, so it can live in version control while each engineer uses their own token.",
+          "Tempting because of the tokens, but credentials are handled with ${VAR} expansion in the project file. User level (~/.claude.json) is for personal or experimental servers, not for one the whole team needs.",
+          "Correct. Project-scoped .mcp.json is the place for shared team tooling: it is versioned with the repository, so new engineers get the same server configuration automatically.",
+          "This puts a secret in version control and makes every engineer act under one identity. ${VAR} expansion avoids both while keeping the configuration shared."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-K1"
+      },
+      {
+        "pergunta": "At Calder & Wynn, lookup_order returns {\"orders\": []} both when a client has no orders in the requested period and when the orders database query times out. During a 40-minute database incident, the agent told 23 clients that \"we have no record of any purchase from you,\" and two of them filed chargebacks. Which TWO changes to lookup_order's responses best address this? Choose TWO.",
+        "opcoes": [
+          "Return isError true whenever no orders are found, so that the agent always confirms with the client before saying no purchase exists.",
+          "Keep the empty list in both cases, and tell the agent in its prompt to treat any empty result as a possible outage and to offer escalation.",
+          "On a timeout, return an error result with isError true, a transient category, and isRetryable true, instead of an empty orders list.",
+          "Retry the query inside lookup_order until it returns at least one order, so a temporary outage never reaches the agent as an empty list.",
+          "When the query succeeds with no matches, return a successful result stating the criteria searched, so the agent can treat it as an answer."
+        ],
+        "corretas": [
+          2,
+          4
+        ],
+        "explicacao": "Access failures and valid empty results must look different to the agent. A timeout should come back as a structured error (isError, transient, retryable) so the agent can make a retry decision; a successful query with no matches should come back as success, ideally with the criteria searched, so the agent can treat it as a real answer.",
+        "feedbacks": [
+          "Marking a successful query with no matches as an error is the mirror-image mistake: a valid empty result is information, and treating it as a failure triggers needless retries and confirmations.",
+          "The tool would still hide the distinction, and the agent would now treat genuine \"no orders\" answers as possible outages, escalating clients who simply bought nothing in that period.",
+          "Correct. A timeout is an access failure: the agent needs to know the query did not run, so it can retry or tell the client it cannot check right now, instead of stating there is no purchase.",
+          "A client who really has no orders would make this loop never end. Retrying until something comes back confuses a valid empty result with a failure.",
+          "Correct. A successful query with no matches is a valid empty result. Returning it as success, with the criteria searched, lets the agent answer confidently and keeps it distinct from the failure case."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.2",
+        "bullet": "2.2-S4"
+      },
+      {
+        "pergunta": "Calder & Wynn's human support staff work in a separate ticketing system and never see the agent's conversation. For mid-process handoffs, a developer proposes this escalate_to_human payload: {\"customer_id\": \"C-48213\", \"customer_name\": \"Dana Ruiz\", \"contact_email\": \"dana.ruiz@example.com\", \"conversation_summary\": \"Client is unhappy with a charge on her trademark order and wants a human.\"} How should you evaluate this proposal?",
+        "opcoes": [
+          "Approve it, because with the customer details staff can trace the root cause in the billing system, and a short summary is quick to read.",
+          "Approve it, but require conversation_summary to be at least 300 words, so the agent includes all the details the client gave in the chat.",
+          "Extend it with the root cause found, the amount involved, what was already checked, and a recommended action, so staff can act at once.",
+          "Replace conversation_summary with the full transcript of the chat, so staff can read exactly what the client and the agent said before acting."
+        ],
+        "correta": 2,
+        "explicacao": "A mid-process escalation should use a structured handoff that includes customer details, the root cause the agent established, and the recommended action, plus relevant amounts and what was already checked. Staff who do not see the transcript can then act immediately instead of repeating the investigation. Customer identity plus a vague summary is not enough.",
+        "feedbacks": [
+          "Customer details are necessary but not sufficient. Staff would have to redo the investigation the agent already did, because the summary says nothing about what is wrong or what should be done.",
+          "A longer free-text summary adds length, not structure. Staff still have to dig out the root cause and the next step, and the content will vary from one escalation to the next.",
+          "Correct. A structured handoff protocol carries customer details, the root cause analysis, and the recommended action, so staff who lack the transcript can act without re-investigating.",
+          "Tempting because nothing is lost, but staff do not work from the conversation, and a raw transcript leaves them to reconstruct the analysis. The handoff should deliver the conclusions in a structured form."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-K3"
+      },
+      {
+        "pergunta": "At Calder & Wynn, the agent assigns a priority (P1, P2, P3) to every escalated ticket so staff know which to handle first. The prompt says \"P1 = urgent, P2 = important, P3 = routine.\" An audit of 200 tickets found the same situation, a client with a court filing deadline in two days, labeled P1 in 54% of cases and P2 or P3 in the rest. The team can change the prompt but cannot add new services. What is the most effective fix?",
+        "opcoes": [
+          "Define what qualifies a ticket for each priority, with two or three concrete example tickets per level, e.g., a filing deadline within 72 hours for P1.",
+          "Ask the agent to rate urgency on an explicit 1–10 scale and map score ranges to priorities, so the finer scale gives more precise decisions.",
+          "Describe the firm's practice areas and typical matter timelines in the prompt, so the agent understands which kinds of ticket are truly urgent.",
+          "Have the agent classify each ticket three times and assign the priority that appears most often, so that isolated misclassifications drop out."
+        ],
+        "correta": 0,
+        "explicacao": "Inconsistent classification comes from undefined levels. Explicit criteria for each severity or priority level, illustrated with concrete examples of what belongs in each, are the most effective way to get consistent labels. Finer scales, extra background, or voting do not define the boundaries between levels.",
+        "feedbacks": [
+          "Correct. Labels such as \"urgent\" are interpreted differently from case to case. Explicit criteria for each level, illustrated with concrete examples, give the agent a consistent standard to apply.",
+          "A finer scale moves the ambiguity instead of removing it: without a definition of what makes a ticket urgent, the 1–10 score will vary just as much as P1–P3 did.",
+          "More background can help the agent reason, but it still leaves the boundary between levels undefined, so the same deadline can still land in different priorities.",
+          "Voting hides inconsistency without fixing its cause, and triples the calls. If the criteria are ambiguous, the majority label can still be wrong for a whole class of tickets."
+        ],
+        "cenario": 1,
+        "dominio": "D4",
+        "ts": "4.1",
+        "bullet": "4.1-S3"
+      },
+      {
+        "pergunta": "At Calder & Wynn, a client disputed two charges. The agent refunded the first ($180, within its limit), found that the second ($1,240) required staff approval, and called escalate_to_human with the note \"Billing dispute, client needs help.\" A staff member, who cannot see the conversation, reviewed the account and refunded both charges, so the client received $180 twice. Four similar double refunds happened this month. What is the most effective first step?",
+        "opcoes": [
+          "Add a hook that blocks process_refund for the rest of a ticket once escalate_to_human has been called, so no refund can follow an escalation.",
+          "Instruct staff to check the payment system for refunds issued in the last 24 hours before acting on any escalated billing ticket.",
+          "On escalation, pass a structured summary: customer ID, root cause, refunds already issued, amount still disputed, and recommended action.",
+          "Stop the agent from issuing any refund on tickets with more than one disputed charge, so that staff handle all of those charges together."
+        ],
+        "correta": 2,
+        "explicacao": "When escalating to humans who lack the conversation transcript, the agent should compile a structured handoff summary: customer ID, root cause, amounts including actions already taken, and the recommended action. Here, the missing information about the refund already issued directly caused the duplicated work.",
+        "feedbacks": [
+          "The duplicate refund was issued by a staff member, not by the agent after escalating, so this hook would not have prevented it. The problem is what the staff member knew.",
+          "This pushes the reconstruction work onto staff and relies on a manual check every time. The agent already knows what it did; it should hand that over.",
+          "Correct. Staff lack the transcript, so the handoff must carry the facts they need: who the client is, what was found, what was already done ($180 refunded), what remains ($1,240), and what the agent recommends.",
+          "This avoids double refunds by giving up first-contact resolution on every multi-charge dispute, including the part the agent handled correctly. The gap is in the handoff, not in the refund."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.4",
+        "bullet": "1.4-S3"
+      },
+      {
+        "pergunta": "One Calder & Wynn engineer wants to try a community MCP server that queries public court calendars, to see whether it could help the support agent answer deadline questions. Nobody else on the team has asked for it, and it may be dropped after a week. He is deciding where to configure it for his own Claude Code sessions. Which option is best?",
+        "opcoes": [
+          "Add it to the project .mcp.json, so that the experiment is visible to the whole team and its configuration gets reviewed in a pull request.",
+          "Write a thin custom MCP server around the court-calendar API instead, so the team controls the code before anyone starts to depend on it.",
+          "Add the server to his personal ~/.claude/CLAUDE.md, so that only his own sessions connect to it and the team's files stay unchanged.",
+          "Add it to his user-level ~/.claude.json, which makes it available in his own sessions without changing the team's shared setup."
+        ],
+        "correta": 3,
+        "explicacao": "Configure personal or experimental MCP servers in user-scoped ~/.claude.json, and shared team tooling in project-scoped .mcp.json. An experiment one engineer is evaluating should not change everyone else's sessions; if the team adopts the server later, it moves to the project file.",
+        "feedbacks": [
+          "Visibility is nice, but a project-level entry gives the server to every teammate who pulls, for an experiment nobody else asked for. The shared .mcp.json is for team tooling.",
+          "A custom wrapper is extra work for an experiment that may be dropped in a week, and existing community servers are preferred for standard integrations. It also leaves open where to configure the server.",
+          "The personal scope is right but the file is wrong: ~/.claude/CLAUDE.md holds personal instructions, not MCP server configuration, so mentioning the server there does not connect it.",
+          "Correct. Personal or experimental MCP servers belong in user-scoped ~/.claude.json: available to him across projects, invisible to the team, and easy to drop. If it proves useful, it can move to .mcp.json later."
+        ],
+        "cenario": 1,
+        "dominio": "D2",
+        "ts": "2.4",
+        "bullet": "2.4-S2"
+      },
+      {
+        "pergunta": "Calder & Wynn's agent loop ends when the last text block of a response contains words such as \"resolved\" or \"anything else\", or after 6 iterations. In 5% of tickets, the conversation ends while a process_refund call requested in that same response is never executed, and long billing disputes are cut off at the sixth iteration mid-investigation. Which TWO changes should you make to the loop's control flow? Choose TWO.",
+        "opcoes": [
+          "Raise the iteration cap from 6 to 15, so that long billing disputes can finish before the loop stops the conversation.",
+          "Continue whenever stop_reason is \"tool_use\": execute the requested tools, append their results, and send the next request.",
+          "End the loop when stop_reason is \"end_turn\", whatever the text says, keeping a high cap only as a safety net.",
+          "Match the closing phrases only in the final sentence of the response, so phrases quoted earlier do not end the loop.",
+          "End the loop when a response contains a text block and no tool call, since that text is the agent's reply to the client."
+        ],
+        "corretas": [
+          1,
+          2
+        ],
+        "explicacao": "Agentic loop control flow should be driven by stop_reason: continue while it is \"tool_use\", executing tools and appending their results, and terminate when it is \"end_turn\". Parsing phrases, checking for text, and using an arbitrary iteration cap as the primary stop are the anti-patterns behind both symptoms.",
+        "feedbacks": [
+          "A higher cap delays the cut-off but keeps an arbitrary iteration count as the main stopping mechanism; some disputes will still be cut off, and the skipped-refund bug remains.",
+          "Correct. stop_reason \"tool_use\" means Claude is waiting for tool results; the loop must run the tools, append the results to the history, and continue, even when the same response also contains text.",
+          "Correct. \"end_turn\" is the signal that Claude has finished; terminating on it, rather than on text content, is the reliable stopping condition. A cap may remain as a safeguard, not as the primary mechanism.",
+          "Refining the phrase match is still parsing natural language to decide termination. Claude can write \"anything else?\" in the same response in which it requests a tool.",
+          "Checking for assistant text is a listed anti-pattern. Text without a tool call also appears when a response is cut off by max_tokens, and the check is indirect; stop_reason is the explicit signal."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S1"
+      },
+      {
+        "pergunta": "At Calder & Wynn, get_customer comes from the CRM's MCP server and returns plan_start as a Unix timestamp (1717200000); lookup_order comes from the billing MCP server and returns order_date in ISO 8601 and payment_status as a numeric code (3 = chargeback open). Audits show the agent sometimes says a 20-day-old order is outside the 30-day refund window, and it once offered a refund on an order with payment_status 3. The refund policy is stated clearly in the prompt. What is the most likely root cause?",
+        "opcoes": [
+          "The 30-day rule exists only in the system prompt, so the agent applies it inconsistently from ticket to ticket; it should be enforced in code.",
+          "Earlier tool results are dropped from the conversation history between turns, so the agent reasons about dates it no longer has in view.",
+          "Raw results from different MCP servers reach the model in mixed date and status formats that it misreads; they should be normalized first.",
+          "Order records contain dozens of fields the agent does not need, which dilutes its attention so that it overlooks the dates that matter."
+        ],
+        "correta": 2,
+        "explicacao": "Heterogeneous formats from different MCP tools (Unix timestamps, ISO 8601 strings, numeric status codes) are a common source of reasoning errors. A PostToolUse hook can intercept each tool result and normalize these values before the model processes them, so date arithmetic and status checks work on consistent data.",
+        "feedbacks": [
+          "Enforcing the window in code would help for that one rule, but the agent also misreads a payment status code; both errors come from how the data arrives, not from how the policy is phrased.",
+          "If results were dropped, the agent would lack the dates altogether or ask for them again. Here it has the values and misinterprets them.",
+          "Correct. Unix timestamps, ISO 8601 strings, and numeric codes from different servers are easy to misread. A PostToolUse hook that converts them to one format (ISO dates, readable status names) before the model sees them removes the source of these errors.",
+          "Verbose results do waste context, but trimming fields would leave the Unix timestamp and code 3 in place, and those are exactly what the agent misreads."
+        ],
+        "cenario": 1,
+        "dominio": "D1",
+        "ts": "1.5",
+        "bullet": "1.5-S1"
+      },
+      {
+        "pergunta": "Calder & Wynn's identification flow for the agent is: (1) call get_customer with the name and email the client provides; (2) if several records match, select the one with an open matter, since clients usually contact support about active work; (3) call lookup_order for that customer; (4) if a refund is due and under $300, call process_refund, otherwise escalate. In a pilot, two clients named Alex Chen who share a family email address received each other's order details. Which step contains the flaw?",
+        "opcoes": [
+          "Step 1, because get_customer should be called with an order number rather than a name and email, since order numbers are always unique.",
+          "Step 4, because process_refund should require staff approval for any amount, so that a misidentified client never receives a refund.",
+          "Step 2, because picking the record with an open matter is a heuristic; the agent should ask for another identifier, such as a matter number.",
+          "Step 3, because lookup_order should run before get_customer, so the order the client mentions determines which customer record is used."
+        ],
+        "correta": 2,
+        "explicacao": "Multiple matches require clarification, not heuristic selection. Choosing the record with an open matter, the most recent activity, or any other guess will sometimes pick the wrong person, which here exposed another client's data. The agent should ask for an additional identifier before proceeding.",
+        "feedbacks": [
+          "Order numbers can help, but clients often do not have one at hand, and step 1 is reasonable. The failure happens when several records match and the agent picks one by guesswork.",
+          "Requiring approval for every refund would sacrifice first-contact resolution and still not fix the data exposure: the wrong client already saw order details at step 3.",
+          "Correct. When a lookup returns multiple matches, the agent should ask for an additional identifier (matter number, phone, billing ZIP code) instead of selecting a record by a heuristic such as \"has an open matter.\"",
+          "Reordering does not resolve the ambiguity: the client may not give an order number, and identity must still be established before account data is shared."
+        ],
+        "cenario": 1,
+        "dominio": "D5",
+        "ts": "5.2",
+        "bullet": "5.2-S5"
+      },
+      {
+        "pergunta": "Scenario: Code Generation with Claude Code. Nestwell runs a real-estate listings portal (property search, a mortgage calculator, dashboards for agents). Its developers use Claude Code for code generation, refactoring, debugging, and documentation, and are integrating it into their workflow with custom slash commands, CLAUDE.md configuration, and clear guidance on when to use plan mode vs direct execution.\n\nThe team added .claude/rules/listing-sql.md with the frontmatter paths: [\"services/listings/**/*.sql\"]. Its conventions are applied when Claude edits services/listings/migrations/0042_add_hoa_fee.sql, but not when it edits db/shared/views/listing_summary.sql, which also queries the listing tables. Which statement about this behavior is correct?",
+        "opcoes": [
+          "Path-scoped rules are loaded at the start of every session, so the model saw the rule in both cases and simply did not follow it for the shared view.",
+          "The ** in the paths glob matches only a single directory level, so the rule covers files directly inside services/listings/ but no nested files.",
+          "The rule loads only when Claude works on files matching its glob; the shared view is outside services/listings/, so the rule never loads for it.",
+          "Rules in .claude/rules/ take effect only for files listed in an @import of the root CLAUDE.md, and the shared view is not among the listed files."
+        ],
+        "correta": 2,
+        "explicacao": "Files in .claude/rules/ with a paths frontmatter of glob patterns load only when Claude edits matching files, which keeps irrelevant conventions out of context. Here the glob covers only services/listings/, so the shared view never triggers the rule; widening the glob (or adding the other location) fixes it.",
+        "feedbacks": [
+          "Rules with a paths field are conditional: they load only when Claude works with matching files, which is how they save context. Blaming the model misses that the rule was never loaded for that file.",
+          "** matches any number of directory levels; that is why the migration under services/listings/migrations/ did get the rule. The shared view fails because it is outside services/listings/ entirely.",
+          "Correct. A paths glob limits when the rule loads. To cover listing SQL wherever it lives, add the other location (e.g., \"db/shared/**/*.sql\") or use a pattern that matches the files regardless of directory.",
+          "Rule files are discovered from .claude/rules/ without being imported, and path-scoped ones activate by glob. @import is a CLAUDE.md mechanism for including other files, not a switch for rules."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-S1"
+      },
+      {
+        "pergunta": "At Nestwell, Claude Code wrote a migration script that converts legacy listing prices stored as text into a numeric price column. Legacy values include \"$450,000\", \"450K\", \"Contact agent\", empty strings, and NULL. After two rounds of asking Claude to \"handle the edge cases properly\", NULL still becomes 0 and \"Contact agent\" crashes the script. A teammate proposes writing a detailed paragraph that explains how each kind of edge case should be treated. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: a precise written specification is the clearest way to define edge-case behavior, and it can be reused for the next migration.",
+          "Prefer test cases with concrete inputs and expected outputs, e.g., NULL → price NULL with price_on_request true, \"450K\" → 450000.",
+          "Reject it and switch to plan mode, so Claude can explore the legacy table and propose its own handling of each edge case first.",
+          "Reject it: handle the edge cases by hand in a small pre-processing step, and keep Claude's script for values that parse cleanly."
+        ],
+        "correta": 1,
+        "explicacao": "When natural-language descriptions produce inconsistent edge-case handling, give Claude specific test cases with example inputs and expected outputs, such as how NULL values must be migrated. Concrete pairs are unambiguous and verifiable, which is why they work better than more prose.",
+        "feedbacks": [
+          "Prose has already been interpreted inconsistently twice. More prose may help, but concrete input/expected-output pairs remove the ambiguity that descriptions leave.",
+          "Correct. Specific test cases with example input and expected output (NULL, empty string, \"Contact agent\", \"450K\") show exactly how each edge case must be handled and can be run to verify the fix.",
+          "Plan mode is for architectural or multi-file decisions; this is one script whose expected behavior the team already knows. Exploration does not tell Claude which output you want.",
+          "Pulling the edge cases out by hand works around the problem instead of communicating the requirement, and leaves two code paths to maintain for a single migration."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.5",
+        "bullet": "3.5-S4"
+      },
+      {
+        "pergunta": "At Nestwell, a developer is using Claude Code to build a mortgage affordability calculator with well-defined rules: down payments from 0% to 50%, 10- to 40-year terms, HOA fees, property tax by county, and a 200 ms response budget. Each round of feedback fixes one problem and breaks something that worked before; after five rounds she is still finding regressions by hand. The requirements are stable. What is the most effective way to proceed?",
+        "opcoes": [
+          "After each change, ask Claude in the same session to review its own code against the requirements before she tests the result by hand.",
+          "Rewrite the requirements as one complete message and ask Claude to regenerate the calculator from scratch so all rules apply together.",
+          "Switch to plan mode and have Claude design the calculator's architecture before it makes any more changes to the implementation.",
+          "Write a test suite first, covering expected results, edge cases, and the 200 ms budget, then iterate by sharing failing tests."
+        ],
+        "correta": 3,
+        "explicacao": "With stable, well-defined requirements, write the test suite first (expected behavior, edge cases, performance) and iterate by sharing test failures with Claude. Each round is then verified against everything that already worked, which ends the cycle of regressions found by hand.",
+        "feedbacks": [
+          "Self-review in the same session is weak because Claude keeps the reasoning that produced the code, and she would still be finding regressions by hand.",
+          "One detailed message helps when issues interact, but regenerating from scratch gives no way to detect what broke; the regressions would return on the next round.",
+          "The architecture is not the problem: the rules are clear and stable. What is missing is an automatic check that earlier behavior still holds.",
+          "Correct. Test-driven iteration fits stable, well-defined requirements: the tests capture expected behavior, edge cases, and performance, every round is checked automatically, and failing output gives Claude precise feedback."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.5",
+        "bullet": "3.5-K2"
+      },
+      {
+        "pergunta": "Nestwell's GraphQL resolvers live in nine service directories (services/*/graphql/*.resolver.ts) and in an older admin package outside services/. Their conventions (use the shared DataLoader; check the agent's role before returning contact details) are in a CLAUDE.md inside services/search/graphql/, so Claude follows them there but not when it edits resolvers in other services. What is the most effective first step?",
+        "opcoes": [
+          "Add a CLAUDE.md to every graphql/ directory that @imports one shared resolver-conventions file, so the text lives in a single place.",
+          "Move the conventions to a .claude/rules/ file with paths: [\"**/*.resolver.ts\"], so they load whenever Claude edits any resolver.",
+          "Move the conventions into the root CLAUDE.md, so that Claude has them in context in every session, whatever directory it works in.",
+          "Move the CLAUDE.md up to services/, one level above the service directories, so that it covers the graphql/ folders of all nine services."
+        ],
+        "correta": 1,
+        "explicacao": "For conventions that apply to a file type spread across many directories, a .claude/rules/ file with a glob pattern beats directory-level CLAUDE.md files: one source of truth that loads automatically for every matching file and stays out of context otherwise.",
+        "feedbacks": [
+          "Sharing one file via @import avoids duplicated text, but it is still directory-bound: ten CLAUDE.md files to maintain, and any new service directory is missed until someone adds another one.",
+          "Correct. A path-scoped rule with a glob by file type applies the conventions to every resolver regardless of directory, including the admin package, and loads only when a resolver is being edited.",
+          "This applies the conventions, but loads resolver rules into every session, including frontend and infrastructure work, which wastes context on irrelevant instructions.",
+          "Moving the file up covers the nine services but still misses the admin package outside services/, and it loads resolver conventions for every file under services/, not just resolvers."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.3",
+        "bullet": "3.3-K3"
+      },
+      {
+        "pergunta": "Nestwell is replacing the mapping library in its property search UI; about 50 files use the old library's map, marker, and clustering APIs, and the new library handles clustering differently. One developer wants to do the whole migration in direct execution because the target library is already chosen; another wants to stay in plan mode for the entire task. Which approach should the team take?",
+        "opcoes": [
+          "Direct execution throughout, since the library decision is already made and the remaining work is mechanical replacement, file by file.",
+          "Plan mode throughout, approving each file's change inside plan mode so that nothing is modified without a reviewed design for that file.",
+          "Direct execution, with a prompt that asks Claude to list every affected file first and then edit all of them in that same pass.",
+          "Plan mode to explore usages and agree on an approach, including clustering, then direct execution to apply the agreed plan."
+        ],
+        "correta": 3,
+        "explicacao": "Large migrations combine both modes: plan mode to explore the codebase and settle the approach (here, how clustering will work with the new library) before committing to changes, then direct execution to carry out the planned edits efficiently.",
+        "feedbacks": [
+          "The library choice is made, but the clustering difference is a design decision that touches many files. Editing before investigating it risks costly rework in the middle of the migration.",
+          "Plan mode is for exploring and designing before changes; using it for the whole implementation adds friction to the part of the work that becomes well defined once the plan is agreed.",
+          "Listing the files first is a step toward investigation, but it skips agreeing on how clustering should be handled before 50 files are edited.",
+          "Correct. Combine the two: plan mode to investigate and design a migration that involves real decisions, then direct execution to implement the approved approach."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-S4"
+      },
+      {
+        "pergunta": "Nestwell's team guideline says \"Always start Claude Code in plan mode.\" Developers complain that one-line fixes, such as adding a null check to a single function with a clear stack trace, now take several extra minutes, and some have started ignoring the guideline altogether, including for multi-service work. The team wants a guideline that keeps the benefits of plan mode where they matter. What should the new guideline say?",
+        "opcoes": [
+          "Keep plan mode for every task, but let developers approve short plans without reading them whenever a change looks small enough.",
+          "Use direct execution by default and rely on code review to catch problems, switching to plan mode only after a change causes rework.",
+          "Decide by file count alone: plan mode when a change will touch more than ten files, and direct execution for everything below that.",
+          "Plan mode for multi-file changes, architectural decisions, or several valid approaches; direct execution for well-scoped fixes."
+        ],
+        "correta": 3,
+        "explicacao": "Plan mode is designed for complex tasks involving large-scale changes, multiple valid approaches, architectural decisions, and multi-file modifications; direct execution suits simple, well-scoped changes. A guideline built on these criteria keeps planning where it prevents rework without slowing down one-line fixes.",
+        "feedbacks": [
+          "Rubber-stamping plans keeps the overhead and removes the benefit. The guideline should distinguish tasks by complexity instead of hiding the cost.",
+          "Waiting for rework before planning gives up what plan mode is designed for: exploring and designing before committing to large or architectural changes.",
+          "File count is one signal, but a three-file change that requires choosing between integration approaches still needs planning. The decision depends on complexity and on whether several approaches are valid, not on one threshold.",
+          "Correct. Plan mode is designed for complex tasks: large-scale or multi-file changes, architectural decisions, several valid approaches. Simple, well-scoped changes such as a single null check suit direct execution."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.4",
+        "bullet": "3.4-K1"
+      },
+      {
+        "pergunta": "A Nestwell tech lead created a /listing-audit command last week and uses it every day. Two teammates pulled the main branch this morning; for them, /listing-audit does not exist, while other team commands such as /new-endpoint work normally. The tech lead also notices that /listing-audit is available when she opens unrelated repositories on her laptop. What is the most likely root cause?",
+        "opcoes": [
+          "Commands are cached when a session starts, so her teammates need to restart Claude Code after pulling before the new command appears.",
+          "The command file has no description in its frontmatter, so Claude Code registers the command only for the person who created the file.",
+          "New commands have to be referenced in the project CLAUDE.md before Claude Code makes them available to the other developers on a team.",
+          "The command file is in her user-level ~/.claude/commands/ directory, which is personal and is not shared through the repository."
+        ],
+        "correta": 3,
+        "explicacao": "Project-scoped commands in .claude/commands/ are shared through version control; user-scoped commands in ~/.claude/commands/ are personal and available in all of that user's projects. A command that appears in unrelated repositories but not for teammates lives in the user directory.",
+        "feedbacks": [
+          "A restart may be needed for some changes, but it would not explain why the command also shows up in her unrelated repositories. That points to where the file lives.",
+          "Frontmatter descriptions help with discovery but do not make a command personal. Who sees a command depends on the directory, not on the file's metadata.",
+          "CLAUDE.md does not register commands. The teammates already see /new-endpoint without any CLAUDE.md reference, which rules this out.",
+          "Correct. A command that follows her into every repository lives in ~/.claude/commands/. To share it with the team, it must be in the repository's .claude/commands/ directory and committed."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S1"
+      },
+      {
+        "pergunta": "At Nestwell, Claude Code generated a new search ranking function, and a developer found four problems: (a) the price filter runs before currency conversion, so euro-priced listings are filtered by their raw numbers; (b) conversion is applied after pagination, so page sizes come out uneven; (c) a log message has a typo; (d) a unit test has a misleading name. Her plan is to send one message per problem, in that order, waiting for each fix before the next. What is the flaw in this plan?",
+        "opcoes": [
+          "All four problems belong in one message: even independent problems take longer to fix one at a time than when described together.",
+          "The filter and conversion problems interact and belong in one detailed message; only the independent ones suit sequential fixes.",
+          "Each fix should be requested in a separate fresh session, so the context of earlier fixes cannot influence how Claude handles the next.",
+          "She should first ask Claude to find all problems on its own, instead of listing the ones she found, so that none of them are missed."
+        ],
+        "correta": 1,
+        "explicacao": "Put interacting issues in a single detailed message so Claude can design one consistent fix, and iterate sequentially on independent issues. Here the filter and pagination problems both depend on where conversion happens, while the typo and the test name are independent.",
+        "feedbacks": [
+          "Batching everything is not the rule. Independent problems such as a typo and a test name are fine to fix one at a time; the problem is sending the interacting ones separately.",
+          "Correct. When fixes interact (both change where conversion happens relative to filtering and pagination), separate rounds make each fix undo or conflict with the other. Interacting issues go in one detailed message; independent ones can be iterated sequentially.",
+          "Fresh sessions would lose useful context and do not address the real issue: two fixes that depend on each other would still be made in isolation.",
+          "Asking Claude to look for more issues can be useful, but it does not change the fact that the known interacting problems must be handled together."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.5",
+        "bullet": "3.5-S5"
+      },
+      {
+        "pergunta": "Nestwell's monorepo has four packages (web, mobile, pricing-engine, mls-ingest) and a docs/standards/ folder with accessibility.md, money-handling.md, api-errors.md, and geo-data.md. Today the root CLAUDE.md @imports all four standards, so Claude loads accessibility rules while working on the pricing engine and occasionally applies web conventions in mls-ingest. Which TWO changes best fit this situation? Choose TWO.",
+        "opcoes": [
+          "Keep importing all four standards from the root CLAUDE.md, and add a sentence telling Claude to apply only the parts that fit the package.",
+          "Remove the four @import lines from the root CLAUDE.md, and keep only the conventions there that genuinely apply to every package in the repo.",
+          "In each package's CLAUDE.md, @import only the standards its maintainers consider relevant, e.g., pricing-engine imports money-handling.md.",
+          "Move the four standards files into each developer's ~/.claude/ directory, so every developer loads them in all of their Claude Code sessions.",
+          "Copy the relevant sections of each standards file into each package's CLAUDE.md, so that every package's instructions are self-contained."
+        ],
+        "corretas": [
+          1,
+          2
+        ],
+        "explicacao": "Use @import in each package's CLAUDE.md to include only the standards files relevant to that package, based on the maintainers' domain knowledge, and keep the root CLAUDE.md for conventions that apply everywhere. Each standard lives in one file, packages import what they need, and irrelevant conventions stay out of context.",
+        "feedbacks": [
+          "Relying on Claude to infer which imported rules apply is what produces the current mix-ups, and all four files still consume context in every session.",
+          "Correct. The root CLAUDE.md should hold only what applies everywhere; taking the four imports out of it stops every session from loading every standard, while package-level imports bring in what each package needs.",
+          "Correct. Package-level CLAUDE.md files that @import only the relevant standards use the maintainers' knowledge of what each package needs and keep unrelated rules out of context.",
+          "User-level files are not shared through version control and would load every standard in every project, the opposite of selective inclusion.",
+          "Copying text gives each package the right content today but creates duplicates that drift when a standard changes. @import keeps one source per standard."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-S2"
+      },
+      {
+        "pergunta": "At Nestwell, Claude Code reviews pull requests before human review. A recent PR touched 23 files to change listing prices from dollars to integer cents. The single-pass review gave detailed comments on the first files, missed that two dashboard components still divided by 100, and contradicted itself about the same rounding helper. The tech lead proposes reviewing each file in its own pass and posting the combined per-file findings. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt per-file passes, and add a separate integration pass that follows the price field across files, which per-file passes cannot see.",
+          "Adopt it as proposed: with one independent pass per file, each file gets full attention, so problems like the dashboard division are caught.",
+          "Reject it, keep the single pass, and put a summary of the PR's intent at the top of the prompt so the review knows what to check in each file.",
+          "Adopt it, giving each per-file pass the full diff of the other 22 files as reference, so that cross-file effects are visible in every pass."
+        ],
+        "correta": 0,
+        "explicacao": "Large multi-file reviews should be split into focused per-file passes for local issues plus a separate integration pass for cross-file data flow. Per-file passes alone miss bugs that exist only between files, such as consumers that were not updated when a producer changed units.",
+        "feedbacks": [
+          "Correct. Per-file passes fix the uneven depth and the contradictions, but the dashboard bug is a cross-file data-flow problem (a producer changed units, its consumers did not). A separate integration pass is needed for that.",
+          "Per-file passes solve attention dilution, but each pass sees only one file. The dashboard components look correct in isolation; the bug appears only when you follow the price field across files.",
+          "Putting the intent first helps with position effects, but the review still processes 23 files at once, which is what caused the uneven depth and contradictory findings.",
+          "Attaching the other 22 diffs to every pass re-creates the dilution the split was meant to remove. Cross-file analysis belongs in one dedicated integration pass."
+        ],
+        "cenario": 2,
+        "dominio": "D4",
+        "ts": "4.6",
+        "bullet": "4.6-S2"
+      },
+      {
+        "pergunta": "Nestwell has a /dependency-report skill that inspects lockfiles across 30 packages and prints several hundred lines of version and license details before its final summary. Developers run it in the middle of feature work; afterwards Claude tends to lose track of the feature it was building, and its later answers drift. Developers want to keep running the skill mid-task and still see its summary. What is the most effective fix?",
+        "opcoes": [
+          "Add context: fork to the skill's SKILL.md frontmatter, so it runs in an isolated sub-agent context and only its result returns.",
+          "Tell developers to run /compact right after each use of the skill, so the verbose output is condensed before they continue working.",
+          "Add allowed-tools to the skill's frontmatter, limiting it to Read and Grep, so the skill can no longer generate as much output.",
+          "Move the skill's instructions into the project CLAUDE.md as explicit standards, so the checks are always in context and the skill is unneeded."
+        ],
+        "correta": 0,
+        "explicacao": "The context: fork frontmatter option runs a skill in an isolated sub-agent context, which keeps verbose skill output out of the main conversation. The main session receives only the result, so the developer's ongoing task keeps its context.",
+        "feedbacks": [
+          "Correct. context: fork runs the skill in an isolated sub-agent context, so the hundreds of lines of intermediate output never enter the main conversation; the developer still receives the summary.",
+          "/compact reduces context after the fact by replacing the history with a summary, which can also compress details of the feature work the developer wants to keep. It treats the symptom on every run.",
+          "allowed-tools restricts which tools the skill can use; it does not control how much output those tools put into the conversation. Read and Grep can still produce hundreds of lines.",
+          "CLAUDE.md is for always-loaded universal standards. Moving an on-demand report there adds permanent context and does not stop the report's output from flooding the session."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-K3"
+      },
+      {
+        "pergunta": "At Nestwell, Claude Code's automated review produces about 60 findings per week. Only two senior engineers can verify findings, and together they have time for roughly 15. Last quarter they labeled 300 past findings as valid or invalid. The team wants to send the seniors the findings most likely to be wrong while still posting the others. What is the most effective first step?",
+        "opcoes": [
+          "Add a verification pass that gives each finding a confidence, set thresholds using the 300 labeled ones, and route low scores to the seniors.",
+          "Change the review prompt to report only high-confidence findings, so the weekly volume falls to what the two seniors can actually verify.",
+          "Run the review three times on each pull request and send the seniors only those findings that do not appear in all three runs.",
+          "Send the seniors a random sample of 15 findings each week, and use their verdicts to estimate the overall precision of the review."
+        ],
+        "correta": 0,
+        "explicacao": "A verification pass in which the model reports confidence alongside each finding enables calibrated review routing: thresholds tuned on labeled findings send uncertain findings to humans and let the rest flow through. This differs from asking the model to \"only report high-confidence findings\", which filters instead of routing and is not calibrated.",
+        "feedbacks": [
+          "Correct. A verification pass in which the model self-reports confidence alongside each finding, with thresholds calibrated against the labeled findings, sends limited reviewer time where errors are most likely.",
+          "\"Only report high-confidence findings\" is a vague filter that does not reliably improve precision, and it hides findings instead of routing them, so the seniors' expertise is not used where it helps.",
+          "Inconsistency across runs is a weak and costly proxy for error, and it triples the review cost. It also provides no calibrated estimate of which findings are wrong.",
+          "Random sampling is good for measuring the overall error rate, but it does not direct attention to the findings most likely to be wrong, which is what the team wants."
+        ],
+        "cenario": 2,
+        "dominio": "D4",
+        "ts": "4.6",
+        "bullet": "4.6-S3"
+      },
+      {
+        "pergunta": "Nestwell's root CLAUDE.md has grown to 1,400 lines covering testing, API conventions, deployment, and accessibility. Four different owners edit it, merge conflicts happen every week, and developers struggle to find the section they should update. The team is choosing between keeping a single file, restructured with a table of contents and strict headers, and splitting it. Which design is the best choice?",
+        "opcoes": [
+          "One file with a table of contents and strict headers, which keeps all conventions in one place so that Claude can apply them consistently.",
+          "Topic files in .claude/rules/ (testing.md, api-conventions.md, deployment.md...), each kept by its owner and path-scoped where useful.",
+          "Topic files in each developer's ~/.claude/rules/, so that every owner can update their topic without causing merge conflicts in the repo.",
+          "Topic directories such as testing/ and deployment/ at the repo root, each holding its own CLAUDE.md, so that every topic loads separately."
+        ],
+        "correta": 1,
+        "explicacao": "The .claude/rules/ directory lets you split a large CLAUDE.md into focused topic files (testing.md, api-conventions.md, deployment.md). The configuration becomes modular and easier to maintain, and individual rule files can be path-scoped when a topic applies only to certain files.",
+        "feedbacks": [
+          "A table of contents helps navigation but keeps four owners editing one file; the merge conflicts and the monolith problem remain.",
+          "Correct. .claude/rules/ is designed for organizing topic-specific rule files as an alternative to a monolithic CLAUDE.md. Each owner maintains a focused file, and rules can later be scoped with paths where they apply only to certain files.",
+          "User-level files are not shared through version control, so teammates would stop receiving the conventions altogether.",
+          "A directory-level CLAUDE.md loads when Claude works in that directory; testing conventions apply to code throughout the repo, not to files inside a testing/ folder."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.1",
+        "bullet": "3.1-K4"
+      },
+      {
+        "pergunta": "Nestwell's developers rely on several Claude Code skills during feature work, and the team is deciding which skills should declare context: fork in their SKILL.md frontmatter. Each skill is described below by what it does when invoked mid-task. Which TWO skills are the best candidates? Choose TWO.",
+        "opcoes": [
+          "/route-inventory: scans all 400 route files and produces a long inventory of their endpoints, handlers, and middleware.",
+          "/compare-layouts: drafts and critiques eight alternative layouts for the listing page before the developer picks one to build.",
+          "/commit-message: writes a commit message that summarizes the changes Claude made to the code during the current conversation.",
+          "/fix-review: applies the review comments that the developer and Claude agreed on earlier in the current session to the open files.",
+          "/explain-error: explains the stack trace the developer pasted a few messages ago, in the context of the code that was just changed."
+        ],
+        "corretas": [
+          0,
+          1
+        ],
+        "explicacao": "context: fork isolates skills that produce verbose output (codebase scans) or exploratory context (brainstorming alternatives) from the main session. Skills that depend on the current conversation, or whose short output is tied to it, should stay in the main context.",
+        "feedbacks": [
+          "Correct. A scan of 400 files produces verbose output; isolating it keeps the main conversation clean and returns only the inventory or a summary.",
+          "Correct. Brainstorming alternatives creates exploratory context the main session does not need; running it in a fork keeps only the chosen direction or a summary.",
+          "A commit message must reflect what happened in this conversation; isolating the skill from the conversation removes the information it needs.",
+          "This skill depends on the discussion in the current session. A forked context starts isolated from that conversation, so it would not know which comments were agreed.",
+          "Explaining an error pasted earlier relies on the main conversation's context, and its output is short; forking it gains nothing and loses the context."
+        ],
+        "cenario": 2,
+        "dominio": "D3",
+        "ts": "3.2",
+        "bullet": "3.2-S2"
+      },
+      {
+        "pergunta": "At Nestwell, Claude Code must change the searchable flag on 6 of the 40 field definitions in config/listing-fields.ts, where every definition has the same shape (name, type, searchable: false, facet: false). Its Edit calls on this file keep failing, and it keeps retrying with slightly different short snippets, while its edits to other files in the same session succeed. What is the most likely cause, and what should Claude do instead?",
+        "opcoes": [
+          "The file is too large for Edit to process in one call; Claude should first split the configuration into several smaller modules.",
+          "Edit matching is sensitive to indentation; Claude should reformat the file to consistent spacing and then retry the same Edit calls.",
+          "A build watcher rewrites the generated file between calls; Claude should stop the watcher and then retry the Edit calls on the file.",
+          "Edit needs anchor text that occurs only once, and the repeated blocks offer none; Claude should Read the full file and then Write it."
+        ],
+        "correta": 3,
+        "explicacao": "Edit makes targeted changes by matching unique text; in a file with many identical blocks, short snippets match several places and the edit fails. When Edit cannot find unique anchor text, use Read to load the full file contents and Write to save the modified version.",
+        "feedbacks": [
+          "Splitting the file is a refactor nobody asked for, and size is not what defeats Edit here; 40 short definitions make a small file.",
+          "Whitespace can break a match, but then the snippet would not be found at all. With 40 identical blocks, short snippets match many places, and no reformatting creates a unique anchor.",
+          "Nothing suggests the file is generated or rewritten, and edits elsewhere succeed. The pattern points at the file's repeated content.",
+          "Correct. Edit makes targeted changes using unique text matching. When the text to change is not unique, the reliable fallback is Read to load the full file, then Write the modified version."
+        ],
+        "cenario": 2,
+        "dominio": "D2",
+        "ts": "2.5",
+        "bullet": "2.5-S3"
+      },
+      {
+        "pergunta": "Scenario: Multi-Agent Research System. The Revenue Policy Office of a national tax agency is building a multi-agent research system with the Claude Agent SDK. A coordinator agent delegates to specialized subagents (one searches the web, one analyzes documents, one synthesizes findings, one generates reports), and the system produces comprehensive, cited reports for policy analysts.\n\nThe web search subagent runs this loop: send the messages; if stop_reason is \"end_turn\", stop; otherwise execute the requested search_web calls, write their results to an audit log, and replace the history with two messages, the original task and \"Searches done, continue.\", to keep requests small. Logs show the subagent repeating the same queries and ending with \"no relevant sources found.\" What is the flaw?",
+        "opcoes": [
+          "The loop stops on \"end_turn\" rather than after a fixed number of searches, so the subagent can keep searching without any limit.",
+          "The original task is resent in every request; it should be sent once, since the model keeps it from the loop's first request.",
+          "Writing the results to an audit log exposes them twice, which confuses the model about which queries were already completed.",
+          "The search results are never added to the messages as tool results, so each request lacks the data that earlier searches found."
+        ],
+        "correta": 3,
+        "explicacao": "Between iterations of the agentic loop, tool results must be appended to the conversation history so the model can incorporate them into its reasoning. Replacing the history with the task and a status line throws the results away, which produces repeated searches and false \"nothing found\" conclusions.",
+        "feedbacks": [
+          "Terminating on \"end_turn\" is correct; switching to a fixed number of searches would make an arbitrary cap the stopping mechanism. The repetition has a different cause.",
+          "The API is stateless: each request must carry everything the model should see. Resending the task is required, not a flaw.",
+          "The audit log is written by the application and never sent to the model, so it cannot confuse it. Logging is fine.",
+          "Correct. Tool results must be added to the conversation (as tool_result blocks following the assistant's tool_use) between iterations. Dropping them means Claude never sees what it found, so it searches again and concludes that nothing was found."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.1",
+        "bullet": "1.1-S2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the document analysis subagent returns its findings to the coordinator as prose paragraphs with inline mentions such as \"(see the 2023 OECD review, p. 14)\". In recent reports, 18% of citations point to the wrong document or lack a page number, although spot checks show the underlying findings are accurate. Which statement about this behavior is correct?",
+        "opcoes": [
+          "Citations should be added at the end by the report subagent from a structured source list, since synthesis rewrites findings and loses them.",
+          "Citations are lost because subagents do not share memory; letting synthesis read the analysis subagent's history would preserve them.",
+          "The analysis subagent is inventing sources, so a separate verification subagent should re-check every citation before synthesis starts.",
+          "Content and sources mixed in prose come apart; structured records (claim, document, URL, page) keep each claim tied to its source."
+        ],
+        "correta": 3,
+        "explicacao": "When context passes between agents, use structured formats that separate content from metadata such as source URLs, document names, and page numbers. In free prose, attribution is implicit and gets lost or misattached when synthesis recombines findings.",
+        "feedbacks": [
+          "Adding citations at the last step, even from a structured source list, means matching claims to sources after the link between them has already been lost; the report generator would have to guess. Attribution must travel with each finding from the start.",
+          "Subagents indeed do not inherit each other's context, but the fix is to pass information explicitly in a format that preserves attribution, not to hand synthesis another agent's whole history.",
+          "Spot checks show the findings are accurate, so the sources exist. A verification layer adds cost without fixing how attribution is carried between agents.",
+          "Correct. Passing findings as structured data that separates content from metadata (source URL, document name, page number) lets downstream agents keep each claim attached to its source."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.3",
+        "bullet": "1.3-S2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the document analysis subagent receives a package of 38 public-consultation responses on a proposed carbon border levy and analyzes them in one pass. Its output covers the first responses in depth, summarizes later ones in a line each, and states two contradictory conclusions about the same exemption. A teammate proposes three passes over the full package: one for rate proposals, one for exemptions, and one for administrative burden. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: aspect-focused passes give each task a specific focus, so every pass can give all 38 responses the attention one pass could not.",
+          "Split by document instead: analyze each response in its own pass, then run a separate cross-document pass to compare and reconcile them.",
+          "Adopt it, and add a final pass that re-reads only the responses that got short summaries, so that their coverage reaches the same depth.",
+          "Keep a single pass, but put a list of all responses with section headers at the top, so the model gives the later responses equal weight."
+        ],
+        "correta": 1,
+        "explicacao": "Large reviews should be split into per-item local passes plus a separate integration pass to avoid attention dilution. Splitting by aspect still processes every document at once, so the dilution persists; splitting by document and then integrating gives consistent depth and one place to reconcile findings across documents.",
+        "feedbacks": [
+          "Each aspect pass still reads all 38 responses at once, so the attention dilution that caused uneven depth and contradictions remains, now three times over.",
+          "Correct. Per-document local passes give each response consistent depth; a separate integration pass then compares positions across responses and resolves contradictions, instead of asking one pass to do both over 38 documents.",
+          "Patching the shallow summaries afterwards treats a symptom; the contradictory conclusions come from analyzing everything together, which this keeps.",
+          "Headers and ordering mitigate position effects, but they do not reduce the load of analyzing 38 documents in one pass, which is the source of the shallow and contradictory output."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-S2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, every request runs the full pipeline: web search, document analysis, synthesis, and report generation. Requests such as \"turn last week's report on remote-worker withholding into a one-page brief for the minister\" therefore trigger new searches and a full re-analysis, take 25 minutes, and sometimes cite sources that were not in the original report. Broad research questions must keep full coverage. What is the most effective fix?",
+        "opcoes": [
+          "Add a classifier model in front of the coordinator that deterministically assigns each request to one of two fixed pipelines, full or short.",
+          "Run the four subagents in parallel instead of in sequence, so requests that do not need every stage still finish much more quickly.",
+          "Have the coordinator assess what each request needs and invoke only those subagents, e.g., only report generation for a reformat.",
+          "Cache every finished report with its sources, and return the cached report whenever a new request mentions the same policy topic."
+        ],
+        "correta": 2,
+        "explicacao": "Coordinators should analyze each request and dynamically select which subagents to invoke rather than always routing through the full pipeline. This cuts latency and cost on narrow requests and avoids side effects such as new sources entering a document that should only be reformatted.",
+        "feedbacks": [
+          "A separate classifier adds infrastructure and still forces requests into fixed pipelines; the coordinator can already analyze each request and decide which subagents it needs.",
+          "Parallelism cuts wall-clock time but still runs unnecessary stages, and the stages depend on each other (synthesis needs search and analysis results). New sources would still leak into the brief.",
+          "Correct. A coordinator should analyze query requirements and dynamically select which subagents to invoke. A reformat request needs only the report generator working from the existing report, while broad questions still use the full pipeline.",
+          "Caching may help repeated questions, but a request to condense a report still requires new work, and matching by topic risks serving stale or mismatched reports."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-S1"
+      },
+      {
+        "pergunta": "At the tax agency's research system, a report stated that \"no court rulings on the tax treatment of crypto staking rewards were found.\" An analyst later discovered that the case-law database had timed out on 3 of the 5 queries the search subagent sent; for those queries, the subagent returned an empty results list, exactly as it does when a query finds nothing. What is the most effective first step?",
+        "opcoes": [
+          "Have the search subagent report timed-out queries as access failures, separately from the queries that completed with no matches.",
+          "Instruct the synthesis subagent to avoid statements of absence such as \"no rulings were found\" in any of the reports it writes.",
+          "Have the coordinator re-run every search whose results list is empty, as a separate step before the findings go on to synthesis.",
+          "Increase the case-law database timeout from 10 to 30 seconds, so that complex queries have enough time to complete normally."
+        ],
+        "correta": 0,
+        "explicacao": "Distinguish access failures (timeouts, which need retry decisions) from valid empty results (successful queries with no matches). When both look like an empty list, the coordinator draws false conclusions of absence; reporting failures explicitly lets it retry or flag the gap.",
+        "feedbacks": [
+          "Correct. An access failure (timeout) and a valid empty result (the query ran and nothing matched) mean different things. Reporting them distinctly lets the coordinator retry the failed queries and keeps genuine \"none found\" results trustworthy.",
+          "This also suppresses valid conclusions: when a query really finds nothing, that is a useful finding. The problem is that the coordinator cannot tell the two cases apart.",
+          "Re-running every empty result wastes work on queries that legitimately have no matches, and still cannot tell a second timeout from a real empty answer.",
+          "A longer timeout may reduce how often this happens, but any future timeout will still be reported as \"no results\" and produce the same false conclusion."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-K2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the coordinator spends several turns with an analyst agreeing on scope: data from 2019–2024, OECD member countries only, excluding sub-national taxes. It then delegates to the search and analysis subagents with prompts such as \"Research digital services tax revenue.\" The results include 2016 data, non-OECD countries, and city-level levies. Which design should the team adopt?",
+        "opcoes": [
+          "Configure the subagents to run inside the coordinator's session, so the scope agreed with the analyst becomes available to them automatically.",
+          "Add the scope rules (years, OECD only, no sub-national taxes) to each subagent's AgentDefinition system prompt as explicit standing rules.",
+          "Have the coordinator write the agreed scope (years, countries, exclusions) explicitly into the prompt of every Task call it makes.",
+          "Pass the coordinator's entire conversation with the analyst to each subagent, so they can read the full scope discussion themselves."
+        ],
+        "correta": 2,
+        "explicacao": "Subagents operate with isolated context: they do not automatically inherit the coordinator's conversation history. Anything they need, such as the scope agreed with the analyst, must be written explicitly into the prompt the coordinator sends with each Task call.",
+        "feedbacks": [
+          "Subagents run with isolated context and do not inherit the coordinator's conversation history; no setting makes the agreed scope appear in their context automatically.",
+          "Standing constraints in the AgentDefinition apply to every request. This scope was negotiated for this request, and the next analyst may want different years or countries.",
+          "Correct. Subagents do not inherit the coordinator's history, so the coordinator must provide the relevant context explicitly in each subagent's prompt.",
+          "This passes context explicitly, but sends a long negotiation instead of its outcome. Subagents must extract the scope themselves, which wastes context and risks misreadings; give them the agreed constraints directly."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-K2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the coordinator spawns four parallel web search subagents for \"digital services taxes in Europe\", each with the same prompt. The four result sets overlap by about 70%, the same 12 sources are cited by all four, and coverage of trade disputes and compliance costs is thin. Which TWO changes best address this? Choose TWO.",
+        "opcoes": [
+          "Have the coordinator split the topic into non-overlapping subtopics and state each one's boundaries in that subagent's Task prompt.",
+          "Keep the identical prompts, and have the synthesis subagent remove duplicated sources before it combines the four sets of findings.",
+          "Give each subagent a different search engine, so that the four result sets come from different indexes instead of the same one.",
+          "Give each subagent a distinct type of source, e.g., legislation databases, official statistics, academic papers, and news.",
+          "Replace the four subagents with one search subagent that has four times the search budget, so that no source is retrieved twice."
+        ],
+        "corretas": [
+          0,
+          3
+        ],
+        "explicacao": "The coordinator should partition research scope across subagents, by subtopic or by source type, so parallel agents cover distinct ground. Identical prompts produce duplicated work and leave parts of the topic uncovered; cleaning up afterwards does not recover the missing coverage.",
+        "feedbacks": [
+          "Correct. Partitioning the topic into non-overlapping subtopics, with the boundaries stated in each Task prompt, gives each subagent distinct ground, minimizing duplication and giving thin areas dedicated effort.",
+          "Deduplication cleans the output but does not recover the coverage lost to overlapping work; trade disputes and compliance costs stay thin.",
+          "Different engines still rank the same prominent sources highly, and every subagent keeps the same goal; overlap persists because the scope itself was never divided.",
+          "Correct. Partitioning by source type is another way to split the scope: each subagent covers different ground, so the results complement rather than repeat each other.",
+          "One agent avoids duplication but gives up parallelism and still has no plan for covering the subtopics evenly."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.2",
+        "bullet": "1.2-S2"
+      },
+      {
+        "pergunta": "At the tax agency, an analyst runs a long investigation as a named session and continues it each morning with --resume vat-gap-review. Overnight, the data team replaced 3 of the 40 source files the session had analyzed with corrected versions. After resuming, the session keeps quoting the old figures from those three files, while its answers about the other 37 files remain accurate. What is the most likely root cause?",
+        "opcoes": [
+          "Resuming reloads every file the session had read before, but serves cached copies of files already read once, so the corrections are skipped.",
+          "The context overflowed overnight, and the automatic summary kept the old figures while dropping the newer values that came from the files.",
+          "The resumed session still holds its earlier tool results for those files, and nothing has told it which files changed after it read them.",
+          "The analyst should have used fork_session instead of --resume, because only a forked session picks up changes made to files on disk."
+        ],
+        "correta": 2,
+        "explicacao": "A resumed session continues from its prior conversation, including tool results that may now be stale. Inform the resumed session about the specific files that changed so it re-reads them for targeted re-analysis; this is cheaper than full re-exploration and more reliable than hoping it notices.",
+        "feedbacks": [
+          "Resuming does not re-read files at all; it restores the prior conversation. The stale figures come from the earlier tool results stored in that conversation.",
+          "Nothing in the timeline points to an overflow, and the accurate answers about the other 37 files show the session's knowledge is intact; only the changed files are stale.",
+          "Correct. A resumed session reasons from its earlier tool results. Tell it which specific files changed so it re-reads those three, rather than re-exploring all 40.",
+          "Forking creates a branch from the same baseline, with the same stale tool results. Neither option detects changes on disk; the session must be told."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.7",
+        "bullet": "1.7-S4"
+      },
+      {
+        "pergunta": "The tax agency's research system now serves two workloads: (a) a weekly review of each new tax court ruling, always covering the holding, the code sections affected, consistency with prior rulings, and the estimated revenue impact; (b) open-ended questions such as \"Why did VAT receipts from hospitality fall 9% this quarter?\" Which TWO decomposition choices are appropriate? Choose TWO.",
+        "opcoes": [
+          "Use dynamic decomposition for the VAT question, generating new subtasks from what each finding reveals about likely causes.",
+          "Use dynamic decomposition for the weekly ruling review, so the coordinator can skip steps that seem unnecessary for a given ruling.",
+          "Use one comprehensive prompt for both workloads, so no context is lost between steps and each answer reflects the full picture.",
+          "Use a fixed prompt chain for the weekly ruling review, since the same steps apply to every ruling and are known in advance.",
+          "Use a fixed search, analyze, and synthesize chain for the VAT question, so every investigation follows a reproducible path."
+        ],
+        "corretas": [
+          0,
+          3
+        ],
+        "explicacao": "Choose the decomposition pattern to fit the workflow: prompt chaining (fixed sequential steps) for predictable multi-aspect reviews, and dynamic, adaptive decomposition for open-ended investigations in which the next subtasks depend on what is discovered.",
+        "feedbacks": [
+          "Correct. An open-ended investigation cannot be planned upfront; dynamic decomposition lets the coordinator generate subtasks from intermediate findings (e.g., a rate change leads to examining filings by business size).",
+          "Skipping steps in a review that must always cover the same four aspects risks incomplete reviews; predictable multi-aspect work fits a fixed chain.",
+          "A single prompt for complex work loses the focus that decomposition provides and degrades on multi-step tasks; the two workloads also need different strategies.",
+          "Correct. Prompt chaining suits predictable multi-aspect reviews: the steps are known in advance, and each one can be focused and checked.",
+          "A fixed chain cannot follow leads that appear mid-investigation; it would run the same searches regardless of what the first findings show."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.6",
+        "bullet": "1.6-S1"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the analysis subagent returns findings as {\"claim\": ..., \"value\": ...} pairs. A recent report presented a figure from an unreviewed working paper alongside the agency's own audit statistics as if both were equally authoritative, and compared a survey-based estimate with administrative data without comment. Which statement about this behavior is correct?",
+        "opcoes": [
+          "Synthesis cannot qualify figures it knows nothing about; each finding should carry metadata such as source, date, and methodology.",
+          "Synthesis should get the original documents and a reading tool, so it can check each figure's methodology itself before using it.",
+          "This is a position effect in the synthesis input; placing the most reliable figures first would make the report weigh them correctly.",
+          "The synthesis prompt lacks an instruction to treat sources with care; adding one would make it tell working papers from statistics."
+        ],
+        "correta": 0,
+        "explicacao": "Require subagents to include metadata such as dates, source locations, and methodological context in their structured outputs. Without it, the synthesis agent cannot tell an unreviewed working paper from official statistics or flag that two figures were measured differently.",
+        "feedbacks": [
+          "Correct. Downstream synthesis can only weigh, qualify, and compare figures accurately if upstream subagents include metadata (source location, dates, methodological context such as survey vs administrative data) in their structured outputs.",
+          "This gives the synthesis agent tools outside its role and makes it repeat work the analysis subagent already did. The information should travel with each finding.",
+          "Order can affect what gets attention, but no ordering tells synthesis which figure came from a working paper; that information is absent from its input.",
+          "\"Treat sources with care\" cannot help when the input carries no information about source type or method; the model has nothing to be careful with."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.1",
+        "bullet": "5.1-S5"
+      },
+      {
+        "pergunta": "At the tax agency, a session has spent two hours building a shared analysis of how 25 countries tax cross-border remote workers. The policy team now wants two alternative recommendations developed from that baseline: one based on employer withholding and one based on a residency test. A developer proposes using fork_session to create one branch per recommendation. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: each fork starts from the shared analysis and develops one option independently, so neither line of reasoning shapes the other.",
+          "Reject it: develop both options one after the other in the same session, so the second recommendation can build on work for the first.",
+          "Reject it: start two fresh sessions and have each one redo the 25-country analysis, so that the two recommendations are fully independent.",
+          "Reject it: resume the session twice under the same name with --resume, so both recommendations share one history and stay comparable."
+        ],
+        "correta": 0,
+        "explicacao": "Use fork_session to create independent branches from a shared analysis baseline when exploring divergent approaches. Each branch inherits the baseline without inheriting the other branch's reasoning, so the alternatives can be compared fairly without redoing the shared work.",
+        "feedbacks": [
+          "Correct. fork_session creates independent branches from a shared baseline, which is exactly what comparing divergent approaches needs: the same starting analysis and no cross-contamination.",
+          "Developing the second option in the same session lets the first option's reasoning anchor it, so the comparison is no longer between independent alternatives.",
+          "Independence is achieved, but at the cost of repeating two hours of analysis, and the two baselines may differ, which weakens the comparison.",
+          "Resuming the same named session twice does not create independent branches; both lines of work would accumulate in one history."
+        ],
+        "cenario": 3,
+        "dominio": "D1",
+        "ts": "1.7",
+        "bullet": "1.7-K2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, a draft report highlighted a \"major contradiction\": one source says a country's digital services tax raised €210 million, another says €520 million. An analyst found that the first figure covers the tax's first year (2020) and the second covers 2023, and both sources are reliable. This kind of false contradiction appears in about one report in five. Without adding a new agent, what is the most effective fix?",
+        "opcoes": [
+          "Instruct the synthesis subagent to prefer the most recently published source whenever two reliable sources report different values.",
+          "Require subagents to output the publication date and period covered for each figure, so synthesis can tell trends from disagreements.",
+          "Have the coordinator send each detected contradiction back to the search subagent to find a third source that settles the question.",
+          "Instruct the synthesis subagent to present both values side by side as conflicting figures, each attributed to its own source."
+        ],
+        "correta": 1,
+        "explicacao": "Require publication or data collection dates in structured outputs so that temporal differences are not misinterpreted as contradictions. Figures from different periods are often both correct; without dates, synthesis cannot tell a trend from a disagreement.",
+        "feedbacks": [
+          "Preferring the newest source discards a valid data point: the 2020 figure is correct for 2020. The issue is that the figures describe different periods.",
+          "Correct. When structured outputs carry publication and data collection dates, synthesis can see that €210M (2020) and €520M (2023) describe growth over time, not a disagreement.",
+          "A third source cannot settle a contradiction that does not exist, and it adds round trips; without dates in the outputs, the new figure may create a third \"conflict.\"",
+          "Annotating conflicts with attribution is right for genuine disagreements, but here it would still present growth over time as a conflict. The missing piece is the temporal data."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-K4"
+      },
+      {
+        "pergunta": "At the tax agency's research system, any exception in a subagent currently makes the coordinator abort the whole run; analysts received no report 11 times this month, usually because one of six document readers hit a corrupted PDF. A developer opens a pull request that catches exceptions inside each subagent and returns an empty findings list marked as successful. What is the most effective first step?",
+        "opcoes": [
+          "Approve the pull request, since a report built from five of six document sets is more useful to analysts than receiving no report at all.",
+          "Keep the abort, but notify the analyst with the name of the subagent that failed so that the request can be resubmitted manually.",
+          "Approve the pull request and add a fixed note to every report saying that some sources may have been unavailable during research.",
+          "Reject it; have a failed subagent report its failure to the coordinator, which continues and marks the affected area as a gap."
+        ],
+        "correta": 3,
+        "explicacao": "Silently suppressing errors (empty results marked as success) and terminating whole workflows on a single failure are both anti-patterns. The failing subagent should report what failed so the coordinator can decide how to recover and continue, with the report annotating which areas lack coverage.",
+        "feedbacks": [
+          "A partial report is better than none, but marking the failure as success hides it: neither the coordinator nor the analyst can tell that a document set was never read.",
+          "Terminating the whole workflow over one failed document wastes the work of the five successful readers and pushes recovery onto the analyst.",
+          "A blanket caveat on every report says nothing about which areas are affected, so analysts cannot tell solid findings from gaps.",
+          "Correct. Both current behaviors are anti-patterns: aborting on a single failure and suppressing errors as empty success. The coordinator should receive the failure, keep going, and annotate the coverage gap."
+        ],
+        "cenario": 3,
+        "dominio": "D5",
+        "ts": "5.3",
+        "bullet": "5.3-K4"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the analysis subagent can call get_taxpayer_records. Confidentiality law forbids returning records that identify individual taxpayers, so the tool refuses those requests; aggregated sector statistics are allowed. Today the denial returns {\"isError\": true, \"message\": \"Access denied\"}, and the subagent retries three times, then tells analysts there was \"a technical problem with the records system.\" Which error design should the tool use?",
+        "opcoes": [
+          "Keep the current error, and retry with exponential backoff inside the tool, since a denial can come from a temporary permission-sync delay.",
+          "Keep the current error, and add a rule to the subagent's prompt telling it never to retry any call that fails with \"Access denied\".",
+          "Return a business error with isRetryable false and a plain explanation of the rule, noting that aggregated sector statistics are allowed.",
+          "Return a business error with isRetryable true, so the coordinator can retry it with a narrower query through a different subagent."
+        ],
+        "correta": 2,
+        "explicacao": "Business rule violations should be returned with a non-retryable flag (retriable: false) and an explanation the agent can relay. The agent then avoids wasted retries and can communicate the restriction appropriately, including any alternative such as aggregated statistics.",
+        "feedbacks": [
+          "Backoff is a remedy for transient errors. A legal prohibition will fail on every attempt, so retries only waste time and delay the explanation.",
+          "The prompt rule stops retries for this message, but the subagent still cannot explain the restriction or suggest the allowed alternative, and genuinely temporary denials would no longer be retried.",
+          "Correct. For business rule violations, return structured metadata marking the error as non-retryable plus a readable explanation, so the agent stops retrying and tells analysts why and what they can request instead.",
+          "Marking a policy violation as retryable invites the same wasted attempts through another path. The rule does not change with a different caller."
+        ],
+        "cenario": 3,
+        "dominio": "D2",
+        "ts": "2.2",
+        "bullet": "2.2-S2"
+      },
+      {
+        "pergunta": "At the tax agency's research system, the coordinator's recovery logic must retry failures that may succeed later, correct malformed inputs and call again, stop and report policy denials, and request access when a dataset is outside the agent's role. Every tool currently returns {\"isError\": true, \"message\": \"Request failed\"} for any failure. What should you change to meet this requirement?",
+        "opcoes": [
+          "Add the HTTP status code to the message text of each error, so the model can infer from codes such as 503, 400, or 403 what went wrong.",
+          "Add an isRetryable boolean to every error, so the coordinator retries when it is true and stops and reports the error when it is false.",
+          "Add an errorCategory to every error: transient for timeouts, validation for bad input, business for policy denials, permission for access.",
+          "Have each tool retry every failed call three times internally, and return an error to the coordinator only after all of the attempts fail."
+        ],
+        "correta": 2,
+        "explicacao": "Transient errors (timeouts, unavailability), validation errors (invalid input), business errors (policy violations), and permission errors call for different recovery actions. A uniform \"Request failed\" hides the distinction; an explicit errorCategory, ideally with isRetryable and a description, lets the agent choose correctly.",
+        "feedbacks": [
+          "Status codes in free text make the agent guess, and codes do not map one-to-one to recovery actions. A structured, explicit category is more reliable than inference.",
+          "Retryability is useful but too coarse here: a validation error is not retryable as sent, yet it is recoverable by correcting the input, while a policy denial must stop. The requirement needs the category.",
+          "Correct. The four recovery actions map to four error categories: transient (retry), validation (fix the input), business (stop and explain), permission (request access). Returning the category lets the coordinator choose the right action.",
+          "Blind internal retries waste attempts on validation, policy, and permission errors that will never succeed, and the coordinator still receives a generic message."
+        ],
+        "cenario": 3,
+        "dominio": "D2",
+        "ts": "2.2",
+        "bullet": "2.2-K2"
+      },
+      {
+        "pergunta": "Scenario: Structured Data Extraction. Threadline, a fashion e-commerce marketplace, is building a structured data extraction system with Claude. It extracts product and billing information from unstructured supplier documents (spec sheets, size charts, invoices), validates the output against JSON schemas, and must handle edge cases gracefully before feeding the catalog and finance systems.\n\nFor each supplier spec sheet, the system also reports data-quality findings through a report_findings tool with location, issue, severity (enum: low/medium/high), and suggested_fix. The prompt describes each field in two paragraphs. Supplier managers complain that locations range from \"page 2\" to \"size table, row M, column Waist\", and fixes range from \"check this\" to precise corrections. What is the most likely root cause?",
+        "opcoes": [
+          "The location and suggested_fix fields are free strings in the schema; they need nested objects so that the tool can enforce their structure.",
+          "Supplier spec sheets vary in structure, and the findings will keep varying as long as the documents are not normalized before extraction.",
+          "Each request includes several spec sheets at once, so the model's attention is diluted and the findings for later sheets get less detailed.",
+          "The format is described only in prose; with no examples of complete findings, the model picks its own level of detail for each field."
+        ],
+        "correta": 3,
+        "explicacao": "Few-shot examples that demonstrate the desired output format (location, issue, severity, suggested fix) are the most effective way to achieve consistency when detailed prose instructions produce varied results. Examples show the expected granularity, which a schema or more description cannot convey.",
+        "feedbacks": [
+          "A nested schema can constrain shape, but it cannot make the model choose the same granularity or write a precise fix. The variation is in content and detail, which examples demonstrate.",
+          "Varied inputs are the reality the system must handle. Consistent output across varied documents is what demonstrated examples achieve; normalizing every supplier format first is not practical.",
+          "Nothing indicates batching; the findings are reported per spec sheet, and the inconsistency appears within single documents. Attention dilution would show up as missed findings, not as varied formatting.",
+          "Correct. When detailed instructions alone produce inconsistent output, few-shot examples that show complete findings (precise location, issue, severity, concrete suggested fix) are the most effective way to get a consistent format and level of detail."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.2",
+        "bullet": "4.2-S2"
+      },
+      {
+        "pergunta": "At Threadline, the extraction agent processes supplier catalogs of 30–60 products. For each product it calls get_catalog_item to check whether the SKU already exists; the tool returns the full catalog record (about 70 fields, including image metadata, inventory history, and pricing history), which is appended to the conversation as usual. After roughly 25 products, extraction quality drops and long catalogs fail on context limits. What is the flaw?",
+        "opcoes": [
+          "The agent calls get_catalog_item once per product; one call that returns all of the catalog's products at once would avoid the growth.",
+          "Whole records pile up in context although the check needs only a few fields; the results should be trimmed before they are appended.",
+          "The agent runs on a model whose context window is too small for long catalogs; switching to a larger window would remove the failures.",
+          "The agent never condenses its history; it should replace the conversation with a short summary every ten products to free up space."
+        ],
+        "correta": 1,
+        "explicacao": "Tool results accumulate in context and can consume tokens far out of proportion to their relevance, as with 70-field records when the check needs only a few fields. Trim verbose tool outputs to the relevant fields before they accumulate.",
+        "feedbacks": [
+          "Batching the calls returns the same 70 fields per product, just in one result; the irrelevant data still fills the context.",
+          "Correct. Tool results accumulate and consume tokens out of proportion to their relevance. Keeping only the fields the check needs (SKU, status, size range) before the result enters the context prevents both the quality drop and the overflow.",
+          "A larger window postpones the failure but keeps filling it with irrelevant fields, and quality already degrades well before the limit.",
+          "Progressive summarization can lose exact values such as SKUs and sizes, and it treats the symptom instead of keeping irrelevant data out of the context in the first place."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.1",
+        "bullet": "5.1-K3"
+      },
+      {
+        "pergunta": "Threadline's extraction agent has two tools, extract_size_chart and extract_product_specs, both described as \"Extracts product data from a supplier document.\" For documents that contain both a size chart and a specification table, the agent calls only extract_product_specs in 41% of runs, and the size data is missing. Which statement about this behavior is correct?",
+        "opcoes": [
+          "The model picks tools mainly from their descriptions; these two are identical, so each should state its inputs, outputs, and when to use it.",
+          "When descriptions are similar, the model picks the first tool listed; reordering the tool definitions would fix the missing size data.",
+          "The model can call only one tool per response, so tool_choice must be set to \"any\" to make it call both tools on the same document.",
+          "The model skips extract_size_chart to keep its responses short; a system prompt rule to always call both tools would fix the problem."
+        ],
+        "correta": 0,
+        "explicacao": "Tool descriptions are the primary mechanism LLMs use for tool selection. When two tools share a vague description, selection becomes unreliable; descriptions that differentiate purpose, inputs, outputs, and when to use each tool versus the other fix the root cause.",
+        "feedbacks": [
+          "Correct. Tool descriptions are the primary mechanism for tool selection. Identical descriptions give the model nothing to tell the tools apart; each should explain its purpose, expected inputs, outputs, and when to use it versus the other.",
+          "List order is not a reliable selection mechanism, and relying on it would break as soon as tools are added or reordered. The descriptions are what the model reads to choose.",
+          "Claude can call several tools in one response, and \"any\" only guarantees that some tool is called, not both. The model skips extract_size_chart because nothing tells it what that tool is for.",
+          "A blanket rule would call the size-chart tool even on documents without a size chart, and it patches selection in the prompt instead of fixing the descriptions the model relies on."
+        ],
+        "cenario": 6,
+        "dominio": "D2",
+        "ts": "2.1",
+        "bullet": "2.1-S1"
+      },
+      {
+        "pergunta": "Threadline submits 18,000 product descriptions to the Message Batches API every night. The code that reads the results assigns the i-th result to the i-th product in the submission file, and a weekly audit found attributes such as fabric and fit attached to the wrong products. A developer proposes setting each request's custom_id to the product's SKU and matching results by custom_id. How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: results are not guaranteed to come back in submission order, and custom_id exists to correlate each result with its request.",
+          "Reject it: split the job into batches of 100 requests, which are small enough to guarantee results keep the submission file's order.",
+          "Reject it: batch results cannot be matched to requests reliably, so the nightly job should move to the synchronous API instead.",
+          "Reject it: have the model repeat the SKU at the start of each output, and match every result to its product by that echoed value."
+        ],
+        "correta": 0,
+        "explicacao": "Results from the Message Batches API must be correlated with their requests through custom_id; their order is not guaranteed. Setting custom_id to a stable identifier such as the SKU and matching on it fixes the misattribution without giving up the batch savings.",
+        "feedbacks": [
+          "Correct. custom_id is the field for correlating batch request/response pairs; matching by position assumes an ordering the API does not guarantee.",
+          "Smaller batches still do not guarantee order, and they multiply the number of jobs to manage. The correlation field already solves this.",
+          "This is a misconception: batch results can be correlated reliably through custom_id. Moving a latency-tolerant nightly job to the synchronous API gives up the 50% savings for no reason.",
+          "Relying on the model to echo an identifier adds a failure point (a mistyped or missing SKU) for something the API provides deterministically through custom_id."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.5",
+        "bullet": "4.5-K4"
+      },
+      {
+        "pergunta": "At Threadline, the extraction system flags suspected data-quality problems (for example, \"waist measurements look like inches in a cm column\") for catalog reviewers, who dismiss 35% of the flags. The team wants to learn which kinds of flags are mostly wrong so it can fix them, but it has no budget for anyone to re-read dismissed flags. What is the most effective change?",
+        "opcoes": [
+          "Require reviewers to type a short free-text reason whenever they dismiss a flag, and go through those reasons in a monthly meeting.",
+          "Add a detected_pattern field to each flag naming the rule or construct that triggered it, then compare dismissal rates per pattern.",
+          "Have a second model review each flag before it reaches the reviewers, so that fewer of the flags they receive end up dismissed.",
+          "Have the model attach a confidence score to each flag, and stop showing reviewers any flag whose score falls below a 0.7 threshold."
+        ],
+        "correta": 1,
+        "explicacao": "Adding a detected_pattern field to structured findings records which construct triggered each one. When reviewers dismiss findings, dismissal rates can be analyzed by pattern, which pinpoints systematic sources of false positives without manually reviewing each dismissal.",
+        "feedbacks": [
+          "Free-text reasons add reviewer work and produce unstructured data that someone must read and categorize, which the team said it cannot afford.",
+          "Correct. A detected_pattern field records what triggered each finding, so dismissals can be aggregated by pattern automatically, revealing which patterns produce false positives.",
+          "A second reviewer model adds cost and may cut the noise, but it still does not tell the team which kinds of flags are wrong, so the underlying rules never get fixed.",
+          "An uncalibrated threshold suppresses flags without explaining which patterns fail; the team would still not know what to fix."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.4",
+        "bullet": "4.4-S3"
+      },
+      {
+        "pergunta": "Threadline's pipeline has a normalization subagent that maps extracted colors and sizes to the catalog taxonomy. It was given all 14 pipeline tools, including fetch_supplier_site and reextract_document, \"in case it needs more data.\" Logs show it re-extracts documents or fetches supplier pages in 22% of runs, sometimes overwriting values from the extraction step and adding latency. What is the most effective first step?",
+        "opcoes": [
+          "Add an instruction to its system prompt saying it must not call extraction or web tools unless the taxonomy lookup returns no match.",
+          "Limit the normalization subagent to the taxonomy lookup tools its role requires, removing the extraction and web tools it was given.",
+          "Add a hook that logs each call it makes to a tool outside its role, and review the logged calls every week to decide what to change.",
+          "Merge normalization into the extraction subagent, so that one agent owns all 14 tools and no values are overwritten between steps."
+        ],
+        "correta": 1,
+        "explicacao": "Agents given tools outside their specialization tend to misuse them, and large tool sets degrade selection reliability. The first step is to restrict each subagent's tools to those its role needs; complex needs can be routed through the coordinator.",
+        "feedbacks": [
+          "A prompt rule leaves the tools available and the decision probabilistic; the \"unless\" clause even invites the same calls whenever the lookup is imperfect.",
+          "Correct. Agents with tools outside their specialization tend to misuse them. Scoping the subagent's tools to its role removes the misuse at the source and simplifies its tool choices.",
+          "Logging gives visibility but prevents nothing; the overwrites and latency continue while the team reviews logs.",
+          "Consolidating gives one agent even more responsibility and the same 14 tools, which degrades tool selection further."
+        ],
+        "cenario": 6,
+        "dominio": "D2",
+        "ts": "2.3",
+        "bullet": "2.3-K2"
+      },
+      {
+        "pergunta": "At Threadline, after each supplier's 120 documents are extracted, a final call asks Claude to write a quality summary for the vendor manager from all 120 per-document validation results, concatenated in processing order. Managers report that critical problems in documents from the middle of the batch are often missing from the summary. Which input design should the team use?",
+        "opcoes": [
+          "Keep processing order, and repeat an explicit instruction, \"cover every critical problem\", at the beginning and end of the input.",
+          "Sort the 120 results alphabetically by SKU, so that the model reads them in a predictable order that is easy to scan and cite.",
+          "Ask for a separate summary of each document, then concatenate the 120 summaries in processing order and send them to the manager.",
+          "Open with a block of key findings (counts, critical problems), then group the detailed results under explicit headers by issue type."
+        ],
+        "correta": 3,
+        "explicacao": "Models process the beginning and end of long inputs most reliably and may omit material in the middle. Place a summary of key findings at the start of aggregated inputs and organize the detailed results with explicit section headers, so important items are not lost.",
+        "feedbacks": [
+          "Repeating the instruction does not change where the critical problems sit in the input; the middle sections remain the least reliably processed.",
+          "Alphabetical order is just another arbitrary order: whatever lands in the middle is still at risk of being omitted.",
+          "This removes the aggregation the manager needs and produces 120 summaries to read, while still burying critical items in the middle.",
+          "Correct. A key-findings summary at the beginning and detailed results organized under explicit section headers mitigate the lost-in-the-middle effect, so critical problems are not dropped."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.1",
+        "bullet": "5.1-S4"
+      },
+      {
+        "pergunta": "Threadline uses the Message Batches API for all extraction. That works for the weekly re-extraction of 2 million catalog items, but sellers who upload a new product sheet in the seller portal wait until its batch finishes, which has taken up to 19 hours, before the listing appears. The requirement is that new uploads are extracted within a minute, while keeping costs low. What should you change?",
+        "opcoes": [
+          "Use the synchronous API for seller uploads, and keep the weekly catalog re-extraction on the Message Batches API for its savings.",
+          "Keep both on the Message Batches API, but submit seller uploads in small batches every five minutes so each batch completes sooner.",
+          "Move both workloads to the synchronous API, so the pipeline has a single processing path and every extraction finishes promptly.",
+          "Keep seller uploads on the Message Batches API, and show sellers an estimated completion time based on recent batch durations."
+        ],
+        "correta": 0,
+        "explicacao": "Batch processing suits non-blocking, latency-tolerant workloads such as weekly audits and is inappropriate for blocking workflows, because it can take up to 24 hours with no latency SLA. Match each workload to the right API: synchronous for seller uploads, batch for the catalog re-extraction.",
+        "feedbacks": [
+          "Correct. A seller waiting for a listing is a blocking workflow that needs the synchronous API; the weekly re-extraction is latency-tolerant and benefits from the 50% batch savings.",
+          "Small batches often finish sooner, but the Message Batches API has no latency SLA (up to 24 hours), so the one-minute requirement cannot be guaranteed.",
+          "This meets the latency requirement but gives up the batch savings on the 2-million-item job, which has no latency need.",
+          "An estimate manages expectations but does not meet the requirement; batch processing remains unsuitable for a workflow that blocks the seller."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.5",
+        "bullet": "4.5-K2"
+      },
+      {
+        "pergunta": "Threadline's extraction agent has parse_document (\"Parses any supplier document\") and parse_invoice (\"Parses invoices\"). For supplier invoices, the agent calls parse_document in about a third of runs, and those results lack line items, which breaks the finance feed. Which TWO changes best eliminate the overlap between the tools? Choose TWO.",
+        "opcoes": [
+          "Add few-shot examples to the system prompt that show supplier invoices being routed to parse_invoice rather than parse_document.",
+          "Keep both tools as they are, and add a system prompt rule saying that parse_document must never be used for any kind of supplier invoice.",
+          "Rename parse_document to extract_catalog_content and describe it as covering only spec sheets and catalogs, not billing documents.",
+          "Describe parse_invoice's inputs (invoices, credit notes) and output (header plus line items), and say to use it for billing documents.",
+          "Force parse_invoice with tool_choice whenever the uploaded file name contains \"INV\", and keep tool_choice \"auto\" for all other files."
+        ],
+        "corretas": [
+          2,
+          3
+        ],
+        "explicacao": "Overlapping tool descriptions cause misrouting. Rename tools and update their descriptions to eliminate functional overlap: narrow the generic tool to its real purpose, and give the specific tool a description with its inputs, outputs, and when to use it.",
+        "feedbacks": [
+          "Examples can help with ambiguous cases, but they add tokens while \"any supplier document\" stays in place, still claiming invoices.",
+          "The overlap remains in the tool definitions; a prompt rule patches selection with a keyword-sensitive instruction that can conflict with how the descriptions read.",
+          "Correct. Renaming the generic tool and narrowing its description removes the functional overlap, so \"any supplier document\" no longer competes with the invoice tool.",
+          "Correct. A description that states which inputs the tool handles, what it returns, and when to use it versus the alternative makes parse_invoice the clear choice for billing documents.",
+          "File names are an unreliable heuristic, and forcing a tool by file name bypasses the model's reading of the document; misnamed invoices would still go to parse_document."
+        ],
+        "cenario": 6,
+        "dominio": "D2",
+        "ts": "2.1",
+        "bullet": "2.1-S2"
+      },
+      {
+        "pergunta": "Threadline merges product attributes from several documents per product. Its merge step: (1) extract fiber composition from each document with a reference to its source; (2) normalize percentages so they sum to 100; (3) when two credible documents disagree, keep the value from the most recently uploaded one; (4) write the merged record to the catalog with the list of documents used. A supplier's spec sheet says 95% cotton / 5% elastane; its certified lab report says 92% / 8%. Which step is flawed?",
+        "opcoes": [
+          "Step 2, because normalizing the percentages to 100 can hide extraction errors; values should be stored exactly as each document states.",
+          "Step 4, because listing the source documents in the catalog record exposes internal supplier files to every downstream system.",
+          "Step 1, because composition should come only from the lab report, the most authoritative source, so that no conflict can arise.",
+          "Step 3, because picking the latest upload silently drops a credible value; keep both values with their sources and mark the conflict."
+        ],
+        "correta": 3,
+        "explicacao": "Conflicting values from credible sources should be preserved and annotated with their sources rather than resolved by an arbitrary rule such as \"latest upload wins.\" The conflict itself is information that a reviewer or downstream system needs.",
+        "feedbacks": [
+          "Normalization can mask errors in some cases, but here both documents already sum to 100; the real problem is how the disagreement is resolved.",
+          "Keeping the source list is what preserves provenance; it is part of the solution, not the flaw.",
+          "Preferring one source type by rule is still arbitrary selection, and it hides the fact that the supplier's own sheet contradicts the lab report, a discrepancy that matters in itself.",
+          "Correct. When credible sources conflict, annotate the conflict with source attribution instead of arbitrarily selecting one value, and let a reviewer or downstream rule decide."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.6",
+        "bullet": "5.6-K3"
+      },
+      {
+        "pergunta": "Threadline's extraction prompt ends with \"Respond only with JSON matching this schema,\" followed by the schema. About 3% of responses fail to parse: some start with \"Here is the extracted data:\", some have trailing commas, and some contain unescaped quotes from product names such as 5\" heels. Which statement about this situation is correct?",
+        "opcoes": [
+          "Three few-shot examples of valid JSON output would make every response parse correctly, so a schema written in the prompt is enough.",
+          "An extraction tool with this schema as input, read from the tool_use block, would remove these syntax errors, though not wrong values.",
+          "Retrying failed parses with the parser error appended makes the output schema-compliant, so moving to tool use would add nothing here.",
+          "Tool use with a schema would remove the syntax errors and also guarantee correct values, such as sizes always in the right field."
+        ],
+        "correta": 1,
+        "explicacao": "Tool use with JSON schemas is the most reliable approach for schema-compliant structured output and eliminates JSON syntax errors. It does not prevent semantic errors, which still require validation.",
+        "feedbacks": [
+          "Examples reduce formatting errors but do not guarantee their absence; the model can still add a preamble or mishandle a quote in a product name.",
+          "Correct. Tool use with a JSON schema is the most reliable way to get schema-compliant output: the structured input of the tool_use block removes syntax errors such as preambles, trailing commas, and unescaped quotes. Semantic errors still need validation.",
+          "Retries recover some failures at extra cost and latency, but they remain a correction step, not a guarantee. Tool use removes the syntax errors at the source.",
+          "This overstates tool use: a schema guarantees structure, not semantics. Values can still be wrong or placed in the wrong field."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.3",
+        "bullet": "4.3-K1"
+      },
+      {
+        "pergunta": "Threadline's extraction request offers three tools (extract_invoice, extract_spec_sheet, extract_return_form) with tool_choice \"auto\". In about 4% of documents, all of them valid invoices, spec sheets, or return forms, the model replies with text such as \"This spec sheet lists six colorways; should I extract all of them?\" instead of calling a tool, and the pipeline stalls. A developer proposes switching to tool_choice \"any\". How should you evaluate this proposal?",
+        "opcoes": [
+          "Adopt it: \"any\" requires the model to call one of the tools, while still letting it choose the schema that fits each document.",
+          "Reject it: force extract_invoice with {\"type\": \"tool\"} instead, because invoices are the most common type of document.",
+          "Reject it: keep \"auto\" and add a system prompt line telling the model to always respond by calling an extraction tool.",
+          "Reject it: \"any\" would make the model call all three tools for every document and triple the cost of each extraction."
+        ],
+        "correta": 0,
+        "explicacao": "With \"auto\", the model may return text instead of calling a tool. Setting tool_choice to \"any\" guarantees a tool call while still letting the model choose among several extraction schemas, which is the right setting when the document type varies.",
+        "feedbacks": [
+          "Correct. tool_choice \"any\" guarantees that the model calls a tool rather than returning conversational text, while letting it pick which extraction schema applies.",
+          "Forcing one specific tool guarantees a call but sends spec sheets and return forms through the invoice schema. Forced selection fits when one particular tool must run, not when the document type is unknown.",
+          "A prompt instruction lowers the rate of text replies but does not guarantee a tool call, so the pipeline would still stall occasionally.",
+          "\"any\" means the model must call at least one tool of its choosing, not all of them. The cost concern rests on a misunderstanding of the option."
+        ],
+        "cenario": 6,
+        "dominio": "D2",
+        "ts": "2.3",
+        "bullet": "2.3-S5"
+      },
+      {
+        "pergunta": "At Threadline, the finance system rejects about 2% of extracted supplier invoices because the line items do not add up to the invoice total. Investigation shows that half are extraction errors (a missed or duplicated line) and half are invoices the supplier got wrong. Finance wants both kinds detected automatically and sent to the right place, without a person re-checking every invoice. What is the most effective change?",
+        "opcoes": [
+          "Have the model adjust the total so that it matches the sum of the extracted line items before the extraction is returned to the pipeline.",
+          "Extract stated_total as printed and a calculated_total from the lines, set conflict_detected when they differ, and route flagged invoices.",
+          "Add a schema constraint requiring the total to equal the sum of the line items, so that the tool call rejects any inconsistent invoice.",
+          "Retry each mismatched invoice with the validation error appended, repeating until the line items and the stated total agree."
+        ],
+        "correta": 1,
+        "explicacao": "Self-correction validation flows extract the stated total together with a calculated total and a conflict_detected flag. A hidden semantic inconsistency becomes an explicit signal that downstream logic can act on, separating extraction errors (retry) from inconsistent source data (route to finance).",
+        "feedbacks": [
+          "This hides the supplier's own errors, which finance needs in order to dispute them, and can disguise an extraction mistake as a consistent invoice.",
+          "Correct. Extracting the stated total alongside a calculated one, with a conflict flag, makes discrepancies explicit. Flagged invoices can then be retried (extraction errors) or sent to finance (supplier errors).",
+          "JSON Schema validates structure and types, not arithmetic across fields; strict schemas do not prevent semantic errors such as totals that do not add up.",
+          "Retrying helps with extraction errors, but for invoices that are genuinely wrong no retry can make them agree, except by pushing the model to alter values."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.4",
+        "bullet": "4.4-S4"
+      },
+      {
+        "pergunta": "Threadline moved extraction to tool use with a strict JSON schema, and JSON parsing errors dropped to zero. A month later, a catalog audit found sleeve lengths stored in inseam_cm and prices in cents stored in the price_usd field for about 5% of products. A manager argues that \"the schema is strict, so the data is already validated.\" What is the most effective first step?",
+        "opcoes": [
+          "Make every field in the schema required, so the model can no longer leave out a field or put a value into a field other than its own.",
+          "Set tool_choice to force the extraction tool on every request, so that each product goes through the strict schema without exception.",
+          "Add semantic checks after extraction (value ranges, cross-field rules such as no inseam on tops) and retry failures with the errors.",
+          "Add a sentence to the prompt asking the model to double-check that each value is in the right field before it calls the extraction tool."
+        ],
+        "correta": 2,
+        "explicacao": "Strict JSON schemas via tool use eliminate syntax errors but do not prevent semantic errors such as values in the wrong field or in the wrong unit. Those need semantic validation after extraction, with the specific errors sent back for a retry.",
+        "feedbacks": [
+          "Making fields required controls presence, not placement, and forces values for fields that do not apply (a top has no inseam), which invites fabrication.",
+          "The extraction tool is already being called; forcing it changes nothing about values placed in the wrong field.",
+          "Correct. Strict schemas eliminate syntax errors but not semantic ones. Semantic checks catch misplaced or implausible values, and feeding the specific errors back enables correction.",
+          "A self-check instruction may help a little but provides no detection; errors that slip through still reach the catalog unnoticed."
+        ],
+        "cenario": 6,
+        "dominio": "D4",
+        "ts": "4.3",
+        "bullet": "4.3-K3"
+      },
+      {
+        "pergunta": "Threadline's extraction is 96.5% accurate overall on a 2,000-document validation set, and management wants to stop the human review that currently checks every extraction. Two designs are proposed: (A) replace full review with a uniform 5% random sample now; (B) first break accuracy down by document type (invoices, spec sheets, return forms) and by field, and reduce review only where every segment meets the target. Which design should the team choose?",
+        "opcoes": [
+          "Design A, because 96.5% overall accuracy shows the model is ready, and a uniform sample will still reveal any decline in accuracy over time.",
+          "Design A, weighting the sample toward invoices, the highest-volume document type, since most of the errors are likely to come from there.",
+          "Design B, because an aggregate figure can hide poor accuracy on one document type or field, which must be found before review is cut.",
+          "Neither yet: keep full review until overall accuracy reaches 99% on the validation set, and then switch to Design A's uniform sample."
+        ],
+        "correta": 2,
+        "explicacao": "Analyze accuracy by document type and field before reducing human review. Aggregate accuracy can mask weak segments; checking each segment against the target ensures that review is reduced only where performance is consistently good.",
+        "feedbacks": [
+          "An aggregate 96.5% can coexist with much lower accuracy on a smaller segment (e.g., return forms, or one field); a uniform 5% sample would rarely surface it.",
+          "Volume is not the same as error rate. The weakest segment may be a low-volume document type, which this sampling would examine even less.",
+          "Correct. Aggregate metrics can mask poor performance on specific document types or fields. Validating accuracy by segment before reducing review ensures automation is applied only where it performs consistently.",
+          "A higher aggregate bar still does not reveal segment-level weaknesses; 99% overall can hide a poorly performing field just as 96.5% can."
+        ],
+        "cenario": 6,
+        "dominio": "D5",
+        "ts": "5.5",
+        "bullet": "5.5-S2"
+      }
+    ]
+  },
+  "order": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59
+  ],
+  "pos": 60,
+  "answers": [
+    {
+      "pos": 0,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 1,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 2,
+      "escolha": [
+        1,
+        4
+      ],
+      "acertou": false
+    },
+    {
+      "pos": 3,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 4,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 5,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 6,
+      "escolha": [
+        1,
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 7,
+      "escolha": [
+        2,
+        4
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 8,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 9,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 10,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 11,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 12,
+      "escolha": [
+        1,
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 13,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 14,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 15,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 16,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 17,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 18,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 19,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 20,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 21,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 22,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 23,
+      "escolha": [
+        1,
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 24,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 25,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 26,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 27,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 28,
+      "escolha": [
+        0,
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 29,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 30,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 31,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 32,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 33,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 34,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 35,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 36,
+      "escolha": [
+        0,
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 37,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 38,
+      "escolha": [
+        0,
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 39,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 40,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 41,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 42,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 43,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 44,
+      "escolha": [
+        1
+      ],
+      "acertou": false
+    },
+    {
+      "pos": 45,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 46,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 47,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 48,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 49,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 50,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 51,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 52,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 53,
+      "escolha": [
+        2,
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 54,
+      "escolha": [
+        3
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 55,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 56,
+      "escolha": [
+        0
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 57,
+      "escolha": [
+        1
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 58,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    },
+    {
+      "pos": 59,
+      "escolha": [
+        2
+      ],
+      "acertou": true
+    }
+  ],
+  "done": true
+}
